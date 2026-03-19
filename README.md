@@ -57,6 +57,12 @@ Requirements change during implementation. You don't have to finish the phase to
 
 The pipeline doesn't require you to finish before course-correcting.
 
+### Best practice: fresh chat per story
+
+Every Mano file lives on disk — phase brief, tech spec, stories, design brief. A new chat reads the same files and picks up where you left off. You don't need conversation history.
+
+For phases with more than a few stories, start a fresh chat for each story. This keeps context lean (3-4KB instead of a full conversation window) and produces better results. Long sessions accumulate context that degrades the model's focus.
+
 ## Output
 
 ```
