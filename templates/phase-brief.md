@@ -14,14 +14,6 @@
 
 <!-- One sentence. The decision filter. -->
 
-## Tech Stack
-
-<!-- Framework, language, key libraries with versions. Updated by Helen after spec. -->
-
-| Category | Decision | Version |
-|----------|----------|---------|
-| | | |
-
 ## Phase Scope
 
 <!-- What ships. One line per item. Must fit one screen with the rest of this doc. -->
@@ -45,10 +37,4 @@
 -
 -
 
-## Next Phase Candidates
-
-<!-- Max five. A few words each. Parking lot, not a plan. -->
-
--
--
--
+<!-- Future work, deferred items, and ideas live in _mano_output/backlog.md — not here. -->

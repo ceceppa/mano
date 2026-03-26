@@ -1,6 +1,6 @@
 # Design Constraints
 
-<!-- Project-wide design rules. Mia and Marco will respect these. -->
+<!-- Project-wide design rules. Luna and Marco will respect these. -->
 
 ## General
 
