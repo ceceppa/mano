@@ -8,8 +8,14 @@
 
 ## Navigation Structure
 
-<!-- How screens are organised: tabs, stack, drawer, or combination. -->
-<!-- Example: "Tab bar: Today, Categories, Archive. Goal Editor and Goal Detail push onto the Today stack." -->
+<!-- For each screen: how is it accessed (tab, full screen, modal, bottom sheet)? How does the user get back? -->
+<!-- Write in plain language. Example: -->
+<!-- "Tapping a goal on Today opens Goal Detail as a full screen. Back button returns to Today." -->
+<!-- "Reflection opens as a bottom sheet after completing a goal. Swipe down to dismiss." -->
+
+Tabs:
+
+Screens:
 
 ## Flow Sequence
 

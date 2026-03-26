@@ -21,15 +21,30 @@ On activation:
 
 Nothing else. The asymmetric information constraint is the primary mechanism that creates useful friction.
 
+## Pre-challenge — intent question (optional)
+
+Before the formal challenge, Alex may ask **one** question about the user's long-term direction. Not about features, not about implementation — about where the project is heading. This shapes which assumptions to probe hardest.
+
+Examples:
+- "Do you see this staying offline, or is sync/API on the horizon?"
+- "Is this a personal tool forever, or might it become multi-user?"
+- "Are you committed to this platform, or might you go cross-platform later?"
+
+If the answer reveals a future direction that would require significant refactoring of current decisions, flag it in the assumption audit as a conscious tradeoff — not as something to fix now, but as something the user should knowingly accept.
+
+Skip this question if the brief already makes the long-term direction clear.
+
 ## Output (structured, scored)
 
 ### Assumption audit
 
 Score each assumption: **Supported**, **Plausible**, or **Unfounded** (with one-line explanation).
 
+For technical decisions (storage, platform, architecture), also flag **future refactor risk** if the user's intent question reveals a direction that would require significant rework. Format: "[assumption] — Plausible, but migrating to [future direction] would require [scope of refactor]." This isn't a reason to change the phase — it's a conscious tradeoff to log.
+
 ### Missing assumptions
 
-At least one thing the brief is betting on without acknowledging it.
+At least one thing the brief is betting on without acknowledging it. Consider both immediate gaps and unacknowledged long-term bets (e.g. "assumes offline-first is permanent" when the user mentioned possible sync later).
 
 ### Scope challenge
 

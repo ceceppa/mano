@@ -1,6 +1,6 @@
 # Design Brief — [Project Name]
 
-<!-- Project-wide. Generated once by Mia, extended on later phases if needed. -->
+<!-- Project-wide. Generated once by Luna, extended on later phases if needed. -->
 
 ## Visual Direction
 

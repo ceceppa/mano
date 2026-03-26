@@ -29,3 +29,8 @@
 
 -
 -
+
+## Cross-Environment Boundaries
+
+<!-- Only needed if features span app + widget, app + watch, web + native, etc. -->
+<!-- For each boundary: what's shared, what's not, and what that means for implementation. -->
