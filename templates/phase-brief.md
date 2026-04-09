@@ -14,6 +14,10 @@
 
 <!-- One sentence. The decision filter. -->
 
+## Phase Goal
+
+<!-- One sentence. The single most important outcome. If you have to cut scope, this survives. -->
+
 ## Phase Scope
 
 <!-- What ships. One line per item. Must fit one screen with the rest of this doc. -->

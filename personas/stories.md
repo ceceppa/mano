@@ -62,14 +62,36 @@ Check if `_mano/custom/story.md` exists.
 ```
 
 ### Enriched mode addition (after Notes):
+
+Add an **Implementation Reference** section to each story. This section is dynamic — Marco reads `_mano_output/project-rules.md` and pulls in only the rules relevant to that specific story.
+
+**For frontend stories (user-facing screen):**
 ```markdown
-#### UI Reference
+#### Implementation Reference
 - **Screen:** [from UX flow]
 - **Layout:** [key layout details]
 - **Components:** [from design brief]
-- **Colours:** [use semantic names from the design brief only — e.g. `primary`, `background`, `surface`. Never hardcode hex values. The design brief is the single source of truth for colour values.]
+- **Colours:** [semantic names only — e.g. primary, surface]
 - **Behaviour:** [interaction details]
+- **Project rules:** [list relevant rules from project-rules.md by name — e.g. "Shared Button component", "Theme object for all tokens"]
 ```
+
+**For backend stories (API endpoints, services):**
+```markdown
+#### Implementation Reference
+- **Project rules:** [list relevant rules — e.g. "Feature-first modules under src/modules", "Route names follow resource and explicit action", "File names are lowercase and hyphenated"]
+- **Files:** [expected file paths based on folder structure rules — e.g. `src/modules/todos/todo.routes.ts`, `src/modules/todos/todo.service.ts`]
+- **Error format:** [from tech spec if applicable]
+```
+
+**For infrastructure stories (Docker, CI, config):**
+```markdown
+#### Implementation Reference
+- **Project rules:** [list relevant rules]
+- **Files:** [expected file paths or locations]
+```
+
+The section adapts to the story type. The common element is always: which project rules apply to this story, referenced by name so the coding agent can look them up.
 
 ## Story quality rules
 
@@ -79,6 +101,22 @@ Check if `_mano/custom/story.md` exists.
 - **Stories must be small.** One focused session. Max five acceptance criteria.
 - **Out of scope is mandatory.** Every story, even if brief.
 - **Cross-check the tech spec.** If a tech spec exists, ensure its decisions are reflected in acceptance criteria where relevant. If the spec says local storage or offline-first, at least one story must include a criterion like "data persists after closing and reopening the app." If the spec says biometric auth, a story must test it. Tech decisions that never appear in acceptance criteria are invisible to QA and will be skipped.
+- **Tests belong in the story, not in a separate story.** If `project-rules.md` mentions testing requirements, each story MUST include at least one test-specific AC. Do not create standalone "write tests" stories.
+
+  **How to write test AC — use this exact pattern:**
+  
+  For each behaviour AC, add a corresponding test AC that starts with "Test:" 
+  
+  Example story AC for a create endpoint:
+  ```
+  - [ ] POST /todos with valid text returns 201 and the created todo
+  - [ ] Test: POST /todos with empty text returns 400 with error envelope
+  - [ ] Test: POST /todos with text over 280 chars returns 400
+  - [ ] GET /todos returns all todos sorted by createdAt descending
+  - [ ] Test: GET /todos with no data returns 200 with empty array
+  ```
+
+  The "Test:" prefix makes test AC visible and scannable. If a story has zero "Test:" AC and the project rules require testing, the story is incomplete.
 - **Flag overloaded screens.** If a screen in the UX flow handles more than two primary actions (e.g. view + create + edit + archive all on one screen), flag it with options:
 
   ```
@@ -143,10 +181,10 @@ Generate all stories for the phase and write them directly to `_mano_output/phas
 
 For each story:
 1. Use short titles (max 6 words — scannable, not descriptive).
-2. Write the file to `_mano_output/phase-[N]/stories/story-[N]-[slug].md`.
+2. Write the file to `_mano_output/phase-[N]/stories/story-[N]-[slug].md`. The slug is mandatory — it's a lowercase, hyphenated, 2-4 word summary of the story. Examples: `story-1-app-bootstrap-health.md`, `story-3-create-list-todos.md`. Never use `story-1.md` or `story-3-untitled.md`.
 3. Update the index at `_mano_output/phase-[N]/stories/README.md` after each story.
 
-When all stories are written, present a summary:
+When all stories are written, present a summary with implementation order and dependencies:
 
 ```
 [Marco]: I've written [N] stories to _mano_output/phase-[N]/stories/:
@@ -156,8 +194,13 @@ When all stories are written, present a summary:
 3. [title] → story-3-[slug].md
 ...
 
+Suggested order: 1 → 2 → 3 → ...
+[Only if dependencies are unambiguous, add a note like: "Stories 3-5 are independent once story 2 is complete — they can be worked in parallel." If parallelism isn't obvious, say nothing about it.]
+
 Review them in your editor. If anything needs changing, run `mano stories` and tell me what to fix.
 ```
+
+**Dependency honesty:** Only claim stories are independent when it's obvious from the acceptance criteria (e.g. separate endpoints on the same existing database, separate screens with no shared state). If unsure, state the sequential order only. False parallelisation claims are worse than no claims.
 
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor. If something's wrong, they come back to discuss or fix it.
 

@@ -2,7 +2,7 @@
 
 A structured thinking tool for AI-assisted software planning. Phased, feedback-driven, anti-slop.
 
-Mano helps you scope, challenge, and spec one shippable phase at a time. It uses persona constraints to surface issues you'd miss working linearly. It is not a multi-agent system — it is one model applying different lenses to your idea.
+Mano helps you scope, spec, and build one shippable phase at a time. It uses persona constraints to surface issues you'd miss working linearly. It is not a multi-agent system — it is one model applying different lenses to your idea.
 
 ## Commands
 
@@ -10,7 +10,8 @@ Mano helps you scope, challenge, and spec one shippable phase at a time. It uses
 |---------|-------------|
 | `mano` | Show available commands and current status. |
 | `mano status` | Scans output folder. Where am I? What's next? |
-| `mano start` | Scope a new project or phase. (Skye, optionally Alex) |
+| `mano start` | Scope a new project or phase. (Skye) |
+| `mano rules` | Define or update project rules. (Alex) |
 | `mano [action]` | Run an action: `spec`, `ui`, `stories`, `review`. Any order, any time. |
 | `mano continue` | Auto-run the next logical action. |
 | `mano help [persona]` | Show what a persona does and when to use it. |
@@ -23,27 +24,28 @@ Actions are independent, not sequential. Run them in any order. Each persona che
 
 | Name | Role | File |
 |------|------|------|
-| **Skye** | Scopes the idea, challenges the why, proposes phases | `personas/start.md` |
+| **Skye** | Scopes the idea, populates the backlog, proposes phases | `personas/start.md` |
+| **Alex** | Defines and updates project rules — components, patterns, architecture | `personas/advisor.md` |
 | **Dave** | Phase review, triage, escape velocity | `personas/review.md` |
-| **Alex** | Stress-tests assumptions and flags risks (triggered by Skye) | `personas/challenger.md` |
 | **Helen** | Translates the phase brief into tech spec and UX flow | `personas/spec.md` |
 | **Luna** | Establishes visual language and component guide | `personas/ui.md` |
 | **Marco** | Breaks specs into implementable stories | `personas/stories.md` |
 
-These are structured constraint lenses, not simulated experts. They surface issues through mechanical rules (asymmetric information, forced scoring, mandatory rejection), not through genuine independent thought.
+These are structured constraint lenses, not simulated experts. They surface issues through mechanical rules and focused responsibilities, not through genuine independent thought.
 
 ## How it works
 
 ### Full pipeline (complex projects)
-1. `mano start` → Skye scopes. Optionally Alex challenges.
+1. `mano start` → Skye scopes and populates the backlog.
 2. `mano spec` → Helen writes tech spec + UX flow.
-3. `mano ui` → Luna creates design brief + preview (once per project).
-4. `mano stories` → Marco breaks into stories.
-5. Build. Ship. Gather feedback.
-6. `mano review` → Dave triages feedback into defects, refinements, and new ideas. Fix what matters, defer the rest, then scope the next phase.
+3. `mano rules` → Alex defines project rules (recommended for new projects).
+4. `mano ui` → Luna creates or updates design brief + preview.
+5. `mano stories` → Marco breaks into stories.
+6. Build. Ship. Gather feedback.
+7. `mano review` → Dave triages feedback into the backlog, writes the review log, closes the phase.
 
 ### Light pipeline (simple projects or later phases with momentum)
-1. `mano start` → Skye scopes. Skip challenge.
+1. `mano start` → Skye scopes.
 2. `mano stories` → Marco writes stories directly.
 3. Build.
 
