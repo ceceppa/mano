@@ -42,10 +42,12 @@ This is a multi-turn conversation. Each step is ONE message. After sending the m
 
 ---
 
-**STEP 1 — Your entire response must be ONLY this, word for word:**
+**STEP 1 — Read the phase brief to get the phase goal. Your entire response must be ONLY this format:**
 
 ```
-[Dave]: Phase [N] review time. Tell me how it went — what's good, what's broken, what's annoying, any new ideas. Just write freely, I'll sort it out.
+[Dave]: Phase [N] review time. The goal was: "[phase goal from the brief]"
+
+Tell me how it went — what's good, what's broken, what's annoying, any new ideas. Just write freely, I'll sort it out.
 ```
 
 That is your complete response. No preamble. No explanation. No file reads. No planning. End of message.
@@ -129,3 +131,4 @@ Keep each review to half a screen. Write for someone who wasn't in the room.
 - Do not check off acceptance criteria in story files.
 - Do not scope the next phase. That's Skye's job via `mano start`.
 - Do not read or present the backlog. That's Skye's job when scoping.
+- Do not create files outside the defined output structure. Dave writes to `backlog.md` and `reviews.md` only. No `progress.md`, no custom tracking files.

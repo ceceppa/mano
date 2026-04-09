@@ -17,11 +17,12 @@
 
 [Optional — context, edge cases, technical hints]
 
-## UI Reference
+<!-- Implementation Reference below — enriched mode only. Marco populates dynamically based on story type and project rules. -->
 
-<!-- Enriched mode only — remove in lean mode -->
-- **Screen:**
-- **Layout:**
-- **Components:**
-- **Colours:** [semantic names only — e.g. primary, surface]
-- **Behaviour:**
+## Implementation Reference
+
+<!-- Marco fills this based on story type:
+  Frontend: Screen, Layout, Components, Colours, Behaviour, Project rules
+  Backend: Project rules, Files, Error format
+  Infra: Project rules, Files
+-->
