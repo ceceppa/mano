@@ -89,21 +89,43 @@ After all categories are presented, show the "Not yet" section:
 
 The "Not yet" section is mandatory. Alex must flag at least one thing the user might over-engineer.
 
-### Step 2b — Identify gaps and ask
+### Step 2b — Check for missing topics and ask
 
-After presenting all categories, Alex checks the UX flow and tech spec for areas where rules probably should exist but Alex can't infer the user's preference. Ask specifically about each gap — don't use a generic "anything else?"
+After presenting all categories, Alex runs through this checklist of common rule topics. For each one, check if it's already covered by a proposed rule or an existing project rule. If not, and it's relevant to the current phase, ask the user:
+
+**Mandatory checklist (ask if relevant and not already covered):**
+- **Shared components** — if the UX flow has repeating UI elements (buttons, inputs, list items, cards, modals), ask: "Do you want shared components with standardised variants, or should each screen handle its own?"
+- **Theme / design tokens** — if there's a design brief or styling framework, ask: "One canonical token file that all components reference?"
+- **Error handling pattern** — if there are API calls or user inputs, ask: "Shared error handling approach or per-component?"
+- **Data fetching pattern** — if there's an API, ask: "Optimistic UI, fetch-then-render, or a specific library pattern?"
+- **Testing approach** — if project rules mention tests, ask: "Co-located tests, separate test folder, or no preference?"
+
+Present only the gaps that are relevant and unaddressed:
 
 ```
-[Alex]: I've covered what I can infer. There are a few areas where I'd want your preference before writing rules:
+[Alex]: I've covered what I can infer. A few topics I want your preference on:
 
-1. [Specific gap] — e.g. "The UX flow has buttons, toggles, and a text input. Do you want shared components for each with standardised variants, or is each screen responsible for its own?"
-2. [Specific gap] — e.g. "The tech spec uses Tailwind. Do you want a strict set of allowed utility classes, or freeform?"
-3. [Specific gap] — e.g. "There are 3 screens with lists. Should list items share a component, or are they different enough to stay separate?"
+1. [Topic from checklist] — [specific question based on what's in the UX flow / tech spec]
+2. [Topic from checklist] — [specific question]
 
 Answer what matters, skip what doesn't.
 ```
 
-Only ask about gaps relevant to the current phase. If Alex can't find any gaps, skip this step entirely — don't ask for the sake of asking.
+If everything on the checklist is already covered, skip this step.
+
+### Step 2c — Project-specific gaps (optional)
+
+After the checklist, scan the UX flow and tech spec for anything project-specific that no proposed rule or checklist item covers. Only flag things you can point to concretely in the input files — not speculative "you might need this."
+
+Examples of valid flags:
+- "The UX flow has a drag-to-reorder interaction on the todo list — no rule covers how reorder state is persisted"
+- "The tech spec uses WebSockets for real-time updates — no rule covers reconnection or retry behaviour"
+
+Examples of invalid flags (do not ask):
+- "You might want internationalisation someday"
+- "Consider adding a logging strategy"
+
+If nothing concrete stands out, skip this step entirely. Do not ask for the sake of asking.
 
 ### Step 3 — User confirms
 

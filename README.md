@@ -12,7 +12,7 @@ Mano helps you scope, spec, and build one shippable phase at a time. It uses per
 | `mano status` | Scans output folder. Where am I? What's next? |
 | `mano start` | Scope a new project or phase. (Skye) |
 | `mano rules` | Define or update project rules. (Alex) |
-| `mano [action]` | Run an action: `spec`, `ui`, `stories`, `review`. Any order, any time. |
+| `mano [action]` | Run an action: `spec`, `ux`, `ui`, `stories`, `review`. Any order, any time. |
 | `mano continue` | Auto-run the next logical action. |
 | `mano help [persona]` | Show what a persona does and when to use it. |
 
@@ -25,11 +25,12 @@ Actions are independent, not sequential. Run them in any order. Each persona che
 | Name | Role | File |
 |------|------|------|
 | **Skye** | Scopes the idea, populates the backlog, proposes phases | `personas/start.md` |
-| **Alex** | Defines and updates project rules — components, patterns, architecture | `personas/advisor.md` |
-| **Dave** | Phase review, triage, escape velocity | `personas/review.md` |
-| **Helen** | Translates the phase brief into tech spec and UX flow | `personas/spec.md` |
+| **Alex** | Defines and updates project rules — components, patterns, architecture | `personas/rules.md` |
+| **Helen** | Translates the phase brief into tech spec | `personas/spec.md` |
+| **Rob** | Defines UX flows — screens, navigation, user interactions | `personas/ux.md` |
 | **Luna** | Establishes visual language and component guide | `personas/ui.md` |
 | **Marco** | Breaks specs into implementable stories | `personas/stories.md` |
+| **Dave** | Phase review, triage, closes the phase | `personas/review.md` |
 
 These are structured constraint lenses, not simulated experts. They surface issues through mechanical rules and focused responsibilities, not through genuine independent thought.
 
@@ -37,12 +38,13 @@ These are structured constraint lenses, not simulated experts. They surface issu
 
 ### Full pipeline (complex projects)
 1. `mano start` → Skye scopes and populates the backlog.
-2. `mano spec` → Helen writes tech spec + UX flow.
-3. `mano rules` → Alex defines project rules (recommended for new projects).
-4. `mano ui` → Luna creates or updates design brief + preview.
-5. `mano stories` → Marco breaks into stories.
-6. Build. Ship. Gather feedback.
-7. `mano review` → Dave triages feedback into the backlog, writes the review log, closes the phase.
+2. `mano spec` → Helen writes tech spec.
+3. `mano ux` → Rob defines UX flow (for user-facing phases).
+4. `mano rules` → Alex defines project rules (recommended for new projects).
+5. `mano ui` → Luna creates or updates design brief + preview.
+6. `mano stories` → Marco breaks into stories.
+7. Build. Ship. Gather feedback.
+8. `mano review` → Dave triages feedback into the backlog, writes the review log, closes the phase.
 
 ### Light pipeline (simple projects or later phases with momentum)
 1. `mano start` → Skye scopes.
@@ -50,7 +52,7 @@ These are structured constraint lenses, not simulated experts. They surface issu
 3. Build.
 
 ### Escape hatch
-After fixes are resolved in a review, Dave offers light mode, full pipeline, or "I'm good." A tool that never lets go is a dependency, not a tool.
+After a review, Dave closes the phase. If you don't need Mano for the rest — that's fine. A tool that never lets go is a dependency, not a tool.
 
 ### Mid-build feedback
 Requirements change during implementation. You don't have to finish the phase to adjust:
@@ -73,7 +75,7 @@ Start a fresh chat for each `mano` command — especially `mano review` and `man
 _mano_output/
 ├── backlog.md               ← future work, deferred items, ideas (Skye + you)
 ├── tech-spec.md             ← project-wide, cumulative (Helen extends per phase)
-├── ux-flow.md               ← project-wide, cumulative (Helen extends per phase)
+├── ux-flow.md               ← project-wide, cumulative (Rob extends per phase)
 ├── design-brief.md          ← project-wide visual language (if generated)
 ├── design-preview.html      ← visual preview (if generated)
 ├── project-rules.md         ← component patterns, architecture, a11y (if generated)

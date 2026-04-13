@@ -5,15 +5,15 @@
 ```
 mano                    → Show available commands and current status.
 mano status             → Scan _mano_output/ and show where you are + what to do next.
-mano start              → Scope a new project or phase. (Skye, optionally Alex)
+mano start              → Scope a new project or phase. (Skye)
 mano continue           → Auto-run the next logical action if unambiguous.
-mano [action]           → Run an action: spec, ui, stories, review.
+mano [action]           → Run an action: spec, ux, rules, ui, stories, review.
 mano help [persona]     → Show what a persona does and when to use it.
 ```
 
 `mano [action]` handles everything — first run, discussion, and regeneration. When a persona activates, it checks what already exists:
 - **Output doesn't exist yet** → generate it (first run).
-- **Output already exists** → the persona reads it and asks what the user wants: discuss, modify specific parts, or regenerate from scratch.
+- **Output already exists** → the persona reads it and the current phase brief, compares them, and presents what's new, changed, or missing.
 
 ## Core principle: à la carte, not a conveyor belt
 
@@ -68,12 +68,13 @@ Show a brief description of the persona — what it does, when to use it, what i
 
 | Persona | Command | Role | Reads | Produces |
 |---------|---------|------|-------|----------|
-| **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, PRD (if provided) | Phase brief, backlog updates |
+| **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
+| **Helen** | `mano spec` | Translates the phase brief into a tech spec. Confirms libraries, defines data model, flags cross-environment boundaries. | Phase brief, tech spec, design constraints | Tech spec |
+| **Rob** | `mano ux` | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules, design constraints | UX flow |
 | **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Run after `mano spec`. | Tech spec (required), UX flow, backlog, phase brief, existing project rules | Project rules |
-| **Helen** | `mano spec` | Translates the phase brief into a tech spec and UX flow. Confirms libraries, defines navigation, flags cross-environment boundaries. | Phase brief, tech spec, UX flow, design constraints | Tech spec, UX flow |
-| **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, design constraints | Design brief, design preview |
+| **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog, design constraints | Design brief, design preview |
 | **Marco** | `mano stories` | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
-| **Dave** | `mano review` | Collects feedback after shipping, triages into defects/refinements/ideas, writes review log. | Stories index | Review log, backlog updates |
+| **Dave** | `mano review` | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief | Review log, backlog updates |
 
 ## Status
 
@@ -98,10 +99,12 @@ When the user types `mano` with no argument (or just wants to see available acti
 ```
 Available actions for Phase [N]:
 
-→ spec     — Generate tech spec and UX flow (Helen)
-  ui       — Generate design brief and component guide (Luna)
+→ spec     — Tech spec (Helen)
+  ux       — UX flow (Rob)
+  rules    — Project rules (Alex)
+  ui       — Design brief and component guide (Luna)
   stories  — Break phase into implementable stories (Marco)
-  review   — Report feedback after shipping, scope next phase
+  review   — Triage feedback, close the phase (Dave)
 
 → marks the suggested next action.
 Type: mano [action]
@@ -123,7 +126,7 @@ Want me to apply these updates, or do you want to adjust something first?
 
 - If no output exists, proceed with generation normally.
 
-Valid actions: `rules` (Alex — `advisor.md`), `spec` (Helen — `spec.md`), `ui` (Luna — `ui.md`), `stories` (Marco — `stories.md`), `review` (Dave — `review.md`).
+Valid actions: `spec` (Helen — `spec.md`), `ux` (Rob — `ux.md`), `rules` (Alex — `rules.md`), `ui` (Luna — `ui.md`), `stories` (Marco — `stories.md`), `review` (Dave — `review.md`).
 
 ## First run — new project
 
@@ -132,6 +135,7 @@ User types: mano start
 
 Step 1 — Skye activates
   Creates _mano_output/ if it doesn't exist.
+  Seeds project-rules.md from template if it doesn't exist.
   Presents numbered intake prompt (what, who, platform).
 
 Step 2 — Understand the why
@@ -139,24 +143,33 @@ Step 2 — Understand the why
   Skip if already explained.
 
 Step 3 — Clarification
-  Max three focused questions. Skip if input is clear.
+  Focused questions. Skip if input is clear.
 
 Step 4 — Design principle
   One tradeoff question. One sentence output.
 
-Step 5 — Phase brief draft
-  Skye produces self-contained phase brief: problem, vision,
-  design principle, phase goal, phase scope, exit criteria, assumption log.
-  Must fit one screen.
-  User confirms or edits.
+Step 5 — Populate the backlog
+  Decompose everything into backlog items.
+  Write to _mano_output/backlog.md.
 
-Step 6 — Skye finalises
+Step 6 — Suggest phase scope
+  Suggest items from the backlog.
+  One testable layer per phase.
+  User picks, adjusts, or chooses their own.
+
+Step 7 — Validate, clarify, draft brief
+  Show selected items with context.
+  Surface review insights if returning.
+  Clarify problem/scope issues (not tech decisions).
+  Draft phase brief. User confirms.
+
+Step 8 — Finalise
   Creates _mano_output/phase-[N]/.
   Writes phase-brief.md.
   Writes deferred items to backlog.
   Suggests next actions:
-    Recommended for new projects: mano spec → mano rules → mano stories
-    Or any order: spec, rules, ui, stories
+    Recommended: mano spec → mano ux → mano rules → mano stories
+    Or any order: spec, ux, rules, ui, stories
 ```
 
 ## Phase review and triage
@@ -164,48 +177,29 @@ Step 6 — Skye finalises
 ```
 User types: mano review
 
-Step 1 — Feedback capture
-  Dave activates. User reports what worked, what didn't,
-  what's broken, what's missing, what ideas emerged.
+Step 1 — Pre-review gate
+  Dave checks stories README index.
+  If stories are pending, asks user to mark done, cut, or come back later.
 
-Step 2 — Triage
+Step 2 — Feedback capture
+  Dave shows the phase goal from the brief.
+  Asks user to write freely about what's good, broken, annoying, new ideas.
+
+Step 3 — Triage
   Dave categorises feedback into three buckets:
   🐛 Defects — broken things from this phase
   🔧 Refinements — things that work but could be better
   ✨ New ideas — emerged from usage, not originally scoped
 
-  Presents categorised list and options:
-  1. Fix defects first (stay in current phase)
-  2. Fix defects + refinements (stay in current phase)
-  3. Move to next phase (carry everything forward)
-  4. Cherry-pick (fix some now, defer the rest)
+  Presents categorised list.
+  User can reclassify items between buckets.
 
-  User can reclassify items between buckets before deciding.
-
-Step 3a — If staying in current phase (options 1, 2, or 4-fix)
-  Marco creates fix stories using sub-numbering (8a, 8b, etc.).
-  No specs, no UI, no full pipeline. Just fix stories.
-  Deferred items (if any) written to next phase candidates with categories.
-  After fixes complete → escape velocity check (Step 4).
-
-Step 3b — If moving to next phase (option 3 or 4-defer)
-  ALL items written to next phase candidates with categories preserved.
-  Defects stay marked as defects — they don't become optional.
-  Proceed to Step 4.
-
-Step 4 — Escape velocity
-  Only after fixes are done (or user chose to move on):
-
-  1. 🚀 Light mode — Scope and go straight to stories.
-  2. 📋 Full pipeline — Run the complete flow.
-  3. 🏁 I'm good — Don't need Mano. Come back if stuck.
-
-Step 5 — Next phase scoping (if not option 3 above)
-  Skye copies the previous phase brief as a starting point.
-  Includes carried-forward items from backlog.
-  Updates problem/vision if feedback requires it.
-  Scopes the new phase.
-  Writes new phase-brief.md to _mano_output/phase-[N]/.
+Step 4 — Close
+  User confirms triage.
+  Dave writes ALL items to backlog with categories preserved.
+  Dave writes review summary to reviews.md.
+  Phase is closed.
+  Dave suggests: mano start for next phase, or stop.
 ```
 
 ## Weight-based pipeline collapse
