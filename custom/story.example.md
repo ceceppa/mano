@@ -26,3 +26,7 @@
   Backend: Project rules, Files, Error format
   Infra: Project rules, Files
 -->
+
+---
+<!-- ⚠️ When this story is implemented, update its status to `done` in the stories README.md index. -->
+ 

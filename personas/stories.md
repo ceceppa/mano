@@ -22,7 +22,8 @@ On activation:
 [Marco]: No tech spec or UX flow exists yet.
 
 You can generate them first:
-  - `mano spec` — Helen will create a tech spec and UX flow.
+  - `mano spec` — Helen will create a tech spec.
+  - `mano ux` — Rob will create a UX flow.
 
 Or I can proceed with the phase brief alone.
 ```
@@ -59,6 +60,9 @@ Check if `_mano/custom/story.md` exists.
 
 #### Notes
 [Optional — context, edge cases, technical hints]
+
+---
+<!-- ⚠️ When this story is implemented, update its status to `done` in the stories README.md index. -->
 ```
 
 ### Enriched mode addition (after Notes):
@@ -98,6 +102,22 @@ The section adapts to the story type. The common element is always: which projec
 - **Users must be specific.** "As a user" is forbidden.
 - **Outcomes must be real.** "So that I can see X" is not an outcome.
 - **Acceptance criteria are observable behaviour.** No implementation tasks.
+- **Group AC by component when a story involves multiple components.** If a story covers a parent and child (e.g. TodoList and TodoRow), separate the AC with component headers so it's clear which component owns which behaviour. This directly informs how tests are split.
+
+  Example:
+  ```
+  #### TodoList
+  - [ ] On app load, a fetch to GET /todos fires automatically
+  - [ ] While fetching, three skeleton rows are visible
+  - [ ] Todos render sorted by createdAt descending
+  - [ ] When there are no todos, an empty state message appears
+  - [ ] Test: fetch failure shows error with retry button
+
+  #### TodoRow
+  - [ ] Each row displays: checkbox, todo text, delete button
+  - [ ] Active todos show default text; completed todos show muted with line-through
+  - [ ] Test: checkbox toggles completed state
+  ```
 - **Stories must be small.** One focused session. Max five acceptance criteria.
 - **Out of scope is mandatory.** Every story, even if brief.
 - **Cross-check the tech spec.** If a tech spec exists, ensure its decisions are reflected in acceptance criteria where relevant. If the spec says local storage or offline-first, at least one story must include a criterion like "data persists after closing and reopening the app." If the spec says biometric auth, a story must test it. Tech decisions that never appear in acceptance criteria are invisible to QA and will be skipped.
@@ -105,13 +125,27 @@ The section adapts to the story type. The common element is always: which projec
 
   **How to write test AC — use this exact pattern:**
   
-  For each behaviour AC, add a corresponding test AC that starts with "Test:" 
+  For each behaviour AC, add corresponding test AC that starts with "Test:". Include both validation tests AND edge case tests.
   
+  **Edge cases to always consider for user input:**
+  - Empty / whitespace-only input
+  - Unicode characters (emoji, CJK, RTL text)
+  - Maximum length boundaries
+  - Special characters (HTML, SQL injection patterns)
+  - Duplicate submissions
+  
+  **Edge cases to always consider for data:**
+  - Empty collections (no items yet)
+  - Single item vs many items
+  - Items at boundary values (0, negative, max int)
+  - Concurrent modifications (if applicable)
+
   Example story AC for a create endpoint:
   ```
   - [ ] POST /todos with valid text returns 201 and the created todo
   - [ ] Test: POST /todos with empty text returns 400 with error envelope
   - [ ] Test: POST /todos with text over 280 chars returns 400
+  - [ ] Test: POST /todos with unicode/emoji text creates successfully
   - [ ] GET /todos returns all todos sorted by createdAt descending
   - [ ] Test: GET /todos with no data returns 200 with empty array
   ```

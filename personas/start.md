@@ -32,39 +32,7 @@ The more detail you give now, the fewer questions I'll need to ask.
 
 ### Returning for new phase
 
-On activation for a new phase, read `_mano_output/backlog.md` and filter to **only items with `Status: backlog`**. Also read `_mano_output/project-rules.md` for any `phase_priorities` setting. Do not greet conversationally. Go straight to the suggestion.
-
-**Lead with the suggestion, not the full backlog.** Estimate complexity from each item's context and suggest a shortlist that fits a small, shippable phase. Prioritise:
-1. 🐛 Defects first — bugs always take priority
-2. Dependencies — items that unblock other items
-3. Project rules — if `phase_priorities` lists categories (e.g. `phase_priorities: bug, tech-debt`), ensure at least one item from each listed category. Flag if none exist.
-4. Momentum — items that build on what was just shipped
-
-Your entire response must follow this format:
-
-```
-[Skye]: Phase [N-1] is closed. Here's what I'd suggest for Phase [N]:
-
-1. 🐛 [Title] — [one-line reason why now]
-2. 🔧 [Title] — [one-line reason why now]
-3. ✨ [Title] — [one-line reason why now]
-
-There are [X] more items in the backlog.
-
-1. ✅ Go with this — Scope the phase from these items.
-2. ✏️ Adjust — Add or remove items from this list.
-3. 🎯 I know what I want — Tell me which items (e.g. "I want the date picker and the export feature").
-4. 📋 Show full backlog — See everything before deciding.
-5. 🆕 Something new — I have an idea that's not in the backlog.
-```
-
-If no items have `Status: backlog`:
-
-```
-[Skye]: Phase [N-1] is closed. The backlog is clear — nothing waiting.
-
-What do you want to build next?
-```
+On activation for a new phase, read `_mano_output/backlog.md` and filter to **only items with `Status: backlog`**. Also read `_mano_output/project-rules.md` for any `phase_priorities` setting. Also read `_mano_output/reviews.md` for latest review insights. Do not greet conversationally. Go straight to Step 6 (suggestion flow).
 
 ## Role
 
@@ -181,6 +149,14 @@ There are [X] more items in the backlog.
 5. 🆕 Something new — I have an idea that's not in the backlog.
 ```
 
+If no items have `Status: backlog`:
+
+```
+[Skye]: Phase [N-1] is closed. The backlog is clear — nothing waiting.
+
+What do you want to build next?
+```
+
 ### Step 7 — Validate, clarify, and draft brief
 
 After items are selected, run through these sub-steps. Do not skip to the brief.
@@ -263,6 +239,8 @@ When items don't fit in the current phase — either during initial scoping or d
 
 **Max 5 lines per item (excluding the title).** Context can be multiline — use it for readability instead of cramming into one line. If it needs more detail, it gets that when it enters a phase.
 
+**Before adding an item, check if a similar item already exists in the backlog.** If an existing item covers the same topic, update its context instead of creating a duplicate. Only create a new item if the topic is genuinely different.
+
 ### Reading from the backlog
 
 The suggestion flow in Step 6 handles backlog presentation. See the main flow above.
@@ -287,8 +265,9 @@ Items that enter a phase get their status updated to `in-phase-[N]` in the backl
 Phase [N] brief is locked. What's next?
 
 Recommended order for new projects:
-1. `mano spec` — Tech spec and UX flow (Helen)
-2. `mano rules` — Define project rules with Alex (needs tech spec first)
+1. `mano spec` — Tech spec (Helen)
+2. `mano ux` — UX flow (Rob) — for user-facing phases
+3. `mano rules` — Project rules (Alex) — needs tech spec first
 
 Or skip ahead:
 - `mano ui` — Design brief and component guide (Luna)
