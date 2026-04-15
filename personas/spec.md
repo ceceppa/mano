@@ -66,9 +66,9 @@ If the file doesn't exist, create it.
 - **Tech stack** — framework, language, toolchain. Specific, not vague.
 - **Libraries & dependencies** — concrete choices with version, reason, and install command.
 
-| Category | Decision | Version | Install |
-|----------|----------|---------|---------|
-| | | | |
+| Category | Decision | Version | Why | Install |
+|----------|----------|---------|-----|---------|
+| | | | | |
 
 - **Data model** — entities, fields, relationships. Table format.
 - **Storage strategy** — library, location, offline behaviour. Schema if SQL.

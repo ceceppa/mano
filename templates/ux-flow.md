@@ -1,4 +1,6 @@
-# UX Flow — [Project Name] — Phase [N]
+# UX Flow — [Project Name]
+
+<!-- Project-wide. Generated once by Rob, extended on later phases with only new or changed screens. -->
 
 ## Screen List
 

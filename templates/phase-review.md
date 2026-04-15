@@ -3,6 +3,7 @@
 <!-- Append a new section after each phase ships. -->
 <!-- Use the standard review entry after the first review for a phase. -->
 <!-- Use the follow-up review entry only if the same phase is reviewed again after fix work. -->
+<!-- If you seed `_mano_output/reviews.md` from this file, keep the title and append real entries. Do not copy the example phase sections below as placeholders. -->
 
 ---
 
