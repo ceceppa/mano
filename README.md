@@ -12,11 +12,11 @@ Mano helps you scope, spec, and build one shippable phase at a time. It uses per
 | `mano status` | Scans output folder. Where am I? What's next? |
 | `mano start` | Scope a new project or phase. (Skye) |
 | `mano rules` | Define or update project rules. (Alex) |
-| `mano [action]` | Run an action: `spec`, `ux`, `ui`, `stories`, `review`. Any order, any time. |
+| `mano [action]` | Run an action: `spec`, `ux`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano continue` | Auto-run the next logical action. |
 | `mano help [persona]` | Show what a persona does and when to use it. |
 
-Actions are independent, not sequential. Run them in any order. Each persona checks for its inputs and warns you if something is missing — but won't refuse to run.
+Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each persona checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
 `mano [action]` handles everything — first run, discussion, and regeneration. Run it again on the same action to discuss changes or regenerate output.
 
@@ -86,7 +86,9 @@ _mano_output/
 └── ...
 ```
 
-Each phase brief is self-contained — problem, vision, design principle, scope. Technical decisions and UX flow live at project level and grow across phases. Future work lives in `backlog.md`.
+Each phase brief is self-contained — problem, vision, design principle, scope, assumptions, and risks. Technical decisions and UX flow live at project level and grow across phases. Future work lives in `backlog.md`.
+
+Planning artifacts live under `_mano_output/`. The only framework scaffold written outside that folder is `AGENTS.md` at the project root, copied during `mano start` so coding agents know where Mano artifacts live.
 
 ## Customisation
 
@@ -94,7 +96,7 @@ Each phase brief is self-contained — problem, vision, design principle, scope.
 Create `_mano/design-constraints.md`. Luna and Marco will respect it. A starter template is at `_mano/templates/design-constraints.md`.
 
 ### Project rules
-Seeded from `_mano/templates/project-rules.md` during `mano start` so the workflow rules exist from day one. Alex owns the substantive rules and updates them during `mano rules`. If Luna captures an accessibility level before Alex runs, she may seed only the `Accessibility level:` line when that field is still blank. If you skip straight to `mano stories` and the file is missing, Marco can create it from the same template. It lives at `_mano_output/project-rules.md`.
+Seeded from `_mano/templates/project-rules.md` during `mano start` so the workflow rules exist from day one. Alex owns the substantive rules and updates them during `mano rules`. If Luna captures an accessibility level before Alex runs, she may seed only the `Accessibility level:` line when that field is still blank; Alex remains the authority for the persisted rules file. If you skip straight to `mano stories` and the file is missing, Marco can create it from the same template. It lives at `_mano_output/project-rules.md`.
 
 ### Persona overrides
 Create `_mano/custom/[persona].md` to override any default persona.

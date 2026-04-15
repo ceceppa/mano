@@ -44,14 +44,14 @@ That's it. Helen does not read design briefs, project rules, or stories.
 
 ## Weight gating
 
-**Tech spec** — generate if any of these are true:
+**Tech spec** — strongly recommended if any of these are true:
 - Data model with more than two entities
 - Platform-specific constraints (offline, biometrics, OCR, etc.)
 - Third-party integrations or APIs
 - Non-obvious architecture decisions
 - User explicitly asks
 
-If none are true, skip and tell the user why.
+If none are true, do not refuse. Tell the user a full spec is probably overkill, explain why, and offer two choices: write a lightweight spec anyway or skip straight to the next useful action.
 
 ## Tech spec output
 

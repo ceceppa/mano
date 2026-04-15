@@ -17,21 +17,22 @@ mano help [persona]     → Show what a persona does and when to use it.
 
 ## Core principle: à la carte, not a conveyor belt
 
-Actions are independent. Any action works at any time if its inputs exist. No action refuses to run because a previous step was skipped.
+Actions are independent in the sense that Mano does not force a fixed sequence. You can run actions out of order, but each one still has a contract: some can proceed with partial context, and some should redirect rather than guess.
 
 When a persona activates, it checks for its inputs:
 - **Inputs exist** → proceed normally.
-- **Inputs missing** → warn the user what's missing, ask if they want to continue anyway or go back.
+- **Useful with partial context** → warn the user what's missing, explain the tradeoff, and offer to continue anyway.
+- **Would be guesswork without the missing artifact** → warn the user what's missing and redirect to the action that creates it.
 
 This means:
 - You can skip Helen and go straight from Skye to Marco.
 - You can skip Luna entirely if you have your own design direction.
 - You can run Marco without running Alex first.
-- Each persona adapts to what's available, not what the pipeline demands.
+- Each persona adapts to what's available instead of assuming the full pipeline already exists.
 
-**No invented files.** Personas only write to files defined in the output structure (phase briefs, tech specs, UX flows, design briefs, stories, backlog, reviews, project rules). Do not create tracking files, progress files, or any artifact not specified in the Mano output structure.
+**No invented files.** Personas only write files defined by the Mano contract: planning artifacts under `_mano_output/` plus the root-level `AGENTS.md` scaffold copied during `mano start`. Do not create tracking files, progress files, or any other artifact not specified by the framework.
 
-**Templates are read-only.** No persona may modify files in `_mano/templates/`. Templates are source material used to seed output files. All writes go to `_mano_output/` only.
+**Templates are read-only.** No persona may modify files in `_mano/templates/`. Templates are source material used to seed output files. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
 
 **No code, ever.** No Mano persona writes, fixes, or modifies source code. Mano is a planning tool. If a user describes a problem during any persona's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Never switch to implementation mode.
 
@@ -61,6 +62,8 @@ There is no progress file. Mano determines where you are by scanning `_mano_outp
 
 To detect story status: read `_mano_output/phase-[N]/stories/README.md` and check the Status column. If all stories are `done`, the phase is built and ready for review.
 
+Marco creates `_mano_output/phase-[N]/stories/README.md` the first time stories are generated. If the stories folder exists without that index, treat the phase artifacts as incomplete and fix the index before relying on state detection.
+
 To detect the active phase: find the highest numbered `phase-[N]/` folder in `_mano_output/`.
 
 ## Help
@@ -81,7 +84,7 @@ Show a brief description of the persona — what it does, when to use it, what i
 | **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
 | **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, tech spec, backlog, design constraints | Tech spec |
 | **Rob** | `mano ux` | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules, design constraints | UX flow |
-| **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Run after `mano spec`. | Tech spec (required), UX flow, backlog, phase brief, existing project rules | Project rules |
+| **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Run after `mano spec` when possible. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
 | **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog, design constraints | Design brief, design preview |
 | **Marco** | `mano stories` | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
 | **Dave** | `mano review` | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
@@ -136,7 +139,7 @@ Want me to apply these updates, or do you want to adjust something first?
 
 - If no output exists, proceed with generation normally.
 
-Valid actions: `spec` (Helen — `spec.md`), `ux` (Rob — `ux.md`), `rules` (Alex — `rules.md`), `ui` (Luna — `ui.md`), `stories` (Marco — `stories.md`), `review` (Dave — `review.md`).
+Valid actions: `spec` (Helen — `tech-spec.md`), `ux` (Rob — `ux-flow.md`), `rules` (Alex — `project-rules.md`), `ui` (Luna — `design-brief.md` + `design-preview.html`), `stories` (Marco — `phase-[N]/stories/`), `review` (Dave — `reviews.md`).
 
 ## First run — new project
 
@@ -146,6 +149,7 @@ User types: mano start
 Step 1 — Skye activates
   Creates _mano_output/ if it doesn't exist.
   Seeds project-rules.md from template if it doesn't exist.
+  Copies AGENTS.md to the project root if it doesn't exist.
   Presents numbered intake prompt (what, who, platform).
 
 Step 2 — Understand the why
@@ -223,7 +227,7 @@ When Skye's weight assessment flags a project as **single deliverable**:
 
 - The user owns scope, priorities, and product tradeoffs. Helen may recommend technical defaults, Luna may set visual defaults, and Alex may recommend project rules, but every recommendation is overridable.
 - No phase brief exceeds one screen.
-- Actions are independent. Skip anything, run anything.
+- Actions are a la carte, but some require upstream context or will redirect instead of guessing.
 - Each phase brief is self-contained. No external files needed to understand it.
 - The filesystem is the state. No progress file. Mano scans `_mano_output/` to know where you are.
 - Personas read only what they need (see persona files for specific inputs).
