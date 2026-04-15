@@ -55,7 +55,14 @@ Luna always asks these questions. Skip any already answered by existing files, b
 [Luna]: I can see the project requires [WCAG level]. I'll make sure contrast, touch targets, and font sizes meet that standard.
 ```
 
-**When the user answers the a11y question**, write the chosen level to `_mano_output/project-rules.md` under an Accessibility section so every other persona can read it. Example: `Accessibility level: WCAG 2.1 AA`. If the user says "skip", write nothing.
+**When the user answers the a11y question**, use that answer for the current design work immediately.
+
+- If `_mano_output/project-rules.md` exists and the Accessibility section has no level yet, Luna may seed only this line: `Accessibility level: WCAG 2.1 AA`.
+- If an Accessibility level already exists, do not overwrite it unless the user explicitly asks to change it.
+- If `_mano_output/project-rules.md` does not exist, do not create or rewrite it from `mano ui`. Tell the user Alex can persist the choice via `mano rules`.
+- If the user says "skip", write nothing.
+
+Alex owns the broader Accessibility section in `project-rules.md`. Luna only seeds the level when it is missing.
 
 "Just pick something" is valid for style questions. Be opinionated and move on.
 

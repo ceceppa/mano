@@ -74,7 +74,7 @@ _mano_output/
 ├── ux-flow.md               ← project-wide, cumulative (Rob extends per phase)
 ├── design-brief.md          ← project-wide visual language (if generated)
 ├── design-preview.html      ← visual preview (if generated)
-├── project-rules.md         ← seeded from template, then maintained by Alex and you
+├── project-rules.md         ← seeded from template; Alex owns substantive rules, Luna may seed accessibility level if blank
 ├── reviews.md               ← review log; Skye reads this when shaping later phases
 ├── phase-1/
 │   ├── phase-brief.md       ← problem, vision, scope for this phase
@@ -94,7 +94,7 @@ Each phase brief is self-contained — problem, vision, design principle, scope.
 Create `_mano/design-constraints.md`. Luna and Marco will respect it. A starter template is at `_mano/templates/design-constraints.md`.
 
 ### Project rules
-Seeded from `_mano/templates/project-rules.md` during `mano start` so the workflow rules exist from day one. Alex owns the substantive rules and updates them during `mano rules`. If you skip straight to `mano stories` and the file is missing, Marco can create it from the same template. It lives at `_mano_output/project-rules.md`.
+Seeded from `_mano/templates/project-rules.md` during `mano start` so the workflow rules exist from day one. Alex owns the substantive rules and updates them during `mano rules`. If Luna captures an accessibility level before Alex runs, she may seed only the `Accessibility level:` line when that field is still blank. If you skip straight to `mano stories` and the file is missing, Marco can create it from the same template. It lives at `_mano_output/project-rules.md`.
 
 ### Persona overrides
 Create `_mano/custom/[persona].md` to override any default persona.

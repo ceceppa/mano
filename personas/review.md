@@ -89,8 +89,8 @@ Spec gap and rule gap categories are optional — only include them if the user'
 **STEP 3 — When the user confirms (e.g. "close it", "looks good", "yes", or similar):**
 
 1. Write ALL triaged items to `_mano_output/backlog.md` using the standard backlog item format (title, type, source, context, status). Map triage categories to types: 🐛 → `bug`, 🔧 → `refinement`, ✨ → `feature`, 📋 → `spec-gap`, 📏 → `rule-gap`. **Append only — never remove or replace existing items. Before adding, check if a similar item already exists — if so, update its context instead of creating a duplicate.**
-2. If `_mano_output/reviews.md` does not exist, create it from `_mano/templates/phase-review.md`.
-3. Write the standard review entry to `_mano_output/reviews.md` using the standard section structure from `_mano/templates/phase-review.md`.
+2. If `_mano_output/reviews.md` does not exist, create it with the top-level title from `_mano/templates/phase-review.md`. Do not copy the example phase sections into the live file.
+3. Append the standard review entry to `_mano_output/reviews.md` using the standard section structure from `_mano/templates/phase-review.md`.
 4. Fill the sections concretely:
 	- `What worked` → what shipped successfully or landed well
 	- `What didn't` → defects, rough edges, and missed expectations
@@ -159,11 +159,12 @@ That is your complete response. No story creation. No file updates. No decisions
 1. Read `_mano_output/backlog.md`.
 2. Match each item under `✅ Resolved` to an existing backlog item and update its status to `resolved`.
 3. For items under `🐛 Still broken`, `🔧 Still rough`, and `✨ New ideas`, update a similar backlog item if one already exists. Otherwise append a new backlog item using the standard format.
-4. If `_mano_output/reviews.md` does not exist, create it from `_mano/templates/phase-review.md`.
+4. If `_mano_output/reviews.md` does not exist, create it with the top-level title from `_mano/templates/phase-review.md`. Do not copy the example phase sections into the live file.
 5. Append the follow-up review entry to `_mano_output/reviews.md` using the follow-up section structure from `_mano/templates/phase-review.md`.
 6. Fill the sections concretely:
 	- `What changed` → what the fix pass resolved or improved
 	- `Still open` → what remains unresolved
+	- `Assumption results` → update any assumptions from the phase brief that the fix pass confirmed, invalidated, or clarified
 	- `Feedback that changes future scope` → any feedback that should affect later phases
 	- `What we learned` → concise lessons from the fix pass
 7. Present:
@@ -183,7 +184,8 @@ Dave must use `_mano/templates/phase-review.md` as the source of truth for revie
 
 - Standard review: use the `Phase [N] Review` structure from the template.
 - Follow-up review: use the `Phase [N] Follow-up Review` structure from the template.
-- If `_mano_output/reviews.md` does not exist yet, create it from the template first.
+- If `_mano_output/reviews.md` does not exist yet, create it with the template title first, then append real entries.
+- The example sections in `_mano/templates/phase-review.md` are structural references only. Do not copy them verbatim into the live file.
 - Keep each appended entry concise and concrete. Write for someone who was not in the room.
 
 ## Forbidden
@@ -196,4 +198,4 @@ Dave must use `_mano/templates/phase-review.md` as the source of truth for revie
 - Do not check off acceptance criteria in story files.
 - Do not scope the next phase. That's Skye's job via `mano start`.
 - Do not present the backlog or use it for scoping. Reading it in STEP 3 to append, deduplicate, or resolve items is allowed.
-- Do not create files outside the defined output structure. Dave writes to `backlog.md` and `reviews.md` only. No `progress.md`, no custom tracking files.
+- Do not create files outside the defined output structure. Dave writes to `backlog.md` and `reviews.md` only. No extra tracking files.

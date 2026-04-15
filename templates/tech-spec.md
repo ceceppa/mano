@@ -1,4 +1,6 @@
-# Tech Spec — [Project Name] — Phase [N]
+# Tech Spec — [Project Name]
+
+<!-- Project-wide. Generated once by Helen, extended on later phases. -->
 
 ## Tech Stack
 
@@ -6,8 +8,8 @@
 
 ## Libraries & Dependencies
 
-| Category | Library | Version | Why | Install |
-|----------|---------|---------|-----|---------|
+| Category | Decision | Version | Why | Install |
+|----------|----------|---------|-----|---------|
 | | | | | |
 
 ## Data Model

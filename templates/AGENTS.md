@@ -16,7 +16,7 @@ This project uses **Mano** for planning. Mano is a structured thinking tool — 
 
 - Modify files in `_mano/` or `_mano/templates/` — these are framework files.
 - Interpret `mano` commands (e.g. `mano start`, `mano review`) as implementation instructions — these are planning commands.
-- Create tracking files like `progress.md` — Mano uses the filesystem for state.
+- Create extra tracking files — Mano does not use a dedicated state file. Determine state by reading `_mano_output/` and the latest `phase-[N]/` artifacts.
 
 ## Project structure
 

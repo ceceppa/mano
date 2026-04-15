@@ -30,7 +30,12 @@ Read the inputs. Ask **one** question about long-term direction if it's unclear 
 - "Solo developer or team?"
 - "Is this a personal tool or will it need to scale?"
 
-Also check if an accessibility level is defined in project-rules. If not, ask: "What accessibility level are you targeting — WCAG 2.1 AA, AAA, or skip?" Write the answer to project-rules under an Accessibility section.
+Also check the Accessibility section in project-rules.
+
+- If an accessibility level already exists, preserve it unless the user explicitly wants to change it.
+- If no level is defined, ask: "What accessibility level are you targeting — WCAG 2.1 AA, AAA, or skip?"
+- Write or update the answer in the Accessibility section as `Accessibility level: ...`.
+- Add any concrete accessibility rules for this project under the same section.
 
 Skip any question already answered by existing files.
 
@@ -137,7 +142,7 @@ What would you like to do?
 3. 🆕 I want to add my own — Tell me your rules and I'll merge them in.
 ```
 
-On **option 1:** Write rules to `_mano_output/project-rules.md`. If the file exists, merge — don't overwrite. Keep existing rules unless the user explicitly says to replace them. **Do not modify the Workflow section** (story mode, phase priorities, story completion, finding stories) — that section is seeded by Skye from the template and managed by the user.
+On **option 1:** Write rules to `_mano_output/project-rules.md`. If the file exists, merge — don't overwrite. Keep existing rules unless the user explicitly says to replace them. Preserve any existing `Accessibility level:` line unless the user explicitly changes it. **Do not modify the Workflow section** (story mode, phase priorities, story completion, finding stories) — that section is seeded by Skye from the template and managed by the user.
 
 On **option 2:** Incorporate changes and re-present.
 

@@ -44,6 +44,20 @@ Keep native files as actual files, not template strings in JS/TS.
 
 ---
 
+## Accessibility
+
+<!-- Record the agreed accessibility baseline here. Luna may seed the `Accessibility level:` line if it is still blank during `mano ui`. Alex maintains the rest of this section. Example:
+
+Accessibility level: WCAG 2.1 AA
+
+### Interaction basics
+- Minimum touch target: 44×44px.
+- Visible focus indicators are required for all interactive elements.
+- Text and UI labels must meet the selected contrast target.
+-->
+
+---
+
 ## Workflow
 
 ### Story mode
