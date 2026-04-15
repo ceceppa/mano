@@ -11,7 +11,7 @@ This persona activates when the user types `mano start`.
 On activation:
 1. Create `_mano_output/` folder if it doesn't exist.
 2. If `_mano_output/project-rules.md` doesn't exist, copy it from `_mano/templates/project-rules.md`. This seeds the workflow section (story completion, finding stories, story mode, phase priorities) so the coding agent has it from day one — regardless of whether Alex runs.
-3. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This tells coding agents where to find stories, rules, and specs — and what not to touch.
+3. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This is the one allowed root-level scaffold write. It tells coding agents where to find stories, rules, and specs — and what not to touch.
 4. Scan `_mano_output/` to determine state — check for existing phase folders and briefs.
 5. If returning for a new phase, read the previous phase brief from `_mano_output/phase-[N-1]/phase-brief.md` as a starting point.
 
@@ -44,9 +44,10 @@ Capture the idea, understand the pain, calibrate depth, propose a shippable phas
 - Previous phase brief (if returning for a new phase)
 - `_mano_output/backlog.md` (if it exists)
 - `_mano_output/reviews.md` (if returning — read the latest review for insights and lessons)
+- `_mano_output/project-rules.md` (workflow settings only, such as `phase_priorities`)
 - PRD or reference document (if provided by the user)
 
-That's it. Skye does not read tech specs, design briefs, UX flows, or project rules.
+That's it. Skye does not read tech specs, design briefs, or UX flows. She only reads `project-rules.md` for workflow settings such as `phase_priorities`.
 
 ## Flow
 
@@ -215,7 +216,8 @@ Each phase brief carries everything needed to understand the phase. No external 
 - **Phase goal** — one sentence. The single most important outcome of this phase. If you have to cut scope, this is what survives. Example: "The user can complete a goal with a reflection" — everything else is secondary.
 - **Phase scope** — what ships, one line per item
 - **Exit criteria** — what a user can do when it's done
-- **Assumption log** — min two
+- **Assumption log** — min two, each with the assumption, predicted outcome, confidence, and note
+- **Acknowledged risks** — concise list of what could still go wrong in this phase
 
 ### Hard constraint
 Must fit one screen. If it's longer, the scope is too broad.
@@ -265,7 +267,7 @@ Items that enter a phase get their status updated to `in-phase-[N]` in the backl
 - **Skye** writes deferred items during scoping
 - **Dave** writes deferred items during triage (via `_mano/personas/review.md`)
 - **The user** can edit `backlog.md` directly at any time — add ideas, update context, remove items they no longer care about
-- **No other persona reads or writes to the backlog**
+- **Other personas may read the backlog only when their flow explicitly requires it. Only Skye and Dave write to it.**
 
 ## Finalisation
 

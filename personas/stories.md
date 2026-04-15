@@ -156,7 +156,7 @@ The section adapts to the story type. The common element is always: which projec
   ```
   ⚠️ [Screen name] handles [N] primary actions: [list them].
   
-  1. ✂️ Split now — I'll wait while you update the UX flow (run `mano spec`).
+  1. ✂️ Split now — I'll wait while you update the UX flow (run `mano ux`).
   2. 📝 Add to backlog — Note it for a future phase and proceed as-is.
   3. ⏩ Keep as-is — It's manageable. Proceed with stories.
   ```
@@ -211,7 +211,7 @@ Generate all stories for the phase and write them directly to `_mano_output/phas
 For each story:
 1. Use short titles (max 6 words — scannable, not descriptive).
 2. Write the file to `_mano_output/phase-[N]/stories/story-[N]-[slug].md`. The slug is mandatory — it's a lowercase, hyphenated, 2-4 word summary of the story. Examples: `story-1-app-bootstrap-health.md`, `story-3-create-list-todos.md`. Never use `story-1.md` or `story-3-untitled.md`.
-3. Update the index at `_mano_output/phase-[N]/stories/README.md` after each story.
+3. Create `_mano_output/phase-[N]/stories/README.md` if it doesn't exist yet, using the Index format below, then update it after each story.
 
 When all stories are written, present a summary with implementation order and dependencies:
 

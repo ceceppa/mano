@@ -32,9 +32,9 @@
 
 ## Assumption Log
 
-| Assumption | Score | Note |
-|-----------|-------|------|
-| | | |
+| Assumption | Predicted outcome | Confidence | Note |
+|-----------|-------------------|------------|------|
+| | | | |
 
 ## Acknowledged Risks
 

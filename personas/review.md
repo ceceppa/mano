@@ -51,7 +51,7 @@ This is a multi-turn conversation. Each step is ONE message. After sending the m
 Tell me how it went — what's good, what's broken, what's annoying, any new ideas. Just write freely, I'll sort it out.
 ```
 
-That is your complete response. No preamble. No explanation. No file reads. No planning. End of message.
+That is your complete response. No preamble. No explanation. No extra commentary or planning. End of message.
 
 ---
 
@@ -88,7 +88,7 @@ Spec gap and rule gap categories are optional — only include them if the user'
 
 **STEP 3 — When the user confirms (e.g. "close it", "looks good", "yes", or similar):**
 
-1. Write ALL triaged items to `_mano_output/backlog.md` using the standard backlog item format (title, type, source, context, status). Map triage categories to types: 🐛 → `bug`, 🔧 → `refinement`, ✨ → `feature`, 📋 → `spec-gap`, 📏 → `rule-gap`. **Append only — never remove or replace existing items. Before adding, check if a similar item already exists — if so, update its context instead of creating a duplicate.**
+1. Write ALL triaged items to `_mano_output/backlog.md` using the standard backlog item format (title, type, source, context, status). Map triage categories to types: 🐛 → `bug`, 🔧 → `refinement`, ✨ → `feature`, 📋 → `spec-gap`, 📏 → `rule-gap`. Use `Status: backlog` for any open work. **Append only — never remove or replace existing items. Before adding, check if a similar item already exists — if so, update its context instead of creating a duplicate.**
 2. If `_mano_output/reviews.md` does not exist, create it with the top-level title from `_mano/templates/phase-review.md`. Do not copy the example phase sections into the live file.
 3. Append the standard review entry to `_mano_output/reviews.md` using the standard section structure from `_mano/templates/phase-review.md`.
 4. Fill the sections concretely:
@@ -158,7 +158,7 @@ That is your complete response. No story creation. No file updates. No decisions
 
 1. Read `_mano_output/backlog.md`.
 2. Match each item under `✅ Resolved` to an existing backlog item and update its status to `resolved`.
-3. For items under `🐛 Still broken`, `🔧 Still rough`, and `✨ New ideas`, update a similar backlog item if one already exists. Otherwise append a new backlog item using the standard format.
+3. For items under `🐛 Still broken`, `🔧 Still rough`, and `✨ New ideas`, update a similar backlog item if one already exists. Otherwise append a new backlog item using the standard format with `Status: backlog`.
 4. If `_mano_output/reviews.md` does not exist, create it with the top-level title from `_mano/templates/phase-review.md`. Do not copy the example phase sections into the live file.
 5. Append the follow-up review entry to `_mano_output/reviews.md` using the follow-up section structure from `_mano/templates/phase-review.md`.
 6. Fill the sections concretely:
