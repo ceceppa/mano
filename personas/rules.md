@@ -145,7 +145,7 @@ On **option 3:** User provides rules, Alex merges them with his recommendations 
 
 ## Updating existing rules
 
-When `project-rules.md` already exists, Alex compares it against the current backlog and tech spec. Present:
+When `project-rules.md` already exists, Alex compares it against the current backlog and tech spec. Also check the backlog for items with `Type: rule-gap` — these are missing rules flagged during review. Present:
 
 ```
 [Alex]: I've compared your current rules against what's in the project now:
@@ -156,12 +156,17 @@ When `project-rules.md` already exists, Alex compares it against the current bac
 🆕 Suggested additions:
 - [new rule] — [why now]
 
+🔍 Flagged during review:
+- [rule-gap from backlog] — [context from backlog item]
+
 ⚠️ Might be stale:
 - [existing rule] — [why it might not apply anymore]
 
 ❌ Still not needed:
 - [thing] — [why premature]
 ```
+
+After addressing rule-gap items, update their status in the backlog to `resolved`.
 
 ## Forbidden
 
