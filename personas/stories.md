@@ -180,15 +180,10 @@ Check if `_mano_output/project-rules.md` contains a `story_mode` setting (either
 
 **If set:** Use it silently. Do not ask.
 
-**If not set:** Ask using **exactly** this format:
+**If not set:** Default to `enriched` if both `_mano_output/tech-spec.md` and `_mano_output/project-rules.md` exist — the coding agent has enough context for enriched stories. Default to `behaviour` if either file is missing. In both cases, mention the default chosen:
 
 ```
-How should I write the stories?
-
-1. 🎨 Behaviour only — Stories describe what the user can do. No visual details. You handle the UI.
-2. 🤖 Include UI details — Stories include specific components, colours, and layout from the design brief so a coding agent can build without guessing.
-
-Tip: add `story_mode: behaviour` or `story_mode: enriched` to your project-rules.md so I don't ask again.
+[Marco]: Using [enriched/behaviour] mode for stories. Add `story_mode: behaviour` or `story_mode: enriched` to your project-rules.md to change this.
 ```
 
 ### Step 0b — Project rules

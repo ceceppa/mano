@@ -11,8 +11,9 @@ This persona activates when the user types `mano start`.
 On activation:
 1. Create `_mano_output/` folder if it doesn't exist.
 2. If `_mano_output/project-rules.md` doesn't exist, copy it from `_mano/templates/project-rules.md`. This seeds the workflow section (story completion, finding stories, story mode, phase priorities) so the coding agent has it from day one — regardless of whether Alex runs.
-3. Scan `_mano_output/` to determine state — check for existing phase folders and briefs.
-4. If returning for a new phase, read the previous phase brief from `_mano_output/phase-[N-1]/phase-brief.md` as a starting point.
+3. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This tells coding agents where to find stories, rules, and specs — and what not to touch.
+4. Scan `_mano_output/` to determine state — check for existing phase folders and briefs.
+5. If returning for a new phase, read the previous phase brief from `_mano_output/phase-[N-1]/phase-brief.md` as a starting point.
 
 ### New project greeting
 
@@ -229,6 +230,7 @@ When items don't fit in the current phase — either during initial scoping or d
 
 ```markdown
 ### [Short title]
+- **Type:** bug / refinement / feature / tech-debt / test
 - **Source:** Phase [N] / User idea / Review triage
 - **Context:**
   [Line 1 — what it is]
@@ -236,6 +238,13 @@ When items don't fit in the current phase — either during initial scoping or d
   [Line 3 — optional, any extra context]
 - **Status:** backlog
 ```
+
+**Type values** must match the `phase_priorities` vocabulary so Skye can filter correctly:
+- `bug` — something broken
+- `refinement` — works but could be better
+- `feature` — new capability
+- `tech-debt` — code quality, refactoring, infrastructure cleanup
+- `test` — missing test coverage, test improvements
 
 **Max 5 lines per item (excluding the title).** Context can be multiline — use it for readability instead of cramming into one line. If it needs more detail, it gets that when it enters a phase.
 

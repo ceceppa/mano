@@ -79,7 +79,7 @@ That is your complete response. No story creation. No file updates. No decisions
 
 **STEP 3 — When the user confirms (e.g. "close it", "looks good", "yes", or similar):**
 
-1. Write ALL triaged items to `_mano_output/backlog.md` with categories preserved. Use the standard backlog item format (title, source, context, status). **Append only — never remove or replace existing items. Before adding, check if a similar item already exists — if so, update its context instead of creating a duplicate.**
+1. Write ALL triaged items to `_mano_output/backlog.md` using the standard backlog item format (title, type, source, context, status). Map triage categories to types: 🐛 Defects → `bug`, 🔧 Refinements → `refinement`, ✨ New ideas → `feature`. **Append only — never remove or replace existing items. Before adding, check if a similar item already exists — if so, update its context instead of creating a duplicate.**
 2. Append the review summary to `_mano_output/reviews.md` (see Review log format below).
 3. Present:
 
