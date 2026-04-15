@@ -1,8 +1,8 @@
 # Backlog — [Project Name]
 
 <!-- Future work, deferred items, and ideas. -->
-<!-- Skye writes here during scoping and review. You can edit this file directly at any time. -->
-<!-- No persona other than Skye reads this file. -->
+<!-- Skye owns backlog curation during scoping. Dave appends or resolves items during review. Other personas may read specific items when their flow requires it. -->
+<!-- You can edit this file directly at any time. -->
 
 <!-- Item format:
 ### [Short title]
@@ -11,5 +11,5 @@
 - **Context:**
   What it is.
   Why it matters or key detail.
-- **Status:** backlog / in-phase-[N]
+- **Status:** backlog / in-phase-[N] / resolved
 -->

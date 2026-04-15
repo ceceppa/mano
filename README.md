@@ -34,6 +34,8 @@ Actions are independent, not sequential. Run them in any order. Each persona che
 
 These are structured constraint lenses, not simulated experts. They surface issues through mechanical rules and focused responsibilities, not through genuine independent thought.
 
+The user owns scope, priorities, and product tradeoffs. Helen can recommend concrete technical defaults and Luna can set a concrete visual direction, but both are always overridable.
+
 ## How it works
 
 ### Full pipeline (complex projects)
@@ -63,23 +65,17 @@ Requirements change during implementation. You don't have to finish the phase to
 
 The pipeline doesn't require you to finish before course-correcting.
 
-### Best practice: fresh chat per action
-
-Every Mano file lives on disk — phase brief, tech spec, stories, design brief. A new chat reads the same files and picks up where you left off. You don't need conversation history.
-
-Start a fresh chat for each `mano` command — especially `mano review` and `mano stories`. Long sessions accumulate context that confuses personas: "review" triggers code review instead of Mano's triage, Marco tries to fix bugs instead of writing stories. A clean context means the persona file is the only instruction the model sees.
-
 ## Output
 
 ```
 _mano_output/
-├── backlog.md               ← future work, deferred items, ideas (Skye + you)
+├── backlog.md               ← future work, deferred items, review follow-ups (owned by Skye, updated by Dave, editable by you)
 ├── tech-spec.md             ← project-wide, cumulative (Helen extends per phase)
 ├── ux-flow.md               ← project-wide, cumulative (Rob extends per phase)
 ├── design-brief.md          ← project-wide visual language (if generated)
 ├── design-preview.html      ← visual preview (if generated)
-├── project-rules.md         ← component patterns, architecture, a11y (if generated)
-├── reviews.md               ← sprint review log, human-only, no persona reads this
+├── project-rules.md         ← seeded from template, then maintained by Alex and you
+├── reviews.md               ← review log; Skye reads this when shaping later phases
 ├── phase-1/
 │   ├── phase-brief.md       ← problem, vision, scope for this phase
 │   └── stories/
@@ -98,7 +94,7 @@ Each phase brief is self-contained — problem, vision, design principle, scope.
 Create `_mano/design-constraints.md`. Luna and Marco will respect it. A starter template is at `_mano/templates/design-constraints.md`.
 
 ### Project rules
-Created by Marco during `mano stories` if you choose to set them, or add your own anytime. Covers component patterns, architecture decisions, accessibility, naming — anything the coding agent must follow. Lives at `_mano_output/project-rules.md`.
+Seeded from `_mano/templates/project-rules.md` during `mano start` so the workflow rules exist from day one. Alex owns the substantive rules and updates them during `mano rules`. If you skip straight to `mano stories` and the file is missing, Marco can create it from the same template. It lives at `_mano_output/project-rules.md`.
 
 ### Persona overrides
 Create `_mano/custom/[persona].md` to override any default persona.

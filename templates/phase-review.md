@@ -1,6 +1,8 @@
 # Phase Review — [Project Name]
 
 <!-- Append a new section after each phase ships. -->
+<!-- Use the standard review entry after the first review for a phase. -->
+<!-- Use the follow-up review entry only if the same phase is reviewed again after fix work. -->
 
 ---
 
@@ -31,10 +33,43 @@
 -
 -
 
-### Updated phase two candidates
+### What we learned
 
-<!-- Revised parking lot. Remove items that no longer matter. Add items from usage. Max five. -->
+<!-- Short lessons from shipping and reviewing this phase. -->
 
 -
+-
+
+---
+
+## Phase [N] Follow-up Review — [Date]
+
+### What changed
+
+-
+-
+
+### Still open
+
+-
+-
+
+### Assumption results
+
+| Assumption | Predicted | Actual | Action |
+|-----------|-----------|--------|--------|
+| | | | |
+
+<!-- Action: confirmed / invalidated / inconclusive -->
+
+### Feedback that changes future scope
+
+-
+-
+
+### What we learned
+
+<!-- Short lessons from the fix pass or follow-up review. -->
+
 -
 -
