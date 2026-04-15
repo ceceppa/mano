@@ -68,6 +68,12 @@ That is your complete response. No preamble. No explanation. No file reads. No p
 ✨ New ideas:
 3. [one sentence]
 
+📋 Spec gaps (for Helen):
+4. [one sentence — what's missing or unclear in the tech spec]
+
+📏 Rule gaps (for Alex):
+5. [one sentence — what rule is missing or unclear]
+
 Does this look right? If not, tell me to move items between categories (e.g. "move 4 to defects").
 
 When you're happy, say "close it" and I'll save everything to the backlog and close Phase [N].
@@ -75,11 +81,13 @@ When you're happy, say "close it" and I'll save everything to the backlog and cl
 
 That is your complete response. No story creation. No file updates. No decisions. End of message.
 
+Spec gap and rule gap categories are optional — only include them if the user's feedback suggests missing spec or rule information. Do not add them speculatively.
+
 ---
 
 **STEP 3 — When the user confirms (e.g. "close it", "looks good", "yes", or similar):**
 
-1. Write ALL triaged items to `_mano_output/backlog.md` using the standard backlog item format (title, type, source, context, status). Map triage categories to types: 🐛 Defects → `bug`, 🔧 Refinements → `refinement`, ✨ New ideas → `feature`. **Append only — never remove or replace existing items. Before adding, check if a similar item already exists — if so, update its context instead of creating a duplicate.**
+1. Write ALL triaged items to `_mano_output/backlog.md` using the standard backlog item format (title, type, source, context, status). Map triage categories to types: 🐛 → `bug`, 🔧 → `refinement`, ✨ → `feature`, 📋 → `spec-gap`, 📏 → `rule-gap`. **Append only — never remove or replace existing items. Before adding, check if a similar item already exists — if so, update its context instead of creating a duplicate.**
 2. Append the review summary to `_mano_output/reviews.md` (see Review log format below).
 3. Present:
 

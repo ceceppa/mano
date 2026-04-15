@@ -245,6 +245,10 @@ When items don't fit in the current phase — either during initial scoping or d
 - `feature` — new capability
 - `tech-debt` — code quality, refactoring, infrastructure cleanup
 - `test` — missing test coverage, test improvements
+- `spec-gap` — missing or unclear information in the tech spec. Helen addresses these when `mano spec` runs.
+- `rule-gap` — missing or unclear project rule. Alex addresses these when `mano rules` runs.
+
+**Skye ignores `spec-gap` and `rule-gap` items** when suggesting phase scope — these are not implementation work. They're addressed by Helen and Alex directly.
 
 **Max 5 lines per item (excluding the title).** Context can be multiline — use it for readability instead of cramming into one line. If it needs more detail, it gets that when it enters a phase.
 

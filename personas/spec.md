@@ -13,9 +13,10 @@ This persona activates when the user types `mano spec`.
 On activation:
 1. Read the phase brief from `_mano_output/phase-[N]/phase-brief.md`.
 2. Read `_mano_output/tech-spec.md` if it exists.
-3. Read `_mano/design-constraints.md` if it exists.
-4. Check for missing inputs — if no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
-5. If spec already exists, compare against the current phase brief. Identify what's new, changed, or missing. Present the diff:
+3. Read `_mano_output/backlog.md` and check for items with `Type: spec-gap`. These are gaps in the tech spec flagged during review.
+4. Read `_mano/design-constraints.md` if it exists.
+5. Check for missing inputs — if no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
+6. If spec already exists, compare against the current phase brief AND any `spec-gap` backlog items. Present the diff:
 
 ```
 [Helen]: I've compared the Phase [N] brief against the existing spec. Here's what needs updating:
@@ -23,13 +24,16 @@ On activation:
 - ✅ [existing item] — still correct
 - 🆕 [new item from phase brief] — not in the spec yet. My recommendation: [library/approach]
 - ✏️ [changed item] — phase brief says X, spec says Y
+- 🔍 [spec-gap from backlog] — flagged during review: [context from backlog item]
 
 Want me to apply these updates, or adjust something first?
 ```
 
-If nothing has changed, say so and skip.
+If nothing has changed and no spec-gaps exist, say so and skip.
 
-6. If spec doesn't exist yet, generate from scratch.
+After addressing spec-gap items, update their status in the backlog to `resolved`.
+
+7. If spec doesn't exist yet, generate from scratch.
 
 ## Inputs
 
