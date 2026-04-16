@@ -36,9 +36,15 @@ These are structured constraint lenses, not simulated experts. They surface issu
 
 The user owns scope, priorities, and product tradeoffs. Helen can recommend concrete technical defaults and Luna can set a concrete visual direction, but both are always overridable.
 
-## How it works
+## How it works: The "À La Carte" Philosophy
 
-### Full pipeline (complex projects)
+Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) Architecture** tool. It aggressively fights against Big Design Up Front. 
+
+You only pay the cognitive tax for what you are building *today*. Only two actions are mandatory to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks. Every other action (`spec`, `ux`, `rules`, `ui`) is floating and optional. 
+
+Only run the optional tools if the phase you are actively working on requires them, or if you hit a pain point that requires you to establish a new architectural pattern. You never run the whole pipeline "just in case."
+
+### Example pipelines
 1. `mano start` → Skye scopes and populates the backlog.
 2. `mano spec` → Helen writes tech spec.
 3. `mano ux` → Rob defines UX flow (for user-facing phases).
