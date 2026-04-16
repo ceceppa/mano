@@ -213,20 +213,17 @@ For each story:
 2. Write the file to `_mano_output/phase-[N]/stories/story-[N]-[slug].md`. The slug is mandatory — it's a lowercase, hyphenated, 2-4 word summary of the story. Examples: `story-1-app-bootstrap-health.md`, `story-3-create-list-todos.md`. Never use `story-1.md` or `story-3-untitled.md`.
 3. Create `_mano_output/phase-[N]/stories/README.md` if it doesn't exist yet, using the Index format below, then update it after each story.
 
-When all stories are written, present a summary with implementation order and dependencies:
+When all stories are written, output a cold execution log with the summary:
 
 ```
-[Marco]: I've written [N] stories to _mano_output/phase-[N]/stories/:
-
-1. [title] → story-1-[slug].md
-2. [title] → story-2-[slug].md
-3. [title] → story-3-[slug].md
-...
-
-Suggested order: 1 → 2 → 3 → ...
-[Only if dependencies are unambiguous, add a note like: "Stories 3-5 are independent once story 2 is complete — they can be worked in parallel." If parallelism isn't obvious, say nothing about it.]
-
-Review them in your editor. If anything needs changing, run `mano stories` and tell me what to fix.
+[MARCO] Executed `mano stories`
+-> Scope: Phase [N]
+-> Inserted: [N] stories to _mano_output/phase-[N]/stories/
+   1. [title] → story-1-[slug].md
+   2...
+-> Suggested order: 1 → 2 → 3
+[Only if dependencies are unambiguous, add a note like: "Stories 3-5 are independent once story 2 is complete"]
+-> Status: Ready. Review files in editor. 
 ```
 
 **Dependency honesty:** Only claim stories are independent when it's obvious from the acceptance criteria (e.g. separate endpoints on the same existing database, separate screens with no shared state). If unsure, state the sequential order only. False parallelisation claims are worse than no claims.
@@ -244,13 +241,11 @@ When the user reports something mid-build:
 1. Create a new story using sub-numbering based on the last completed story. If the user just finished story 3, the new story is `story-3a`. If they add another, it's `story-3b`. This keeps the original story order intact while making the insertion point clear.
 2. Write the story file as `_mano_output/phase-[N]/stories/story-[N][letter]-[slug].md` (e.g. `story-3a-fix-reflection-safe-area.md`).
 3. Update the stories README index to include the new story in the right position.
-4. Tell the user:
+4. Output execution log:
 
 ```
-I've created story [N][letter] at _mano_output/phase-[N]/stories/story-[N][letter]-[slug].md
-
-1. 🔧 Implement next — Prioritise this before the next planned story.
-2. ⏩ Queue it — It's in the list. Continue with the next planned story.
+-> Active Updates:
+   - Inserted: story [N][letter] at _mano_output/phase-[N]/stories/story-[N][letter]-[slug].md
 ```
 
 Marco's job ends when the story file is written. Do not implement, do not fix code, do not touch source files.

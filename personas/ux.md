@@ -28,85 +28,37 @@ On activation:
 
 Define how users move through the application. Generate the UX flow for the current phase only — new screens, changed screens, new navigation. Do not regenerate existing screens that haven't changed.
 
-## Flow
+## Flow — One-Shot Generation
 
-### Step 1 — Identify what's new
+Generate the UX flow for the current phase entirely in one go and write it directly to `_mano_output/ux-flow.md`. Do not pause for confirmation. Do not present screens one at a time in the chat. Make structural decisions based on the brief and enforce them.
 
-If `ux-flow.md` already exists, compare it against the current phase brief. Present only what's new or changed:
+### Step 1 — Define all screens & Navigation
 
-```
-[Rob]: I've compared the Phase [N] brief against the existing UX flow:
+Write the full navigation structure and screen definitions to the file.
+If the file already exists, **extend it** — add new screens and update changed screens. Do not remove or regenerate screens that haven't changed.
 
-- 🆕 [new screen] — not in the flow yet
-- ✏️ [existing screen] — needs [specific change based on phase scope]
-- ✅ [existing screen] — no changes needed
-
-I'll work through the new and changed screens with you one at a time.
-```
-
-If no UX flow exists, start from scratch with all screens in the phase brief.
-
-### Step 2 — Define screens one at a time
-
-For each new or changed screen, present:
-
-```
-[Rob]: **[Screen name]**
-
+For each screen, include:
 - **How it's accessed:** [tab, opens from another screen, modal, bottom sheet, inline section]
 - **How the user gets back:** [back button, close, swipe down, auto-dismiss]
 - **What the user sees:** [key elements on this screen]
 - **What the user can do:** [actions available]
 - **What happens on action:** [result of each action]
 
-⚠️ [Flag any ambiguity or choice — e.g. "Should completing a todo show a confirmation or just toggle immediately?"]
-
-Does this match what you had in mind, or want to adjust?
-```
-
-Wait for confirmation before moving to the next screen. Do not present all screens at once.
-
-### Step 3 — Navigation structure
-
-After all screens are confirmed, present the complete navigation structure:
-
-```
-[Rob]: Here's how everything connects:
-
-Tabs: [list if applicable]
-
-[Screen] — [how accessed, how to get back]
-[Screen] — [how accessed, how to get back]
-...
-```
-
 Use plain language. "Tapping a todo on the list opens Todo Detail as a full screen. Back button returns to the list." Not "stack screen pushed from tab context."
 
-### Step 4 — Write the UX flow
+## After completion
 
-After navigation is confirmed, write to `_mano_output/ux-flow.md`.
-
-If the file exists, **extend it** — add new screens and update changed screens. Do not remove or regenerate screens that haven't changed. The UX flow is cumulative across phases.
-
-Present options:
+Output a cold, structured execution log to the user indicating completion, pointing them to edit the file directly if needed. Use this exact format:
 
 ```
-What would you like to do?
-
-1. ✅ Approve — UX flow is good. Move on.
-2. ✏️ Edit — Tell me what to change.
-3. ❓ Question — I have a question about a flow decision.
+[ROB] Executed `mano ux`
+-> Scope: Phase [N]
+-> Action: Wrote _mano_output/ux-flow.md
+-> Screens updated: [list of screens added or modified]
+-> Status: Ready. Edit the file directly to adjust navigation, or run `mano rules` next.
 ```
 
-Once approved, suggest next actions:
-
-```
-UX flow is locked. What's next?
-
-- `mano rules` — Define project rules with Alex
-- `mano ui` — Design brief and component guide (Luna)
-- `mano stories` — Go straight to stories (Marco)
-```
+Do not add conversational fluff.
 
 ## Hard constraints
 

@@ -11,9 +11,9 @@ mano [action]           → Run an action: spec, ux, rules, ui, stories, review.
 mano help [persona]     → Show what a persona does and when to use it.
 ```
 
-`mano [action]` handles everything — first run, discussion, and regeneration. When a persona activates, it checks what already exists:
-- **Output doesn't exist yet** → generate it (first run).
-- **Output already exists** → the persona reads it and the current phase brief, compares them, and presents what's new, changed, or missing.
+`mano [action]` handles everything — first run, extending, and regeneration. When an action executes, it checks what already exists:
+- **Output doesn't exist yet** → generate it directly to the file (first run).
+- **Output already exists** → read it and the current phase brief, then append/extend the file automatically.
 
 ## Core principle: à la carte, not a conveyor belt
 
@@ -124,20 +124,9 @@ Type: mano [action]
 ```
 
 When the user types `mano [action]`:
-- Activate the named persona.
-- If the persona's output already exists, read it AND the current phase brief. Compare them and identify what's new, changed, or missing. Present the diff — don't ask the user to figure it out:
-
-```
-[Persona]: I've compared the Phase [N] brief against the existing [output]. Here's what needs updating:
-
-- [New item] — not in the current spec yet
-- [Changed item] — phase brief says X, spec says Y
-- [Nothing to change] — everything aligns
-
-Want me to apply these updates, or do you want to adjust something first?
-```
-
-- If no output exists, proceed with generation normally.
+- Execute the specific action logic defined in the `personas/` file.
+- Action generation should be **One-Shot**. Write output file directly instead of engaging in step-by-step chat prompts.
+- Output a single execution log snippet to the user, not conversational dialogue.
 
 Valid actions: `spec` (Helen — `tech-spec.md`), `ux` (Rob — `ux-flow.md`), `rules` (Alex — `project-rules.md`), `ui` (Luna — `design-brief.md` + `design-preview.html`), `stories` (Marco — `phase-[N]/stories/`), `review` (Dave — `reviews.md`).
 

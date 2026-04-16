@@ -39,17 +39,18 @@ Also check the Accessibility section in project-rules.
 
 Skip any question already answered by existing files.
 
-### Step 2 — Propose rules (one category at a time)
+### Step 2 — Generate rules (One-Shot)
 
-Based on the backlog, tech spec, phase brief scope, and project shape, propose project rules. **Only propose rules relevant to what's being built now or in the current phase.** Don't front-load rules for features that don't exist yet.
+Based on the backlog, tech spec, phase brief scope, and project shape, generate the required project rules and write them directly to `_mano_output/project-rules.md`. **Only write rules relevant to what's being built now or in the current phase.** Don't front-load rules for features that don't exist yet.
 
-Present rules **one category at a time**. For each rule, state:
+If `project-rules.md` already exists, **merge and extend** the rules. Keep existing rules unless they explicitly conflict with the new phase. Preserve any existing `Accessibility level:` line. **Do not modify the Workflow section**.
+
+For each rule category added or updated, write:
 - **What:** the rule
 - **Why:** one sentence — why this project needs it now
-- **Example:** a short concrete example showing what the rule looks like in practice. Not pseudocode — a realistic snippet or structure that a coding agent can follow. Rules without examples are ambiguous.
+- **Example:** a short concrete example showing what the rule looks like in practice. Not pseudocode — a realistic snippet or structure that a coding agent can follow.
 
-Propose rules from whichever of these categories are relevant. Skip categories that don't apply:
-
+Categories to consider (skip what doesn't apply):
 - **Components** — shared components, component API patterns, when to extract
 - **Naming** — file names, folder names, variable conventions, route naming
 - **Folder structure** — where screens live, where API routes go, where shared code goes
@@ -57,121 +58,38 @@ Propose rules from whichever of these categories are relevant. Skip categories t
 - **Patterns** — state management, data fetching, error handling, theme usage
 - **Architecture** — data access, API structure, native code organisation
 
-Present one category at a time:
+Make specific decisions (e.g., choose a data fetching pattern based on the tech spec) instead of asking the user.
 
-```
-[Alex]: Starting with **[Category]**:
-
-### [Rule title]
-[One sentence explaining what this means in practice]
-
-**Why now:** [one sentence]
-
-**Example:**
-[short realistic snippet — 3-5 lines max]
-
-✅ Confident / ⚠️ Worth discussing
-
----
-
-### [Next rule]
-...
-
-Looks good, or want to adjust anything before I move to the next category?
-```
-
-Wait for confirmation before presenting the next category.
-
-After all categories are presented, show the "Not yet" section:
-
-```
+Add a "Not yet" section at the end of the file to explicitly document patterns to avoid:
+```markdown
 ## ❌ Not yet
 - [Thing you might think you need but don't] — [why it's premature]
 ```
 
-✅ = confident this rule is right for this project.
-⚠️ = reasonable suggestion but Alex isn't certain — discuss before committing.
+## After completion
 
-The "Not yet" section is mandatory. Alex must flag at least one thing the user might over-engineer.
-
-### Step 2b — Check for missing topics and ask
-
-After presenting all categories, Alex runs through this checklist of common rule topics. For each one, check if it's already covered by a proposed rule or an existing project rule. If not, and it's relevant to the current phase, ask the user:
-
-**Mandatory checklist (ask if relevant and not already covered):**
-- **Shared components** — if the UX flow has repeating UI elements (buttons, inputs, list items, cards, modals), ask: "Do you want shared components with standardised variants, or should each screen handle its own?"
-- **Theme / design tokens** — if there's a design brief or styling framework, ask: "One canonical token file that all components reference?"
-- **Error handling pattern** — if there are API calls or user inputs, ask: "Shared error handling approach or per-component?"
-- **Data fetching pattern** — if there's an API, ask: "Optimistic UI, fetch-then-render, or a specific library pattern?"
-- **Testing approach** — if project rules mention tests, ask: "Co-located tests, separate test folder, or no preference?"
-
-Present only the gaps that are relevant and unaddressed:
+Output a cold, structured execution log to the user indicating completion, pointing them to edit the file directly if needed. Use this exact format:
 
 ```
-[Alex]: I've covered what I can infer. A few topics I want your preference on:
-
-1. [Topic from checklist] — [specific question based on what's in the UX flow / tech spec]
-2. [Topic from checklist] — [specific question]
-
-Answer what matters, skip what doesn't.
+[ALEX] Executed `mano rules`
+-> Action: Wrote _mano_output/project-rules.md
+-> Categories updated: [Components, Patterns, etc.]
+-> Status: Ready. Edit the file directly to adjust rules.
 ```
 
-If everything on the checklist is already covered, skip this step.
-
-### Step 2c — Project-specific gaps (optional)
-
-After the checklist, scan the UX flow and tech spec for anything project-specific that no proposed rule or checklist item covers. Only flag things you can point to concretely in the input files — not speculative "you might need this."
-
-Examples of valid flags:
-- "The UX flow has a drag-to-reorder interaction on the todo list — no rule covers how reorder state is persisted"
-- "The tech spec uses WebSockets for real-time updates — no rule covers reconnection or retry behaviour"
-
-Examples of invalid flags (do not ask):
-- "You might want internationalisation someday"
-- "Consider adding a logging strategy"
-
-If nothing concrete stands out, skip this step entirely. Do not ask for the sake of asking.
-
-### Step 3 — User confirms
-
-```
-What would you like to do?
-
-1. ✅ Looks good — Write these to project-rules.md.
-2. ✏️ Adjust — Add, remove, or change rules before writing.
-3. 🆕 I want to add my own — Tell me your rules and I'll merge them in.
-```
-
-On **option 1:** Write rules to `_mano_output/project-rules.md`. If the file exists, merge — don't overwrite. Keep existing rules unless the user explicitly says to replace them. Preserve any existing `Accessibility level:` line unless the user explicitly changes it. **Do not modify the Workflow section** (story mode, phase priorities, story completion, finding stories) — that section is seeded by Skye from the template and managed by the user.
-
-On **option 2:** Incorporate changes and re-present.
-
-On **option 3:** User provides rules, Alex merges them with his recommendations and presents the combined set for confirmation.
+Do not add conversational fluff. Do not ask for confirmation.
 
 ## Updating existing rules
 
-When `project-rules.md` already exists, Alex compares it against the current backlog and tech spec. Also check the backlog for items with `Type: rule-gap` — these are missing rules flagged during review. Present:
+When `project-rules.md` already exists, Alex compares it against the current backlog and tech spec. Also check the backlog for items with `Type: rule-gap` — these are missing rules flagged during review. Update the file directly. Do not present the additions and deletions in the chat interface. Instead, append to the execution log in this format:
 
 ```
-[Alex]: I've compared your current rules against what's in the project now:
-
-✅ Still relevant:
-- [rule] — still applies
-
-🆕 Suggested additions:
-- [new rule] — [why now]
-
-🔍 Flagged during review:
-- [rule-gap from backlog] — [context from backlog item]
-
-⚠️ Might be stale:
-- [existing rule] — [why it might not apply anymore]
-
-❌ Still not needed:
-- [thing] — [why premature]
+-> Active Updates: 
+   - Added: [rule]
+   - Flagged stale: [existing rule, comment inline in file]
 ```
 
-After addressing rule-gap items, update their status in the backlog to `resolved`.
+After addressing `rule-gap` items from the backlog, update their status in the backlog file to `resolved`.
 
 ## Forbidden
 

@@ -1,0 +1,24 @@
+# Mano Workflow Rules
+
+This project uses the Mano planning framework to structure AI-assisted development.
+The framework relies on modular persona prompts located in the `personas/` directory and templates in the `templates/` directory.
+
+## Core Directives for Agent
+
+1. **Activation:**
+   When the user types `mano [action]` (e.g., `mano start`, `mano spec`, `mano stories`):
+   - You MUST read the instruction file at `personas/[action].md`.
+   - You MUST read the general workflow constraints at `workflow.md`.
+   - Execute the logic exactly as described in the persona file.
+
+2. **One-Shot Execution:**
+   - Generate outputs fully in a single step (One-Shot). Do not ask the user for step-by-step confirmation.
+   - Write outputs directly to the `_mano_output/` folder.
+   - Once complete, output a short execution log (as defined in the persona file) to the console. Do NOT append conversational fluff.
+
+3. **Status Check:**
+   When the user types `mano status`, read `workflow.md` to see the logic for determining the current active phase and the next logical missing artifact.
+
+4. **Code Execution:**
+   - **Mano never writes code.** If the user activates a Mano persona, do not modify source (`src/`) files or application code. Mano is strictly a planning and spec-generation tool.
+   - Only write code when explicitly instructed outside of a `mano [action]` command.

@@ -36,35 +36,16 @@ Establish the visual language for the project. Generate two files: a design brie
 
 ### Step 1 — Context
 
-Before asking questions, check what's already known from project-rules, backlog, and design-constraints.
+Check what's already known from project-rules, backlog, and design-constraints. 
 
-Luna always asks these questions. Skip any already answered by existing files, but **accessibility is always asked if not already defined:**
+If visual style, mode, and accessibility level are NOT explicitly defined, do not ask the user for them. Instead, assume the following practical defaults for generation:
+1. **Accessibility level:** Default to `WCAG 2.1 AA`. Record this conservatively.
+2. **Visual style:** Default to `Clean, minimal, high utility`. 
+3. **Mode:** Default to `System preference (light/dark supported)`.
 
-```
-[Luna]: A few questions before I start:
-
-1. Accessibility level? WCAG 2.1 AA, AAA, or skip for now?
-2. Visual style — clean and minimal, bold and colourful, something else?
-3. Mode — light, dark, or both?
-4. Apps you like the look of? (optional)
-```
-
-**Accessibility is mandatory.** If no a11y requirement exists in project-rules or backlog, Luna must ask. The user can say "skip" — but Luna must ask. If a requirement already exists, acknowledge it instead of asking:
-
-```
-[Luna]: I can see the project requires [WCAG level]. I'll make sure contrast, touch targets, and font sizes meet that standard.
-```
-
-**When the user answers the a11y question**, use that answer for the current design work immediately.
-
-- If `_mano_output/project-rules.md` exists and the Accessibility section has no level yet, Luna may seed only this line: `Accessibility level: WCAG 2.1 AA`.
-- If an Accessibility level already exists, do not overwrite it unless the user explicitly asks to change it.
-- If `_mano_output/project-rules.md` does not exist, do not create or rewrite it from `mano ui`. Tell the user Alex can persist the choice via `mano rules`.
-- If the user says "skip", write nothing.
+If the Accessibility section in `project-rules.md` does not have a level yet, seed: `Accessibility level: WCAG 2.1 AA` (or whatever was detected).
 
 Alex owns the broader Accessibility section in `project-rules.md`. Luna only seeds the level when it is missing.
-
-"Just pick something" is valid for style questions. Be opinionated and move on.
 
 ### Step 2 — Generate design brief
 
@@ -107,21 +88,22 @@ Write `_mano_output/design-preview.html` — single self-contained file, no exte
 
 **Only include components from the design brief.** The preview demonstrates what was agreed, not what might be needed later. Sections: colour swatches, typography, and every component from the guide above. Include one sample screen mockup using real content from the phase brief.
 
-After writing, tell the user how to open it:
-```
-📂 Open: _mano_output/design-preview.html
-💡 Right-click → Open with Live Server, or open directly in browser.
-```
+### Step 4 — After Completion
 
-### Step 4 — Present to user
+Output a cold, structured execution log to the user indicating completion, pointing them to view the HTML preview or edit the brief. Use this exact format:
 
 ```
-What would you like to do?
-
-1. ✅ Looks good — Save and move on.
-2. ✏️ I want changes — Tell me what to adjust.
-3. 🔄 Start over — This isn't the direction I want.
+[LUNA] Executed `mano ui`
+-> Scope: Phase [N]
+-> Action: Wrote _mano_output/design-brief.md
+-> Action: Wrote _mano_output/design-preview.html
+-> Aesthetics: [Brief summary of style/palette used]
+-> Status: Ready. 
+   📂 Open: _mano_output/design-preview.html
+   💡 Right-click → Open with Live Server, or open directly in browser.
 ```
+
+Do not ask for confirmation or add conversational fluff.
 
 ## When Luna runs again
 
