@@ -92,11 +92,25 @@ Planning artifacts live under `_mano_output/`. The only framework scaffold writt
 
 ## Customisation
 
-### Design constraints
-Create `_mano/design-constraints.md`. Luna and Marco will respect it. A starter template is at `_mano/templates/design-constraints.md`.
+You can override or guide the framework's default behavior by adding specific files to your workspace.
 
-### Project rules
-Seeded from `_mano/templates/project-rules.md` during `mano start` so the workflow rules exist from day one. Alex owns the substantive rules and updates them during `mano rules`. If Luna captures an accessibility level before Alex runs, she may seed only the `Accessibility level:` line when that field is still blank; Alex remains the authority for the persisted rules file. If you skip straight to `mano stories` and the file is missing, Marco can create it from the same template. It lives at `_mano_output/project-rules.md`.
+### 1. Project Rules (`_mano_output/project-rules.md`)
+This is the core configuration file that manages your architectural patterns, routing formats, and workflow preferences.
+- **Creation:** Seeded automatically from a template when you run `mano start` (or if you skip straight to `mano stories`).
+- **Updates:** `mano rules` is the primary command for updating this file. Other actions (like `mano ui` for accessibility settings) will append to it, but they will never overwrite your existing rules.
 
-### Persona overrides
-Create `_mano/custom/[persona].md` to override any default persona.
+### 2. Design Constraints (`_mano_output/design-constraints.md`)
+Use this file to enforce strict visual or UX rules that shouldn't be altered by the AI (e.g., "Always use Tailwind utility classes", "Never use modals for forms"). 
+- Both `mano ui` and `mano stories` will strictly respect this file. 
+- A starter template is available: `_mano/templates/design-constraints.md`.
+
+### 3. Persona Overrides (`_mano/custom/[persona].md`)
+If you want to fundamentally change how a persona plans or generates output, you can completely override their default instructions. 
+- Create a Markdown file matching the persona's name (e.g., `_mano/custom/ui.md`) containing your custom prompt.
+
+### 4. Bring Your Own Artifacts
+Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a persona by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:
+- `design-brief.md`
+- `tech-spec.md`
+- `ux-flow.md`
+- `project-rules.md`
