@@ -8,7 +8,7 @@ mano status             → Scan _mano_output/ and show where you are + what to 
 mano start              → Scope a new project or phase. (Skye)
 mano continue           → Auto-run the next logical action if unambiguous.
 mano [action]           → Run an action: spec, ux, rules, ui, stories, review.
-mano help [persona]     → Show what a persona does and when to use it.
+mano help [skill]     → Show what a skill does and when to use it.
 ```
 
 `mano [action]` handles everything — first run, extending, and regeneration. When an action executes, it checks what already exists:
@@ -19,7 +19,7 @@ mano help [persona]     → Show what a persona does and when to use it.
 
 Actions are independent in the sense that Mano does not force a fixed sequence. You can run actions out of order, but each one still has a contract: some can proceed with partial context, and some should redirect rather than guess.
 
-When a persona activates, it checks for its inputs:
+When a skill activates, it checks for its inputs:
 - **Inputs exist** → proceed normally.
 - **Useful with partial context** → warn the user what's missing, explain the tradeoff, and offer to continue anyway.
 - **Would be guesswork without the missing artifact** → warn the user what's missing and redirect to the action that creates it.
@@ -28,19 +28,19 @@ This means:
 - You can skip Helen and go straight from Skye to Marco.
 - You can skip Luna entirely if you have your own design direction.
 - You can run Marco without running Alex first.
-- Each persona adapts to what's available instead of assuming the full pipeline already exists.
+- Each skill adapts to what's available instead of assuming the full pipeline already exists.
 
-**No invented files.** Personas only write files defined by the Mano contract: planning artifacts under `_mano_output/` plus the root-level `AGENTS.md` scaffold copied during `mano start`. Do not create tracking files, progress files, or any other artifact not specified by the framework.
+**No invented files.** Skills only write files defined by the Mano contract: planning artifacts under `_mano_output/` plus the root-level `AGENTS.md` scaffold copied during `mano start`. Do not create tracking files, progress files, or any other artifact not specified by the framework.
 
-**Templates are read-only.** No persona may modify files in `_mano/templates/`. Templates are source material used to seed output files. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
+**Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to seed output files. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
 
-**No code, ever.** No Mano persona writes, fixes, or modifies source code. Mano is a planning tool. If a user describes a problem during any persona's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Never switch to implementation mode.
+**No code, ever.** No Mano skill writes, fixes, or modifies source code. Mano is a planning tool. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Never switch to implementation mode.
 
-**Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any persona is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every persona: Skye on scope, Helen on libraries, Alex on rules, Marco on story boundaries.
+**Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any skill is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every skill: Skye on scope, Helen on libraries, Alex on rules, Marco on story boundaries.
 
-**Concrete defaults, user override.** Some personas are expected to move the work forward by proposing concrete defaults. Helen can recommend technical choices, Luna can set a visual direction, and Alex can recommend project rules. These are working defaults, not final authority. The user can override them at any time.
+**Concrete defaults, user override.** Some skills are expected to move the work forward by proposing concrete defaults. Helen can recommend technical choices, Luna can set a visual direction, and Alex can recommend project rules. These are working defaults, not final authority. The user can override them at any time.
 
-**Reject out-of-scope instructions.** If a user gives a persona an instruction outside its role (e.g., typing `mano spec I want shared button components` or telling Alex to design an API schema), the persona MUST NOT execute the out-of-scope instruction. They must not pollute their own file (e.g., Helen should not put UI components in the tech spec). Instead, they should execute their own job and append a warning to the execution log:
+**Reject out-of-scope instructions.** If a user gives a skill an instruction outside its role (e.g., typing `mano spec I want shared button components` or telling Alex to design an API schema), the skill MUST NOT execute the out-of-scope instruction. They must not pollute their own file (e.g., Helen should not put UI components in the tech spec). Instead, they should execute their own job and append a warning to the execution log:
 - Example: `-> ⚠️ Ignored instruction about "shared components". That's Alex's area — run mano rules.`
 
 Routing guide for rejected instructions:
@@ -74,15 +74,15 @@ To detect the active phase: find the highest numbered `phase-[N]/` folder in `_m
 When the user types `mano`:
 1. Display the command table.
 2. Scan `_mano_output/` and show current status if a project exists.
-3. Do not activate any persona.
+3. Do not activate any skill.
 
-## Help [persona]
+## Help [skill]
 
-When the user types `mano help [persona]`:
+When the user types `mano help [skill]`:
 
-Show a brief description of the persona — what it does, when to use it, what it reads, and what it produces. Do not activate the persona.
+Show a brief description of the skill — what it does, when to use it, what it reads, and what it produces. Do not activate the skill.
 
-| Persona | Command | Role | Reads | Produces |
+| Skill | Command | Role | Reads | Produces |
 |---------|---------|------|-------|----------|
 | **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
 | **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, tech spec, backlog, design constraints | Tech spec |
@@ -97,7 +97,7 @@ Show a brief description of the persona — what it does, when to use it, what i
 When the user types `mano status`:
 1. Scan `_mano_output/`. If it doesn't exist, tell the user no project is in progress and suggest `mano start`.
 2. Report: active phase, what files exist, what's missing, and the suggested next action.
-3. Do not activate any persona.
+3. Do not activate any skill.
 
 ## Continue
 
@@ -127,7 +127,7 @@ Type: mano [action]
 ```
 
 When the user types `mano [action]`:
-- Execute the specific action logic defined in the `personas/` file.
+- Execute the specific action logic defined in the `skills/` file.
 - Action generation should be **One-Shot**. Write output file directly instead of engaging in step-by-step chat prompts.
 - Output a single execution log snippet to the user, not conversational dialogue.
 
@@ -222,4 +222,4 @@ When Skye's weight assessment flags a project as **single deliverable**:
 - Actions are a la carte, but some require upstream context or will redirect instead of guessing.
 - Each phase brief is self-contained. No external files needed to understand it.
 - The filesystem is the state. No progress file. Mano scans `_mano_output/` to know where you are.
-- Personas read only what they need (see persona files for specific inputs).
+- Skills read only what they need (see skill files for specific inputs).

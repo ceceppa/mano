@@ -2,7 +2,7 @@
 
 A structured thinking tool for AI-assisted software planning. Phased, feedback-driven, anti-slop.
 
-Mano helps you scope, spec, and build one shippable phase at a time. It uses persona constraints to surface issues you'd miss working linearly. It is not a multi-agent system — it is one model applying different lenses to your idea.
+Mano helps you scope, spec, and build one shippable phase at a time. It uses skill constraints to surface issues you'd miss working linearly. It is not a multi-agent system — it is one model applying different lenses to your idea.
 
 ## Commands
 
@@ -14,23 +14,23 @@ Mano helps you scope, spec, and build one shippable phase at a time. It uses per
 | `mano rules` | Define or update project rules. (Alex) |
 | `mano [action]` | Run an action: `spec`, `ux`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano continue` | Auto-run the next logical action. |
-| `mano help [persona]` | Show what a persona does and when to use it. |
+| `mano help [skill]` | Show what a skill does and when to use it. |
 
-Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each persona checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
+Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
 `mano [action]` handles everything — first run, discussion, and regeneration. Run it again on the same action to discuss changes or regenerate output.
 
-## Personas
+## Skills
 
 | Name | Role | File |
 |------|------|------|
-| **Skye** | Scopes the idea, populates the backlog, proposes phases | `personas/start.md` |
-| **Alex** | Defines and updates project rules — components, patterns, architecture | `personas/rules.md` |
-| **Helen** | Translates the phase brief into tech spec | `personas/spec.md` |
-| **Rob** | Defines UX flows — screens, navigation, user interactions | `personas/ux.md` |
-| **Luna** | Establishes visual language and component guide | `personas/ui.md` |
-| **Marco** | Breaks specs into implementable stories | `personas/stories.md` |
-| **Dave** | Phase review, triage, closes the phase | `personas/review.md` |
+| **Skye** | Scopes the idea, populates the backlog, proposes phases | `skills/start.md` |
+| **Alex** | Defines and updates project rules — components, patterns, architecture | `skills/rules.md` |
+| **Helen** | Translates the phase brief into tech spec | `skills/spec.md` |
+| **Rob** | Defines UX flows — screens, navigation, user interactions | `skills/ux.md` |
+| **Luna** | Establishes visual language and component guide | `skills/ui.md` |
+| **Marco** | Breaks specs into implementable stories | `skills/stories.md` |
+| **Dave** | Phase review, triage, closes the phase | `skills/review.md` |
 
 These are structured constraint lenses, not simulated experts. They surface issues through mechanical rules and focused responsibilities, not through genuine independent thought.
 
@@ -67,7 +67,7 @@ Requirements change during implementation. You don't have to finish the phase to
 
 - **Found a bug or missing feature?** Use `mano stories` — Marco will create a new story (numbered 3a, 3b, etc.) and ask whether to implement it now or queue it for later.
 - **Need to change scope?** Use `mano start` to talk to Skye — update assumptions, adjust scope, flag stories that turned out wrong.
-- **Need to regenerate specs or stories?** Run `mano [action]` again — the persona will check what exists and offer to update or regenerate.
+- **Need to regenerate specs or stories?** Run `mano [action]` again — the skill will check what exists and offer to update or regenerate.
 
 The pipeline doesn't require you to finish before course-correcting.
 
@@ -115,12 +115,12 @@ Use this file to enforce strict visual or UX rules that shouldn't be altered by 
 - Both `mano ui` and `mano stories` will strictly respect this file. 
 - A starter template is available: `_mano/templates/design-constraints.md`.
 
-### 3. Persona Overrides (`_mano/custom/[persona].md`)
-If you want to fundamentally change how a persona plans or generates output, you can completely override their default instructions. 
-- Create a Markdown file matching the persona's name (e.g., `_mano/custom/ui.md`) containing your custom prompt.
+### 3. Skill Overrides (`_mano/custom/[skill].md`)
+If you want to fundamentally change how a skill plans or generates output, you can completely override their default instructions. 
+- Create a Markdown file matching the skill's name (e.g., `_mano/custom/ui.md`) containing your custom prompt.
 
 ### 4. Bring Your Own Artifacts
-Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a persona by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:
+Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a skill by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:
 - `design-brief.md`
 - `tech-spec.md`
 - `ux-flow.md`
