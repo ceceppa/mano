@@ -1,6 +1,6 @@
 # Project Rules
 
-These rules apply to every story and every implementation. The coding agent must follow them without exception.
+The team agrees to follow these architectural decisions, styling standards, and workflow patterns. This list can be extended or modified as required down the line. The coding agent must follow these rules without exception on every single story.
 
 ---
 

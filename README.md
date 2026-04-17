@@ -38,7 +38,7 @@ The user owns scope, priorities, and product tradeoffs. Helen can recommend conc
 
 ## How it works: The "À La Carte" Philosophy
 
-Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) Architecture** tool. It aggressively fights against Big Design Up Front. 
+Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) Architecture** tool.
 
 You only pay the cognitive tax for what you are building *today*. Only two actions are mandatory to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks. Every other action (`spec`, `ux`, `rules`, `ui`) is floating and optional. 
 
@@ -104,6 +104,11 @@ You can override or guide the framework's default behavior by adding specific fi
 This is the core configuration file that manages your architectural patterns, routing formats, and workflow preferences.
 - **Creation:** Seeded automatically from a template when you run `mano start` (or if you skip straight to `mano stories`).
 - **Updates:** `mano rules` is the primary command for updating this file. Other actions (like `mano ui` for accessibility settings) will append to it, but they will never overwrite your existing rules.
+
+> **Spec vs Rules:** What's the difference? 
+> Mano enforces a strict separation of concerns to prevent AI context bloat:
+> - **`tech-spec.md` is the WHAT (The Blueprint):** It defines libraries, database schemas, and API contracts (e.g., "We will use PostgreSQL, and the `/users` endpoint returns JSON").
+> - **`project-rules.md` is the HOW (The Building Codes):** It defines architectural patterns, folder structures, and styling guidelines (e.g., "All API handlers must be wrapped in `catchAsync`, and we separate UI logic from data fetching").
 
 ### 2. Design Constraints (`_mano_output/design-constraints.md`)
 Use this file to enforce strict visual or UX rules that shouldn't be altered by the AI (e.g., "Always use Tailwind utility classes", "Never use modals for forms"). 
