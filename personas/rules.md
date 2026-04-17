@@ -56,6 +56,7 @@ Categories to consider (skip what doesn't apply):
 - **Folder structure** — where screens live, where API routes go, where shared code goes
 - **Accessibility** — component a11y requirements, aria attributes, touch targets, screen reader support
 - **Patterns** — state management, data fetching, error handling, theme usage
+- **Testing** — co-located vs separate folder, unit vs integration, TDD enforcement.
 - **Architecture** — data access, API structure, native code organisation
 
 Make specific decisions (e.g., choose a data fetching pattern based on the tech spec) instead of asking the user.
