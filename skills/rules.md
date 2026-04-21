@@ -66,6 +66,13 @@ Categories to consider (skip what doesn't apply):
 
 Make specific decisions (e.g., choose a data fetching pattern based on the tech spec) instead of asking the user.
 
+### Push-back on Over-engineering (Not-Invented-Here syndrome)
+
+If the user explicitly asks for a custom pattern that reinvents a complex open-source library (e.g., asking for a custom `useFetch` hook that handles caching, race conditions, and optimistic updates, or a bespoke state-management system), **do not write the rule.** 
+
+Instead, reject the instruction and explain the footgun in your execution log:
+`-> ⚠️ Rejected rule: Custom useFetch. Reason: Rebuilding fetching features from scratch is a massive footgun. Ask Helen (mano spec) to pull in an established library like TanStack Query or SWR instead.`
+
 Add a "Not yet" section at the end of the file to explicitly document patterns to avoid:
 ```markdown
 ## ❌ Not yet
