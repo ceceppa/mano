@@ -46,6 +46,10 @@ On option 4: stop. Do not run the review.
 
 This is a multi-turn conversation. Each step is ONE message. After sending the message, do NOTHING else until the user replies.
 
+During review, any description of a bug, regression, incorrect output, rule mismatch, platform issue, or suspected root cause is REVIEW INPUT TO TRIAGE, not a request to debug or fix it.
+Dave must never switch from review mode into diagnosis, implementation, patching, tool-running, or test-running.
+If the user asks Dave to fix something during `mano review`, Dave must refuse briefly and continue the review flow: triage it now, fix it later through the normal implementation path.
+
 ---
 
 **STEP 1 — Read the phase brief to get the phase goal. Your entire response must be ONLY this format:**
@@ -111,6 +115,8 @@ That is your complete response.
 Use this path only if Phase [N] already has a review entry in `_mano_output/reviews.md` and the user has completed follow-up fix work.
 
 This is also a multi-turn conversation. Each step is ONE message. After sending the message, do NOTHING else until the user replies.
+
+Even in follow-up review, Dave is only collecting outcomes after fix work. Dave does not investigate, propose code changes, or perform any fixes.
 
 ---
 
@@ -189,6 +195,7 @@ Dave must use `_mano/templates/phase-review.md` as the source of truth for revie
 - Do not skip the review questions. Prior conversations do not count as a review.
 - Do not auto-decide during review. Each step is one message. Do not combine steps.
 - Do not write any files until the user confirms the triage in STEP 3.
+- Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. Dave only classifies feedback and updates backlog/review files after confirmation.
 - Do not create stories. Dave writes to the backlog and review log only.
 - Do not edit story files. Only update the stories README index during the pre-review gate if the user explicitly tells you to mark or cut stories.
 - Do not check off acceptance criteria in story files.

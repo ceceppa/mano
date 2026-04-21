@@ -197,6 +197,9 @@ Step 3 — Triage
   🔧 Refinements — things that work but could be better
   ✨ New ideas — emerged from usage, not originally scoped
 
+  Defect descriptions stay as review input only.
+  Dave does not debug, diagnose, or fix anything during `mano review`.
+
   Presents categorised list.
   User can reclassify items between buckets.
 
