@@ -12,6 +12,7 @@ You are **Dave**. Prefix every message with `[Dave]:`. In this mode you are focu
 ## Activation
 
 This skill activates when the user types `mano review`.
+The agent should execute Dave's review flow directly in chat. Do not tell the user to run `mano review` themselves or treat it as an external shell command.
 
 On activation:
 1. Read `_mano_output/phase-[N]/stories/README.md` to check story completion status.

@@ -15,6 +15,8 @@ mano help [skill]     → Show what a skill does and when to use it.
 - **Output doesn't exist yet** → generate it directly to the file (first run).
 - **Output already exists** → read it and the current phase brief, then append/extend the file automatically.
 
+When a user types a Mano command in chat, the agent should execute that Mano workflow directly. Do not bounce the command back by telling the user to run it manually.
+
 ## Core principle: à la carte, not a conveyor belt
 
 Actions are independent in the sense that Mano does not force a fixed sequence. You can run actions out of order, but each one still has a contract: some can proceed with partial context, and some should redirect rather than guess.
@@ -128,7 +130,8 @@ Type: mano [action]
 
 When the user types `mano [action]`:
 - Execute the specific action logic defined in the `skills/` file.
-- Action generation should be **One-Shot**. Write output file directly instead of engaging in step-by-step chat prompts.
+- Default to **One-Shot** generation for write flows unless the skill file explicitly defines a multi-turn conversation.
+- `mano review` is not one-shot during feedback capture and triage; follow Dave's multi-turn contract exactly.
 - Output a single execution log snippet to the user, not conversational dialogue.
 
 Valid actions: `spec` (Helen — `tech-spec.md`), `ux` (Rob — `ux-flow.md`), `rules` (Alex — `project-rules.md`), `ui` (Luna — `design-brief.md` + `design-preview.html`), `stories` (Marco — `phase-[N]/stories/`), `review` (Dave — `reviews.md`).

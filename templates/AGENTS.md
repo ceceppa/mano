@@ -4,6 +4,14 @@ This project uses **Mano** for planning. Mano is a structured thinking tool — 
 
 ## For coding agents
 
+### Running Mano commands
+
+If the user types a Mano command in chat, treat that as an instruction to execute the corresponding Mano planning flow yourself.
+
+- `mano`, `mano status`, `mano continue`, and `mano help [skill]` should be handled according to [workflow.md](workflow.md).
+- `mano start`, `mano spec`, `mano ux`, `mano rules`, `mano ui`, `mano stories`, and `mano review` should activate the matching skill and follow that skill's contract.
+- Do not tell the user to run Mano commands manually just because they are planning commands. They are planning commands for the agent to carry out, not shell commands to bounce back to the user.
+
 ### Implementing a story
 
 1. Find the active phase: highest numbered `phase-[N]/` folder in `_mano_output/`.
@@ -15,7 +23,7 @@ This project uses **Mano** for planning. Mano is a structured thinking tool — 
 ### Do not
 
 - Modify files in `_mano/` or `_mano/templates/` — these are framework files.
-- Interpret `mano` commands (e.g. `mano start`, `mano review`) as implementation instructions — these are planning commands.
+- Interpret `mano` commands (e.g. `mano start`, `mano review`) as implementation instructions — these are planning commands. Execute the relevant planning flow instead.
 - Create extra tracking files — Mano does not use a dedicated state file. Determine state by reading `_mano_output/` and the latest `phase-[N]/` artifacts.
 
 ## Project structure

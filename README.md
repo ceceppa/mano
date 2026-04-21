@@ -18,6 +18,8 @@ Mano helps you scope, spec, and build one shippable phase at a time. It uses ski
 
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
+When a user types a Mano command in chat, the agent should carry out that planning command directly. Mano commands are not implementation instructions, but they are still agent-executable instructions.
+
 `mano [action]` handles everything — first run, discussion, and regeneration. Run it again on the same action to discuss changes or regenerate output.
 
 ## Skills
