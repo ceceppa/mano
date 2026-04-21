@@ -69,11 +69,11 @@ If a library or decision is being **replaced** (e.g. swapping SQLite for an API,
 If the file doesn't exist, create it.
 
 - **Tech stack** — framework, language, toolchain. Specific, not vague.
-- **Libraries & dependencies** — concrete choices with version, reason, and install command.
+- **Libraries & dependencies** — concrete choices with reasons and install command. **Do not hallucinate exact version numbers.** Use `@latest` in the install command unless a specific legacy version is absolutely required by platform constraints.
 
-| Category | Decision | Version | Why | Install |
-|----------|----------|---------|-----|---------|
-| | | | | |
+| Category | Decision | Why | Install |
+|----------|----------|-----|---------|
+| | | | |
 
 - **Data model** — entities, fields, relationships. Table format.
 
