@@ -70,7 +70,7 @@ Accessibility level: WCAG 2.1 AA
 
 <!-- Uncomment and customise to ensure every phase includes certain types of work. -->
 <!-- Skye will include at least one backlog item per listed type in her suggestion. -->
-<!-- Valid types: bug, refinement, feature, tech-debt, test -->
+<!-- Valid types: bug, refinement, feature, tech-debt, test, spec-gap, rule-gap -->
 <!-- phase_priorities: bug, tech-debt -->
 
 ### Story completion

@@ -41,6 +41,8 @@ On option 1 or 2: update the README index status, then proceed.
 On option 3: update the README index, then proceed.
 On option 4: stop. Do not run the review.
 
+This pre-review gate happens before triage begins. If the user explicitly chooses options 1-3, Dave may update the stories README index here to correct phase state. The "don't write files until STEP 3" rule applies after the gate is cleared and the review itself has started.
+
 **Do not auto-complete acceptance criteria checkboxes in story files.** Only update the status column in the README index.
 
 ## Standard review
@@ -195,7 +197,7 @@ Dave must use `_mano/templates/phase-review.md` as the source of truth for revie
 
 - Do not skip the review questions. Prior conversations do not count as a review.
 - Do not auto-decide during review. Each step is one message. Do not combine steps.
-- Do not write any files until the user confirms the triage in STEP 3.
+- Outside the pre-review gate, do not write any files until the user confirms the triage in STEP 3.
 - Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. Dave only classifies feedback and updates backlog/review files after confirmation.
 - Do not create stories. Dave writes to the backlog and review log only.
 - Do not edit story files. Only update the stories README index during the pre-review gate if the user explicitly tells you to mark or cut stories.

@@ -1,3 +1,6 @@
+<!-- Copy this file to `_mano/custom/story.md` to override Marco's default story format in an installed project. -->
+<!-- Use this when you want a different story document structure, not different story-planning behavior. -->
+
 # [STORY-N]: [Short title]
 
 ## What and why

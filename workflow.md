@@ -11,6 +11,8 @@ mano [action]           → Run an action: spec, ux, rules, ui, stories, review.
 mano help [skill]     → Show what a skill does and when to use it.
 ```
 
+`mano start` is a dedicated command. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
+
 `mano [action]` handles everything — first run, extending, and regeneration. When an action executes, it checks what already exists:
 - **Output doesn't exist yet** → generate it directly to the file (first run).
 - **Output already exists** → read it and the current phase brief, then append/extend the file automatically.
@@ -36,6 +38,8 @@ This means:
 
 **Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to seed output files. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
 
+In installed projects, Mano framework files live under `_mano/skills`, `_mano/templates`, and `_mano/custom`. This repository may store the source files at the root, but the runtime contract presented to coding agents uses `_mano/...` paths.
+
 **No code, ever.** No Mano skill writes, fixes, or modifies source code. Mano is a planning tool. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Never switch to implementation mode.
 
 **Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any skill is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every skill: Skye on scope, Helen on libraries, Alex on rules, Marco on story boundaries.
@@ -53,16 +57,24 @@ Routing guide for rejected instructions:
 - Stories (breaking work into units) → "That's Marco's area — run `mano stories`"
 - Review (phase feedback, triage) → "That's Dave's area — run `mano review`"
 
+## Missing input protocol
+
+When a skill is missing context, classify the gap before responding:
+
+- **Optional** → proceed. Mention the tradeoff only if it changes output quality.
+- **Recommended but skippable** → warn briefly and offer two paths: continue anyway or run the upstream Mano command that creates the missing artifact.
+- **Blocking** → stop and redirect because continuing would be guesswork. Dave's pre-review gate is a blocking check.
+
+If more than one next step is reasonable, do not fake certainty. Present the options instead of inventing a hidden sequence.
+
 ## State detection — the filesystem is the truth
 
 There is no progress file. Mano determines where you are by scanning `_mano_output/`:
 
 - No `_mano_output/` folder → no project started → suggest `mano start`
-- `phase-[N]/phase-brief.md` exists, no `tech-spec.md` at project level → suggest `mano spec`
-- `tech-spec.md` and `ux-flow.md` exist at project level, no `design-brief.md` → suggest `mano ui`
-- `design-brief.md` exists, no `stories/` folder in current phase → suggest `mano stories`
-- `stories/` folder exists, stories are `pending` → in build mode, suggest implementing stories
-- `stories/` folder exists, all stories are `done` → phase is built, suggest `mano review`
+- Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist and suggest `mano stories` as the shortest path, while listing `mano spec`, `mano ux`, `mano rules`, and `mano ui` as optional planning actions when useful.
+- `stories/` folder exists, stories are `pending` → build mode. No Mano planning command is required until the user wants to adjust scope or add planning context.
+- `stories/` folder exists, all stories are `done`, and the latest phase has no review entry → phase is built, suggest `mano review`
 - `reviews.md` has an entry for the latest phase → phase is reviewed, suggest `mano start` for next phase
 
 To detect story status: read `_mano_output/phase-[N]/stories/README.md` and check the Status column. If all stories are `done`, the phase is built and ready for review.
@@ -105,8 +117,9 @@ When the user types `mano status`:
 
 When the user types `mano continue`:
 1. Scan `_mano_output/` to determine state.
-2. If the next action is unambiguous, execute it immediately.
-3. If it requires a user decision, stop and explain why.
+2. If there is a single obvious next Mano action, execute it immediately.
+3. If there are multiple reasonable planning actions, stop and explain the options instead of choosing one.
+4. If the project is in build mode, say so plainly instead of forcing a planning command.
 
 ## Do
 
@@ -115,8 +128,9 @@ When the user types `mano` with no argument (or just wants to see available acti
 2. Show available actions with the suggested next action marked:
 
 ```
-Available actions for Phase [N]:
+Available Mano commands for Phase [N]:
 
+  start    — Scope a new project or phase (Skye)
 → spec     — Tech spec (Helen)
   ux       — UX flow (Rob)
   rules    — Project rules (Alex)
@@ -125,7 +139,7 @@ Available actions for Phase [N]:
   review   — Triage feedback, close the phase (Dave)
 
 → marks the suggested next action.
-Type: mano [action]
+Type: mano start or mano [action]
 ```
 
 When the user types `mano [action]`:
@@ -177,7 +191,7 @@ Step 8 — Finalise
   Writes phase-brief.md.
   Writes deferred items to backlog.
   Suggests next actions:
-    Recommended: mano spec → mano ux → mano rules → mano stories
+    Recommended: mano spec → mano ux → mano rules → mano ui → mano stories
     Or any order: spec, ux, rules, ui, stories
 ```
 
@@ -214,17 +228,17 @@ Step 4 — Close
   Dave suggests: mano start for next phase, or stop.
 ```
 
-## Weight-based pipeline collapse
+## Minimal pipeline
 
-When Skye's weight assessment flags a project as **single deliverable**:
-- Skip Alex, Helen, and Luna entirely.
-- Skye scopes → Marco writes stories → build.
-- Three steps total.
+When the phase is already clear and extra artifacts would add overhead instead of clarity:
+- Skip `spec`, `ux`, `rules`, and `ui`.
+- Use `mano start` → `mano stories` → build.
+- Add optional planning artifacts later only if the work becomes ambiguous.
 
 ## Rules
 
 - The user owns scope, priorities, and product tradeoffs. Helen may recommend technical defaults, Luna may set visual defaults, and Alex may recommend project rules, but every recommendation is overridable.
-- No phase brief exceeds one screen.
+- Keep phase briefs concise enough to read in under two minutes. Target roughly 250-500 words plus short lists.
 - Actions are a la carte, but some require upstream context or will redirect instead of guessing.
 - Each phase brief is self-contained. No external files needed to understand it.
 - The filesystem is the state. No progress file. Mano scans `_mano_output/` to know where you are.

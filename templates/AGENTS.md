@@ -29,7 +29,10 @@ If the user types a Mano command in chat, treat that as an instruction to execut
 ## Project structure
 
 ```
-_mano/                    ← Mano framework (do not modify)
+_mano/                    ← Mano framework (do not modify during implementation)
+├── skills/               ← Mano skill prompts
+├── templates/            ← Mano templates
+└── custom/               ← Optional Mano overrides and story template overrides
 _mano_output/             ← Planning artifacts
 ├── project-rules.md      ← Rules for implementation (referenced by stories)
 ├── tech-spec.md          ← Technical decisions

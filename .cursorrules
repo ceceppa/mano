@@ -6,13 +6,22 @@ The framework relies on modular skill prompts located in the `skills/` directory
 ## Core Directives for Agent
 
 1. **Activation:**
-   When the user types `mano [action]` (e.g., `mano start`, `mano spec`, `mano stories`):
-   - You MUST read the instruction file at `skills/[action].md`.
+   When the user types a Mano command (e.g., `mano start`, `mano spec`, `mano stories`, `mano review`):
+   - You MUST read `workflow.md` first.
+   - You MUST resolve the command to the correct skill file using the workflow command map.
+   - `mano start` maps to `skills/start.md`.
+   - `mano spec` maps to `skills/spec.md`.
+   - `mano ux` maps to `skills/ux.md`.
+   - `mano rules` maps to `skills/rules.md`.
+   - `mano ui` maps to `skills/ui.md`.
+   - `mano stories` maps to `skills/stories.md`.
+   - `mano review` maps to `skills/review.md`.
    - You MUST read the general workflow constraints at `workflow.md`.
    - Execute the logic exactly as described in the skill file.
 
 2. **One-Shot Execution:**
-   - Generate outputs fully in a single step (One-Shot). Do not ask the user for step-by-step confirmation.
+   - Default to one-shot generation for write flows.
+   - If the skill explicitly defines a multi-turn flow, follow that contract instead of forcing one-shot behavior.
    - Write outputs directly to the `_mano_output/` folder.
    - Once complete, output a short execution log (as defined in the skill file) to the console. Do NOT append conversational fluff.
 
@@ -22,3 +31,7 @@ The framework relies on modular skill prompts located in the `skills/` directory
 4. **Code Execution:**
    - **Mano never writes code.** If the user activates a Mano skill, do not modify source (`src/`) files or application code. Mano is strictly a planning and spec-generation tool.
    - Only write code when explicitly instructed outside of a `mano [action]` command.
+
+5. **Runtime Layout:**
+   - In installed projects, Mano framework files live under `_mano/` even if the framework source repository stores them at the root.
+   - When interpreting prompts or copied templates in a user project, prefer `_mano/skills`, `_mano/templates`, and `_mano/custom` as the runtime paths.

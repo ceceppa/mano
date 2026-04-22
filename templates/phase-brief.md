@@ -20,7 +20,7 @@
 
 ## Phase Scope
 
-<!-- What ships. One line per item. Must fit one screen with the rest of this doc. -->
+<!-- What ships. One line per item. Keep the whole brief concise: target roughly 250-500 words total. -->
 
 -
 -

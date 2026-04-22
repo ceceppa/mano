@@ -10,10 +10,9 @@ Mano helps you scope, spec, and build one shippable phase at a time. It uses ski
 |---------|-------------|
 | `mano` | Show available commands and current status. |
 | `mano status` | Scans output folder. Where am I? What's next? |
-| `mano start` | Scope a new project or phase. (Skye) |
-| `mano rules` | Define or update project rules. (Alex) |
-| `mano [action]` | Run an action: `spec`, `ux`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
-| `mano continue` | Auto-run the next logical action. |
+| `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (Skye) |
+| `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
+| `mano continue` | Auto-run only when there is a single obvious next planning step; otherwise stop and explain the options. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
 
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
@@ -46,7 +45,7 @@ You only pay the cognitive tax for what you are building *today*. Only two actio
 
 Only run the optional tools if the phase you are actively working on requires them, or if you hit a pain point that requires you to establish a new architectural pattern. You never run the whole pipeline "just in case."
 
-### Example pipelines
+### Example fuller pass
 1. `mano start` → Skye scopes and populates the backlog.
 2. `mano spec` → Helen writes tech spec.
 3. `mano ux` → Rob defines UX flow (for user-facing phases).
@@ -56,10 +55,14 @@ Only run the optional tools if the phase you are actively working on requires th
 7. Build. Ship. Gather feedback.
 8. `mano review` → Dave triages feedback into the backlog, writes the review log, closes the phase.
 
-### Light pipeline (simple projects or later phases with momentum)
+This is an example path, not a mandatory conveyor belt.
+
+### Minimal phase
 1. `mano start` → Skye scopes.
 2. `mano stories` → Marco writes stories directly.
 3. Build.
+
+Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal.
 
 ### Escape hatch
 After a review, Dave closes the phase. If you don't need Mano for the rest — that's fine. A tool that never lets go is a dependency, not a tool.
@@ -98,6 +101,8 @@ Each phase brief is self-contained — problem, vision, design principle, scope,
 
 Planning artifacts live under `_mano_output/`. The only framework scaffold written outside that folder is `AGENTS.md` at the project root, copied during `mano start` so coding agents know where Mano artifacts live.
 
+Mano's installed runtime layout lives under `_mano/` inside the user's project. This repository contains the framework source files at the root for authoring, but the contract exposed to coding agents in real projects uses `_mano/skills`, `_mano/templates`, and `_mano/custom`.
+
 ## Customisation
 
 You can override or guide the framework's default behavior by adding specific files to your workspace.
@@ -117,11 +122,16 @@ Use this file to enforce strict visual or UX rules that shouldn't be altered by 
 - Both `mano ui` and `mano stories` will strictly respect this file. 
 - A starter template is available: `_mano/templates/design-constraints.md`.
 
-### 3. Skill Overrides (`_mano/custom/[skill].md`)
+### 3. Story Template Override (`_mano/custom/story.md`)
+Use this when you want Marco to keep the same planning behavior but emit stories in a different shape.
+- Copy `_mano/custom/story.example.md` to `_mano/custom/story.md` and edit it.
+- Choose this when you want a different story document structure, not when you want to change Marco's decision-making.
+
+### 4. Skill Overrides (`_mano/custom/[skill].md`)
 If you want to fundamentally change how a skill plans or generates output, you can completely override their default instructions. 
 - Create a Markdown file matching the skill's name (e.g., `_mano/custom/ui.md`) containing your custom prompt.
 
-### 4. Bring Your Own Artifacts
+### 5. Bring Your Own Artifacts
 Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a skill by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:
 - `design-brief.md`
 - `tech-spec.md`
