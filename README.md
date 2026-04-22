@@ -1,8 +1,8 @@
 # Mano
 
-A structured thinking tool for AI-assisted software planning. Phased, feedback-driven, anti-slop.
+Mano is an AI-assisted phase planning system for developers who want structured planning without giving the model control of implementation or product decisions.
 
-Mano helps you scope, spec, and build one shippable phase at a time. It uses skill constraints to surface issues you'd miss working linearly. It is not a multi-agent system — it is one model applying different lenses to your idea.
+It helps break work into one shippable phase at a time, keeps planning artifacts explicit in the filesystem, and keeps AI focused on bounded planning tasks instead of open-ended decision making. It is not a multi-agent system — it is one model applying different lenses to your idea.
 
 ## Commands
 
