@@ -4,7 +4,9 @@ AI-assisted phase planning that keeps the human in control.
 
 Mano is for developers who want AI to help plan work without handing the model control of implementation or product decisions.
 
-Without structure, AI planning tends to collapse into vague chat, bloated process, or hidden decisions. Mano breaks work into one shippable phase at a time, keeps planning artifacts explicit in the filesystem, and keeps AI focused on bounded planning tasks instead of open-ended decision making. It is not a multi-agent system — it is one model applying different lenses to your idea.
+Without structure, AI planning tends to collapse into vague chat, bloated process, or hidden decisions. Mano is an **LLM Workflow Protocol** that breaks work into one shippable phase at a time, keeps planning artifacts explicit in the filesystem, and keeps AI focused on bounded planning tasks instead of open-ended decision making. 
+
+> **Important:** Mano is not a compiled CLI tool or a deterministic software framework. It is a set of personas and instructions that rely entirely on your AI agent's context window. You, the human, are the ultimate enforcer of these boundaries.
 
 ## Commands
 
@@ -19,7 +21,7 @@ Without structure, AI planning tends to collapse into vague chat, bloated proces
 
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
-When a user types a Mano command in chat, the agent should carry out that planning command directly. Mano commands are not implementation instructions, but they are still agent-executable instructions.
+When a user types a Mano command in their AI IDE's chat interface, the agent is instructed to carry out that planning command directly. Since this relies entirely on the agent's context window and instruction-following capabilities, you must actively steer the agent if it hallucinates state or breaks character.
 
 `mano [action]` handles everything — first run, discussion, and regeneration. Run it again on the same action to discuss changes or regenerate output.
 
@@ -41,7 +43,7 @@ The user owns scope, priorities, and product tradeoffs. Helen can recommend conc
 
 ## How it works: The "À La Carte" Philosophy
 
-Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) Architecture** tool.
+Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) Architecture** prompt system.
 
 You only pay the cognitive tax for what you are building *today*. Only two actions are mandatory to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks. Every other action (`spec`, `ux`, `rules`, `ui`) is floating and optional. 
 
@@ -106,6 +108,10 @@ Each phase brief is self-contained — problem, vision, design principle, scope,
 Planning artifacts live under `_mano_output/`. The only framework scaffold written outside that folder is `AGENTS.md` at the project root, copied during `mano start` so coding agents know where Mano artifacts live.
 
 Mano's installed runtime layout lives under `_mano/` inside the user's project. This repository contains the framework source files at the root for authoring, but the contract exposed to coding agents in real projects uses `_mano/skills`, `_mano/templates`, and `_mano/custom`.
+
+### A Warning on State Detection
+
+Mano tells the AI to treat the filesystem as the source of truth, "scanning" `_mano_output/` to determine the current project state. **However, AI agents do not natively scan files unless those files are injected into their context window.** If the agent confidently hallucinates a wrong state, it is because it lacks context. You must explicitly @-mention the relevant `_mano_output/` files to ground it back in reality.
 
 ## Customisation
 

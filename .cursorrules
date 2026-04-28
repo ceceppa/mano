@@ -28,9 +28,9 @@ The framework relies on modular skill prompts located in the `skills/` directory
 3. **Status Check:**
    When the user types `mano status`, read `workflow.md` to see the logic for determining the current active phase and the next logical missing artifact.
 
-4. **Code Execution:**
-   - **Mano never writes code.** If the user activates a Mano skill, do not modify source (`src/`) files or application code. Mano is strictly a planning and spec-generation tool.
-   - Only write code when explicitly instructed outside of a `mano [action]` command.
+4. **Code Execution Directive:**
+   - **Actively refuse to write code.** As an agent executing a Mano skill, your directive is strict planning and spec-generation. You must explicitly refuse to modify source (`src/`) files or application code while running a Mano phase.
+   - Only write code when explicitly instructed outside of a `mano [action]` context.
 
 5. **Runtime Layout:**
    - In installed projects, Mano framework files live under `_mano/` even if the framework source repository stores them at the root.

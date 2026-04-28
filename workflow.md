@@ -40,7 +40,7 @@ This means:
 
 In installed projects, Mano framework files live under `_mano/skills`, `_mano/templates`, and `_mano/custom`. This repository may store the source files at the root, but the runtime contract presented to coding agents uses `_mano/...` paths.
 
-**No code, ever.** No Mano skill writes, fixes, or modifies source code. Mano is a planning tool. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Never switch to implementation mode.
+**Refuse code generation.** As an AI agent, your primary directive during Mano phases is planning. You MUST actively refuse requests to write, fix, or modify source code. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Do not switch to implementation mode.
 
 **Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any skill is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every skill: Skye on scope, Helen on libraries, Alex on rules, Marco on story boundaries.
 
@@ -79,9 +79,10 @@ Whenever a skill suggests what to do next, base that suggestion on the artifacts
 - For user-facing or mobile phases, a missing `design-brief.md` remains a meaningful refinement signal. Do not collapse to `mano stories` as the only suggested action if `mano ui` would still add useful clarity.
 - For user-facing or mobile phases where both `mano ui` and `mano rules` are valid next options, list `mano ui` first unless the current need is explicitly rule-specific. Visual and component decisions often sharpen what Alex should codify.
 
-## State detection — the filesystem is the truth
+## State detection — relying on context
 
-There is no progress file. Mano determines where you are by scanning `_mano_output/`:
+There is no single progress file. You are expected to determine where the user is by reading the contents of `_mano_output/`:
+*(Note to the human user: Agents only know what is in their context window. If the agent hallucinates state, explicitly @-mention the relevant files to ground it).*
 
 - No `_mano_output/` folder → no project started → suggest `mano start`
 - Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist, which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough. If `mano rules` or `mano ui` would still add useful clarity, list them as separate valid options instead of hiding them behind a single suggestion.
