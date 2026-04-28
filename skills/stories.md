@@ -169,6 +169,8 @@ The section adapts to the story type. The common rule is simple: include only th
 
 Special case for `story-0` and other setup/tooling/dependency stories: the Implementation Reference must copy the exact package-manager choice, dependency names, and install commands from the tech spec when those decisions exist. Do not rely on the coding agent to reopen `tech-spec.md` just to discover which packages to install or whether provisional commands used `@latest`.
 
+Special case for onboarding, form, settings, and other stateful frontend stories: if the tech spec says draft or saved data uses durable local storage, the Implementation Reference must name what persists across app restart, what remains transient, and which module or store owns that persistence.
+
 ## Story quality rules
 
 - **Users must be specific.** "As a user" is forbidden.
@@ -198,6 +200,12 @@ Special case for `story-0` and other setup/tooling/dependency stories: the Imple
   A shared create/edit form for the same entity is not automatically an overloaded screen. If edit is the same screen shape with existing values pre-populated, Marco may keep the single UX screen and still split implementation into linked stories such as "add records" first and "edit existing records" second.
 - **Out of scope is mandatory.** Every story, even if brief.
 - **Cross-check the tech spec.** If a tech spec exists, ensure its decisions are reflected in acceptance criteria where relevant. If the spec says local storage or offline-first, at least one story must include a criterion like "data persists after closing and reopening the app." If the spec says biometric auth, a story must test it. Tech decisions that never appear in acceptance criteria are invisible to QA and will be skipped.
+
+  This is mandatory for user-entered draft state. If the tech spec says onboarding data, forms, preferences, or local entities use durable on-device storage, every story that creates or edits that data must say plainly whether it persists across app restarts. Do not bury this only in the Implementation Reference.
+
+  For any frontend story that collects or edits persistent user input, include both:
+  - a behaviour AC that says the saved or draft data is still present after closing and reopening the app when the tech spec says it should persist
+  - a `Test:` AC that checks the restart-persistence case explicitly
 - **Tests belong in the story, not in a separate story.** If `project-rules.md` mentions testing requirements, each story MUST include at least one test-specific AC. Do not create standalone "write tests" stories.
 
   **How to write test AC — use this exact pattern:**
