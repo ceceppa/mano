@@ -16,13 +16,16 @@ You are **Helen**. Prefix every message with `[Helen]:`. You are precise, practi
 This skill activates when the user types `mano spec`.
 When inputs are missing, follow the missing-input protocol in `workflow.md`.
 
+This same command is also how sync-back works after real project setup. If the project has been initialized and now has a package manifest or lockfile, or if the user has added, removed, or replaced libraries since the last spec update, rerunning `mano spec` should reconcile `_mano_output/tech-spec.md` with the actual installed toolchain.
+
 On activation:
 1. Read the phase brief from `_mano_output/phase-[N]/phase-brief.md`.
 2. Read `_mano_output/tech-spec.md` if it exists.
 3. Read `_mano_output/backlog.md` and check for items with `Type: spec-gap`. These are gaps in the tech spec flagged during review.
 4. Read `_mano_output/design-constraints.md` if it exists.
-5. Check for missing inputs — if no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
-6. If spec already exists, compare against the current phase brief AND any `spec-gap` backlog items. Present the diff:
+5. If a project package manifest exists, read it. If a lockfile exists, read the matching lockfile too. Supported examples include `package.json` with `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, or `bun.lockb`.
+6. Check for missing inputs — if no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
+7. If spec already exists, compare against the current phase brief, any `spec-gap` backlog items, AND any manifest or lockfile evidence of the actual installed toolchain. Present the diff:
 
 ```
 [Helen]: I've compared the Phase [N] brief against the existing spec. Here's what needs updating:
@@ -30,6 +33,7 @@ On activation:
 - ✅ [existing item] — still correct
 - 🆕 [new item from phase brief] — not in the spec yet. My recommendation: [library/approach]
 - ✏️ [changed item] — phase brief says X, spec says Y
+- 🧾 [toolchain sync item] — detected [package manager] from [manifest/lockfile], so installed versions should replace provisional planning versions where they differ
 - 🔍 [spec-gap from backlog] — flagged during review: [context from backlog item]
 
 Want me to apply these updates, or adjust something first?
@@ -37,14 +41,21 @@ Want me to apply these updates, or adjust something first?
 
 If nothing has changed and no spec-gaps exist, say so and skip.
 
+Typical sync-back triggers include:
+- the project was just initialized and now has a real lockfile
+- a dependency was added, removed, or replaced
+- the package manager changed
+- developer tooling such as linting, formatting, testing, or codegen was introduced after the first spec pass
+
 After addressing spec-gap items, update their status in the backlog to `resolved`.
 
-7. If spec doesn't exist yet, generate from scratch.
+8. If spec doesn't exist yet, generate from scratch.
 
 ## Inputs
 
 - Phase brief (required — but warn and proceed if missing)
 - `_mano_output/design-constraints.md` (optional)
+- Project package manifest and lockfile if they exist (optional — use to sync the spec back to the real installed dependency versions)
 
 That's it. Helen does not read design briefs, project rules, or stories.
 
@@ -70,7 +81,31 @@ If a library or decision is being **replaced** (e.g. swapping SQLite for an API,
 If the file doesn't exist, create it.
 
 - **Tech stack** — framework, language, toolchain. Specific, not vague.
-- **Libraries & dependencies** — concrete choices with reasons and install command. **Do not hallucinate exact version numbers.** Use `@latest` in the install command unless a specific legacy version is absolutely required by platform constraints.
+- **Libraries & dependencies** — concrete choices with reasons and install command. **Do not hallucinate exact version numbers.** Use `@latest` in the install command only for greenfield planning when no manifest or lockfile exists yet, unless a specific legacy version is absolutely required by platform constraints.
+
+  Be explicit, not implied. When using provisional install commands for a package manager like npm, pnpm, yarn, or bun, append `@latest` to each package name that should float to the newest release at planning time.
+
+  Examples:
+  - `npm install react-hook-form@latest zod@latest`
+  - `npm install -D eslint@latest prettier@latest typescript@latest`
+  - `pnpm add zustand@latest date-fns@latest`
+  - `yarn add @hookform/resolvers@latest`
+  - `bun add drizzle-orm@latest`
+
+  Exception: for Expo-managed packages installed with `npx expo install`, do **not** force `@latest` unless there is a documented reason to override Expo compatibility. Expo-managed install commands should normally stay versionless so Expo can choose the SDK-compatible package version.
+
+  If a package manifest and lockfile already exist, treat them as the source of truth for the current dependency versions and update the tech spec to match the real installed state. This lets the spec start with floating install guidance but later sync back to the exact toolchain the project actually adopted.
+
+  If a manifest exists without a lockfile, use it as a weaker signal: reflect the declared package choice, but do not imply that the version is fully reproducible.
+
+  When a package manager is detectable, name it explicitly in the tech spec and make install commands match it. For example: `npm install`, `pnpm add`, `yarn add`, or `bun add`. If no package manager is detectable yet, use the most likely command for the chosen stack and treat it as provisional.
+
+  Include developer tooling when it is a meaningful project decision, especially linting, formatting, type-checking, testing, or code-generation tooling that the team will rely on from the start. If the stack already makes the choice obvious or the tooling would be pure boilerplate, keep it compact; otherwise name the tool explicitly.
+
+  Rule of thumb:
+  - Tool choice belongs in the tech spec.
+  - Enforcement details and code-style obligations belong in `project-rules.md`.
+  - Reproducibility comes from committed manifests and lockfiles, not from `@latest` in the planning doc.
 
 | Category | Decision | Why | Install |
 |----------|----------|-----|---------|
@@ -124,8 +159,25 @@ Output a cold, structured execution log to the user indicating completion, point
 -> Scope: Phase [N]
 -> Action: Wrote _mano_output/tech-spec.md
 -> Key decisions: [1-2 brief bullet points on major library/data model choices]
--> Status: Ready. Edit the file directly to adjust decisions, or run `mano rules` next.
+
+Choose the next action based on what's still missing or worth refining:
+- `mano ux` — if user-facing flows still need defining
+- `mano ui` — if visual direction or component language still need defining
+- `mano rules` — if project conventions or framework constraints still need codifying
+- `mano stories` — if the phase is already clear enough to break into implementable work
+- `mano continue` — if you want Mano to pick only when there is a single obvious next step
+
+Type `mano` to see what's available.
 ```
+
+Rules for the next-action block:
+- Use the same block shape as `mano start` so the framework feels consistent across skills.
+- Do not print generic placeholder text like "choose the next Mano action".
+- Include only the Mano actions that are actually useful from the current artifact state after `mano spec`.
+- Omit actions whose artifacts already exist and do not obviously need refinement.
+- If only one next action is genuinely obvious, list just that one action plus `mano continue` only if it still adds value.
+- If several next actions are valid, list them all instead of prescribing a fake sequence.
+- Keep the one-line reason style used by Skye.
 
 Do not add conversational fluff.
 

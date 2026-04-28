@@ -15,7 +15,7 @@ This skill activates when the user types `mano start`.
 
 On activation:
 1. Create `_mano_output/` folder if it doesn't exist.
-2. If `_mano_output/project-rules.md` doesn't exist, copy it from `_mano/templates/project-rules.md`. This seeds the workflow section (story completion, finding stories, story mode, phase priorities) so the coding agent has it from day one — regardless of whether Alex runs.
+2. If `_mano_output/project-rules.md` doesn't exist, copy it from `_mano/templates/project-rules.md`. This seeds the workflow section (story completion, finding stories, phase priorities) so the coding agent has it from day one — regardless of whether Alex runs.
 3. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This is the one allowed root-level scaffold write. It tells coding agents where to find stories, rules, and specs — and what not to touch.
 4. Scan `_mano_output/` to determine state — check for existing phase folders and briefs.
 5. If returning for a new phase, read the previous phase brief from `_mano_output/phase-[N-1]/phase-brief.md` as a starting point.
@@ -73,6 +73,15 @@ Ask focused questions where the answer changes what gets built. Skip if input is
 
 **Specificity rule:** If the user uses vague terms ("simple UI," "basic CRUD," "standard auth"), push back: "What does 'basic' mean to you? What fields does a todo have? What does done look like?"
 
+**Branching-flow rule:** If the user describes a flow with branching choices, conditional follow-up questions, multiple selectable options, or sport / mode / plan variants, Skye must ask for the concrete branches that change scope. Do not accept "for example" lists as complete requirements when the real set of options affects onboarding, validation, or downstream screens.
+
+**Exhaustiveness rule:** When the user gives a short list that might be illustrative rather than complete, ask whether the list is exhaustive. If later choices depend on earlier answers, ask for those dependencies explicitly before drafting the brief.
+
+**Scope-layer rule:** Ask branch questions at the earliest stage where the answer changes planning.
+- Before backlog population: ask only for branch details that change what work exists, reveal hidden scope, or split one feature into meaningfully different backlog items.
+- After phase items are selected: ask for branch details that change what ships in this phase.
+- Do not pull in deep per-branch behavior early if it only affects later specs, UX details, or implementation. Capture the existence of the branch now; defer the fine detail until the selected phase needs it.
+
 #### Step 4 — Design principle
 
 One tradeoff question. One sentence output. Decision filter for every scope tradeoff.
@@ -92,6 +101,9 @@ Read the entire document. Before decomposing anything, check for:
 - **Ambiguities** — terms that sound specific but aren't defined ("basic metadata," "simple UI," "standard CRUD"). Ask what these mean concretely.
 - **Gaps** — things the document assumes but doesn't state. If it says "REST API" but doesn't mention authentication, error format, or versioning — ask which matter for v1.
 - **Contradictions** — if the document says "simple" but lists 8 success criteria, flag it.
+- **Hidden branches** — flows that sound linear but contain choice-dependent steps, variant-specific inputs, or example lists that are not obviously complete. Ask for the full branch logic when it changes scope.
+
+Apply the same scope-layer rule here: resolve enough branching detail to shape the backlog correctly, then defer phase-specific branch detail until the relevant items are selected for a phase.
 
 Present your findings:
 
@@ -273,21 +285,18 @@ Items that enter a phase get their status updated to `in-phase-[N]` in the backl
 1. Create `_mano_output/phase-[N]/` subfolder.
 2. Write final `phase-brief.md`.
 3. **Write ALL deferred items to `_mano_output/backlog.md`.** Everything mentioned as "later", "Phase 2", "deferred", or "not in this phase" during scoping MUST be written to the backlog. If you said it's not in this phase, it goes in the backlog. No exceptions. Do not mention deferrals only in conversation — they must exist as backlog items.
-4. Suggest next actions. If this is Phase 1 (new project), recommend `mano spec` then `mano rules`:
+4. Suggest next actions based on which useful artifacts are still missing for the current phase. Do not recommend a fixed order when multiple options are valid:
 
 ```
 Phase [N] brief is locked. What's next?
 
-Recommended order for new projects:
-1. `mano spec` — Tech spec (Helen)
-2. `mano ux` — UX flow (Rob) — for user-facing phases
-3. `mano rules` — Project rules (Alex) — needs tech spec first
-4. `mano ui` — Design brief and component guide (Luna) — for user-facing phases
-5. `mano stories` — Break the phase into implementable work (Marco)
-
-Or skip ahead:
-- `mano stories` — Go straight to stories (Marco)
-- `mano continue` — Run the suggested next step automatically
+Choose the next action based on what's still missing or worth refining:
+- `mano spec` — if technical decisions are still fuzzy
+- `mano ux` — if user-facing flows still need defining
+- `mano ui` — if visual direction or component language still need defining
+- `mano rules` — if project conventions or framework constraints still need codifying
+- `mano stories` — if the phase is already clear enough to break into implementable work
+- `mano continue` — if you want Mano to pick only when there is a single obvious next step
 
 Type `mano` to see what's available.
 ```

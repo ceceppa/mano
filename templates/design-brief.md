@@ -40,6 +40,20 @@
 
 ## Icon Style
 
+## Screen Composition
+
+<!-- For any sample screen mockup shown in design-preview.html, describe the screen structure here. -->
+
+### [Screen Name]
+
+- **Purpose:**
+- **Sections (top to bottom):**
+- **Shared components used:**
+- **Layout / hierarchy notes:**
+
+<!-- This screen-level list is the inventory of shared UI used by the design.
+If a component later needs a hard implementation contract such as required props, accessibility semantics, mandatory reuse, or ownership rules, Alex may codify that separately in project-rules.md. -->
+
 ---
 
 # Component Guide

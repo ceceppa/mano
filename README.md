@@ -1,8 +1,10 @@
 # Mano
 
-Mano is an AI-assisted phase planning system for developers who want structured planning without giving the model control of implementation or product decisions.
+AI-assisted phase planning that keeps the human in control.
 
-It helps break work into one shippable phase at a time, keeps planning artifacts explicit in the filesystem, and keeps AI focused on bounded planning tasks instead of open-ended decision making. It is not a multi-agent system — it is one model applying different lenses to your idea.
+Mano is for developers who want AI to help plan work without handing the model control of implementation or product decisions.
+
+Without structure, AI planning tends to collapse into vague chat, bloated process, or hidden decisions. Mano breaks work into one shippable phase at a time, keeps planning artifacts explicit in the filesystem, and keeps AI focused on bounded planning tasks instead of open-ended decision making. It is not a multi-agent system — it is one model applying different lenses to your idea.
 
 ## Commands
 
@@ -12,7 +14,7 @@ It helps break work into one shippable phase at a time, keeps planning artifacts
 | `mano status` | Scans output folder. Where am I? What's next? |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (Skye) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
-| `mano continue` | Auto-run only when there is a single obvious next planning step; otherwise stop and explain the options. |
+| `mano continue` | Auto-run only when there is a single obvious next planning step. If several planning actions are still reasonable, it stops and shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
 
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
@@ -55,7 +57,7 @@ Only run the optional tools if the phase you are actively working on requires th
 7. Build. Ship. Gather feedback.
 8. `mano review` → Dave triages feedback into the backlog, writes the review log, closes the phase.
 
-This is an example path, not a mandatory conveyor belt.
+This is an example path, not a mandatory conveyor belt. After any step, choose the next action from the artifacts that are still missing or need revision.
 
 ### Minimal phase
 1. `mano start` → Skye scopes.
@@ -73,6 +75,8 @@ Requirements change during implementation. You don't have to finish the phase to
 - **Found a bug or missing feature?** Use `mano stories` — Marco will create a new story (numbered 3a, 3b, etc.) and ask whether to implement it now or queue it for later.
 - **Need to change scope?** Use `mano start` to talk to Skye — update assumptions, adjust scope, flag stories that turned out wrong.
 - **Need to regenerate specs or stories?** Run `mano [action]` again — the skill will check what exists and offer to update or regenerate.
+
+For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real `package.json` and lockfile, or anytime you add/remove/replace a library, run `mano spec` again so Helen can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain.
 
 The pipeline doesn't require you to finish before course-correcting.
 
@@ -124,7 +128,11 @@ Use this file to enforce strict visual or UX rules that shouldn't be altered by 
 
 ### 3. Story Template Override (`_mano/custom/story.md`)
 Use this when you want Marco to keep the same planning behavior but emit stories in a different shape.
-- Copy `_mano/custom/story.example.md` to `_mano/custom/story.md` and edit it.
+- Copy one of the shipped examples to `_mano/custom/story.md` and edit it.
+- Available examples:
+	- `_mano/custom/story.example.md` — default human-friendly format
+	- `_mano/custom/story.example.corporate.md` — classic `As a / I want / So that` format
+	- `_mano/custom/story.example.given-when-then.md` — scenario-led `Given / When / Then / And` format
 - Choose this when you want a different story document structure, not when you want to change Marco's decision-making.
 
 ### 4. Skill Overrides (`_mano/custom/[skill].md`)

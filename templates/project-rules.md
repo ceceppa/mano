@@ -6,40 +6,45 @@ The team agrees to follow these architectural decisions, styling standards, and 
 
 ## Components
 
-<!-- Define shared components here. Example:
+<!-- Define shared components here only when the current project genuinely needs them.
 
-### Button
+Possible uses:
+- Repeated interactive elements that should stay visually and behaviorally consistent
+- Reusable form controls with project-specific accessibility or validation requirements
+- Cross-screen UI building blocks that would otherwise drift
+- Contracts from the design brief that now need explicit implementation rules
 
-Create a shared `Button` component.
+Do not duplicate the design brief's shared-component inventory here. If `design-brief.md` already names a component and this section has no extra implementation rule to add, leave it in the design brief only.
 
-**Variants:** primary, secondary, destructive, ghost.
-
-**Rules:**
-- All buttons must use this component — no raw Pressable or TouchableOpacity.
-- Minimum touch target: 44×44pt.
+For each shared component, describe:
+- what it is
+- when it must be used
+- any required variants, props, accessibility semantics, or constraints that the coding agent must follow
 -->
 
 ---
 
 ## Patterns
 
-<!-- Define coding patterns here. Example:
+<!-- Define coding patterns here only when they are useful for this project now.
 
-### Theme object
-All design tokens must be defined in a single theme file. No hardcoded values.
-
-### One responsibility per component
-If a component handles data fetching, state, and rendering, split it.
+Possible uses:
+- State and data-fetching boundaries
+- Token or theme management if the project needs centralized design values
+- Error-handling or form-handling conventions
+- Extraction thresholds for when UI should become shared
 -->
 
 ---
 
 ## Architecture
 
-<!-- Define architectural rules here. Example:
+<!-- Define architectural rules here when the stack or project shape requires them.
 
-### No inlined native code
-Keep native files as actual files, not template strings in JS/TS.
+Possible uses:
+- Routing or entrypoint boundaries imposed by the framework
+- Native/web/client-server separation rules
+- File placement rules for services, modules, or screen containers
 -->
 
 ---
@@ -60,12 +65,6 @@ Accessibility level: WCAG 2.1 AA
 
 ## Workflow
 
-### Story mode
-
-<!-- Uncomment one to stop Marco asking every time: -->
-<!-- story_mode: behaviour -->
-<!-- story_mode: enriched -->
-
 ### Phase priorities
 
 <!-- Uncomment and customise to ensure every phase includes certain types of work. -->
@@ -80,6 +79,8 @@ When you finish implementing a story, update its status to `done` in `_mano_outp
 ### Finding stories
 
 When asked to implement a story (e.g. "implement story 3"), find the active phase by looking for the highest numbered `phase-[N]/` folder in `_mano_output/`. Read the story from `_mano_output/phase-[N]/stories/`. Always check the stories README index first to confirm the story exists and its current status.
+
+Before implementing the requested story, check whether any earlier story in the index is still `pending`. Treat numbered stories and lettered insertions as ordered work unless the README or story notes explicitly say otherwise. If an earlier story is still pending, stop and tell the user which story would be skipped. Do not implement the later story unless the user explicitly confirms they want to bypass the suggested order.
 
 **Before implementing any story, read this entire `project-rules.md` file.** Every rule applies to every story — even if the story's Implementation Reference doesn't mention a specific rule. The Implementation Reference highlights the most relevant rules, but it is not exhaustive.
 

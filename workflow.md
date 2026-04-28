@@ -67,19 +67,35 @@ When a skill is missing context, classify the gap before responding:
 
 If more than one next step is reasonable, do not fake certainty. Present the options instead of inventing a hidden sequence.
 
+## Next-step suggestion rule
+
+Whenever a skill suggests what to do next, base that suggestion on the artifacts that are actually missing or stale in `_mano_output/`, not on a canonical pipeline order.
+
+- Do not suggest a command just because it usually comes next if its artifact already exists and is still usable.
+- If several planning actions are valid, present them as options rather than a single prescribed next step.
+- Prefer the shortest path that adds useful clarity for the current phase.
+- If the phase is already clear enough for `mano stories`, say so plainly instead of pushing optional artifacts first.
+- A seeded `project-rules.md` that still contains only template comments and workflow defaults does **not** count as substantive project rules for suggestion purposes.
+- For user-facing or mobile phases, a missing `design-brief.md` remains a meaningful refinement signal. Do not collapse to `mano stories` as the only suggested action if `mano ui` would still add useful clarity.
+- For user-facing or mobile phases where both `mano ui` and `mano rules` are valid next options, list `mano ui` first unless the current need is explicitly rule-specific. Visual and component decisions often sharpen what Alex should codify.
+
 ## State detection — the filesystem is the truth
 
 There is no progress file. Mano determines where you are by scanning `_mano_output/`:
 
 - No `_mano_output/` folder → no project started → suggest `mano start`
-- Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist and suggest `mano stories` as the shortest path, while listing `mano spec`, `mano ux`, `mano rules`, and `mano ui` as optional planning actions when useful.
+- Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist, which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough. If `mano rules` or `mano ui` would still add useful clarity, list them as separate valid options instead of hiding them behind a single suggestion.
 - `stories/` folder exists, stories are `pending` → build mode. No Mano planning command is required until the user wants to adjust scope or add planning context.
 - `stories/` folder exists, all stories are `done`, and the latest phase has no review entry → phase is built, suggest `mano review`
 - `reviews.md` has an entry for the latest phase → phase is reviewed, suggest `mano start` for next phase
 
 To detect story status: read `_mano_output/phase-[N]/stories/README.md` and check the Status column. If all stories are `done`, the phase is built and ready for review.
 
-Marco creates `_mano_output/phase-[N]/stories/README.md` the first time stories are generated. If the stories folder exists without that index, treat the phase artifacts as incomplete and fix the index before relying on state detection.
+Marco creates `_mano_output/phase-[N]/stories/README.md` the first time stories are generated. If the stories folder exists without that index, treat the phase artifacts as incomplete and fix the index before relying on state detection. This missing index is a local artifact-repair issue, not proof that `mano stories` is the only reasonable next planning action.
+
+To detect whether `project-rules.md` is substantive or still just the seeded default template:
+- If it contains only the stock template comments plus the workflow section, treat it as `present but still default` rather than as a fully useful planning artifact.
+- Only treat `project-rules.md` as substantive when Alex or Luna has added actual project-specific rules, accessibility content, or other non-template guidance.
 
 To detect the active phase: find the highest numbered `phase-[N]/` folder in `_mano_output/`.
 
@@ -101,7 +117,7 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
 | **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, tech spec, backlog, design constraints | Tech spec |
 | **Rob** | `mano ux` | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules, design constraints | UX flow |
-| **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Run after `mano spec` when possible. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
+| **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
 | **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog, design constraints | Design brief, design preview |
 | **Marco** | `mano stories` | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
 | **Dave** | `mano review` | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
@@ -110,8 +126,12 @@ Show a brief description of the skill — what it does, when to use it, what it 
 
 When the user types `mano status`:
 1. Scan `_mano_output/`. If it doesn't exist, tell the user no project is in progress and suggest `mano start`.
-2. Report: active phase, what files exist, what's missing, and the suggested next action.
-3. Do not activate any skill.
+2. Report: active phase, what files exist, what is missing, and what is present-but-incomplete.
+3. If multiple planning actions are still reasonable, show them as `Next options` instead of forcing a single `Suggested next action`.
+4. Only show one `Suggested next action` when the next move is genuinely narrower than the other valid options.
+5. When relevant, call out seeded defaults explicitly. Example: `project-rules.md exists but still appears to be the default template, so mano rules is still a valid next action.`
+6. For user-facing or mobile phases, missing `design-brief.md` and `design-preview.html` should keep `mano ui` visible as a valid next option unless the current phase is already obviously ready for stories without further design clarification.
+7. Do not activate any skill.
 
 ## Continue
 
@@ -120,6 +140,29 @@ When the user types `mano continue`:
 2. If there is a single obvious next Mano action, execute it immediately.
 3. If there are multiple reasonable planning actions, stop and explain the options instead of choosing one.
 4. If the project is in build mode, say so plainly instead of forcing a planning command.
+
+Build-mode fallback output:
+
+```
+Build mode: Phase [N]
+
+- Active phase: phase-[N]
+- Status: Stories are still pending, so no planning action was auto-run.
+- Use `mano stories` only if you need to add or adjust planned work.
+- Use `mano start` only if the phase scope itself has changed.
+- Use `mano review` after all stories in the phase are done.
+```
+
+Formatting rule for `mano continue` and `mano status`:
+- Never expose drafting notes, placeholder text, formatting reminders, link-fix notes, or internal reasoning.
+- If a draft starts to spill internal text, discard it and output only the clean final response.
+
+Rules for what counts as a `single obvious next` action:
+- `mano continue` is narrower than `suggested next action`. A shortest path is not automatically a single obvious next step.
+- In planning stage, do **not** auto-run `mano stories` if other missing artifacts like `mano rules` or `mano ui` would still be reasonable refinements for the current phase. In that case, present the options instead.
+- Only auto-run `mano stories` when the phase brief is already clear enough and stories are the only materially useful planning artifact still missing.
+- If a local artifact needs repair (for example a `stories/` folder exists without its README index), do not treat that repair need by itself as proof that one planning action is unambiguous. Check whether other planning actions are still reasonably available first.
+- When in doubt between "shortest path" and "multiple valid options", stop and explain the options.
 
 ## Do
 
@@ -146,6 +189,7 @@ When the user types `mano [action]`:
 - Execute the specific action logic defined in the `skills/` file.
 - Default to **One-Shot** generation for write flows unless the skill file explicitly defines a multi-turn conversation.
 - `mano review` is not one-shot during feedback capture and triage; follow Dave's multi-turn contract exactly.
+- `mano ui` must begin with one brief preference-capture step on first-run design generation when visual preferences are not already defined; after that reply, Luna generates files in one shot.
 - Output a single execution log snippet to the user, not conversational dialogue.
 
 Valid actions: `spec` (Helen — `tech-spec.md`), `ux` (Rob — `ux-flow.md`), `rules` (Alex — `project-rules.md`), `ui` (Luna — `design-brief.md` + `design-preview.html`), `stories` (Marco — `phase-[N]/stories/`), `review` (Dave — `reviews.md`).

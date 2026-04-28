@@ -1,15 +1,18 @@
 <!-- Copy this file to `_mano/custom/story.md` to override Marco's default story format in an installed project. -->
-<!-- This mirrors Mano's default human-friendly story shape. Use it as-is or as the starting point for your own variant. -->
+<!-- Use this when you want scenario-led story framing without changing Marco's planning behavior. -->
 
 # [STORY-N]: [Short title]
 
-## What and why
+## Scenario
 
-[2-3 sentences. Name the specific persona, what they should be able to do after this story is implemented, and why it matters. Written as a plain description, not a user story formula.]
+Given [starting context and specific persona]
+When [the person takes the relevant action]
+Then [the core outcome happens]
+And [secondary expectation, constraint, or follow-on result]
 
 ## Done when
 
-- [ ] [Plain English behaviour — what a person testing this would check]
+- [ ] [Observable behaviour, testable by a non-developer]
 - [ ] [Another observable outcome]
 
 ## Not this story
@@ -32,4 +35,3 @@
 
 ---
 <!-- ⚠️ When this story is implemented, update its status to `done` in the stories README.md index. -->
- 

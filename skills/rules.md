@@ -51,6 +51,12 @@ Based on the backlog, tech spec, phase brief scope, and project shape, generate 
 
 If `project-rules.md` already exists, **merge and extend** the rules. Keep existing rules unless they explicitly conflict with the new phase. Preserve any existing `Accessibility level:` line. **Do not modify the Workflow section**.
 
+If a chosen library or framework imposes a non-obvious structural constraint that will repeatedly affect implementation, turn that quirk into a project rule. Good candidates are file-based routing constraints, client/server boundaries, platform-specific entrypoints, or framework-required wrapper files. Do not document trivia or one-off caveats that developers can handle locally.
+
+Treat `_mano_output/design-brief.md` as the source of truth for visual inventory and named shared UI from Luna. Alex should only promote something from the design brief into `project-rules.md` when it needs an implementation contract that Luna's brief does not already provide, such as required props, behavioural states, accessibility semantics, ownership boundaries, extraction thresholds, or "must use this shared component here" enforcement.
+
+Do not restate a component in `project-rules.md` just because it appears in the design brief. If the design brief already names a shared component and Alex has nothing more to add than its existence or rough purpose, leave it in the design brief only.
+
 For each rule category added or updated, write:
 - **What:** the rule
 - **Why:** one sentence — why this project needs it now
@@ -64,6 +70,13 @@ Categories to consider (skip what doesn't apply):
 - **Patterns** — state management, data fetching, error handling, theme usage
 - **Testing** — co-located vs separate folder, unit vs integration, TDD enforcement.
 - **Architecture** — data access, API structure, native code organisation
+- **Library-imposed constraints** — framework quirks that materially affect file structure, boundaries, or implementation shape
+
+For the **Components** category specifically:
+- Use the design brief to see which shared components Luna has already identified.
+- Add a component rule only when developers need a reusable contract, not just a list entry.
+- Good reasons to add a component rule: required accessibility behaviour, exact API props or states, mandatory reuse across screens, token/theme restrictions, or file ownership and extraction boundaries.
+- Weak reasons: repeating that a `StepIndicator` exists, repeating its visual role, or restating screen-specific composition already captured in the design brief.
 
 Make specific decisions (e.g., choose a data fetching pattern based on the tech spec) instead of asking the user.
 
@@ -88,8 +101,22 @@ Output a cold, structured execution log to the user indicating completion, point
 [ALEX] Executed `mano rules`
 -> Action: Wrote _mano_output/project-rules.md
 -> Categories updated: [Components, Patterns, etc.]
--> Status: Ready. Edit the file directly to adjust rules.
+
+Choose the next action based on what's still missing or worth refining:
+- `mano ui` — if visual direction or component language still need defining
+- `mano stories` — if the phase is already clear enough to break into implementable work
+- `mano continue` — if you want Mano to pick only when there is a single obvious next step
+
+Type `mano` to see what's available.
 ```
+
+Rules for the next-action block:
+- Use the same block shape as `mano start` so the framework feels consistent across skills.
+- Include only the Mano actions that are actually useful from the current artifact state after `mano rules`.
+- Omit actions whose artifacts already exist and do not obviously need refinement.
+- If only one next action is genuinely obvious, list just that one action plus `mano continue` only if it still adds value.
+- If several next actions are valid, list them all instead of prescribing a fake sequence.
+- Keep the one-line reason style used by Skye.
 
 Do not add conversational fluff. Do not ask for confirmation.
 
