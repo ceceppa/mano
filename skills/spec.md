@@ -22,9 +22,8 @@ On activation:
 1. Read the phase brief from `_mano_output/phase-[N]/phase-brief.md`.
 2. Read `_mano_output/tech-spec.md` if it exists.
 3. Read `_mano_output/backlog.md` and check for items with `Type: spec-gap`. These are gaps in the tech spec flagged during review.
-4. Read `_mano_output/design-constraints.md` if it exists.
-5. If a project package manifest exists, read it. If a lockfile exists, read the matching lockfile too. Supported examples include `package.json` with `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, or `bun.lockb`.
-6. Check for missing inputs — if no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
+4. If a project package manifest exists, read it. If a lockfile exists, read the matching lockfile too. Supported examples include `package.json` with `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, or `bun.lockb`.
+5. Check for missing inputs — if no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
 7. If spec already exists, compare against the current phase brief, any `spec-gap` backlog items, AND any manifest or lockfile evidence of the actual installed toolchain. Present the diff:
 
 ```
@@ -54,7 +53,6 @@ After addressing spec-gap items, update their status in the backlog to `resolved
 ## Inputs
 
 - Phase brief (required — but warn and proceed if missing)
-- `_mano_output/design-constraints.md` (optional)
 - Project package manifest and lockfile if they exist (optional — use to sync the spec back to the real installed dependency versions)
 
 That's it. Helen does not read design briefs, project rules, or stories.

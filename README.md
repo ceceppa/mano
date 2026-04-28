@@ -127,12 +127,7 @@ This is the core configuration file that manages your architectural patterns, ro
 > - **`tech-spec.md` is the WHAT (The Blueprint):** It defines libraries, database schemas, and API contracts (e.g., "We will use PostgreSQL, and the `/users` endpoint returns JSON").
 > - **`project-rules.md` is the HOW (The Building Codes):** It defines architectural patterns, folder structures, and styling guidelines (e.g., "All API handlers must be wrapped in `catchAsync`, and we separate UI logic from data fetching").
 
-### 2. Design Constraints (`_mano_output/design-constraints.md`)
-Use this file to enforce strict visual or UX rules that shouldn't be altered by the AI (e.g., "Always use Tailwind utility classes", "Never use modals for forms"). 
-- Both `mano ui` and `mano stories` will strictly respect this file. 
-- A starter template is available: `_mano/templates/design-constraints.md`.
-
-### 3. Story Template Override (`_mano/custom/story.md`)
+### 2. Story Template Override (`_mano/custom/story.md`)
 Use this when you want Marco to keep the same planning behavior but emit stories in a different shape.
 - Copy one of the shipped examples to `_mano/custom/story.md` and edit it.
 - Available examples:
@@ -141,11 +136,11 @@ Use this when you want Marco to keep the same planning behavior but emit stories
 	- `_mano/custom/story.example.given-when-then.md` — scenario-led `Given / When / Then / And` format
 - Choose this when you want a different story document structure, not when you want to change Marco's decision-making.
 
-### 4. Skill Overrides (`_mano/custom/[skill].md`)
+### 3. Skill Overrides (`_mano/custom/[skill].md`)
 If you want to fundamentally change how a skill plans or generates output, you can completely override their default instructions. 
 - Create a Markdown file matching the skill's name (e.g., `_mano/custom/ui.md`) containing your custom prompt.
 
-### 5. Bring Your Own Artifacts
+### 4. Bring Your Own Artifacts
 Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a skill by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:
 - `design-brief.md`
 - `tech-spec.md`

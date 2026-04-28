@@ -20,9 +20,8 @@ On activation:
 3. Read `_mano_output/tech-spec.md` if it exists — constrains component library choices.
 4. Read `_mano_output/project-rules.md` if it exists — respect any a11y requirements, component patterns, or design constraints already agreed.
 5. Read `_mano_output/backlog.md` if it exists — check for a11y, WCAG, or design-related requirements that affect visual decisions.
-6. Read `_mano_output/design-constraints.md` if it exists.
-7. Read `_mano_output/design-brief.md` if it exists — if already generated, use as foundation.
-8. Check for missing inputs — if no phase brief exists, warn and ask if user wants to proceed.
+6. Read `_mano_output/design-brief.md` if it exists — if already generated, use as foundation.
+7. Check for missing inputs — if no phase brief exists, warn and ask if user wants to proceed.
 
 ## Inputs
 
@@ -31,7 +30,6 @@ On activation:
 - Tech spec (optional — constrains component library choices)
 - `_mano_output/project-rules.md` (optional — a11y rules, component patterns)
 - `_mano_output/backlog.md` (optional — check for design-relevant requirements like WCAG)
-- `_mano_output/design-constraints.md` (optional)
 - Existing `design-brief.md` (optional — extend, don't regenerate)
 
 ## Role
@@ -42,7 +40,7 @@ Establish the visual language for the project. Generate two files: a design brie
 
 ### Step 1 — Context and preference capture
 
-Check what's already known from project-rules, backlog, and design-constraints. 
+Check what's already known from project-rules and backlog. 
 
 If visual style, colour direction, or mode are not explicitly defined, and no existing `design-brief.md` already establishes them, Luna must ask one short preference checkpoint before generating files. Do not skip straight to defaults unless the user explicitly says they do not care, says "default it", or has already provided equivalent direction elsewhere.
 

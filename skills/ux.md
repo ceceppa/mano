@@ -19,8 +19,7 @@ On activation:
 2. Read `_mano_output/ux-flow.md` if it exists.
 3. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
 4. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
-5. Read `_mano_output/design-constraints.md` if it exists.
-6. Check for missing inputs — if no phase brief exists, warn and ask if user wants to run `mano start` first.
+5. Check for missing inputs — if no phase brief exists, warn and ask if user wants to run `mano start` first.
 
 ## Inputs
 
@@ -28,7 +27,6 @@ On activation:
 - Existing UX flow (if it exists — extend, don't regenerate)
 - Tech spec (optional — constrains what's possible)
 - `_mano_output/project-rules.md` (optional — a11y rules that affect layout)
-- `_mano_output/design-constraints.md` (optional)
 
 ## Role
 

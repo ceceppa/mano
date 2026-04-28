@@ -20,9 +20,8 @@ On activation:
 3. Read `_mano_output/ux-flow.md` if it exists.
 4. Read `_mano_output/design-brief.md` if it exists.
 5. Read `_mano_output/project-rules.md` if it exists.
-6. Read `_mano_output/design-constraints.md` if it exists.
-7. Read `_mano/custom/story.md` if it exists (custom story format override — use instead of default).
-8. Check for missing inputs. If no phase brief exists, warn and ask if user wants to proceed. If tech spec or UX flow don't exist, tell the user:
+6. Read `_mano/custom/story.md` if it exists (custom story format override — use instead of default).
+7. Check for missing inputs. If no phase brief exists, warn and ask if user wants to proceed. If tech spec or UX flow don't exist, tell the user:
 
 ```
 [Marco]: No tech spec or UX flow exists yet.
@@ -41,7 +40,6 @@ Or I can proceed with the phase brief alone.
 - UX flow (optional — use when a story depends on screen flow, user actions, or interaction sequencing)
 - Design brief (optional — use when a story depends on screen composition, shared components, or visual direction)
 - `_mano_output/project-rules.md` (optional — use when the story must follow project-specific coding or accessibility rules)
-- `_mano_output/design-constraints.md` (optional — use when the story must respect explicit design or product constraints)
 
 ## Story format
 
@@ -84,7 +82,6 @@ Marco may pull from any available source:
 - `_mano_output/ux-flow.md`
 - `_mano_output/design-brief.md`
 - `_mano_output/project-rules.md`
-- `_mano_output/design-constraints.md`
 
 Only include fields backed by an existing file and relevant to the story. Omit empty categories. If none of the supporting files add useful implementation context for a story, omit the section entirely.
 
@@ -105,7 +102,7 @@ When a project rule names exact API tokens, prop names, attribute names, state k
 
 When the tech spec defines exact dependency choices, package-manager choice, or install commands that matter to the story, preserve those exact package names and commands verbatim in the story. Do not summarize them as "install the required libraries" or leave the implementer to rediscover them from `package.json`.
 
-Do not invent variants, props, states, files, or architectural constraints that are not explicitly supported by the phase brief, tech spec, UX flow, design brief, project rules, or design constraints. If a shared component is required but its variants or props are not defined in the source artifacts, say that only the defined contract is known. Do not fill the gap with plausible defaults.
+Do not invent variants, props, states, files, or architectural constraints that are not explicitly supported by the phase brief, tech spec, UX flow, design brief, or project rules. If a shared component is required but its variants or props are not defined in the source artifacts, say that only the defined contract is known. Do not fill the gap with plausible defaults.
 
 Do not write compressed shorthand that assumes prior Mano knowledge. Replace vague summaries like `Feature-first app code under src/` or `Expo Router files compose screens only` with plain-language statements of what the implementer must actually do in this story.
 
@@ -123,7 +120,7 @@ Do not write compressed shorthand that assumes prior Mano knowledge. Replace vag
 - **Behaviour to preserve or add:** [interaction details and any existing flows that must remain intact]
 - **Accessibility requirements:** [minimum targets, required labels, and exact state semantics/API names that apply to this story — copy exact names like `aria-disabled` and `aria-busy` when the rule specifies them]
 - **Do not:** [explicit prohibitions that matter for this story — e.g. "Do not inline color/spacing/radius values", "Do not split this screen into extra files unless the extraction threshold is met"]
-- **Additional constraints:** [from design constraints or other planning artifacts if relevant]
+- **Additional constraints:** [from other planning artifacts if relevant]
 - **Non-negotiable project rules for this story:** [plain-language explanation of each applicable rule and what it means here; include the important detail, not just the rule name]
 ```
 
@@ -274,14 +271,13 @@ Check which supporting files exist:
 - `_mano_output/ux-flow.md`
 - `_mano_output/design-brief.md`
 - `_mano_output/project-rules.md`
-- `_mano_output/design-constraints.md`
 
 Use any of these that exist and are relevant to the specific story being written. Do not force a binary mode. If a file exists but adds no useful context to a story, ignore it for that story.
 
 Mention the supporting context found. List only the files that actually exist:
 
 ```
-[Marco]: Story inputs available: [phase brief, tech spec, UX flow, design brief, project rules, design constraints].
+[Marco]: Story inputs available: [phase brief, tech spec, UX flow, design brief, project rules].
 ```
 
 ### Step 0b — Project rules
