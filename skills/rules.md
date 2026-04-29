@@ -127,7 +127,6 @@ When `project-rules.md` already exists, Alex compares it against the current bac
 ```
 -> Active Updates: 
    - Added: [rule]
-   - Flagged stale: [existing rule, comment inline in file]
 ```
 
 After addressing `rule-gap` items from the backlog, update their status in the backlog file to `resolved`.

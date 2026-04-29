@@ -336,7 +336,7 @@ During implementation, the user may come back via `mano stories` to report a bug
 
 When the user reports something mid-build:
 
-1. Create a new story using sub-numbering based on the last completed story. If the user just finished story 3, the new story is `story-3a`. If they add another, it's `story-3b`. This keeps the original story order intact while making the insertion point clear.
+1. Create a new story using sub-numbering based on the last completed story. If the user just finished story 3, the new story is `story-3a`. If they add another, it's `story-3b`. This keeps the original story order intact while making the insertion point clear. Lettered insertions (`3a`) only block the subsequent number (`4`) if explicitly marked as a blocker in the story dependencies.
 2. Write the story file as `_mano_output/phase-[N]/stories/story-[N][letter]-[slug].md` (e.g. `story-3a-fix-reflection-safe-area.md`).
 3. Update the stories README index to include the new story in the right position.
 4. Output execution log:

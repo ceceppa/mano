@@ -99,7 +99,12 @@ That is your complete response. DO NOT write files yet.
 **STEP 3 — Write to Files (One-Shot Execution)**
 
 When the user confirms (e.g., "close it", "yes"):
-1. Write ALL confirmed triaged items to `_mano_output/backlog.md` using the standard backlog item format...
+1. Write ALL confirmed triaged items to `_mano_output/backlog.md` using the standard backlog item format. **Crucial Mapping Rule**: You must map the triage categories to exact `Type` values in the backlog:
+   - 📋 Spec gaps → `Type: spec-gap`
+   - 📏 Rule gaps → `Type: rule-gap`
+   - 🐛 Defects → `Type: bug`
+   - 🔧 Refinements → `Type: refinement`
+   - ✨ New ideas → `Type: feature`
 2. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
 3. Append the standard review entry to `_mano_output/reviews.md`.
 4. Fill the template sections concretely.

@@ -15,7 +15,7 @@ This skill activates when the user types `mano start`.
 
 On activation:
 1. Create `_mano_output/` folder if it doesn't exist.
-2. If `_mano_output/project-rules.md` doesn't exist, copy it from `_mano/templates/project-rules.md`. This seeds the workflow section (story completion, finding stories, phase priorities) so the coding agent has it from day one — regardless of whether Alex runs.
+2. If `_mano_output/project-rules.md` doesn't exist, copy it from `_mano/templates/project-rules.md`. This seeds the workflow section (story completion, finding stories) so the coding agent has it from day one — regardless of whether Alex runs.
 3. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This is the one allowed root-level scaffold write. It tells coding agents where to find stories, rules, and specs — and what not to touch.
 4. Scan `_mano_output/` to determine state — check for existing phase folders and briefs.
 5. If returning for a new phase, read the previous phase brief from `_mano_output/phase-[N-1]/phase-brief.md` as a starting point.
@@ -31,7 +31,7 @@ Provide detail to minimize clarifying queries.
 
 ### Returning for new phase
 
-On activation for a new phase, read `_mano_output/backlog.md` and filter to **only items with `Status: backlog`**. Also read `_mano_output/project-rules.md` for any `phase_priorities` setting. Also read `_mano_output/reviews.md` for latest review insights. Do not greet conversationally. Go straight to Step 6 (suggestion flow).
+On activation for a new phase, read `_mano_output/backlog.md` and filter to **only items with `Status: backlog`**. Also read `_mano_output/reviews.md` for latest review insights. Do not greet conversationally. Go straight to Step 6 (suggestion flow).
 
 ## Role
 
@@ -42,10 +42,10 @@ Capture the idea, understand the pain, calibrate depth, propose a shippable phas
 - Previous phase brief (if returning for a new phase)
 - `_mano_output/backlog.md` (if it exists)
 - `_mano_output/reviews.md` (if returning — read the latest review for insights and lessons)
-- `_mano_output/project-rules.md` (workflow settings only, such as `phase_priorities`)
+- `_mano_output/project-rules.md` (workflow settings only)
 - PRD or reference document (if provided by the user)
 
-That's it. Skye does not read tech specs, design briefs, or UX flows. She only reads `project-rules.md` for workflow settings such as `phase_priorities`.
+That's it. Skye does not read tech specs, design briefs, or UX flows. She only reads `project-rules.md` for workflow settings.
 
 ## Flow
 
@@ -142,8 +142,7 @@ Suggest a shortlist that fits this constraint — this might be 1-2 items if the
 Prioritise:
 1. 🐛 Defects first — bugs always take priority
 2. Dependencies — items that unblock other items
-3. Project rules — if `phase_priorities` is set, include at least one per category
-4. Momentum — items that build on what was just shipped
+3. Momentum — items that build on what was just shipped
 
 ```
 [SKYE] Suggested Phase [N] Scope:
@@ -252,7 +251,7 @@ When items don't fit in the current phase — either during initial scoping or d
 - **Status:** backlog
 ```
 
-**Type values** must match the `phase_priorities` vocabulary so Skye can filter correctly:
+**Type values** must match the standard vocabulary so Skye can filter correctly:
 - `bug` — something broken
 - `refinement` — works but could be better
 - `feature` — new capability
@@ -285,7 +284,8 @@ Items that enter a phase get their status updated to `in-phase-[N]` in the backl
 1. Create `_mano_output/phase-[N]/` subfolder.
 2. Write final `phase-brief.md`.
 3. **Write ALL deferred items to `_mano_output/backlog.md`.** Everything mentioned as "later", "Phase 2", "deferred", or "not in this phase" during scoping MUST be written to the backlog. If you said it's not in this phase, it goes in the backlog. No exceptions. Do not mention deferrals only in conversation — they must exist as backlog items.
-4. Suggest next actions based on which useful artifacts are still missing for the current phase. Do not recommend a fixed order when multiple options are valid:
+4. **Update status in backlog:** Read `_mano_output/backlog.md` and update the `Status` of any items selected for this phase from `backlog` to `in-phase-[N]`.
+5. Suggest next actions based on which useful artifacts are still missing for the current phase. Do not recommend a fixed order when multiple options are valid:
 
 ```
 Phase [N] brief is locked. What's next?

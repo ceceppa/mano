@@ -74,10 +74,16 @@ Whenever a skill suggests what to do next, base that suggestion on the artifacts
 - Do not suggest a command just because it usually comes next if its artifact already exists and is still usable.
 - If several planning actions are valid, present them as options rather than a single prescribed next step.
 - Prefer the shortest path that adds useful clarity for the current phase.
-- If the phase is already clear enough for `mano stories`, say so plainly instead of pushing optional artifacts first.
-- A seeded `project-rules.md` that still contains only template comments and workflow defaults does **not** count as substantive project rules for suggestion purposes.
-- For user-facing or mobile phases, a missing `design-brief.md` remains a meaningful refinement signal. Do not collapse to `mano stories` as the only suggested action if `mano ui` would still add useful clarity.
-- For user-facing or mobile phases where both `mano ui` and `mano rules` are valid next options, list `mano ui` first unless the current need is explicitly rule-specific. Visual and component decisions often sharpen what Alex should codify.
+- Use this decision tree when evaluating next steps for the planning stage:
+  ```
+  Phase is user-facing or mobile?
+  ├─ design-brief missing? → suggest `mano ui` (do not auto-run stories)
+  ├─ project-rules still default? → list `mano rules` + `mano stories` as options
+  └─ both present? → suggest `mano stories`
+  
+  Phase is non-user-facing (backend/infra)?
+  └─ go straight to `mano stories` unless tech is genuinely fuzzy (suggest `mano spec`)
+  ```
 
 ## State detection — relying on context
 
@@ -160,8 +166,7 @@ Formatting rule for `mano continue` and `mano status`:
 
 Rules for what counts as a `single obvious next` action:
 - `mano continue` is narrower than `suggested next action`. A shortest path is not automatically a single obvious next step.
-- In planning stage, do **not** auto-run `mano stories` if other missing artifacts like `mano rules` or `mano ui` would still be reasonable refinements for the current phase. In that case, present the options instead.
-- Only auto-run `mano stories` when the phase brief is already clear enough and stories are the only materially useful planning artifact still missing.
+- Follow the decision tree from the "Next-step suggestion rule" section. Only auto-run `mano stories` if the tree resolves to it unambiguously.
 - If a local artifact needs repair (for example a `stories/` folder exists without its README index), do not treat that repair need by itself as proof that one planning action is unambiguous. Check whether other planning actions are still reasonably available first.
 - When in doubt between "shortest path" and "multiple valid options", stop and explain the options.
 
