@@ -18,10 +18,10 @@ If the user types a Mano command in chat, treat that as an instruction to execut
 2. Check `_mano_output/phase-[N]/stories/README.md` for the story index and status.
 3. Before implementing the requested story, check whether any earlier story in the index is still `pending`. Treat numbered stories and lettered insertions as ordered work unless the README or story notes explicitly say otherwise.
 4. If an earlier story is still `pending`, stop and tell the user which story would be skipped. Do not implement the later story unless the user explicitly confirms they want to bypass the suggested order.
-5. Read the story file. It's self-contained — the Implementation Reference section should carry the applicable rules plus any required files, modules, contracts, constraints, ownership boundaries, and prohibitions for that story. Treat exact prop names, attribute names, variant names, state keys, ownership statements, and file paths written there as normative.
+5. Read the story file first. Treat it as the primary implementation contract. The Implementation Reference section should carry the applicable rules plus any required files, modules, contracts, constraints, ownership boundaries, and prohibitions for that story. Treat exact prop names, attribute names, variant names, state keys, ownership statements, file paths, dependency names, and install commands written there as normative.
 6. If the story is bootstrap, setup, tooling, infrastructure, or dependency-related, also read `_mano_output/tech-spec.md` before implementing. Treat library choices, package-manager choice, and install commands there as normative unless the story file already repeats them exactly.
 7. If the story involves user-entered state, forms, onboarding drafts, settings, or other local data, check whether the story or tech spec says that data should persist across app restarts. If it should, treat restart persistence as part of the required behaviour, not as an optional enhancement.
-8. Only if something is still ambiguous, look up the referenced rule in `_mano_output/project-rules.md`.
+8. Read `_mano_output/project-rules.md` only when the story explicitly points to a rule there or something is still ambiguous after reading the story and any mandatory tech-spec pre-read.
 9. After implementing, update the story's status to `done` in the stories README.md.
 
 ### Do not

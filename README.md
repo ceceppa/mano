@@ -132,9 +132,9 @@ Use this when you want Marco to keep the same planning behavior but emit stories
 - Copy one of the shipped examples to `_mano/custom/story.md` and edit it.
 - Available examples:
 	- `_mano/custom/story.example.md` — default human-friendly format
-	- `_mano/custom/story.example.corporate.md` — classic `As a / I want / So that` format
+	- `_mano/custom/story.example.as-i-so.md` — classic `As a / I want / So that` format
 	- `_mano/custom/story.example.given-when-then.md` — scenario-led `Given / When / Then / And` format
-- Choose this when you want a different story document structure, not when you want to change Marco's decision-making.
+- Choose this when you want a different story document structure, not when you want to change Marco's decision-making. The implementation contract still stays mandatory: custom templates should preserve a clear acceptance section, scope boundary, `Implementation Reference`, and completion footer.
 
 ### 3. Skill Overrides (`_mano/custom/[skill].md`)
 If you want to fundamentally change how a skill plans or generates output, you can completely override their default instructions. 

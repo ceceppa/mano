@@ -23,7 +23,7 @@ And [secondary expectation, constraint, or follow-on result]
 
 [Optional — context, edge cases, technical hints]
 
-<!-- Implementation Reference below — include only when supporting artifacts add useful implementation context for this story. Marco populates it dynamically based on story type and available planning artifacts. -->
+<!-- Implementation Reference below is mandatory. If supporting artifacts add nothing beyond the story body, Marco should leave a short note saying no additional implementation constraints are known. -->
 
 ## Implementation Reference
 

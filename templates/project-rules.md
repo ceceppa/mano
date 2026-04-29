@@ -77,6 +77,6 @@ When asked to implement a story (e.g. "implement story 3"), find the active phas
 
 Before implementing the requested story, check whether any earlier story in the index is still `pending`. Treat numbered stories and lettered insertions as ordered work unless the README or story notes explicitly say otherwise. If an earlier story is still pending, stop and tell the user which story would be skipped. Do not implement the later story unless the user explicitly confirms they want to bypass the suggested order.
 
-**Before implementing any story, read this entire `project-rules.md` file.** Every rule applies to every story — even if the story's Implementation Reference doesn't mention a specific rule. The Implementation Reference highlights the most relevant rules, but it is not exhaustive.
+The story file is the primary implementation contract. Read `project-rules.md` when the story explicitly references a rule here or when something is still ambiguous after reading the story and any mandatory tech-spec pre-read.
 
 ---

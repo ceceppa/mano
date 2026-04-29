@@ -45,12 +45,17 @@ Or I can proceed with the phase brief alone.
 
 Check if `_mano/custom/story.md` exists.
 
-**If it exists:** Use that template for all stories. Follow its structure exactly — do not mix in the default format.
+**If it exists:** Use that template for the story's framing and headings, but do not let it remove the mandatory implementation contract. If the custom template omits any mandatory section listed below, append the missing section to the generated story instead of dropping it.
 
-This is a story-template override, not a skill override. Users can copy one of the shipped examples to `_mano/custom/story.md` when they want a different story document shape without changing Marco's planning behavior. Available starters:
-- `_mano/custom/story.example.md` — default human-friendly format
-- `_mano/custom/story.example.corporate.md` — classic `As a / I want / So that` format
-- `_mano/custom/story.example.given-when-then.md` — scenario-led `Given / When / Then / And` format
+This is a story-template override, not a skill override.
+
+Mandatory sections for every final story file, regardless of template choice:
+- story title
+- persona plus outcome framing in some readable form
+- acceptance criteria or equivalent `Done when` section
+- explicit scope boundary such as `Out of Scope` or `Not this story`
+- `Implementation Reference`
+- completion footer reminding implementers to mark the story `done` in the stories index
 
 **If it doesn't exist:** Use this default format:
 
@@ -73,9 +78,11 @@ This is a story-template override, not a skill override. Users can copy one of t
 <!-- ⚠️ When this story is implemented, update its status to `done` in the stories README.md index. -->
 ```
 
-### Implementation Reference (after Notes, when useful):
+### Implementation Reference (mandatory after Notes):
 
-Add an **Implementation Reference** section only when at least one supporting artifact exists and is relevant to that specific story.
+Every generated story must include an **Implementation Reference** section.
+
+If supporting artifacts add no extra implementation context for a story, keep the section brief and say that no additional implementation constraints are known beyond the story body.
 
 Marco may pull from any available source:
 - `_mano_output/tech-spec.md`
@@ -83,7 +90,7 @@ Marco may pull from any available source:
 - `_mano_output/design-brief.md`
 - `_mano_output/project-rules.md`
 
-Only include fields backed by an existing file and relevant to the story. Omit empty categories. If none of the supporting files add useful implementation context for a story, omit the section entirely.
+Only include fields backed by an existing file and relevant to the story. Omit empty categories inside the section, but do not omit the section itself.
 
 If a relevant project rule implies a required file, shared module, extraction threshold, setup step, or prohibition, translate that into an explicit instruction in the Implementation Reference. Do not assume the coding agent will infer the implication from the rule name alone.
 
