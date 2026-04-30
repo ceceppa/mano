@@ -58,34 +58,39 @@ If a component later needs a hard implementation contract such as required props
 
 # Component Guide
 
+<!-- Include only the component categories that actually appear in the current phase scope. Delete unused sections instead of filling placeholders. -->
+
 ## Buttons
 
-### Primary
-### Secondary
-### Destructive
-### Disabled state
+<!-- Include only the button variants or states actually used in the current scope. -->
+
+### [Button variant or state]
+
 
 ## Inputs
 
-### Text input
-### Dropdown / Picker
-### Date picker
+<!-- Include only the input types actually used in the current scope. Example: Text input, Checkbox, Toggle, Picker, Date picker. -->
+
+### [Input type]
 
 ## Cards / List Items
 
+<!-- Include only if the current scope actually uses list or card surfaces. -->
+
 ## Headers
 
-### Screen title
-### Section header
+<!-- Include only if the current scope uses shared header patterns. -->
+
+### [Header type]
 
 ## Navigation
 
-### Active state
-### Inactive state
+<!-- Include only if the current scope uses navigation UI that needs visual rules. -->
+
+### [Navigation element or state]
 
 ## Feedback
 
-### Success
-### Error
-### Loading
-### Empty state
+<!-- Include only feedback states relevant to the current scope. -->
+
+### [Feedback state]

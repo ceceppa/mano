@@ -94,7 +94,7 @@ Only include fields backed by an existing file and relevant to the story. Omit e
 
 If a relevant project rule implies a required file, shared module, extraction threshold, setup step, or prohibition, translate that into an explicit instruction in the Implementation Reference. Do not assume the coding agent will infer the implication from the rule name alone.
 
-The Implementation Reference should be usable as a self-contained implementation brief for that story. Assume the implementer knows nothing about the project beyond this story file. The coding agent may still consult `_mano_output/project-rules.md` for clarification, but it should not need to reopen it just to discover critical rule details such as required variants, props, accessibility semantics, minimum sizes, ownership boundaries, persistence rules, or file/module responsibilities.
+The Implementation Reference should be sufficient to implement the story correctly without reopening other planning files for core requirements. Assume the implementer knows nothing about the project beyond this story file. Keep broader rationale or deeper project context in the source artifacts, but copy the critical implementation contract into the story. The coding agent may still consult `_mano_output/project-rules.md` for clarification or fuller context, but it should not need to reopen it just to discover critical rule details such as required variants, props, accessibility semantics, minimum sizes, ownership boundaries, persistence rules, or file/module responsibilities.
 
 When a project rule defines a concrete contract, copy the contract into the story in concise form instead of reducing it to a label. This includes:
 - shared component APIs and required variants
@@ -160,7 +160,7 @@ Example of the level of detail expected:
 #### Implementation Reference
 - **What this story is building:** [plain-language description of the infrastructure slice and why it exists]
 - **Technical decisions:** [relevant decisions from tech spec explained in plain language]
-- **Dependencies and install commands:** [exact packages, package manager, and install commands from the tech spec when this story establishes or changes project setup/tooling]
+- **Dependencies and install commands:** [exact packages, package manager, and install commands from the tech spec when this story establishes or changes project setup/tooling. Preserve command grouping and tool choice exactly. If the tech spec uses `npx expo install`, keep those commands separate and do not rewrite them into `npm install` or merge them into other install commands.]
 - **Files and entrypoints involved:** [files, folders, or config entrypoints that must be created or updated]
 - **Ownership boundaries:** [what this setup owns and what it must not absorb]
 - **Operational expectations:** [how it should behave once wired in]
@@ -171,7 +171,9 @@ Example of the level of detail expected:
 
 The section adapts to the story type. The common rule is simple: include only the context the coding agent will actually need for that story, but write it in plain language with enough ownership and boundary detail that a developer new to the project can implement the story without decoding Mano shorthand or reopening other artifacts for the basics.
 
-Special case for `story-0` and other setup/tooling/dependency stories: the Implementation Reference must copy the exact package-manager choice, dependency names, and install commands from the tech spec when those decisions exist. Do not rely on the coding agent to reopen `tech-spec.md` just to discover which packages to install or whether provisional commands used `@latest`.
+When a story includes install commands, preserve them as distinct command groups in the order they should be run. Do not compress multiple commands into one line or normalize different tools into a single package-manager command for convenience.
+
+Special case for `story-0` and other setup/tooling/dependency stories: the Implementation Reference must copy the exact package-manager choice, dependency names, and install commands from the tech spec when those decisions exist. Preserve command grouping and tool choice exactly as written in the tech spec. Do not rely on the coding agent to reopen `tech-spec.md` just to discover which packages to install, whether provisional commands used `@latest`, or whether an Expo-managed dependency must stay under `npx expo install` instead of being rewritten into `npm install`.
 
 Special case for onboarding, form, settings, and other stateful frontend stories: if the tech spec says draft or saved data uses durable local storage, the Implementation Reference must name what persists across app restart, what remains transient, and which module or store owns that persistence.
 
@@ -294,16 +296,9 @@ Check if `_mano_output/project-rules.md` exists.
 **If it exists**: Read and acknowledge.
 
 **If it doesn't exist**:
-
-```
-Do you have any project rules? These cover anything the coding agent must follow: component patterns, architecture decisions, accessibility requirements, naming conventions, etc.
-
-1. ✍️ Yes — I'll create a file for you to edit. Tell me when you're done.
-2. ⏩ No, skip this — No rules.
-```
-
-On option 1: Create `_mano_output/project-rules.md` using the template from `_mano/templates/project-rules.md`. Wait for confirmation.
-On option 2: Skip.
+- Create `_mano_output/project-rules.md` using the template from `_mano/templates/project-rules.md`.
+- Read the seeded file and continue. This seeds the workflow baseline so the coding agent has the story-finding and story-completion rules even when the user skips `mano start`.
+- Do not stop story generation just to ask whether rules exist. If the user needs project-specific rules beyond the seeded baseline, they can add them later via `mano rules`.
 
 ### Step 1 — Write all stories to files
 

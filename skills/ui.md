@@ -1,6 +1,6 @@
 ---
 name: mano-ui
-description: Use to establish the visual language, design constraints, CSS/theme choices, and component guidelines.
+description: Use to establish the visual language, CSS/theme choices, and component guidelines.
 ---
 
 # Luna — UI Skill
@@ -18,7 +18,7 @@ On activation:
 1. Read the phase brief from `_mano_output/phase-[N]/phase-brief.md`.
 2. Read `_mano_output/ux-flow.md` if it exists — know what screens and navigation exist before designing components.
 3. Read `_mano_output/tech-spec.md` if it exists — constrains component library choices.
-4. Read `_mano_output/project-rules.md` if it exists — respect any a11y requirements, component patterns, or design constraints already agreed.
+4. Read `_mano_output/project-rules.md` if it exists — respect any a11y requirements or component patterns already agreed.
 5. Read `_mano_output/backlog.md` if it exists — check for a11y, WCAG, or design-related requirements that affect visual decisions.
 6. Read `_mano_output/design-brief.md` if it exists — if already generated, use as foundation.
 7. Check for missing inputs — if no phase brief exists, warn and ask if user wants to proceed.

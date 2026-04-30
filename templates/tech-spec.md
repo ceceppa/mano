@@ -8,9 +8,11 @@
 
 ## Libraries & Dependencies
 
-| Category | Decision | Version | Why | Install |
-|----------|----------|---------|-----|---------|
-| | | | | |
+<!-- Use exact versions only when syncing from a real manifest or lockfile. Otherwise keep the install command provisional instead of inventing a version number here. -->
+
+| Category | Decision | Why | Install |
+|----------|----------|-----|---------|
+| | | | |
 
 ## Data Model
 

@@ -23,7 +23,7 @@ And [secondary expectation, constraint, or follow-on result]
 
 [Optional — context, edge cases, technical hints]
 
-<!-- Implementation Reference below is mandatory. If supporting artifacts add nothing beyond the story body, Marco should leave a short note saying no additional implementation constraints are known. -->
+<!-- Implementation Reference below is mandatory and should carry the critical implementation contract for this story. If supporting artifacts add nothing beyond the story body, Marco should leave a short note saying no additional implementation constraints are known. -->
 
 ## Implementation Reference
 

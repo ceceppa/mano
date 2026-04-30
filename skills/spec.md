@@ -92,6 +92,8 @@ If the file doesn't exist, create it.
 
   Exception: for Expo-managed packages installed with `npx expo install`, do **not** force `@latest` unless there is a documented reason to override Expo compatibility. Expo-managed install commands should normally stay versionless so Expo can choose the SDK-compatible package version.
 
+  When Expo-managed installs are required, keep them as explicit `npx expo install ...` command groups. Do not rewrite those packages into `npm install`, `pnpm add`, `yarn add`, or `bun add`, and do not merge Expo-managed packages into a generic package-manager command just to reduce the number of commands. Expo compatibility resolution is the reason the command tool matters.
+
   If a package manifest and lockfile already exist, treat them as the source of truth for the current dependency versions and update the tech spec to match the real installed state. This lets the spec start with floating install guidance but later sync back to the exact toolchain the project actually adopted.
 
   If a manifest exists without a lockfile, use it as a weaker signal: reflect the declared package choice, but do not imply that the version is fully reproducible.

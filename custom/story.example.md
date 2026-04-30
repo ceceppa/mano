@@ -20,7 +20,7 @@
 
 [Optional — context, edge cases, technical hints]
 
-<!-- Implementation Reference below — include only when supporting artifacts add useful implementation context for this story. Marco populates it dynamically based on story type and available planning artifacts. -->
+<!-- Implementation Reference below should carry the critical implementation contract for this story and be sufficient for correct implementation. If supporting artifacts add nothing beyond the story body, Marco should say that briefly instead of leaving the contract implicit. -->
 
 ## Implementation Reference
 

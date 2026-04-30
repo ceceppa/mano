@@ -122,10 +122,10 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | Skill | Command | Role | Reads | Produces |
 |---------|---------|------|-------|----------|
 | **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
-| **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, tech spec, backlog, design constraints | Tech spec |
-| **Rob** | `mano ux` | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules, design constraints | UX flow |
+| **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, tech spec, backlog | Tech spec |
+| **Rob** | `mano ux` | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
 | **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
-| **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog, design constraints | Design brief, design preview |
+| **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog | Design brief, design preview |
 | **Marco** | `mano stories` | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
 | **Dave** | `mano review` | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
 

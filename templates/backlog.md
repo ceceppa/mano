@@ -6,7 +6,7 @@
 
 <!-- Item format:
 ### [Short title]
-- **Type:** bug / refinement / feature / tech-debt / test
+- **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
 - **Source:** Phase [N] / User idea / Review triage
 - **Context:**
   What it is.
