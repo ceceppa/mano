@@ -25,9 +25,9 @@
 ## Implementation Reference
 
 <!-- Marco fills this based on story type:
-  Frontend: Screen, Layout, Components, Colours, Behaviour, Project rules
-  Backend: Project rules, Files, Error format
-  Infra: Project rules, Files
+  Frontend: Build, UI, Files, Components, State, Boundaries, Style, A11y, Commands, Do not, Rules
+  Backend: Build, Files, Contract, Data, Boundaries, Commands, Do not, Rules
+  Infra: Build, Commands, Files, Boundaries, Ops, Do not, Rules
 -->
 
 ---

@@ -113,67 +113,70 @@ Do not invent variants, props, states, files, or architectural constraints that 
 
 Do not write compressed shorthand that assumes prior Mano knowledge. Replace vague summaries like `Feature-first app code under src/` or `Expo Router files compose screens only` with plain-language statements of what the implementer must actually do in this story.
 
+Inside Implementation Reference, optimize for token density rather than polished prose. Use stable field labels plus terse fragments, exact tokens, and compact lists. Good: `- **Build:** local SQLite layer; app boot open; auto-migrate; seed v1 catalog.` Bad: `- **What this story is building:** This story is building the local SQLite data layer for...`
+
+Keep the labels explicit and reusable across stories. `Build`, `Files`, `State`, `Commands`, `A11y`, `Do not`, and `Rules` are clear. Obscure shorthand like `Bld`, `Mods`, or project-specific abbreviations is not.
+
+Prefer compact lists or fenced code blocks over wide markdown tables when carrying exact names such as schema fields, routes, commands, file paths, variants, or state keys. Use markdown tables only when the table genuinely makes the relationship clearer.
+
+When commands matter, render them as distinct command groups in a fenced `bash` block with one command per line, in execution order.
+
 **For frontend stories (user-facing screen):**
 ```markdown
 #### Implementation Reference
-- **What this story is building:** [plain-language description of the screen or screen slice, where it sits in the flow, and what part of the product it establishes]
-- **What the user sees:** [key layout and visible UI structure in plain language]
-- **Shared UI to use or create:** [components from the design brief or rules, plus what each one is responsible for]
-- **Files and modules involved:** [files or modules that must be created, reused, or kept thin — e.g. `src/theme/tokens.ts`, shared onboarding shell, route files]
-- **Component contracts:** [critical API details copied from project rules — list only the variants, props, states, and ownership rules that are explicitly defined in the source artifacts; do not invent missing ones]
-- **State and persistence:** [where draft state lives, what persists, what is transient, and which module owns that responsibility]
-- **Routing and composition boundaries:** [what route files may do, what screen files own, and where logic must live]
-- **Tokens and styling:** [semantic names only, plus the source they must come from; if a tokens rule exists, name the token source and say not to inline visual values]
-- **Behaviour to preserve or add:** [interaction details and any existing flows that must remain intact]
-- **Accessibility requirements:** [minimum targets, required labels, and exact state semantics/API names that apply to this story — copy exact names like `aria-disabled` and `aria-busy` when the rule specifies them]
-- **Do not:** [explicit prohibitions that matter for this story — e.g. "Do not inline color/spacing/radius values", "Do not split this screen into extra files unless the extraction threshold is met"]
-- **Additional constraints:** [from other planning artifacts if relevant]
-- **Non-negotiable project rules for this story:** [plain-language explanation of each applicable rule and what it means here; include the important detail, not just the rule name]
+- **Build:** [screen or slice; where it sits in the flow; core outcome]
+- **UI:** [visible structure only — layout, sections, key controls]
+- **Files:** [exact files/modules to create, update, or keep thin]
+- **Components:** [shared UI to use/create plus exact props, variants, states, ownership rules]
+- **State:** [owner, persisted vs transient, restart behaviour if relevant]
+- **Boundaries:** [routing/composition limits; where logic may and may not live]
+- **Style:** [token source, semantic names, styling bans if relevant]
+- **A11y:** [exact labels, min targets, focus/state semantics, API names]
+- **Commands:** [only when setup or install commands matter]
+- **Do not:** [critical prohibitions]
+- **Rules:** [only the project rules that materially change this story's implementation]
 ```
 
 Example of the level of detail expected:
 ```markdown
-- **Files and modules involved:** Create the shared files explicitly required by the project rules before expanding the affected feature screens. Keep route files thin when the rules say routing files are composition-only, and place screen logic in the feature modules the rules identify.
-- **Component contracts:** For each required shared component, copy only the variants, props, states, and ownership rules explicitly defined in the source artifacts. If the rules define `disabled` and `loading` but do not define visual variants, do not invent visual variants.
-- **State and persistence:** Name the module that owns draft state, what data persists across restarts, and what data is intentionally transient. If the rules restrict a storage layer to a narrow purpose, repeat that restriction directly.
-- **Routing and composition boundaries:** Explain plainly which files may only compose screens and which files own business logic, data shaping, and state coordination.
-- **Accessibility requirements:** Repeat the exact accessibility contract that applies here, including minimum target sizes, label requirements, and any exact API names such as `aria-disabled={disabled}` or `aria-busy={loading}` when the rules specify them.
-- **Do not:** Repeat the prohibitions that matter for this story, such as bans on inline visual values, ad hoc typography, or premature screen extraction.
-- **Non-negotiable project rules for this story:** Translate each relevant rule into a plain-language obligation for this story. If the source artifacts do not define a detail, leave it unspecified instead of inventing one.
+- **Files:** `src/theme/tokens.ts`; route files compose only; screen logic stays in feature modules named by the project rules.
+- **Components:** `Button` uses exact states `disabled`, `loading`; do not invent visual variants not defined in source artifacts.
+- **State:** draft owned by onboarding store; persists across restart; transient validation stays local.
+- **A11y:** min target `44x44`; preserve `aria-disabled={disabled}` and `aria-busy={loading}` where specified.
+- **Do not:** no inline color/spacing/radius; no extra file splits before extraction threshold.
+- **Rules:** route files compose only; business logic/data shaping stay outside route files.
 ```
 
 **For backend stories (API endpoints, services):**
 ```markdown
 #### Implementation Reference
-- **What this story is building:** [plain-language description of the endpoint/service/job and its role in the phase]
-- **Technical decisions:** [relevant decisions from tech spec explained in plain language]
-- **Files and modules involved:** [files or modules that must be created or extended first]
-- **Ownership boundaries:** [which module owns logic, validation, orchestration, persistence, and transport concerns]
-- **Data and error handling:** [state, persistence, envelope, and error-format expectations]
-- **Do not:** [explicit prohibitions that matter for this story]
-- **Additional constraints:** [relevant constraints if they affect the endpoint or service]
-- **Non-negotiable project rules for this story:** [plain-language explanation of each applicable rule and what it means here]
+- **Build:** [endpoint/service/job; role in phase]
+- **Files:** [exact files/modules to create or extend]
+- **Contract:** [method/route, request/response shape, or service interface]
+- **Data:** [entities, persistence, validation, envelope, error format]
+- **Boundaries:** [ownership of validation, orchestration, persistence, transport]
+- **Commands:** [only when setup/tooling commands matter]
+- **Do not:** [critical prohibitions]
+- **Rules:** [only the project rules that materially change this story's implementation]
 ```
 
 **For infrastructure stories (Docker, CI, config):**
 ```markdown
 #### Implementation Reference
-- **What this story is building:** [plain-language description of the infrastructure slice and why it exists]
-- **Technical decisions:** [relevant decisions from tech spec explained in plain language]
-- **Dependencies and install commands:** [exact packages, package manager, and install commands from the tech spec when this story establishes or changes project setup/tooling. Preserve command grouping and tool choice exactly. If the tech spec uses `npx expo install`, keep those commands separate and do not rewrite them into `npm install` or merge them into other install commands.]
-- **Files and entrypoints involved:** [files, folders, or config entrypoints that must be created or updated]
-- **Ownership boundaries:** [what this setup owns and what it must not absorb]
-- **Operational expectations:** [how it should behave once wired in]
-- **Do not:** [explicit prohibitions that matter for this story]
-- **Additional constraints:** [relevant constraints]
-- **Non-negotiable project rules for this story:** [plain-language explanation of each applicable rule and what it means here]
+- **Build:** [infrastructure slice and why it exists]
+- **Commands:** [exact install/setup commands from tech spec; preserve tool choice and grouping exactly]
+- **Files:** [files, folders, entrypoints, generated outputs]
+- **Boundaries:** [what this setup owns and must not absorb]
+- **Ops:** [expected runtime/build/dev behaviour once wired in]
+- **Do not:** [critical prohibitions]
+- **Rules:** [only the project rules that materially change this story's implementation]
 ```
 
-The section adapts to the story type. The common rule is simple: include only the context the coding agent will actually need for that story, but write it in plain language with enough ownership and boundary detail that a developer new to the project can implement the story without decoding Mano shorthand or reopening other artifacts for the basics.
+The section adapts to the story type. The common rule is simple: include only the context the coding agent will actually need for that story, but write it as a compact execution brief rather than polished prose. Keep exact tokens and clear field labels; strip filler, repeated rationale, and conversational phrasing.
 
 When a story includes install commands, preserve them as distinct command groups in the order they should be run. Do not compress multiple commands into one line or normalize different tools into a single package-manager command for convenience.
 
-Special case for `story-0` and other setup/tooling/dependency stories: the Implementation Reference must copy the exact package-manager choice, dependency names, and install commands from the tech spec when those decisions exist. Preserve command grouping and tool choice exactly as written in the tech spec. Do not rely on the coding agent to reopen `tech-spec.md` just to discover which packages to install, whether provisional commands used `@latest`, or whether an Expo-managed dependency must stay under `npx expo install` instead of being rewritten into `npm install`.
+Special case for `story-0` and other setup/tooling/dependency stories: the Implementation Reference must copy the exact package-manager choice, dependency names, and install commands from the tech spec when those decisions exist. Preserve command grouping and tool choice exactly as written in the tech spec. Prefer a fenced `bash` block for commands instead of a prose sentence. Do not rely on the coding agent to reopen `tech-spec.md` just to discover which packages to install, whether provisional commands used `@latest`, or whether an Expo-managed dependency must stay under `npx expo install` instead of being rewritten into `npm install`.
 
 Special case for onboarding, form, settings, and other stateful frontend stories: if the tech spec says draft or saved data uses durable local storage, the Implementation Reference must name what persists across app restart, what remains transient, and which module or store owns that persistence.
 

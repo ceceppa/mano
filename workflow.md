@@ -255,8 +255,8 @@ Step 1 — Pre-review gate
   If stories are pending, asks user to mark done, cut, or come back later.
 
 Step 2 — Feedback capture
-  Dave shows the phase goal from the brief.
-  Asks user to write freely about what's good, broken, annoying, new ideas.
+  If the activation message already includes review feedback, Dave uses it directly once the pre-review gate is clear.
+  Otherwise Dave shows the phase goal from the brief and asks the user to write freely about what's good, broken, annoying, new ideas.
 
 Step 3 — Triage
   Dave categorises feedback into three buckets:
