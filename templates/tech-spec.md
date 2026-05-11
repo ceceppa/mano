@@ -38,3 +38,11 @@
 
 <!-- Only needed if features span app + widget, app + watch, web + native, etc. -->
 <!-- For each boundary: what's shared, what's not, and what that means for implementation. -->
+
+
+## Product Principle Constraints
+
+<!-- Optional. Only include technical constraints derived from principles explicitly present in the current phase brief or provided context. Omit if none apply. -->
+
+-
+

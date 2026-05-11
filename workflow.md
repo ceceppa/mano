@@ -122,7 +122,7 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | Skill | Command | Role | Reads | Produces |
 |---------|---------|------|-------|----------|
 | **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
-| **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, tech spec, backlog | Tech spec |
+| **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, explicit spec-gap context | Tech spec |
 | **Rob** | `mano ux` | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
 | **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
 | **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog | Design brief, design preview |
@@ -139,6 +139,25 @@ When the user types `mano status`:
 5. When relevant, call out seeded defaults explicitly. Example: `project-rules.md exists but still appears to be the default template, so mano rules is still a valid next action.`
 6. For user-facing or mobile phases, missing `design-brief.md` and `design-preview.html` should keep `mano ui` visible as a valid next option unless the current phase is already obviously ready for stories without further design clarification.
 7. Do not activate any skill.
+
+## Single obvious next action gates
+
+`mano continue` should auto-run only when the next planning action is genuinely narrower than the alternatives.
+
+Auto-run is appropriate when:
+- no `_mano_output/` exists → `mano start`
+- a phase brief exists and supporting artifacts are either already present, irrelevant, or explicitly skipped → `mano stories`
+- all stories are done and no review entry exists → `mano review`
+- the latest phase is reviewed and the user asks to keep going → `mano start`
+
+Do not auto-run when:
+- spec, UX, rules, or UI are all still plausible options for adding useful clarity
+- the phase is user-facing and design context may materially change stories
+- the tech approach is unclear enough that stories would become guesswork
+- an artifact is stale or conflicting and the right repair path is not obvious
+- the project is in build mode with pending stories
+
+In those cases, show `Next options` instead of choosing for the user.
 
 ## Continue
 
@@ -293,3 +312,49 @@ When the phase is already clear and extra artifacts would add overhead instead o
 - Each phase brief is self-contained. No external files needed to understand it.
 - The filesystem is the state. No progress file. Mano scans `_mano_output/` to know where you are.
 - Skills read only what they need (see skill files for specific inputs).
+
+
+# Human Oversight
+
+Mano assumes humans actively supervise planning outputs.
+
+LLMs may:
+- make unsupported assumptions
+- merge conflicting context
+- preserve outdated decisions
+- generate overconfident recommendations
+
+Humans are responsible for:
+- validating important decisions
+- resolving ambiguity
+- rejecting unnecessary complexity
+- deciding when artifacts should be regenerated
+
+Mano structures collaboration. It does not replace judgment.
+
+# Compactness Guidelines
+
+Artifacts should prioritize clarity over completeness.
+
+Prefer:
+- short sections
+- tables over prose
+- concrete decisions over speculation
+- current-phase needs over future-proofing
+
+Avoid:
+- speculative scalability planning
+- unused abstractions
+- excessive rationale
+- documenting hypothetical futures
+
+## Backlog Ownership Boundary
+
+Skye and Dave own backlog content and long-lived project continuity.
+
+Other skills should not edit the backlog except for narrow gap-resolution status updates:
+- Helen may mark an explicitly provided `spec-gap` as resolved after updating the technical specification.
+- Alex may mark an explicitly provided `rule-gap` as resolved after updating project rules.
+
+Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
+

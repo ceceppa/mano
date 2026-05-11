@@ -49,3 +49,13 @@ _mano_output/             ← Planning artifacts
     ├── phase-brief.md    ← Phase scope and goals
     └── stories/          ← Implementation stories (start here)
 ```
+
+
+
+## Context Discipline
+
+Roles in Mano are reasoning lenses, not isolated autonomous agents.
+
+Specialization is maintained through selective context exposure and user discipline. Models may still merge assumptions or infer information outside the intended scope.
+
+Use each role to focus attention on a specific planning concern rather than assuming strict separation.

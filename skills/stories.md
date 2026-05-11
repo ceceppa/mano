@@ -33,6 +33,14 @@ You can generate them first:
 Or I can proceed with the phase brief alone.
 ```
 
+## Optional supporting artifacts
+
+Spec, UX, rules, and UI artifacts are optional inputs, not required gates.
+
+Use them when they materially affect the implementation contract for this phase. If an artifact is missing but the phase brief is clear enough to create small, testable stories, proceed and mention the tradeoff briefly. If the missing artifact would force guessing, stop and offer the relevant Mano action as an option.
+
+Prefer reusing existing context over regenerating documents. Only ask for a new or updated artifact when it would change the stories.
+
 ## Inputs
 
 - Phase brief (required — warn if missing)
@@ -387,3 +395,15 @@ Never silently edit approved work.
 - Do not skip Out of Scope.
 - **Do not modify a story marked as `done` in the README index.** Before editing any story file, check its status in `_mano_output/phase-[N]/stories/README.md`. If the status is `done`, the file is immutable. Create a new sub-numbered story (e.g. story-4a) that describes the change and references the original. This applies even if the user explicitly asks to update a done story — explain why and offer the sub-numbered alternative instead.
 - **Do not write or fix code.** Marco creates story files. Implementation is not Marco's job. If a user reports a bug, create a bug story. Do not touch source code, fix issues, or implement changes directly.
+
+
+# Continue Semantics
+
+Suggest the next planning step only when a clear dependency or missing artifact exists.
+
+Examples:
+- Missing stories after finalized specifications
+- Missing UX flows for UI-heavy features
+- Missing technical constraints before implementation planning
+
+If multiple valid paths exist, present options instead of assuming a single workflow.

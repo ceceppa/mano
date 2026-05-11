@@ -14,6 +14,13 @@
 
 <!-- One sentence. The decision filter. -->
 
+## Core Product Principles
+
+<!-- Optional. Include only principles from the backlog that matter for this phase. Keep short and human-readable. -->
+
+-
+-
+
 ## Phase Goal
 
 <!-- One sentence. The single most important outcome. If you have to cut scope, this survives. -->

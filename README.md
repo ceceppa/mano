@@ -1,12 +1,36 @@
 # Mano
 
-AI-assisted phase planning that keeps the human in control.
+Mano is a lightweight context-discipline protocol for adaptive AI-assisted software planning.
 
-Mano is for developers who want AI to help plan work without handing the model control of implementation or product decisions.
+It helps developers use AI as a thinking partner while keeping humans in charge of scope, architecture, product tradeoffs, and implementation decisions.
 
-Without structure, AI planning tends to collapse into vague chat, bloated process, or hidden decisions. Mano is an **LLM Workflow Protocol** that breaks work into one shippable phase at a time, keeps planning artifacts explicit in the filesystem, and keeps AI focused on bounded planning tasks instead of open-ended decision making. 
+Mano is built around a simple assumption: software projects rarely move in a straight line. User feedback, testing, technical discovery, and changing priorities invalidate early assumptions. The goal is not to generate a perfect upfront plan. The goal is to keep planning cheap to revise as understanding changes.
 
-> **Important:** Mano is not a compiled CLI tool or a deterministic software framework. It is a set of personas and instructions that rely entirely on your AI agent's context window. You, the human, are the ultimate enforcer of these boundaries.
+Mano does this by breaking work into small shippable phases, using only the context needed for the current phase, and keeping artifacts explicit, lightweight, and disposable when they stop being useful.
+
+> **Important:** Mano is not a compiled CLI tool, a deterministic software framework, or an autonomous planning system. It is a set of personas, skills, templates, and instructions that rely entirely on your AI agent's context window. You, the human, are the ultimate enforcer of scope, context, and quality.
+
+## Core Principles
+
+### Human judgment stays in control
+
+Mano supports engineering judgment; it does not replace it. The AI may challenge vague ideas, surface gaps, suggest defaults, and help decompose work, but the human owns the final decisions.
+
+### Adaptive planning beats predictive planning
+
+Mano expects plans to change. Artifacts should evolve when real feedback, implementation constraints, or better understanding invalidate earlier assumptions. Change is a normal part of the workflow, not a failure of planning.
+
+### Low-cost adaptation
+
+Mano optimizes for reducing the cost of changing direction. Small phases, short tickets, focused context, and lightweight artifacts make it easier to update the plan without rewriting a large pre-planned system.
+
+### Planning compression
+
+Mano deliberately keeps planning surface area small. Use the minimum artifacts needed to make the next phase clear enough to build. Do not generate specs, UX docs, rules, or UI guidance just because they exist as actions.
+
+### AI as a thinking partner
+
+Mano should help you think more clearly, not encourage passive acceptance. Skills are expected to challenge abstraction, short-sighted decisions, missing assumptions, and overloaded scope.
 
 ## Commands
 
@@ -43,11 +67,11 @@ The user owns scope, priorities, and product tradeoffs. Helen can recommend conc
 
 ## How it works: The "À La Carte" Philosophy
 
-Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) Architecture** prompt system.
+Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) planning** system.
 
-You only pay the cognitive tax for what you are building *today*. Only two actions are mandatory to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks. Every other action (`spec`, `ux`, `rules`, `ui`) is floating and optional. 
+You only pay the cognitive tax for what you are building *today*. Only two actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
 
-Only run the optional tools if the phase you are actively working on requires them, or if you hit a pain point that requires you to establish a new architectural pattern. You never run the whole pipeline "just in case."
+Optional actions can be created now, reused from existing work, copied from a similar project, adapted from external inputs, or skipped entirely when they would add noise. Only run them when the current phase needs more clarity, constraints, or alignment. You never run the whole pipeline "just in case."
 
 ### Example fuller pass
 1. `mano start` → Skye scopes and populates the backlog.
@@ -103,7 +127,7 @@ _mano_output/
 └── ...
 ```
 
-Each phase brief is self-contained — problem, vision, design principle, scope, assumptions, and risks. Technical decisions and UX flow live at project level and grow across phases. Future work lives in `backlog.md`.
+Each phase brief is self-contained — problem, vision, design principle, scope, assumptions, and risks. Technical decisions and UX flow live at project level and grow only when they are useful. Future work lives in `backlog.md`. Artifacts are living working documents, not permanent contracts.
 
 Planning artifacts live under `_mano_output/`. The only framework scaffold written outside that folder is `AGENTS.md` at the project root, copied during `mano start` so coding agents know where Mano artifacts live.
 
@@ -146,3 +170,88 @@ Because Mano operates on a strictly "à la carte" file-based system, you can com
 - `tech-spec.md`
 - `ux-flow.md`
 - `project-rules.md`
+
+## Optional Skill Chaining
+
+Mano does not automatically trigger extra skills after commands.
+
+This is intentional.
+
+Skills are small and can be run manually against generated artifacts when useful. This keeps the workflow explicit, lightweight, and human-directed.
+
+Examples:
+- After creating a phase brief, ask another skill to challenge the scope.
+- After generating stories, ask for a review against the phase brief.
+- After feedback, ask Skye to update the backlog before starting the next phase.
+
+Use extra skill passes when they add value. Skip them when they do not.
+˜
+# Reality of Context
+
+Mano does not create true agent isolation, persistent memory, or deterministic workflows.
+
+LLMs only reason over the context currently provided to them. Artifact boundaries, role specialization, and phase separation are maintained through user discipline and selective context exposure — not hard enforcement.
+
+Mano reduces planning entropy by encouraging bounded reasoning scopes and structured project artifacts, but humans remain responsible for:
+- validating outputs
+- resolving contradictions
+- detecting stale assumptions
+- deciding what context to expose
+
+This is not a fully autonomous system. It is a collaboration framework for guiding LLM-assisted planning work.
+
+# Artifact Trust Hierarchy
+
+When artifacts conflict, prefer sources in this order:
+
+1. Explicit human decisions
+2. Current phase brief
+3. Project rules
+4. Technical specifications
+5. UX/UI documentation
+6. Generated stories or tasks
+
+Lower-level artifacts should be regenerated or updated when they drift from higher-priority decisions.
+
+# Artifact Drift
+
+Project artifacts may become outdated as decisions evolve.
+
+Artifacts can exist in four states:
+- Current — aligned with latest project direction
+- Stale — partially outdated but still useful
+- Conflicting — contradicts newer decisions
+- Deprecated — retained only for historical reference
+
+When major decisions change, regenerate downstream artifacts rather than patching inconsistencies incrementally.
+
+# Common Failure Modes
+
+Mano cannot eliminate typical LLM failure patterns.
+
+Watch for:
+- stale artifact assumptions
+- contradictory project documents
+- speculative architecture growth
+- overconfident recommendations
+- context leakage between planning phases
+- unnecessary process expansion
+
+When outputs become unfocused or contradictory, reduce context scope and regenerate artifacts from the latest trusted decisions.
+
+## Human-Readable Artifacts
+
+Mano artifacts are optimized for humans first. They should be easy to read, edit, trim, or replace manually without rerunning a skill. Skills accelerate planning, but they do not own the documents.
+
+The backlog may include a short optional `Core Product Principles` section for durable product intent that should survive across phases, such as speed, simplicity, interaction feel, accessibility posture, or other values that would be easy to lose during iterative planning. Keep it small and human-editable.
+
+## Core Principles and Phase Context
+
+The backlog may contain a short, optional `Core Product Principles` section for durable product values that should survive across phases.
+
+This can include expectations such as speed, simplicity, interaction feel, accessibility level, tone, or other product values that are easy to lose during iterative planning.
+
+These principles do not need a separate process or artifact. They are human-readable backlog content.
+
+Skye owns this continuity and should copy only the principles relevant to the current phase into the phase brief. Downstream skills should operate from the phase brief and explicitly provided context rather than reading the backlog for general project memory.
+
