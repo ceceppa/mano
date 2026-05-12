@@ -318,25 +318,39 @@ Hooks should not define the main workflow, automatically load broad context, or 
 
 ## Optional Hooks
 
-Mano supports optional post-skill hooks through `_mano/hooks/`.
+Mano can support optional post-skill hooks through a local `hooks/` folder.
 
-Hooks are advisory reminders for extra checks after a Mano skill writes or updates an artifact. They are useful when you want to remember project-specific validation or specialist review without making it part of Mano's core workflow.
+Hooks are suggest-only. They do not run automatically.
 
-Hooks never run automatically.
-
-When an active hook exists, Mano should mention it after the related skill finishes and ask whether to run it. This keeps the human in control and avoids running reviews against draft artifacts that may still change.
-
-Hook files use the `post-` prefix:
+A hook becomes active only when an `.example.md` file is copied or renamed without `.example`:
 
 ```text
-_mano/hooks/post-spec.md
-_mano/hooks/post-rules.md
-_mano/hooks/post-ux.md
-_mano/hooks/post-ui.md
-_mano/hooks/post-stories.md
-_mano/hooks/post-review.md
+hooks/post-spec.example.md  -> inactive
+hooks/post-spec.md          -> active
 ```
 
-Files ending in `.example.md` are inactive examples. Copy or rename one to remove `.example` when you want to activate it.
+When an active hook exists, Mano mentions it after the related skill finishes and asks whether to run it.
 
-Use hooks for optional review, validation, or project-specific checks. Do not use hooks as mandatory hidden workflow steps.
+Hooks are useful for optional external review, validation, or specialist checks that are specific to your project.
+
+Default example hooks include:
+
+```text
+hooks/post-start.example.md
+hooks/post-spec.example.md
+hooks/post-rules.example.md
+hooks/post-ux.example.md
+hooks/post-ui.example.md
+hooks/post-stories.example.md
+hooks/post-review.example.md
+```
+
+To use a project-specific external check, copy an example hook and replace `[external-review-command]` in the suggested prompt with the command or skill you want to run.
+
+Mano should not:
+- run hooks automatically
+- print the hook's suggested prompt unless asked
+- mention specific external skill names in generic output
+- modify files through a hook unless explicitly asked
+
+Hooks are best run after the human reviews the generated artifact. This avoids stale validation when the artifact is edited after generation.

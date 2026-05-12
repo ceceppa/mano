@@ -1,18 +1,17 @@
-# post-spec hook
+# post-start hook
 
 ## Mode
 suggest
 
 ## Purpose
-Optional post-spec review after `mano spec` creates, updates, or validates technical artifacts.
+Optional post-start review after `mano start` creates or updates the backlog, phase suggestion, or phase brief.
 
 ## When useful
-- API contract changed
-- data model changed
-- persistence strategy changed
-- external interface changed
-- high-impact technical decision changed
-- existing spec was checked and the user wants a specialist review before stories or implementation
+- new backlog was created from a brief or PRD
+- phase scope was suggested or approved
+- Core Product Principles changed
+- backlog structure or statuses changed
+- phase brief was created or updated
 
 ## How to run
 
@@ -25,15 +24,14 @@ Replace `[external-review-command]` in your active project hook with the command
 ## Suggested prompt
 
 ```text
-[external-review-command] review the technical design in `_mano_output/tech-spec.md`.
+[external-review-command] review the planning artifacts in `_mano_output/backlog.md` and the current phase brief if present.
 
 Focus on:
-- API contract correctness
-- data model risks
-- persistence assumptions
-- interface consistency
-- missing edge cases
-- contradictions with the current phase brief
+- backlog structure and status accuracy
+- phase scope risks
+- missing or over-broad backlog items
+- Core Product Principles preservation
+- contradictions with the source brief
 
 Report issues, risks, contradictions, and suggested improvements.
 Do not modify files unless explicitly asked.

@@ -402,6 +402,42 @@ The following belong in the chat response only:
 
 The artifact should remain useful and readable outside Mano.
 
+## Post-Rules Hook Suggestion
+
+After `mano rules` completes, check whether an active post-rules hook exists:
+
+`_mano/hooks/post-rules.md`
+
+Ignore example hooks:
+
+`_mano/hooks/post-rules.example.md`
+
+If an active `post-rules.md` hook exists, do not run it automatically.
+
+Mention it in the final chat response before the next-action block.
+
+This applies whether the skill:
+- created an artifact
+- updated an artifact
+- checked existing artifacts and decided no update was needed
+
+Use this format:
+
+```text
+Active post-rules hook found: `_mano/hooks/post-rules.md`.
+-> Purpose: Optional specialist review of the project rules.
+-> Recommended timing: Run after reviewing the rules and before `mano stories` if implementation conventions could affect story quality.
+-> To run it, say: run the post-rules hook.
+```
+
+Do not mention specific third-party or external skill names in the generic Mano response.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute the hook without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.
+
 ## After completion
 
 Output a cold, structured execution log to the user indicating completion, pointing them to edit the file directly if needed.
@@ -413,22 +449,15 @@ Use this exact format:
 -> Action: Wrote _mano_output/project-rules.md
 -> Categories updated: [Components, Patterns, etc.]
 
-Choose the next action based on what's still missing or worth refining:
-- `mano ui` — if visual direction or component language still need defining
-- `mano stories` — if the phase is already clear enough to break into implementable work
-- `mano continue` — if you want Mano to pick only when there is a single obvious next step
-
-Type `mano` to see what's available.
+[Optional hook block if active]
 ```
 
-Rules for the next-action block:
-- Use the same block shape as `mano start` so the framework feels consistent across skills.
-- Include only the Mano actions that are actually useful from the current artifact state after `mano rules`.
-- Omit actions whose artifacts already exist and do not obviously need refinement.
-- If only one next action is genuinely obvious, list just that one action plus `mano continue` only if it still adds value.
-- If several next actions are valid, list them all instead of prescribing a fake sequence.
-- Keep the one-line reason style used by Skye.
-
+Choose the next action based on what's still missing or worth refining:
+- `mano spec` — if technical decisions, API contracts, data models, dependencies, persistence, or platform constraints need defining or updating
+- `mano stories` — if the phase is technically clear enough to break into implementable work
+- `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
+- `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
+- `mano continue` — only if it adds value and there may be a single obvious next step
 Do not add conversational fluff. Do not ask for confirmation.
 
 ## Updating existing rules

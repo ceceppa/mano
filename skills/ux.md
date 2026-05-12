@@ -66,6 +66,42 @@ For each screen, include:
 
 Use plain language. "Tapping a todo on the list opens Todo Detail as a full screen. Back button returns to the list." Not "stack screen pushed from tab context."
 
+## Post-UX Hook Suggestion
+
+After `mano ux` completes, check whether an active post-ux hook exists:
+
+`_mano/hooks/post-ux.md`
+
+Ignore example hooks:
+
+`_mano/hooks/post-ux.example.md`
+
+If an active `post-ux.md` hook exists, do not run it automatically.
+
+Mention it in the final chat response before the next-action block.
+
+This applies whether the skill:
+- created an artifact
+- updated an artifact
+- checked existing artifacts and decided no update was needed
+
+Use this format:
+
+```text
+Active post-ux hook found: `_mano/hooks/post-ux.md`.
+-> Purpose: Optional specialist review of the UX artifact.
+-> Recommended timing: Run after reviewing the UX artifact and before UI or stories if interaction quality matters for this phase.
+-> To run it, say: run the post-yx hook.
+```
+
+Do not mention specific third-party or external skill names in the generic Mano response.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute the hook without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.
+
 ## After completion
 
 Output a cold, structured execution log to the user indicating completion, pointing them to edit the file directly if needed. Use this exact format:

@@ -385,6 +385,42 @@ If the user edits UI/UX in a story during review:
 
 Never silently edit approved work.
 
+## Post-Stories Hook Suggestion
+
+After `mano stories` completes, check whether an active post-stories hook exists:
+
+`_mano/hooks/post-stories.md`
+
+Ignore example hooks:
+
+`_mano/hooks/post-stories.example.md`
+
+If an active `post-stories.md` hook exists, do not run it automatically.
+
+Mention it in the final chat response before the next-action block.
+
+This applies whether the skill:
+- created an artifact
+- updated an artifact
+- checked existing artifacts and decided no update was needed
+
+Use this format:
+
+```text
+Active post-stories hook found: `_mano/hooks/post-stories.md`.
+-> Purpose: Optional specialist review of the current phase stories.
+-> Recommended timing: Run after reviewing the stories and before implementation if story quality or sequencing matters.
+-> To run it, say: run the post-stories hook.
+```
+
+Do not mention specific third-party or external skill names in the generic Mano response.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute the hook without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.
+
 ## Forbidden
 
 - Do not write stories that need verbal explanation.

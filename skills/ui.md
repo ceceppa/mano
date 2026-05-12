@@ -172,6 +172,42 @@ On subsequent phases, Luna reads existing `design-brief.md` and checks if new co
 - Use real content from the phase brief in the sample mockup, not lorem ipsum.
 - Preference capture must stay short. Do not turn `mano ui` into open-ended design discovery.
 
+## Post-UI Hook Suggestion
+
+After `mano ui` completes, check whether an active post-ui hook exists:
+
+`_mano/hooks/post-ui.md`
+
+Ignore example hooks:
+
+`_mano/hooks/post-ui.example.md`
+
+If an active `post-ui.md` hook exists, do not run it automatically.
+
+Mention it in the final chat response before the next-action block.
+
+This applies whether the skill:
+- created an artifact
+- updated an artifact
+- checked existing artifacts and decided no update was needed
+
+Use this format:
+
+```text
+Active post-ui hook found: `_mano/hooks/post-ui.md`.
+-> Purpose: Optional specialist review of the UI/design artifact.
+-> Recommended timing: Run after reviewing the UI artifact and before rules or stories if component guidance affects implementation.
+-> To run it, say: run the post-ui hook.
+```
+
+Do not mention specific third-party or external skill names in the generic Mano response.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute the hook without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.
+
 ## Forbidden
 
 - Do not generate wireframes or full mockups.

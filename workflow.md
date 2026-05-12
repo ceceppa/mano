@@ -391,45 +391,51 @@ Default to the smallest relevant context.
 
 Only request or load additional artifacts when they materially change the current output.
 
-## Post-Skill Hooks
+## Optional Post-Skill Hooks
 
 Mano supports optional post-skill hooks in `_mano/hooks/`.
 
-Hooks are suggest-only. They do not run automatically.
+Hooks are suggest-only. They never run automatically.
 
-After a skill writes or updates an artifact, check for an active hook matching the skill name:
+After any Mano skill completes, check for an active hook matching the skill name:
 
 ```text
 _mano/hooks/post-[skill].md
 ```
 
+Ignore example hooks:
+
+```text
+_mano/hooks/post-[skill].example.md
+```
+
 Examples:
+- `mano start` checks for `_mano/hooks/post-start.md`
+- `mano spec` checks for `_mano/hooks/post-spec.md`
+- `mano rules` checks for `_mano/hooks/post-rules.md`
+- `mano ux` checks for `_mano/hooks/post-ux.md`
+- `mano ui` checks for `_mano/hooks/post-ui.md`
+- `mano stories` checks for `_mano/hooks/post-stories.md`
+- `mano review` checks for `_mano/hooks/post-review.md`
+
+If an active hook exists, mention it in the final chat response before the next-action block and ask whether to run it.
+
+Use this format:
 
 ```text
-_mano/hooks/post-spec.md
-_mano/hooks/post-rules.md
-_mano/hooks/post-stories.md
+Active post-[skill] hook found: `_mano/hooks/post-[skill].md`.
+-> Purpose: Optional specialist review of the generated or current artifact.
+-> Recommended timing: Run after reviewing the artifact and before the next dependent Mano action if this check matters for the phase.
 ```
 
-Ignore files ending in `.example.md`.
+Do not run the hook without explicit user confirmation.
 
-If an active hook exists, mention it in the final chat response and ask whether to run it.
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
 
-Recommended wording:
+Do not mention specific third-party or external skill names in generic Mano output.
 
-```text
-Active post-spec hook found: `_mano/hooks/post-spec.md`.
+Do not write hook suggestions into generated artifacts.
 
-Run it now, or review the generated artifact first?
-```
+Hooks are best run after the human has reviewed or accepted the generated artifact. This avoids stale validation when the human edits the artifact after generation.
 
-Run the hook only after explicit user confirmation.
-
-Hooks are best run after the human has reviewed or accepted the generated artifact. Do not automatically run hooks that may:
-- suggest changes
-- modify artifacts
-- validate unstable draft content
-- trigger additional specialist review
-- require rerunning after human edits
-
-Hook output belongs in chat unless the user explicitly asks to update an artifact.
+Hooks are for optional review, validation, or project-specific checks. They are not mandatory hidden workflow steps.

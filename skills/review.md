@@ -204,6 +204,42 @@ Dave must use `_mano/templates/phase-review.md` as the source of truth for revie
 - The example sections in `_mano/templates/phase-review.md` are structural references only. Do not copy them verbatim into the live file.
 - Keep each appended entry concise and concrete. Write for someone who was not in the room.
 
+## Post-Review Hook Suggestion
+
+After `mano review` completes, check whether an active post-review hook exists:
+
+`_mano/hooks/post-review.md`
+
+Ignore example hooks:
+
+`_mano/hooks/post-review.example.md`
+
+If an active `post-review.md` hook exists, do not run it automatically.
+
+Mention it in the final chat response before the next-action block.
+
+This applies whether the skill:
+- created an artifact
+- updated an artifact
+- checked existing artifacts and decided no update was needed
+
+Use this format:
+
+```text
+Active post-review hook found: `_mano/hooks/post-review.md`.
+-> Purpose: Optional specialist review of the phase review and backlog updates.
+-> Recommended timing: Run after reviewing the phase review if the outcome changes future planning or project assumptions.
+-> To run it, say: run the post-review hook.
+```
+
+Do not mention specific third-party or external skill names in the generic Mano response.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute the hook without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.
+
 ## Forbidden
 
 - Do not skip the review questions. Prior conversations do not count as a review.

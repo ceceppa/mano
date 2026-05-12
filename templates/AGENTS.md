@@ -60,17 +60,35 @@ Specialization is maintained through selective context exposure and user discipl
 
 Use each role to focus attention on a specific planning concern rather than assuming strict separation.
 
-## Optional Post-Skill Hooks
+## Post-Skill Hooks
 
 After completing a Mano skill, check `_mano/hooks/` for an active post-hook matching the skill name.
 
 Examples:
+- `mano start` checks for `_mano/hooks/post-start.md`
 - `mano spec` checks for `_mano/hooks/post-spec.md`
 - `mano rules` checks for `_mano/hooks/post-rules.md`
+- `mano ux` checks for `_mano/hooks/post-ux.md`
+- `mano ui` checks for `_mano/hooks/post-ui.md`
 - `mano stories` checks for `_mano/hooks/post-stories.md`
+- `mano review` checks for `_mano/hooks/post-review.md`
 
-Ignore `.example.md` files.
+Ignore `.example.md` hooks.
 
 Hooks are suggest-only. Do not run them automatically.
 
-If an active hook exists, mention it in the final response and ask whether the user wants to run it now or review the generated artifact first.
+If an active hook exists, mention it in the final response before the next-action block:
+
+```text
+Active post-[skill] hook found: `_mano/hooks/post-[skill].md`.
+-> Purpose: Optional specialist review of the generated or current artifact.
+-> Recommended timing: Run after reviewing the artifact and before the next dependent Mano action if this check matters for the phase.
+```
+
+Do not mention specific third-party or external skill names in generic Mano output.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute hooks without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.

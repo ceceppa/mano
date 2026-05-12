@@ -175,36 +175,65 @@ If a decision requires highlighting (like a volatile library choice or a complex
 ### Hard constraint
 Tech spec must stay compact. Aim for roughly 400-800 words outside compact tables and keep it readable in under five minutes. Do not generate large architecture documents.
 
+## Post-Spec Hook Suggestion
+
+After `mano spec` completes, check whether an active post-spec hook exists:
+
+`_mano/hooks/post-spec.md`
+
+Ignore example hooks:
+
+`_mano/hooks/post-spec.example.md`
+
+If an active `post-spec.md` hook exists, do not run it automatically.
+
+Mention it in the final chat response before the next-action block.
+
+This applies whether the skill:
+- created an artifact
+- updated an artifact
+- checked existing artifacts and decided no update was needed
+
+Use this format:
+
+```text
+Active post-spec hook found: `_mano/hooks/post-spec.md`.
+-> Purpose: Optional specialist review of the current technical artifacts.
+-> Recommended timing: Run before `mano stories` if API, data model, persistence, or external interface quality matters for this phase.
+-> To run it, say: run the post-spec hook.
+```
+
+Do not mention specific third-party or external skill names in the generic Mano response.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute the hook without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.
+
 ## After completion
 
-Output a cold, structured execution log to the user indicating completion, pointing them to edit the file directly if needed. Use this exact format:
+Output a cold, structured execution log to the user indicating completion, pointing them to edit the file directly if needed.
 
-```
-[HELEN] Executed `mano spec`
+Use this format:
+
+```text
+[Helen]: Executed `mano spec`
 -> Scope: Phase [N]
--> Action: Wrote _mano_output/tech-spec.md
--> Key decisions: [1-2 brief bullet points on major library/data model choices]
+-> Action: Wrote or updated `_mano_output/tech-spec.md`
+-> Key decisions: [1-2 brief points on major library, architecture, API, or data-model choices]
+
+[Optional hook block if active]
+```
 
 Choose the next action based on what's still missing or worth refining:
-- `mano ux` — if user-facing flows still need defining
-- `mano ui` — if visual direction or component language still need defining
-- `mano rules` — if project conventions or framework constraints still need codifying
-- `mano stories` — if the phase is already clear enough to break into implementable work
-- `mano continue` — if you want Mano to pick only when there is a single obvious next step
+- `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying
+- `mano stories` — if the phase is technically clear enough to break into implementable work
+- `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
+- `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
+- `mano continue` — only if it adds value and there may be a single obvious next step
 
 Type `mano` to see what's available.
-```
-
-Rules for the next-action block:
-- Use the same block shape as `mano start` so the framework feels consistent across skills.
-- Do not print generic placeholder text like "choose the next Mano action".
-- Include only the Mano actions that are actually useful from the current artifact state after `mano spec`.
-- Omit actions whose artifacts already exist and do not obviously need refinement.
-- If only one next action is genuinely obvious, list just that one action plus `mano continue` only if it still adds value.
-- If several next actions are valid, list them all instead of prescribing a fake sequence.
-- Keep the one-line reason style used by Skye.
-
-Do not add conversational fluff.
 
 ## Forbidden
 

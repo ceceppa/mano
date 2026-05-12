@@ -408,6 +408,42 @@ Choose the next action based on what's still missing or worth refining:
 Type `mano` to see what's available.
 ```
 
+## Post-Start Hook Suggestion
+
+After `mano start` completes, check whether an active post-start hook exists:
+
+`_mano/hooks/post-start.md`
+
+Ignore example hooks:
+
+`_mano/hooks/post-start.example.md`
+
+If an active `post-start.md` hook exists, do not run it automatically.
+
+Mention it in the final chat response before the next-action block.
+
+This applies whether the skill:
+- created an artifact
+- updated an artifact
+- checked existing artifacts and decided no update was needed
+
+Use this format:
+
+```text
+Active post-start hook found: `_mano/hooks/post-start.md`.
+-> Purpose: Optional specialist review of the planning artifacts.
+-> Recommended timing: Run after reviewing the backlog or phase brief if planning scope, backlog quality, or product continuity matters before moving on.
+-> To run it, say: run the post-start hook.
+```
+
+Do not mention specific third-party or external skill names in the generic Mano response.
+
+Do not print the hook's suggested prompt unless the user asks to run or view the hook.
+
+Do not execute the hook without explicit user confirmation.
+
+Do not write hook suggestions into generated artifacts.
+
 ## Forbidden
 
 - Do not propose solutions or architecture.
