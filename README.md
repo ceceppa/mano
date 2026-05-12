@@ -315,3 +315,28 @@ hooks/post-review.example.md
 To test a hook, copy or rename it to the active post-hook name, for example `hooks/post-spec.md`.
 
 Hooks should not define the main workflow, automatically load broad context, or become mandatory gates unless the project deliberately chooses that convention.
+
+## Optional Hooks
+
+Mano supports optional post-skill hooks through `_mano/hooks/`.
+
+Hooks are advisory reminders for extra checks after a Mano skill writes or updates an artifact. They are useful when you want to remember project-specific validation or specialist review without making it part of Mano's core workflow.
+
+Hooks never run automatically.
+
+When an active hook exists, Mano should mention it after the related skill finishes and ask whether to run it. This keeps the human in control and avoids running reviews against draft artifacts that may still change.
+
+Hook files use the `post-` prefix:
+
+```text
+_mano/hooks/post-spec.md
+_mano/hooks/post-rules.md
+_mano/hooks/post-ux.md
+_mano/hooks/post-ui.md
+_mano/hooks/post-stories.md
+_mano/hooks/post-review.md
+```
+
+Files ending in `.example.md` are inactive examples. Copy or rename one to remove `.example` when you want to activate it.
+
+Use hooks for optional review, validation, or project-specific checks. Do not use hooks as mandatory hidden workflow steps.

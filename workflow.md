@@ -390,3 +390,46 @@ Before finalizing an artifact, check that it is:
 Default to the smallest relevant context.
 
 Only request or load additional artifacts when they materially change the current output.
+
+## Post-Skill Hooks
+
+Mano supports optional post-skill hooks in `_mano/hooks/`.
+
+Hooks are suggest-only. They do not run automatically.
+
+After a skill writes or updates an artifact, check for an active hook matching the skill name:
+
+```text
+_mano/hooks/post-[skill].md
+```
+
+Examples:
+
+```text
+_mano/hooks/post-spec.md
+_mano/hooks/post-rules.md
+_mano/hooks/post-stories.md
+```
+
+Ignore files ending in `.example.md`.
+
+If an active hook exists, mention it in the final chat response and ask whether to run it.
+
+Recommended wording:
+
+```text
+Active post-spec hook found: `_mano/hooks/post-spec.md`.
+
+Run it now, or review the generated artifact first?
+```
+
+Run the hook only after explicit user confirmation.
+
+Hooks are best run after the human has reviewed or accepted the generated artifact. Do not automatically run hooks that may:
+- suggest changes
+- modify artifacts
+- validate unstable draft content
+- trigger additional specialist review
+- require rerunning after human edits
+
+Hook output belongs in chat unless the user explicitly asks to update an artifact.

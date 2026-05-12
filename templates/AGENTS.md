@@ -59,3 +59,18 @@ Roles in Mano are reasoning lenses, not isolated autonomous agents.
 Specialization is maintained through selective context exposure and user discipline. Models may still merge assumptions or infer information outside the intended scope.
 
 Use each role to focus attention on a specific planning concern rather than assuming strict separation.
+
+## Optional Post-Skill Hooks
+
+After completing a Mano skill, check `_mano/hooks/` for an active post-hook matching the skill name.
+
+Examples:
+- `mano spec` checks for `_mano/hooks/post-spec.md`
+- `mano rules` checks for `_mano/hooks/post-rules.md`
+- `mano stories` checks for `_mano/hooks/post-stories.md`
+
+Ignore `.example.md` files.
+
+Hooks are suggest-only. Do not run them automatically.
+
+If an active hook exists, mention it in the final response and ask whether the user wants to run it now or review the generated artifact first.
