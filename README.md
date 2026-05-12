@@ -171,21 +171,7 @@ Because Mano operates on a strictly "à la carte" file-based system, you can com
 - `ux-flow.md`
 - `project-rules.md`
 
-## Optional Skill Chaining
 
-Mano does not automatically trigger extra skills after commands.
-
-This is intentional.
-
-Skills are small and can be run manually against generated artifacts when useful. This keeps the workflow explicit, lightweight, and human-directed.
-
-Examples:
-- After creating a phase brief, ask another skill to challenge the scope.
-- After generating stories, ask for a review against the phase brief.
-- After feedback, ask Skye to update the backlog before starting the next phase.
-
-Use extra skill passes when they add value. Skip them when they do not.
-˜
 # Reality of Context
 
 Mano does not create true agent isolation, persistent memory, or deterministic workflows.
@@ -239,6 +225,7 @@ Watch for:
 
 When outputs become unfocused or contradictory, reduce context scope and regenerate artifacts from the latest trusted decisions.
 
+
 ## Human-Readable Artifacts
 
 Mano artifacts are optimized for humans first. They should be easy to read, edit, trim, or replace manually without rerunning a skill. Skills accelerate planning, but they do not own the documents.
@@ -255,3 +242,71 @@ These principles do not need a separate process or artifact. They are human-read
 
 Skye owns this continuity and should copy only the principles relevant to the current phase into the phase brief. Downstream skills should operate from the phase brief and explicitly provided context rather than reading the backlog for general project memory.
 
+## Skill Tightening Patterns
+
+Mano can use small skill-tightening patterns without changing its philosophy.
+
+These patterns are not extra process steps. They are lightweight guardrails that make skills more predictable, especially with smaller models.
+
+### Anti-Rationalization
+
+Skills should not justify weak outputs with excuses such as:
+- "This is enough for now" when important ambiguity remains.
+- "The user can figure it out later" when a decision affects the current phase.
+- "This is obvious" when the artifact does not state the reasoning clearly.
+- "We can add detail later" when missing detail blocks implementation.
+- "The model probably knows" when context was not provided.
+
+When a skill cannot produce a useful artifact from the available context, it should say what is missing, explain the tradeoff, and offer a smaller useful next step.
+
+### Exit Criteria
+
+Artifacts should have simple "good enough" checks.
+
+Exit criteria are not approval gates. They help humans quickly judge whether an artifact is usable, incomplete, or too vague.
+
+A Mano artifact is usually good enough when:
+- it supports the current phase
+- it is readable and editable by a human
+- it avoids unnecessary future planning
+- it exposes important assumptions
+- it gives the next skill or developer enough context to continue
+
+### Progressive Disclosure
+
+Skills should load or request only the context needed for the current task.
+
+Prefer:
+- phase brief before full backlog
+- relevant artifact sections before entire documents
+- explicit provided context before inferred project memory
+- small targeted follow-up questions before broad discovery
+
+Avoid pulling every artifact into every skill. Mano should preserve useful reasoning quality by keeping context bounded.
+
+## Optional Post-Skill Hooks
+
+Mano can support optional post-skill hooks through a local `hooks/` folder.
+
+Hooks are not part of the default workflow. They are a project-level extension point for users who want to run extra checks or external skills after a Mano skill creates or updates artifacts.
+
+This keeps Mano's core workflow small while allowing local experimentation.
+
+Post hooks should be:
+- optional
+- explicit
+- post-skill only
+- scoped to files touched by the original skill
+- advisory by default
+
+Example inactive hook files use the `.example.md` suffix:
+
+```text
+hooks/post-spec.example.md
+hooks/post-stories.example.md
+hooks/post-review.example.md
+```
+
+To test a hook, copy or rename it to the active post-hook name, for example `hooks/post-spec.md`.
+
+Hooks should not define the main workflow, automatically load broad context, or become mandatory gates unless the project deliberately chooses that convention.

@@ -358,3 +358,48 @@ Other skills should not edit the backlog except for narrow gap-resolution status
 
 Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
 
+## Skill Tightening
+
+Use these patterns inside skills when outputs start becoming vague, overconfident, or too broad.
+
+### Anti-Rationalization
+
+Do not allow a skill to excuse weak work.
+
+If the available context is insufficient, the skill should:
+1. state what is missing
+2. explain the risk or tradeoff
+3. produce a smaller useful output if possible
+4. avoid inventing certainty
+
+### Exit Criteria
+
+Before finalizing an artifact, check that it is:
+- scoped to the current phase
+- human-readable and directly editable
+- free of unnecessary process or speculative future work
+- explicit about assumptions and unresolved questions
+- useful for the next action
+
+### Progressive Disclosure
+
+Default to the smallest relevant context.
+
+Only request or load additional artifacts when they materially change the current output.
+
+## Optional Post-Skill Hooks
+
+If a project has a `hooks/` folder, a user may run a post-skill hook after a Mano skill creates or updates artifacts.
+
+Hooks receive the skill name, touched files, and any explicitly provided context.
+
+Use hooks for optional validation or external skill chaining, not for defining the main Mano workflow.
+
+Recommended behavior:
+1. run the Mano skill
+2. identify files created or updated
+3. check whether a matching active hook exists, such as `hooks/post-spec.md`
+4. ask the user whether to run the hook, unless the project has explicitly chosen automatic post-hooks
+5. keep hook output short and actionable
+
+Dot-prefixed files such as `hooks/post-spec.example.md` are examples only and should not run by default.
