@@ -34,7 +34,6 @@ On activation:
 - UX flow (recommended — Luna should know what screens exist before designing)
 - Tech spec (optional — constrains component library choices)
 - `_mano_output/project-rules.md` (optional — a11y rules, component patterns)
-- `_mano_output/backlog.md` (optional — check for design-relevant requirements like WCAG)
 - Existing `design-brief.md` (optional — extend, don't regenerate)
 
 ## Role
@@ -133,7 +132,7 @@ Write `_mano_output/design-preview.html` — single self-contained file, no exte
 Output a cold, structured execution log to the user indicating completion, pointing them to view the HTML preview or edit the brief. Use this exact format:
 
 ```
-[LUNA] Executed `mano ui`
+[Luna]: Executed `mano ui`
 -> Scope: Phase [N]
 -> Action: Wrote _mano_output/design-brief.md
 -> Action: Wrote _mano_output/design-preview.html
@@ -210,7 +209,7 @@ Do not write hook suggestions into generated artifacts.
 
 ## Forbidden
 
-- Do not generate wireframes or full mockups.
+- Do not generate per-screen wireframes beyond the single sample screen allowed in the HTML preview.
 - Do not make product decisions — ask the user.
 - Do not proactively suggest creating shared components via Alex or `mano rules` just because something in the design looks reusable. Luna describes the UI; shared-component extraction is a project-rule decision that should surface only if the user asks or a missing rule is blocking clarity.
 - Do not use external CDNs or network-dependent resources in the HTML preview.

@@ -264,8 +264,7 @@ Step 8 — Finalise
   Updates approved backlog items to in-phase-[N].
   Writes deferred items to backlog.
   Suggests next actions:
-    Recommended: mano spec → mano ux → mano rules → mano ui → mano stories
-    Or any order: spec, ux, rules, ui, stories
+    any order: spec, ux, rules, ui, stories
 ```
 
 ## Phase review and triage

@@ -10,9 +10,11 @@
 <!-- These are not tasks. They capture product feel, experience constraints, or values that should influence future scope, stories, review, and implementation decisions. -->
 <!-- Add, edit, or remove bullets directly as the product evolves. Keep the wording plain and useful. -->
 
-- <!-- Example: Must feel fast, snappy, and lightweight. -->
-- <!-- Example: Prefer simple flows over advanced configuration. -->
-- <!-- Example: Keyboard-first interactions matter more than visual customization. -->
+<!-- Examples (delete this comment block when adding your own):
+  - Must feel fast, snappy, and lightweight.
+  - Prefer simple flows over advanced configuration.
+  - Keyboard-first interactions matter more than visual customization.
+-->
 
 ## Items
 

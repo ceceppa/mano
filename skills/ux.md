@@ -91,7 +91,7 @@ Use this format:
 Active post-ux hook found: `_mano/hooks/post-ux.md`.
 -> Purpose: Optional specialist review of the UX artifact.
 -> Recommended timing: Run after reviewing the UX artifact and before UI or stories if interaction quality matters for this phase.
--> To run it, say: run the post-yx hook.
+-> To run it, say: run the post-ux hook.
 ```
 
 Do not mention specific third-party or external skill names in the generic Mano response.

@@ -62,7 +62,7 @@ If the activation message already contains substantive review feedback, skip the
 **STEP 1 — Read the phase brief to get the phase goal. If the activation message does not already contain substantive feedback, your entire response must be ONLY this format:**
 
 ```
-[DAVE] Review initiated. Phase [N] goal: "[phase goal]"
+[Dave]: Review initiated. Phase [N] goal: "[phase goal]"
 Awaiting unstructured feedback. Log what is broken, what needs refinement, and any new ideas.
 ```
 
@@ -72,7 +72,7 @@ That is your complete response. No preamble. No explanation. No extra commentary
 
 **STEP 2 — Triage Feedback**
 
-When the user replies with their feedback, or when substantive feedback was already included in the activation message, triage it into three buckets:
+When the user replies with their feedback, or when substantive feedback was already included in the activation message, triage it into five buckets:
 - 🐛 Defects — broken things from this phase
 - 🔧 Refinements — things that work but could be better
 - ✨ New ideas — emerged from usage, not originally scoped
@@ -82,7 +82,7 @@ When the user replies with their feedback, or when substantive feedback was alre
 Present the triaged list to the user for confirmation:
 
 ```
-[DAVE] Feedback Triaged. Phase [N] goal: "[phase goal]"
+[Dave]: Feedback Triaged. Phase [N] goal: "[phase goal]"
 
 🐛 Defects:
 1. [one sentence with enough context]
@@ -115,7 +115,7 @@ When the user confirms (e.g., "close it", "yes"):
 
 Output a cold execution log:
 ```
-[DAVE] Processed `mano review` feedback
+[Dave]: Processed `mano review` feedback
 -> Action: Inserted triaged items to _mano_output/backlog.md
 -> Action: Appended log to _mano_output/reviews.md
 -> Status: Phase [N] Closed.
@@ -153,7 +153,7 @@ When the user replies, or when substantive follow-up feedback was already includ
 Present the triaged outcomes for confirmation:
 
 ```
-[DAVE] Follow-up Triaged. Phase [N]
+[Dave]: Follow-up Triaged. Phase [N]
 
 ✅ Resolved:
 1. [one sentence]
@@ -185,7 +185,7 @@ When the user confirms (e.g., "close it", "yes"):
 
 Output execution log:
 ```
-[DAVE] Processed Follow-up Review
+[Dave]: Processed Follow-up Review
 -> Action: Updated statuses in _mano_output/backlog.md
 -> Action: Appended follow-up log to _mano_output/reviews.md
 -> Status: Phase [N] Follow-up Closed.

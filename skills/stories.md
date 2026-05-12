@@ -265,13 +265,22 @@ Special case for onboarding, form, settings, and other stateful frontend stories
   This usually means the screen may produce larger stories, weaker separation of concerns, or unclear ownership between flows. Decide whether to simplify the screen now or accept that complexity in this phase.
   
   1. ✂️ Split now — Best if this should become separate screens or steps. I will stop story generation and hand off cleanly to Rob. Tell the user exactly which screen is overloaded, why that matters, and that the next step is to type `mano ux` in chat so Rob can update only the changed screen in `_mano_output/ux-flow.md`. Then tell them to run `mano stories` again once the UX flow is revised.
-  2. 📝 Add to backlog — Best if the overload is real but not worth fixing in this phase. I'll record it in `backlog.md` as a follow-up and proceed with stories for the current flow.
+  2. 📝 Suggest backlog item — Best if the overload is real but not worth fixing in this phase. I will not write to the backlog directly. I will include a suggested backlog item in the execution log and tell the user to run mano start or edit _mano_output/backlog.md manually if they want to keep it.
   3. ⏩ Keep as-is — Best if the combined flow is intentional. I'll keep the current UX flow, but where possible I'll split implementation into linked stories that add one part of the screen at a time instead of writing one giant story.
   ```
   
-  On option 2, Marco writes the item to `_mano_output/backlog.md` with context, then proceeds.
-  
   On option 1, Marco does not pretend the UX flow was changed already and does not continue into story generation. He stops after the handoff message.
+
+  On option 2, Marco does **not** write to `_mano_output/backlog.md`. Marco emits a suggested backlog item in the final execution log using this format:
+
+```text
+-> Suggested backlog item:
+   Title: [short title]
+   Type: refinement
+   Source: Phase [N] story planning
+   Context: [why the overload matters and what should be revisited]
+   Status: backlog
+```
 
 ## Generation flow
 
@@ -313,7 +322,7 @@ For each story:
 When all stories are written, output a cold execution log with the summary:
 
 ```
-[MARCO] Executed `mano stories`
+[Marco]: Executed `mano stories`
 -> Scope: Phase [N]
 -> Inserted: [N] stories to _mano_output/phase-[N]/stories/
   0. [title] → story-0-[slug].md   [only when a bootstrap story exists]
@@ -412,6 +421,7 @@ Do not write hook suggestions into generated artifacts.
 
 ## Forbidden
 
+- Do not write to `_mano_output/backlog.md`. If story planning reveals deferred work, output a suggested backlog item in the execution log and tell the user to run `mano start` or edit the backlog manually.
 - Do not write stories that need verbal explanation.
 - Do not write acceptance criteria as implementation tasks.
 - Do not write "As a user."

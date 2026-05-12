@@ -39,8 +39,8 @@
 
 ## Assumption Log
 
-| Assumption | Predicted outcome | Confidence | Note |
-|-----------|-------------------|------------|------|
+| Assumption | Risk if wrong |
+|---|---|
 | | | | |
 
 ## Acknowledged Risks

@@ -21,7 +21,7 @@ On activation:
 5. If returning for a new phase, read the previous phase brief from `_mano_output/phase-[N-1]/phase-brief.md` as a starting point.
 
 ```
-[SKYE] Awaiting project context. Please provide:
+[Skye]: Awaiting project context. Please provide:
 1. What do you want to build?
 2. Who is it for?
 3. What platform? (web, mobile, desktop)
@@ -196,7 +196,7 @@ Prioritise:
 3. Momentum — items that build on what was just shipped
 
 ```
-[SKYE] Suggested Phase [N] Scope:
+[Skye]: Suggested Phase [N] Scope:
 
 1. 🐛 [Title] — [one-line reason why now]
 2. 🔧 [Title] — [one-line reason why now]
@@ -282,14 +282,14 @@ If everything is clear, say so and move to 7c. Do not ask "still accurate?" — 
 
 Each phase brief carries everything needed to understand the phase. No external files required.
 
-- **Problem** — one or two sentences
+- **Why this phase** — one or two sentences
 - **Vision** — max 3 sentences. Write it like you're explaining to a friend, not writing a spec. No jargon, no technical framing. "Make categories visual with icons and let me reflect on goals when I complete them" not "Add shared category icons so category identity is easier to parse."
 - **Design principle** — one sentence
 - **Core product principles** — optional. Include only durable principles from the backlog that matter for this phase. Do not invent new principles here.
 - **Phase goal** — one sentence. The single most important outcome of this phase. If you have to cut scope, this is what survives. Example: "The user can complete a goal with a reflection" — everything else is secondary.
 - **Phase scope** — what ships, one line per item
 - **Exit criteria** — what a user can do when it's done
-- **Assumption log** — min two, each with the assumption, predicted outcome, confidence, and note
+- **Assumption log** — include only assumptions whose failure would materially change the phase. Zero is acceptable.
 - **Acknowledged risks** — concise list of what could still go wrong in this phase
 
 ### Hard constraint
