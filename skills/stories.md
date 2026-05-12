@@ -300,17 +300,6 @@ Mention the supporting context found. List only the files that actually exist:
 [Marco]: Story inputs available: [phase brief, tech spec, UX flow, design brief, project rules].
 ```
 
-### Step 0b — Project rules
-
-Check if `_mano_output/project-rules.md` exists.
-
-**If it exists**: Read and acknowledge.
-
-**If it doesn't exist**:
-- Create `_mano_output/project-rules.md` using the template from `_mano/templates/project-rules.md`.
-- Read the seeded file and continue. This seeds the workflow baseline so the coding agent has the story-finding and story-completion rules even when the user skips `mano start`.
-- Do not stop story generation just to ask whether rules exist. If the user needs project-specific rules beyond the seeded baseline, they can add them later via `mano rules`.
-
 ### Step 1 — Write all stories to files
 
 Generate all stories for the phase and write them directly to `_mano_output/phase-[N]/stories/`. Do not print stories in the chat — write them to files only. This keeps context lean and lets multiple developers pick up stories simultaneously.
