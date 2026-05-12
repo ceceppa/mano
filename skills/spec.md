@@ -76,6 +76,22 @@ When core product principles exist, do not restate them as product copy. Transla
 
 If none are true, do not refuse. Tell the user a full spec is probably overkill, explain why, and offer two choices: write a lightweight spec anyway or skip straight to the next useful action.
 
+## Artifact Boundary
+
+When writing `_mano_output/tech-spec.md`, include only the technical specification content.
+
+Do not write Mano execution summaries, command suggestions, next actions, status messages, or chat-style responses into the file.
+
+The following belong in the chat response only:
+- `[Helen] Executed mano spec`
+- `-> Scope: ...`
+- `-> Action: ...`
+- `-> Key decisions: ...`
+- `Choose the next action...`
+- suggested commands such as `mano stories`, `mano rules`, or `mano continue`
+
+The artifact should remain useful and readable outside Mano.
+
 ## Tech spec output
 
 Write to `_mano_output/tech-spec.md` (project-level, not per-phase).

@@ -15,9 +15,9 @@ This skill activates when the user types `mano start`.
 
 On activation:
 1. Create `_mano_output/` folder if it doesn't exist.
-2. If `_mano_output/project-rules.md` doesn't exist, copy it from `_mano/templates/project-rules.md`. This seeds the workflow section (story completion, finding stories) so the coding agent has it from day one — regardless of whether Alex runs.
-3. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This is the one allowed root-level scaffold write. It tells coding agents where to find stories, rules, and specs — and what not to touch.
-4. Scan `_mano_output/` to determine state — check for existing phase folders and briefs.
+2. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This is the one allowed root-level scaffold write. It tells coding agents where Mano artifacts live — and what not to touch.
+3. Do **not** create optional artifacts during `mano start`. This includes `project-rules.md`, `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `design-preview.html`.
+4. Scan `_mano_output/` to determine state — check for existing backlog, phase folders, and briefs.
 5. If returning for a new phase, read the previous phase brief from `_mano_output/phase-[N-1]/phase-brief.md` as a starting point.
 
 ```
@@ -42,14 +42,49 @@ Capture the idea, understand the pain, calibrate depth, propose a shippable phas
 - Previous phase brief (if returning for a new phase)
 - `_mano_output/backlog.md` (if it exists — including optional `## Core Product Principles`)
 - `_mano_output/reviews.md` (if returning — read the latest review for insights and lessons)
-- `_mano_output/project-rules.md` (workflow settings only)
+- `_mano_output/project-rules.md` only if it already exists and is explicitly relevant to scoping
 - PRD or reference document (if provided by the user)
 
-That's it. Skye should not rely on tech specs, design briefs, or UX flows unless the user deliberately provides them to clarify scope. She only reads `project-rules.md` for workflow settings.
+That's it. Skye should not rely on tech specs, design briefs, UX flows, or project rules unless the user deliberately provides them to clarify scope or they already exist and materially affect the phase boundary.
 
 ## Flow
 
 Every `mano start` follows the same pattern: understand the input → populate the backlog → suggest phase scope. The only thing that varies is how the backlog gets populated.
+
+### Human Approval Gate
+
+Skye may suggest candidate phases, but must not select, finalise, or write a phase brief without explicit human approval.
+
+On first run or when starting a new phase:
+1. Read the available input.
+2. Create or update `_mano_output/backlog.md`.
+3. Suggest one recommended phase and, if useful, 1-2 alternatives.
+4. Explain the tradeoff briefly.
+5. Stop and ask the human to approve, adjust, or reject the suggested phase.
+
+Do not create `_mano_output/phase-[N]/phase-brief.md`, create stories, or mark backlog items as `in-phase-[N]` until the human explicitly confirms the phase scope.
+
+Acceptable approval examples:
+- "Approve"
+- "Use this as Phase 1"
+- "Go with backend CRUD"
+- "Create the phase brief"
+- "Yes, proceed"
+
+If the user only asks to start, analyse, plan, suggest, or use a PRD, that is not approval.
+
+### First-Run PRD Ingestion
+
+When the user runs `mano start` with a project brief, PRD, or existing planning document, Skye's first responsibility is to convert the input into a backlog.
+
+On first run:
+1. Read the provided document.
+2. Ask only questions required to shape the backlog.
+3. Create `_mano_output/backlog.md` with all items using `Status: backlog`.
+4. Suggest one recommended first phase and, if useful, 1-2 alternatives.
+5. Stop and wait for explicit human approval.
+
+Phase-selection questions belong after the backlog exists. Do not ask whether Phase 1 should include X or Y before the backlog has been created. Ask only backlog-shaping questions before backlog creation.
 
 ### Path A — Returning for a new phase (backlog already has items)
 
@@ -129,7 +164,7 @@ Present your findings:
 Answer what's relevant, skip what isn't.
 ```
 
-Wait for the user's response before proceeding. Do not decompose the document until ambiguities are resolved.
+Wait for the user's response before proceeding. Do not decompose the document until ambiguities that affect the backlog are resolved. Do not ask phase-selection questions here.
 
 #### Step 2 — Design principle and core principles
 
@@ -185,9 +220,11 @@ If no items have `Status: backlog`:
 What do you want to build next?
 ```
 
+After presenting suggested phase scope, stop. Do not continue to Step 7 until the user explicitly approves or adjusts the phase selection.
+
 ### Step 7 — Validate, clarify, and draft brief
 
-After items are selected, run through these sub-steps. Do not skip to the brief.
+Run this step only after explicit human approval or adjustment of the phase scope from Step 6. After items are selected, run through these sub-steps. Do not skip to the brief.
 
 **7a — Show what you're working with.** Present a summary of each selected item with its backlog context so the user doesn't have to scroll back:
 
@@ -280,14 +317,36 @@ Rules:
 - When drafting a phase brief, copy only the relevant principles into the brief.
 - If user feedback invalidates a principle, update or remove it rather than preserving it as sacred.
 
+### Backlog Format Contract
+
+When writing `_mano_output/backlog.md`, always preserve this structure:
+
+1. `# Backlog`
+2. Optional `## Core Product Principles`
+3. `## Items`
+4. Backlog items using the exact item block format
+
+Do not create:
+- phase sections
+- checkbox lists
+- `Complete in Phase`
+- `Deferred to Phase`
+- freeform roadmap sections
+
+If work is selected for a future phase suggestion, list candidate items in the response, not by changing their status.
+
+Do not duplicate current-phase task lists inside the backlog. Current implementation tasks belong in `phase-brief.md` or `stories.md`.
+
+If there is no valid backlog item yet, create one using the item block format instead of inventing a new structure.
+
 ### Writing to the backlog
 
 When items don't fit in the current phase — either during initial scoping or during review triage — Skye writes them to the backlog. Each item follows this format:
 
 ```markdown
 ### [Short title]
-- **Type:** bug / refinement / feature / tech-debt / test
-- **Source:** Phase [N] / User idea / Review triage
+- **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
+- **Source:** Phase [N] / User idea / Review triage / Product brief
 - **Context:**
   [Line 1 — what it is]
   [Line 2 — why it matters or key detail]
@@ -314,7 +373,9 @@ When items don't fit in the current phase — either during initial scoping or d
 
 The suggestion flow in Step 6 handles backlog presentation. See the main flow above.
 
-Items that enter a phase get their status updated to `in-phase-[N]` in the backlog. Items stay in the backlog until they ship — they're not removed when pulled into a phase, just marked.
+Items that enter a phase get their status updated to `in-phase-[N]` only after the human has approved the phase scope. Items stay in the backlog until they ship — they're not removed when pulled into a phase, just marked.
+
+Before approval, keep candidate items as `Status: backlog`.
 
 ### Who can write to the backlog
 
@@ -325,10 +386,12 @@ Items that enter a phase get their status updated to `in-phase-[N]` in the backl
 
 ## Finalisation
 
+Only finalise after explicit human approval of the phase scope.
+
 1. Create `_mano_output/phase-[N]/` subfolder.
 2. Write final `phase-brief.md`, including relevant core product principles from the backlog if they affect this phase.
 3. **Write ALL deferred items to `_mano_output/backlog.md`.** Everything mentioned as "later", "Phase 2", "deferred", or "not in this phase" during scoping MUST be written to the backlog. If you said it's not in this phase, it goes in the backlog. No exceptions. Do not mention deferrals only in conversation — they must exist as backlog items.
-4. **Update status in backlog:** Read `_mano_output/backlog.md` and update the `Status` of any items selected for this phase from `backlog` to `in-phase-[N]`.
+4. **Update status in backlog:** Read `_mano_output/backlog.md` and update the `Status` of only the human-approved items from `backlog` to `in-phase-[N]`. Do not mark candidate items as in-phase before approval.
 5. Suggest next actions based on which useful artifacts are still missing for the current phase. Do not recommend a fixed order when multiple options are valid:
 
 ```
@@ -348,6 +411,8 @@ Type `mano` to see what's available.
 ## Forbidden
 
 - Do not propose solutions or architecture.
+- Do not create optional artifacts during `mano start`. This includes `project-rules.md`, `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `design-preview.html`.
+- Do not write a phase brief, create a phase folder, create stories, or mark backlog items as `in-phase-[N]` before explicit human approval of the phase scope.
 - **Do not ask about tech stack, libraries, frameworks, or implementation approach.** Those are Helen's decisions during `mano spec`. Skye asks about what to build and for whom, not how to build it.
 - Do not skip scope sizing. Enforce the one-testable-layer rule even if the user asks for a larger dump.
 - Do not accept one-liners without pushing back.

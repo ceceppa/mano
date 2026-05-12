@@ -1,9 +1,8 @@
 # Backlog — [Project Name]
 
 <!-- Future work, deferred items, and ideas. -->
-<!-- Skye owns backlog curation during scoping. Dave appends or resolves items during review. Other personas may read specific items when their flow requires it. -->
+<!-- Skye owns backlog curation during scoping. Dave appends or resolves items during review. -->
 <!-- You can edit this file directly at any time. -->
-
 
 ## Core Product Principles
 
@@ -17,12 +16,17 @@
 
 ## Items
 
-<!-- Item format:
+Every backlog item must use this exact format.
+
+Do not create phase sections such as `Phase 1`, `Complete in Phase`, or `Deferred`.
+Do not use checkbox task lists.
+Do not mark items as `in-phase-[N]` until the human has approved that phase scope.
+Current-phase implementation work belongs in `phase-brief.md` or `stories.md`, not as checklist tasks in the backlog.
+
 ### [Short title]
 - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
-- **Source:** Phase [N] / User idea / Review triage
+- **Source:** Phase [N] / User idea / Review triage / Product brief
 - **Context:**
   What it is.
   Why it matters or key detail.
 - **Status:** backlog / in-phase-[N] / resolved
--->

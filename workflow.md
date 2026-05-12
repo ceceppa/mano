@@ -36,7 +36,7 @@ This means:
 
 **No invented files.** Skills only write files defined by the Mano contract: planning artifacts under `_mano_output/` plus the root-level `AGENTS.md` scaffold copied during `mano start`. Do not create tracking files, progress files, or any other artifact not specified by the framework.
 
-**Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to seed output files. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
+**Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to create output files only when the relevant action is explicitly run. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
 
 In installed projects, Mano framework files live under `_mano/skills`, `_mano/templates`, and `_mano/custom`. This repository may store the source files at the root, but the runtime contract presented to coding agents uses `_mano/...` paths.
 
@@ -136,7 +136,6 @@ When the user types `mano status`:
 2. Report: active phase, what files exist, what is missing, and what is present-but-incomplete.
 3. If multiple planning actions are still reasonable, show them as `Next options` instead of forcing a single `Suggested next action`.
 4. Only show one `Suggested next action` when the next move is genuinely narrower than the other valid options.
-5. When relevant, call out seeded defaults explicitly. Example: `project-rules.md exists but still appears to be the default template, so mano rules is still a valid next action.`
 6. For user-facing or mobile phases, missing `design-brief.md` and `design-preview.html` should keep `mano ui` visible as a valid next option unless the current phase is already obviously ready for stories without further design clarification.
 7. Do not activate any skill.
 
@@ -221,14 +220,17 @@ Valid actions: `spec` (Helen — `tech-spec.md`), `ux` (Rob — `ux-flow.md`), `
 
 ## First run — new project
 
+Human approval boundary: `mano start` may create or update the backlog and suggest a phase, but it must not write `phase-[N]/phase-brief.md` or mark items as `in-phase-[N]` until the user explicitly approves the phase scope.
+
 ```
 User types: mano start
 
 Step 1 — Skye activates
   Creates _mano_output/ if it doesn't exist.
-  Seeds project-rules.md from template if it doesn't exist.
+  Creates _mano_output/ if it doesn't exist.
   Copies AGENTS.md to the project root if it doesn't exist.
-  Presents numbered intake prompt (what, who, platform).
+  Does not create optional artifacts such as project-rules.md.
+  Presents numbered intake prompt or reads the provided PRD/brief.
 
 Step 2 — Understand the why
   Skye asks about the pain point and existing solutions.
@@ -242,12 +244,12 @@ Step 4 — Design principle
 
 Step 5 — Populate the backlog
   Decompose everything into backlog items.
-  Write to _mano_output/backlog.md.
+  Write to _mano_output/backlog.md with all items as Status: backlog.
 
 Step 6 — Suggest phase scope
   Suggest items from the backlog.
   One testable layer per phase.
-  User picks, adjusts, or chooses their own.
+  Stop and wait for explicit human approval or adjustment.
 
 Step 7 — Validate, clarify, draft brief
   Show selected items with context.
@@ -256,8 +258,10 @@ Step 7 — Validate, clarify, draft brief
   Draft phase brief. User confirms.
 
 Step 8 — Finalise
+  Runs only after explicit human approval of the phase scope.
   Creates _mano_output/phase-[N]/.
   Writes phase-brief.md.
+  Updates approved backlog items to in-phase-[N].
   Writes deferred items to backlog.
   Suggests next actions:
     Recommended: mano spec → mano ux → mano rules → mano ui → mano stories
@@ -358,3 +362,31 @@ Other skills should not edit the backlog except for narrow gap-resolution status
 
 Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
 
+## Skill Tightening
+
+Use these patterns inside skills when outputs start becoming vague, overconfident, or too broad.
+
+### Anti-Rationalization
+
+Do not allow a skill to excuse weak work.
+
+If the available context is insufficient, the skill should:
+1. state what is missing
+2. explain the risk or tradeoff
+3. produce a smaller useful output if possible
+4. avoid inventing certainty
+
+### Exit Criteria
+
+Before finalizing an artifact, check that it is:
+- scoped to the current phase
+- human-readable and directly editable
+- free of unnecessary process or speculative future work
+- explicit about assumptions and unresolved questions
+- useful for the next action
+
+### Progressive Disclosure
+
+Default to the smallest relevant context.
+
+Only request or load additional artifacts when they materially change the current output.

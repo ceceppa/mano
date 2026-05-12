@@ -2,9 +2,9 @@
 
 <!-- Self-contained. Everything needed to understand this phase is here. -->
 
-## Problem
+## Why This Phase
 
-<!-- One or two sentences. -->
+<!-- One or two sentences explaining why this phase should happen now and what it makes possible. -->
 
 ## Vision
 
