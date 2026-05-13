@@ -62,3 +62,5 @@ Accessibility level: WCAG 2.1 AA
 -->
 
 ---
+
+<!-- Do not add a "Workflow", "How to use", or "Implementation guide" section. The rules in this file are the instructions; meta-guidance about applying them lives in AGENTS.md. -->

@@ -402,17 +402,39 @@ The following belong in the chat response only:
 
 The artifact should remain useful and readable outside Mano.
 
+## Workflow Boundary
+
+`project-rules.md` is for project implementation conventions, not Mano workflow instructions.
+
+Do not add sections that explain:
+- how Mano works
+- when to run Mano commands
+- how stories are found or completed
+- how rules should evolve during implementation
+- what implementers should do after finishing a story
+
+Those instructions belong in `AGENTS.md`, `workflow.md`, story files, or the final chat response.
+
+If implementation reveals a repeated pattern that should become a rule, do not instruct the implementer to edit `project-rules.md` directly. Capture it during `mano review` or run `mano rules` intentionally.
+
 ## Post-Rules Hook Suggestion
 
-After `mano rules` completes, check whether an active post-rules hook exists:
+After `mano rules` completes, always check whether this file exists:
 
 `_mano/hooks/post-rules.md`
 
-Ignore example hooks:
+Ignore this file:
 
 `_mano/hooks/post-rules.example.md`
 
 If an active `post-rules.md` hook exists, do not run it automatically.
+
+
+Do not run the hook automatically.
+
+Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
+
+This step is required even when no spec update was needed.
 
 Mention it in the final chat response before the next-action block.
 
@@ -421,21 +443,8 @@ This applies whether the skill:
 - updated an artifact
 - checked existing artifacts and decided no update was needed
 
-Use this format:
-
-```text
-Active post-rules hook found: `_mano/hooks/post-rules.md`.
--> Purpose: Optional specialist review of the project rules.
--> Recommended timing: Run after reviewing the rules and before `mano stories` if implementation conventions could affect story quality.
--> To run it, say: run the post-rules hook.
-```
-
-Do not mention specific third-party or external skill names in the generic Mano response.
-
 Do not print the hook's suggested prompt unless the user asks to run or view the hook.
-
 Do not execute the hook without explicit user confirmation.
-
 Do not write hook suggestions into generated artifacts.
 
 ## After completion
@@ -495,6 +504,7 @@ Prefer narrow edits.
 - Do not produce a bloated rulebook. Keep each update concise enough to scan in a few minutes.
 - Do not write execution logs, next actions, or command suggestions into `_mano_output/project-rules.md`.
 - **Do not modify files in `_mano/templates/`.** Templates are read-only source material. Alex only writes to `_mano_output/project-rules.md`.
+- Do not generate a Workflow, How-to-use, or Implementation guide section. Rules are the instructions, not the meta-instructions about applying them. Framework philosophy about how rules evolve belongs in workflow.md, not in project-rules.md.
 
 ## Progressive Disclosure
 

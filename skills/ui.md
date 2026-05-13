@@ -173,15 +173,21 @@ On subsequent phases, Luna reads existing `design-brief.md` and checks if new co
 
 ## Post-UI Hook Suggestion
 
-After `mano ui` completes, check whether an active post-ui hook exists:
+After `mano ui` completes, always check whether this file exists:
 
 `_mano/hooks/post-ui.md`
 
-Ignore example hooks:
+Ignore this file:
 
 `_mano/hooks/post-ui.example.md`
 
-If an active `post-ui.md` hook exists, do not run it automatically.
+If an active `post-ui.md` hook exists, prepare the generic hook block for the final chat response.
+
+Do not run the hook automatically.
+
+Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
+
+This step is required even when no spec update was needed.
 
 Mention it in the final chat response before the next-action block.
 
@@ -190,21 +196,8 @@ This applies whether the skill:
 - updated an artifact
 - checked existing artifacts and decided no update was needed
 
-Use this format:
-
-```text
-Active post-ui hook found: `_mano/hooks/post-ui.md`.
--> Purpose: Optional specialist review of the UI/design artifact.
--> Recommended timing: Run after reviewing the UI artifact and before rules or stories if component guidance affects implementation.
--> To run it, say: run the post-ui hook.
-```
-
-Do not mention specific third-party or external skill names in the generic Mano response.
-
 Do not print the hook's suggested prompt unless the user asks to run or view the hook.
-
 Do not execute the hook without explicit user confirmation.
-
 Do not write hook suggestions into generated artifacts.
 
 ## Forbidden
