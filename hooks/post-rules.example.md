@@ -21,10 +21,24 @@ Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
+## Inputs
+
+Allow the review skill to read:
+
+- `_mano_output/project-rules.md` — implementation conventions and guardrails being reviewed
+- `_mano_output/phase-[N]/phase-brief.md` — current phase scope and constraints
+- `_mano_output/tech-spec.md` if it exists — technical decisions that rules should reference but not duplicate
+- `_mano_output/ux-flow.md` if it exists — user-flow constraints that may require implementation rules
+- `_mano_output/design-brief.md` if it exists — component, accessibility, and UI constraints that may require implementation rules
+
+Optional files may be missing. Do not fail because an optional file is absent.
+
+Use only the context relevant to the review target. Do not invent missing context.
+
 ## Suggested prompt
 
 ```text
-[external-review-command] review the project rules in `_mano_output/project-rules.md`.
+[external-review-command] review the project rules using the inputs listed in this hook.
 
 Focus on:
 - clarity

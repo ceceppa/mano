@@ -21,10 +21,22 @@ Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
+## Inputs
+
+Allow the review skill to read:
+
+- `_mano_output/backlog.md` — backlog structure, Core Product Principles, deferred work, and item statuses
+- `_mano_output/phase-[N]/phase-brief.md` if it exists — approved phase scope and current phase context
+- `_mano_output/reviews.md` if it exists — prior phase findings, unresolved feedback, and lessons that may affect the next phase
+
+Optional files may be missing. Do not fail because an optional file is absent.
+
+Use only the context relevant to the review target. Do not invent missing context.
+
 ## Suggested prompt
 
 ```text
-[external-review-command] review the planning artifacts in `_mano_output/backlog.md` and the current phase brief if present.
+[external-review-command] review the planning artifacts using the inputs listed in this hook.
 
 Focus on:
 - backlog structure and status accuracy

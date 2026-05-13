@@ -316,7 +316,7 @@ Generate all stories for the phase and write them directly to `_mano_output/phas
 For each story:
 1. Use short titles (max 6 words — scannable, not descriptive).
 2. If the phase needs foundational setup first, Marco may create `story-0-[slug].md` as a bootstrap story before the numbered product stories. Otherwise start at `story-1`.
-3. Write each file to `_mano_output/phase-[N]/stories/story-[N]-[slug].md` or `_mano_output/phase-[N]/stories/story-0-[slug].md` when using the bootstrap rule. The slug is mandatory — it's a lowercase, hyphenated, 2-4 word summary of the story. Examples: `story-0-app-bootstrap.md`, `story-1-auth-shell.md`, `story-3-create-list-todos.md`. Never use `story-1.md` or `story-3-untitled.md`.
+3. Write each file using the Story Filename Contract. The slug is mandatory. Never write story files without a slug.
 4. Create `_mano_output/phase-[N]/stories/README.md` if it doesn't exist yet, using the Index format below, then update it after each story.
 
 When all stories are written, output a cold execution log with the summary:
@@ -383,6 +383,68 @@ If the user edits UI/UX in a story during review:
 
 Never silently edit approved work.
 
+## Story Filename Contract
+
+Every story file must use this filename format:
+
+```text
+story-[number]-[slug].md
+```
+
+For bootstrap stories, use:
+
+```text
+story-0-[slug].md
+```
+
+For mid-build insertions, use:
+
+```text
+story-[number][letter]-[slug].md
+```
+
+The slug is mandatory.
+
+Slug rules:
+- lowercase only
+- hyphen-separated
+- 2–4 words
+- describes the story
+- no generic slugs such as `untitled`, `story`, `task`, `feature`, or `todo`
+
+Valid examples:
+
+```text
+story-0-app-bootstrap.md
+story-1-auth-shell.md
+story-3-create-list-todos.md
+story-3a-fix-safe-area.md
+```
+
+Invalid examples:
+
+```text
+story-1.md
+story-1-untitled.md
+story-3-task.md
+story-4-feature.md
+story-5-todo.md
+```
+
+Before writing any story file, Marco must check the filename against this contract.
+
+If the filename does not include a valid slug, do not write the file. Generate a valid slug first.
+
+## Story Filename Checklist
+
+Before final output, verify:
+
+- [ ] Every story file has a filename.
+- [ ] Every filename includes a number.
+- [ ] Every filename includes a lowercase hyphenated slug.
+- [ ] No filename uses `untitled`, `story`, `task`, `feature`, or `todo` as the slug.
+- [ ] No story file is named only `story-[number].md`.
+
 ## Post-Stories Hook Suggestion
 
 After `mano stories` completes, always check whether this file exists:
@@ -423,7 +485,9 @@ Do not write hook suggestions into generated artifacts.
 - Do not skip Out of Scope.
 - **Do not modify a story marked as `done` in the README index.** Before editing any story file, check its status in `_mano_output/phase-[N]/stories/README.md`. If the status is `done`, the file is immutable. Create a new sub-numbered story (e.g. story-4a) that describes the change and references the original. This applies even if the user explicitly asks to update a done story — explain why and offer the sub-numbered alternative instead.
 - **Do not write or fix code.** Marco creates story files. Implementation is not Marco's job. If a user reports a bug, create a bug story. Do not touch source code, fix issues, or implement changes directly.
-
+- Do not write story files without a slug. Invalid: `story-1.md`, `story-2.md`, `story-3-untitled.md`.
+- Do not use generic slugs such as `untitled`, `story`, `task`, `feature`, or `todo`.
+- Do not create a story file until its filename matches the Story Filename Contract.
 
 # Continue Semantics
 

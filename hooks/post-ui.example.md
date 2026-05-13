@@ -21,10 +21,24 @@ Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
+## Inputs
+
+Allow the review skill to read:
+
+- `_mano_output/design-brief.md` — visual direction, components, layout guidance, and UI constraints
+- `_mano_output/design-preview.html` if it exists — rendered preview or reference implementation
+- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, product intent, and relevant principles
+- `_mano_output/ux-flow.md` if it exists — screen flow and interaction context
+- `_mano_output/project-rules.md` if it exists — implementation contracts, accessibility rules, and component constraints
+
+Optional files may be missing. Do not fail because an optional file is absent.
+
+Use only the context relevant to the review target. Do not invent missing context.
+
 ## Suggested prompt
 
 ```text
-[external-review-command] review the UI/design artifact in `_mano_output/design-brief.md`.
+[external-review-command] review the UI/design artifact using the inputs listed in this hook.
 
 Focus on:
 - component clarity

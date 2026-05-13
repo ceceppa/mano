@@ -21,10 +21,22 @@ Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
+## Inputs
+
+Allow the review skill to read:
+
+- `_mano_output/ux-flow.md` — user flow, screen sequence, interaction expectations, and UX assumptions
+- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, user outcome, assumptions, and risks
+- `_mano_output/backlog.md` only if the hook is explicitly checking Core Product Principles or deferred UX work
+
+Optional files may be missing. Do not fail because an optional file is absent.
+
+Use only the context relevant to the review target. Do not invent missing context.
+
 ## Suggested prompt
 
 ```text
-[external-review-command] review the UX artifact in `_mano_output/ux-flow.md`.
+[external-review-command] review the UX artifact using the inputs listed in this hook.
 
 Focus on:
 - flow gaps

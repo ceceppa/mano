@@ -183,100 +183,72 @@ Categories to consider. Skip what does not apply:
 
 ## Preferred rule shape
 
-Good:
-
-```md
-## Error Responses
-
-**What:** Every API error must use the shared error helper and an error code defined in `tech-spec.md`.
-
-**Why:** Keeps backend and frontend error handling deterministic without duplicating the error-code table.
-
-**Pattern:**
-```typescript
-return errorResponse("Todo not found", 2001, 404);
-```
-
-Do not invent error codes inline. Update `tech-spec.md` first if a new code is needed.
-```
-
-Bad:
-
-```md
-## Error Handling
-
-The API uses this error format:
-{
-  "error": "string describing the error",
-  "code": "number of the error"
-}
-
-Error codes are:
-1001 validation error...
-1002 empty todo...
-3001 unsupported version...
-```
-
-The good version tells contributors what to do.
-
-The bad version repeats the specification.
-
-## Response and API contract rules
-
-When writing rules about API responses, pagination, versioning, errors, or schemas:
-
-- State the contributor behaviour.
-- Reference `tech-spec.md` for the full contract.
-- Do not repeat full endpoint tables, full response objects, or full error-code lists.
+Good project rules are short, enforceable, and tied to repeated implementation behaviour.
 
 Good:
 
 ```md
-## Response Shape
+## Shared Helper Usage
 
-**What:** Do not return raw entities from route handlers. Use the response shapes defined in `tech-spec.md`.
+**What:** Use the shared helper for repeated formatting, validation, or response shaping instead of duplicating the logic inline.
 
-**Why:** Keeps frontend integration predictable.
+**Why:** Keeps repeated behaviour consistent across files and makes future changes local.
 
 **Pattern:**
 ```typescript
-return Response.json({ data: todo }, { status: 200 });
+const result = sharedHelper(input);
 ```
 
-For collection and pagination response details, see `tech-spec.md`.
-```
-
-Bad:
+Then add a generic boundary section:
 
 ```md
-## Success Responses
+## Contract Reference Rules
 
-GET /api/todos returns:
-{ data: Todo[], pagination: { next_cursor, has_more } }
+When a rule depends on a contract defined elsewhere, reference the source artifact instead of duplicating it.
 
-POST /api/todos returns:
-{ data: Todo }
+Examples of contracts that usually belong elsewhere:
+- API contracts
+- data models
+- component inventories
+- visual design details
+- UX flows
+- dependency choices
+- platform constraints
+- error-code tables
+- storage strategy
 
-PATCH /api/todos/{id} returns:
-{ data: Todo }
+Project rules should describe how contributors apply those contracts consistently.
+
+Good:
+
+```md
+## Contract Usage
+
+**What:** Follow the contract defined in `tech-spec.md` when implementing this area. Do not invent additional fields, states, variants, or response shapes inline.
+
+**Why:** Keeps implementation aligned with the approved technical contract.
+
+**Pattern:**
+- Use the fields, routes, states, or variants named in the source artifact.
+- If the contract is missing something, update the source artifact before implementing a new shape.
 ```
-
 ## Testing rules
 
-Testing rules should describe what contributors must cover, not recreate the full test plan.
+Testing rules should describe what contributors must cover, not recreate a full test plan.
 
 Good:
 
 ```md
-## Testing Strategy
+## Testing Expectations
 
-**What:** Cover each route’s success path, validation failures, not-found cases, and database failure behavior.
+**What:** Add tests for the behaviour introduced or changed by each story, including expected failure or edge cases when relevant.
 
-**Why:** Phase 1 has no frontend safety net, so API behavior must be verified directly.
+**Why:** Keeps stories verifiable without creating separate test-only work.
 
 **Pattern:**
-- Unit tests: validation, error mapping, response shape
-- Integration tests: Prisma schema, persistence, full request-response behavior
+- Behaviour test: expected successful path
+- Edge test: invalid, empty, missing, or boundary input when relevant
+- Regression test: only when fixing a known defect
 ```
 
 Avoid:
@@ -332,60 +304,55 @@ For the **Components** category specifically:
   - repeating that a `StepIndicator` exists
   - repeating its visual role
   - restating screen-specific composition already captured in the design brief
+## Push-back on Premature Rules
 
-## Push-back on Over-engineered Rules
+Do not write a rule just because something might be useful later.
 
-If the user asks for a rule that introduces unnecessary abstraction, custom infrastructure, or premature architecture, do not write the rule automatically.
-
-Reject or narrow the rule when it would:
-- reinvent a mature library
-- introduce a custom framework
-- add abstractions before repeated need exists
+Reject, narrow, or defer a requested rule when it would:
+- add abstraction before repeated need exists
 - make simple implementation harder
-- create rules for future features not being built now
-- increase maintenance cost without solving a current problem
+- create conventions for features not being built now
+- duplicate guidance already captured in another artifact
+- introduce maintenance cost without solving a current problem
+- turn a one-off implementation choice into a project-wide standard
 
-Examples:
-- custom `useFetch` with caching, retries, race handling, and optimistic updates
-- bespoke state-management system
-- homegrown form library
-- custom query cache
-- custom router abstraction
-- custom design token engine
-- generic repository/service layers before the project needs them
-- premature plugin architecture
-- reusable component contracts before reuse exists
+When a requested rule is useful but premature, do not add it as an active rule. Capture it in `## ❌ Not yet` only if it is genuinely tempting enough to warn against.
 
-When rejecting or narrowing a rule, explain the reason in the execution log:
-
-```text
--> ⚠️ Rejected rule: Custom useFetch.
-   Reason: Rebuilding fetching, caching, retries, and race handling is a maintenance footgun. If this becomes necessary, ask Helen (`mano spec`) to choose an established library such as TanStack Query or SWR.
-```
-
-If the idea is useful but premature, capture it in `## ❌ Not yet` instead of turning it into a rule.
-
-Good:
+Use this format:
 
 ```md
 ## ❌ Not yet
 
-- Custom query cache — Not needed until the frontend has repeated server-state complexity. Prefer a proven library if this becomes necessary.
+- [Premature pattern] — [why it is not needed in the current phase].
+```
+
+When rejecting or narrowing a rule, explain the reason in the execution log:
+
+```
+-> ⚠️ Rejected rule: [rule name]
+   Reason: [why this adds process weight, abstraction, or future-planning before the current phase needs it]
 ```
 
 Do not reject simple conventions just because they are new rules. Reject rules that create process weight or architecture before the current phase needs them.
 
-## Not yet section
 
-Add a `Not yet` section at the end of the file to explicitly document patterns to avoid when useful:
+This keeps the principle without dragging in specific technologies.
+
+I’d also remove the separate **Not yet section** heading entirely, because it duplicates the same idea. One section is enough.
+
+If you want it even tighter:
 
 ```md
-## ❌ Not yet
+## Push-back on Premature Rules
 
-- [Thing you might think you need but don't] — [why it's premature]
+Project rules should reduce repeated ambiguity, not predict the future.
+
+Do not add rules for patterns, abstractions, or features that are not needed in the current phase.
+
+If a requested rule is useful but premature, either reject it in the execution log or capture it under `## ❌ Not yet` when it is important enough to remember.
+
+Rules should earn their place by preventing a real implementation inconsistency now.
 ```
-
-Only add this section when there are genuinely tempting premature patterns to avoid.
 
 ## Artifact Boundary
 

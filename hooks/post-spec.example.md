@@ -14,6 +14,19 @@ Optional post-spec review after `mano spec` creates, updates, or validates techn
 - high-impact technical decision changed
 - existing spec was checked and the user wants a specialist review before stories or implementation
 
+## Inputs
+
+Allow the review skill to read:
+
+- `_mano_output/tech-spec.md` — technical decisions, dependencies, API contracts, data model, persistence, and platform constraints
+- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, intended outcome, assumptions, and risks
+- `_mano_output/openapi.yaml` if it exists — machine-readable API contract
+- project manifest and lockfile if they exist — actual installed dependencies and package manager evidence
+
+Optional files may be missing. Do not fail because an optional file is absent.
+
+Use only the context relevant to the review target. Do not invent missing context.
+
 ## How to run
 
 Run the relevant external or specialist review manually after reviewing and accepting the generated artifact.
@@ -25,7 +38,7 @@ Replace `[external-review-command]` in your active project hook with the command
 ## Suggested prompt
 
 ```text
-[external-review-command] review the technical design in `_mano_output/tech-spec.md`.
+[external-review-command] review the technical design using the inputs listed in this hook
 
 Focus on:
 - API contract correctness

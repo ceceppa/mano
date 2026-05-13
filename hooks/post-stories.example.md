@@ -21,10 +21,26 @@ Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
+## Inputs
+
+Allow the review skill to read:
+
+- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, exit criteria, assumptions, and risks
+- `_mano_output/phase-[N]/stories/README.md` — story index, order, status, and dependencies
+- `_mano_output/phase-[N]/stories/*.md` — generated story files
+- `_mano_output/tech-spec.md` if it exists — technical decisions and contracts stories must reflect
+- `_mano_output/project-rules.md` if it exists — implementation conventions stories must reflect
+- `_mano_output/ux-flow.md` if it exists — user flow and interaction sequencing
+- `_mano_output/design-brief.md` if it exists — UI/component requirements that stories must reflect
+
+Optional files may be missing. Do not fail because an optional file is absent.
+
+Use only the context relevant to the review target. Do not invent missing context.
+
 ## Suggested prompt
 
 ```text
-[external-review-command] review the story artifacts for the current phase.
+[external-review-command] review the story artifacts using the inputs listed in this hook.
 
 Focus on:
 - scope
