@@ -6,11 +6,28 @@ This project uses **Mano** for planning. Mano is a structured thinking tool — 
 
 ### Running Mano commands
 
-If the user types a Mano command in chat, treat that as an instruction to execute the corresponding Mano planning flow yourself.
+Mano commands are repo-local workflow instructions, not installed OpenCode skills.
 
-- `mano`, `mano status`, `mano continue`, and `mano help [skill]` should be handled according to [workflow.md](workflow.md).
-- `mano start`, `mano spec`, `mano ux`, `mano rules`, `mano ui`, `mano stories`, and `mano review` should activate the matching skill and follow that skill's contract.
-- Do not tell the user to run Mano commands manually just because they are planning commands. They are planning commands for the agent to carry out, not shell commands to bounce back to the user.
+If the user types a Mano command in chat, do **not** try to load an external skill named `mano`.
+
+Instead, execute the corresponding Mano planning flow by reading the local files in this repository:
+
+- `_mano/workflow.md`
+- `_mano/skills/[command].md`
+- any referenced templates or current `_mano_output/` artifacts
+
+Examples:
+
+- `mano start` → read `_mano/skills/start.md` and follow that flow
+- `mano spec` → read `_mano/skills/spec.md` and follow that flow
+- `mano rules` → read `_mano/skills/rules.md` and follow that flow
+- `mano stories` → read `_mano/skills/stories.md` and follow that flow
+- `mano review` → read `_mano/skills/review.md` and follow that flow
+- `mano continue` → read `_mano/workflow.md` and determine the next useful Mano action
+
+If a platform skill named `mano` is not available, that is not an error. Continue by using the local `_mano/` files.
+
+Only use external/platform skills when the user explicitly invokes them or when a Mano hook asks whether to run one and the user confirms.
 
 ### Implementing a story
 

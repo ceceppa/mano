@@ -215,6 +215,7 @@ Special case for onboarding, form, settings, and other stateful frontend stories
 - **Intentional multi-action screens should become linked stories, not giant stories.** If one screen intentionally contains multiple primary actions, keep the screen but split the implementation into sequential stories that add one primary action or decision at a time. Make the dependency explicit in `Notes` with a short line such as `Depends on: story-2` or `Builds on: story-2 primary sport selection`.
 
   A shared create/edit form for the same entity is not automatically an overloaded screen. If edit is the same screen shape with existing values pre-populated, Marco may keep the single UX screen and still split implementation into linked stories such as "add records" first and "edit existing records" second.
+- **Linked stories must own integration.** When a single user-visible behavior spans more than one story, the final story in the chain must include at least one acceptance criterion that exercises the full end-to-end path, not just the slice that story adds. Example: if story-2 defines beam origin, story-3 traces the beam, and story-4 adds mirror reflection, story-4 must have an AC like "Test: tapping emitter fires a beam that reflects off a mirror and hits the target." Each story passing in isolation is not enough — somebody must own the composition.
 - **Out of scope is mandatory.** Every story, even if brief.
 - **Cross-check the tech spec.** If a tech spec exists, ensure its decisions are reflected in acceptance criteria where relevant. If the spec says local storage or offline-first, at least one story must include a criterion like "data persists after closing and reopening the app." If the spec says biometric auth, a story must test it. Tech decisions that never appear in acceptance criteria are invisible to QA and will be skipped.
 
@@ -241,6 +242,13 @@ Special case for onboarding, form, settings, and other stateful frontend stories
   - Single item vs many items
   - Items at boundary values (0, negative, max int)
   - Concurrent modifications (if applicable)
+
+  **Edge cases to always consider for domain interactions (mechanics, rules, state machines):**
+  - Object interacting with another instance of itself (beam × beam, player × player)
+  - Object encountering an undefined or unhandled type (beam hits an unknown tile)
+  - Multiple actors triggering the same behavior simultaneously
+  - Behavior fired with no valid target, surface, or context
+  - Behavior fired while a prior instance of itself is still active
 
   Example story AC for a create endpoint:
   ```
@@ -332,6 +340,23 @@ Examples:
 - Do not write a beam-tracing story unless the beam origin/emitter is defined.
 - Do not write a mirror-reflection story unless mirror tiles or reflective behavior are represented.
 - Do not write a level-behavior story unless a default level or fixture exists for testing.
+
+## Story Reachability Check
+
+Before writing stories for interactive behavior, screens, endpoints, or any user-triggered action, Marco must confirm the behavior can actually be reached when the story ships.
+
+For each story, name:
+
+- What surface does this behavior live on? (screen, route, command, endpoint)
+- What user action or call invokes it?
+- How does the user reach that surface in the first place? (existing route, prior story, default app entry)
+
+If the wiring lives in another story, that story must already exist and run earlier in the order. If the wiring lives in this story, say so in the Implementation Reference. Stories that ship orphan components — a mounted screen with no route, a handler with no caller, an endpoint with no client surface — pass acceptance individually but produce features the user cannot reach.
+
+Examples:
+- Do not write a beam-firing story unless something owns the player input that triggers it (tile tap, button, key press) and the screen that hosts it.
+- Do not write a settings-form story unless an earlier story or this story exposes how the user opens settings.
+- Do not write an endpoint story without naming the client surface, seed call, or test harness that exercises it for verification.
 
 ### Step 1 — Write all stories to files
 

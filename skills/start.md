@@ -288,7 +288,7 @@ Each phase brief carries everything needed to understand the phase. No external 
 - **Core product principles** — optional. Include only durable principles from the backlog that matter for this phase. Do not invent new principles here.
 - **Phase goal** — one sentence. The single most important outcome of this phase. If you have to cut scope, this is what survives. Example: "The user can complete a goal with a reflection" — everything else is secondary.
 - **Phase scope** — what ships, one line per item
-- **Exit criteria** — what a user can do when it's done
+- **Exit criteria** — concrete sequence of user actions that proves the phase landed end-to-end. Write it as a demo script, not a capability list. Example: "Open app → default level loads → tap emitter → beam fires → reflects off mirror → hits target → win state appears." If the sequence cannot be written without ambiguity, the phase scope is unclear or scattered across disconnected pieces. This is the script used to verify the phase at review time.
 - **Assumption log** — include only assumptions whose failure would materially change the phase. Zero is acceptable.
 - **Acknowledged risks** — concise list of what could still go wrong in this phase
 
