@@ -259,9 +259,11 @@ Do not copy every principle automatically. If none matter for the selected phase
 **7b — Clarify.** Look at the selected items together and check for **problem and scope** issues only:
 - **Ambiguities in what to build** — "responsive across devices" could mean responsive web or native apps. Clarify the outcome, not the tech.
 - **Interactions** — items that might affect each other ("date picker and export — does export include date fields?")
-- **Scope gaps** — things the items assume but don't state about user behaviour or expected outcomes
+- **Scope gaps** — things the items assume but don't state, including system state, starting conditions, and referenced-but-undefined nouns. If the phase goal or scope mentions "the level," "the session," "the game," "the origin," "the scene," or any similar concept that hasn't been defined in Phase 1 or this brief, ask what it is concretely.
 
 **Do NOT ask about tech stack, libraries, styling, state management, or implementation approach.** Those are Helen's decisions during `mano spec`. Skye clarifies what to build and for whom. Helen decides how to build it.
+
+**Demo-sketch checkpoint.** Before drafting the brief, sketch the Exit Criteria as a concrete user-action sequence in your head — open the app, what loads, what the player does, what happens next, what proves it worked. If that sequence requires nouns you cannot ground in either Phase 1 or this brief (e.g. "the level," "the origin," "the starting scene"), surface them as scope-gap questions in this step. Do not move to 7c with hand-wavy placeholders for system state the implementer will have to invent.
 
 If any exist, ask:
 
