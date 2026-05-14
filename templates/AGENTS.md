@@ -25,6 +25,41 @@ If the user types a Mano command in chat, treat that as an instruction to execut
 9. Read `_mano_output/project-rules.md` only when the story explicitly points to a rule there, something remains ambiguous after reading the story and any mandatory tech-spec pre-read, or you need fuller context behind a rule already summarized in the story.
 10. After implementing, update the story's status to `done` in the stories README.md.
 
+## Implementation Output Discipline
+
+When implementing a Mano story, the implementing agent writes code and updates the story's status. It does not append completion reports, verification logs, behavioural confirmations, or implementation narratives to the story file.
+
+If implementation produces project-relevant decisions worth preserving — colour values, dimensions, performance budgets, accessibility measurements, architectural patterns, technique choices, library quirks discovered in practice — the agent surfaces them in chat and offers to capture them in the appropriate artifact:
+
+- Architectural or repeatable conventions → `_mano_output/project-rules.md`
+- Visual or design decisions → `_mano_output/design-brief.md`
+- Story-specific behavioural changes → the story's `## Changes` section (see "In-Flight Story Changes" below)
+
+The story file remains a planning artifact, not an implementation log. This applies to all implementing agents, including third-party language specialists and external coding skills.
+
+## In-Flight Story Changes
+
+When the user requests a behavioural change to a story already in progress, treat it as a story change, not just a code change.
+
+Before making the code change:
+
+1. Identify which acceptance criteria are affected.
+2. Suggest updated wording for the affected acceptance criteria.
+3. Ask the user to confirm or adjust the wording.
+4. After confirmation, append a one-line note to a `## Changes` section in the story file capturing what changed and why.
+
+Bug fixes that preserve the intended observable behaviour do not require a `## Changes` entry.
+
+Use this format:
+
+```md
+## Changes
+
+- [Date or short context]: [what changed] because [why it changed].
+```
+
+Do not add an empty ## Changes section to every story. Add it only when behaviour changes during implementation.
+
 ### Do not
 
 - Modify files in `_mano/` or `_mano/templates/` — these are framework files.
@@ -49,8 +84,6 @@ _mano_output/             ← Planning artifacts
     ├── phase-brief.md    ← Phase scope and goals
     └── stories/          ← Implementation stories (start here)
 ```
-
-
 
 ## Context Discipline
 

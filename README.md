@@ -230,6 +230,21 @@ Watch for:
 
 When outputs become unfocused or contradictory, reduce context scope and regenerate artifacts from the latest trusted decisions.
 
+## Project-Level Customization
+
+Mano is intentionally small. The skills, templates, and workflow documents in `_mano/` describe how Mano thinks, not how your specific project behaves. When you run Mano on a real project, you'll discover constraints, conventions, and integration friction that are specific to your stack, your tooling, or your collaborating skills. Those belong in your project's `AGENTS.md`, not in Mano itself.
+
+Common places where project-specific rules earn their place:
+
+- **Output discipline for third-party skills.** Specialist skills (language experts, code reviewers, accessibility auditors) often have their own output habits — verbose verification notes, scratch test files, narrative explanations appended to artifacts. These habits make sense for one-shot interactions and become noise in long-running projects. AGENTS.md is the right place to constrain them.
+
+- **Tooling conventions.** Package manager choice, test framework, build commands, dependency installation patterns. These are project decisions, not framework decisions. Recording them in AGENTS.md keeps implementing agents consistent across stories without bloating Mano's own files.
+
+- **Implementation house style.** Naming, file placement, framework-specific patterns. Some of these belong in `_mano_output/project-rules.md` (where Alex captures repeatable conventions); some belong in AGENTS.md (where coding agents read at session start). The line is roughly: rules that constrain *what gets built* go in project-rules; rules that constrain *how agents behave during implementation* go in AGENTS.md.
+
+- **Integration with external systems.** If your project uses an external review skill, a specific testing service, a particular deployment flow, document how Mano-shaped work hands off to those systems. Don't try to make Mano itself aware of them.
+
+The pattern is: Mano stays general; your project's AGENTS.md absorbs the specifics. This keeps Mano upgradable across projects and keeps your project's particular constraints from drifting into framework files where they don't belong.
 
 ## Human-Readable Artifacts
 

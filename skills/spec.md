@@ -164,6 +164,29 @@ Error format: [proposed shape]
 
   If a feature that uses app-only capabilities is also planned for a constrained environment, flag the incompatibility explicitly. Do not assume the developer knows the limitations.
 
+## Domain Model Completeness Check
+
+When the phase includes domain mechanics, game rules, workflows, entities, state machines, or non-trivial business logic, Helen must define the minimum data model needed to implement and test the phase.
+
+Before writing or confirming the spec, check:
+
+- What entities or objects exist?
+- What properties do they need for this phase?
+- What state changes during the phase?
+- What starts the main behavior?
+- What stops or completes the behavior?
+- What default/test data is needed to verify the behavior?
+
+If a story or phase goal depends on an object property, that property must appear in the data model or be explicitly deferred.
+
+Examples:
+- Beam tracing requires a beam origin/emitter and direction.
+- Mirror reflection requires a tile type or property that identifies reflective tiles.
+- Level loading requires a level structure or default test level.
+- Completion logic requires a target, goal, or win condition.
+
+Do not leave mechanics implied only by story wording.
+
 ### Spec generation — One-Shot
 
 Generate the complete tech spec in one go and write it directly to `_mano_output/tech-spec.md`. Do not pause for confirmation. Do not ask step-by-step questions. Make the most logical, concrete assumptions based on the phase brief and any constraints, and enforce them.

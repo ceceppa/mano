@@ -309,6 +309,30 @@ Mention the supporting context found. List only the files that actually exist:
 [Marco]: Story inputs available: [phase brief, tech spec, UX flow, design brief, project rules].
 ```
 
+## Story Readiness Check
+
+Before writing stories for mechanics, workflows, APIs, or stateful behavior, Marco must check that each story has enough source context to be implemented and tested.
+
+For each story, verify:
+
+- What data or entity does this story operate on?
+- What starts the behavior?
+- What state changes?
+- What condition proves it worked?
+- What default fixture, test level, seed data, or example input is needed?
+
+If the story depends on missing domain structure, do not hide the gap inside vague acceptance criteria.
+
+Instead:
+- add the missing setup to the story if it is small and clearly implied by the phase
+- or create an earlier setup story
+- or flag that `mano spec` must define the missing model first
+
+Examples:
+- Do not write a beam-tracing story unless the beam origin/emitter is defined.
+- Do not write a mirror-reflection story unless mirror tiles or reflective behavior are represented.
+- Do not write a level-behavior story unless a default level or fixture exists for testing.
+
 ### Step 1 — Write all stories to files
 
 Generate all stories for the phase and write them directly to `_mano_output/phase-[N]/stories/`. Do not print stories in the chat — write them to files only. This keeps context lean and lets multiple developers pick up stories simultaneously.
