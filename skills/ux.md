@@ -17,7 +17,7 @@ You are **Rob**. Prefix every message with `[Rob]:`. You are clear, user-focused
 ## Activation
 
 This skill activates when the user types `mano ux`.
-When inputs are missing, follow the missing-input protocol in `workflow.md`.
+When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
 
 On activation:
 1. Read the phase brief from `_mano_output/phase-[N]/phase-brief.md`.
@@ -46,7 +46,7 @@ Generate the UX flow for the current phase entirely in one go and write it direc
 ### Step 1 — Define all screens & Navigation
 
 Write the full navigation structure and screen definitions to the file.
-If the file already exists, **extend it** — add new screens and update changed screens. Do not remove or regenerate screens that haven't changed.
+If the file already exists, **extend it** — add new screens and update changed screens. Do not remove or regenerate screens that haven't changed. Do remove screens and states that no longer exist in the product: a screen that was cut, merged, or replaced should be deleted or replaced in place, not preserved as a dead entry. `ux-flow.md` describes current UX, not history. History lives in `reviews.md` and git.
 
 Before writing or updating screens, normalise overloaded flows:
 - Prefer one primary decision or action per screen or step. Two primary actions is the practical ceiling.
@@ -99,11 +99,12 @@ Do not write hook suggestions into generated artifacts.
 
 Output a cold, structured execution log to the user indicating completion, pointing them to edit the file directly if needed. Use this exact format:
 
+Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
+
 ```
-[ROB] Executed `mano ux`
--> Scope: Phase [N]
--> Action: Wrote _mano_output/ux-flow.md
--> Screens updated: [list of screens added or modified]
+[Rob]: mano ux — ux-flow.md
+- Screens/states updated: [list of screens or UX states added or modified]
+⚠ Verify: [embedded assumption worth checking — omit if none]
 
 Choose the next action based on what's still missing or worth refining:
 - `mano ui` — if visual direction or component language still need defining

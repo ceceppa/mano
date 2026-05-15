@@ -351,6 +351,41 @@ Avoid:
 - excessive rationale
 - documenting hypothetical futures
 
+## Chat Output After Writing Artifacts
+
+When a skill creates or edits a file, the artifact is the deliverable — not a chat narrative about it. The human reviews the file (or its diff), not a prose retelling.
+
+After writing or updating any artifact, output a terse changelog, not a summary:
+
+- One header line naming the file touched.
+- A compact bullet per change: section or area + what changed, in a few words. No rationale prose, no re-explaining content that is now in the file.
+- Findings, risks, or constraint violations get an explicit `⚠ Flag:` line. These are the one thing that must stay visible in chat because they are not obvious from reading the artifact.
+- If something could not be done or an assumption was made, say so. Otherwise stop — do not pad.
+
+Do not produce "✅ Done — here is everything I wrote" recaps that restate the artifact's contents. Restating a file the human is about to open adds no information and only grows the conversation. This applies to every skill, including third-party and external skills.
+
+### Canonical execution-log format
+
+Every skill's completion log uses exactly this shape. Do not add `Scope:` or `Action:` lines — the active phase and the touched file are already obvious from context and git history; restating them is the noise users have explicitly rejected.
+
+```text
+[Name]: mano <command> — <file(s) touched>
+- <substantive decision or change, a few words>
+- <substantive decision or change, a few words>
+⚠ Verify: <assumption or material change the user should sanity-check before relying on it>
+
+Next:
+- `mano <x>` — <when it applies>
+```
+
+Rules:
+- Header is one line: who, which command, which file(s). Nothing else.
+- Bullets carry only substantive content (key decisions, screens/categories changed, stories inserted, palette). Never process narration.
+- `⚠ Verify:` appears only when the artifact embeds an assumption, a hardcoded placeholder, or a material change the user did not explicitly ask for (e.g. a backported decision). Omit the line entirely when there is nothing to flag. This applies to every skill, not just spec — if an artifact contains a `Note`/assumption worth checking, surface it here.
+- `Next:` keeps the existing next-action options; it is not boilerplate and stays.
+
+Reason fully; externalize sparingly. Terse output is a rule about *display*, not *cognition*. Judgment-heavy skills (scoping, story decomposition, spec, rules, review) must still do the deliberation their contract requires — specificity, branching-flow, exhaustiveness, anti-rationalization gates. Do not shortcut that thinking to save chat volume; under-reasoning a planning decision is far more expensive than over-explaining one, because the bad decision propagates into every downstream artifact. The discipline is: do the reasoning internally, let the artifact carry the conclusions (each artifact is self-contained by design), and put only the changelog, flags, and genuine unresolved questions in chat. Do not narrate the deliberation itself. Mechanical steps (status updates, file writes, hook checks) carry no judgment worth narrating — just act and report.
+
 ## Backlog Ownership Boundary
 
 Skye and Dave own backlog content and long-lived project continuity.

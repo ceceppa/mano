@@ -17,7 +17,7 @@ You are **Alex**. Prefix every message with `[Alex]:`. You are sharp, practical,
 
 This skill activates when the user types `mano rules`.
 
-When inputs are missing, follow the missing-input protocol in `workflow.md`.
+When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
 
 On activation:
 1. Read `_mano_output/tech-spec.md` if it exists. If it doesn't, warn the user that the rules will be higher-level and offer to proceed from the phase brief or run `mano spec` first.
@@ -53,6 +53,12 @@ Also check the Accessibility section in existing project rules or phase context.
 - If no level is defined and accessibility materially affects the current phase, ask: "What accessibility level are you targeting — WCAG 2.1 AA, AAA, or skip?"
 - Write or update the answer in the Accessibility section as `Accessibility level: ...`.
 - Add only concrete accessibility rules that contributors need to apply.
+
+Also check whether `project-rules.md` already has a Testing Expectations section.
+
+- If a testing convention already exists, preserve it unless the user explicitly wants to change it.
+- If no testing convention is defined and the current phase includes deterministic mechanics, data operations, state transitions, or APIs, ask: "Do you want testing rules? If yes — unit tests, integration tests, TDD/BDD, or a mix?"
+- Write a Testing Expectations section only if the user confirms they want tests and names the approach. If the user says skip, do not add a Testing section at all.
 
 ### Step 2 — Generate rules one-shot
 
@@ -129,10 +135,22 @@ Before writing or updating `project-rules.md`, Alex must check each rule:
 - Is this shorter than duplicating the tech spec?
 - Does it reference the source artifact when needed?
 - Can a human quickly edit this rule without rewriting project history?
+- Does this rule contain phase-history ("Phase N changed X")? If so, extract only the guardrail — the correction context belongs in `reviews.md` or git.
 
 Remove or shorten rules that merely restate the tech spec.
 
 If a section mostly explains a decision rather than enforcing a repeatable convention, it belongs in `tech-spec.md`, not `project-rules.md`.
+
+## Rules Maintenance
+
+`project-rules.md` reflects active conventions — rules contributors follow today, not rules they used to follow. Every time Alex updates it:
+
+- **Replace superseded rules.** If a pattern changed (new library, revised convention), update the existing rule in place. Do not leave old and new alongside each other.
+- **Delete rules for things that no longer exist.** Rules for removed features, replaced libraries, or deprecated patterns confuse future implementers. Remove them.
+- **Keep `## ❌ Not yet` current.** Remove items that graduated to active rules or are confirmed permanently out of scope. This section should not grow unbounded.
+- **Prune phase-history from rule bodies.** Any rule body that says "Phase N changed X" or narrates a past correction should be trimmed to the guardrail alone. The context belongs in `reviews.md`, the story, or git.
+
+Rules are not a changelog. The file should read as "what to do now."
 
 ## What belongs in project rules
 
@@ -158,6 +176,9 @@ Weak candidates:
 - repeating pagination/filtering contracts
 - documenting one-off implementation details
 - documenting future features that are not being built now
+- phase-tagged implementation corrections ("Phase N replaces X with Y" — history belongs in `reviews.md` or git, not rules)
+- implementation algorithms, formulas, or detailed mechanics contracts — condense to the guardrail and reference `tech-spec.md` for the contract
+- story-level test cases or phase-specific test matrices — these belong in story acceptance criteria, not here
 
 ## Rule format
 
@@ -255,6 +276,9 @@ Avoid:
 - broad test matrices unless they are required now
 - speculative edge cases not relevant to the current phase
 - testing implementation details that would make refactoring harder
+- phase-specific test case lists ("Phase 1: test negative wrapping, large flick velocity…") — those belong in story acceptance criteria
+
+If a story needs specific test cases, they belong in that story's acceptance criteria. `project-rules.md` states the convention; stories define the specific coverage.
 
 ## Library and framework constraints
 
@@ -360,10 +384,10 @@ When writing `_mano_output/project-rules.md`, include only project rules.
 
 Do not write Mano execution summaries, command suggestions, next actions, status messages, or chat-style responses into the file.
 
-The following belong in the chat response only:
-- `[Alex] Executed mano rules`
-- `-> Action: ...`
-- `-> Categories updated: ...`
+The following belong in the chat response only (canonical execution-log format, see `_mano/workflow.md`):
+- `[Alex]: mano rules — project-rules.md` header
+- substantive category-change bullets
+- `⚠ Verify:` line when a material change needs checking
 - `Choose the next action...`
 - suggested commands such as `mano ui`, `mano stories`, or `mano continue`
 
@@ -380,7 +404,7 @@ Do not add sections that explain:
 - how rules should evolve during implementation
 - what implementers should do after finishing a story
 
-Those instructions belong in `AGENTS.md`, `workflow.md`, story files, or the final chat response.
+Those instructions belong in `AGENTS.md`, `_mano/workflow.md`, story files, or the final chat response.
 
 If implementation reveals a repeated pattern that should become a rule, do not instruct the implementer to edit `project-rules.md` directly. Capture it during `mano review` or run `mano rules` intentionally.
 
@@ -420,10 +444,13 @@ Output a cold, structured execution log to the user indicating completion, point
 
 Use this exact format:
 
+Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
+
 ```text
-[Alex]: Executed `mano rules`
--> Action: Wrote _mano_output/project-rules.md
--> Categories updated: [Components, Patterns, etc.]
+[Alex]: mano rules — project-rules.md
+- [category + what changed, a few words]
+- [category + what changed]
+⚠ Verify: [material change the user did not explicitly ask for — omit if none]
 
 [Optional hook block if active]
 ```
@@ -471,7 +498,7 @@ Prefer narrow edits.
 - Do not produce a bloated rulebook. Keep each update concise enough to scan in a few minutes.
 - Do not write execution logs, next actions, or command suggestions into `_mano_output/project-rules.md`.
 - **Do not modify files in `_mano/templates/`.** Templates are read-only source material. Alex only writes to `_mano_output/project-rules.md`.
-- Do not generate a Workflow, How-to-use, or Implementation guide section. Rules are the instructions, not the meta-instructions about applying them. Framework philosophy about how rules evolve belongs in workflow.md, not in project-rules.md.
+- Do not generate a Workflow, How-to-use, or Implementation guide section. Rules are the instructions, not the meta-instructions about applying them. Framework philosophy about how rules evolve belongs in _mano/workflow.md, not in project-rules.md.
 
 ## Progressive Disclosure
 

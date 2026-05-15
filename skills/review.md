@@ -114,11 +114,13 @@ When the user confirms (e.g., "close it", "yes"):
 4. Fill the template sections concretely.
 
 Output a cold execution log:
+Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
+
 ```
-[Dave]: Processed `mano review` feedback
--> Action: Inserted triaged items to _mano_output/backlog.md
--> Action: Appended log to _mano_output/reviews.md
--> Status: Phase [N] Closed.
+[Dave]: mano review — backlog.md, reviews.md
+- Triaged items inserted to backlog
+- Phase [N] closed
+⚠ Verify: [material triage decision worth checking — omit if none]
 ```
 That is your complete response.
 
@@ -183,12 +185,11 @@ When the user confirms (e.g., "close it", "yes"):
 4. Append follow-up review entry to `_mano_output/reviews.md`.
 5. Fill sections concretely.
 
-Output execution log:
+Output execution log (canonical format, see `_mano/workflow.md`):
 ```
-[Dave]: Processed Follow-up Review
--> Action: Updated statuses in _mano_output/backlog.md
--> Action: Appended follow-up log to _mano_output/reviews.md
--> Status: Phase [N] Follow-up Closed.
+[Dave]: mano review (follow-up) — backlog.md, reviews.md
+- Statuses updated in backlog
+- Phase [N] follow-up closed
 ```
 That is your complete response.
 

@@ -1,22 +1,22 @@
 # Mano Workflow Rules
 
 This project uses the Mano planning framework to structure AI-assisted development.
-The framework relies on modular skill prompts located in the `skills/` directory and templates in the `templates/` directory.
+The framework relies on modular skill prompts located in the `_mano/skills/` directory and templates in the `_mano/templates/` directory.
 
 ## Core Directives for Agent
 
 1. **Activation:**
    When the user types a Mano command (e.g., `mano start`, `mano spec`, `mano stories`, `mano review`):
-   - You MUST read `workflow.md` first.
+   - You MUST read `_mano/workflow.md` first.
    - You MUST resolve the command to the correct skill file using the workflow command map.
-   - `mano start` maps to `skills/start.md`.
-   - `mano spec` maps to `skills/spec.md`.
-   - `mano ux` maps to `skills/ux.md`.
-   - `mano rules` maps to `skills/rules.md`.
-   - `mano ui` maps to `skills/ui.md`.
-   - `mano stories` maps to `skills/stories.md`.
-   - `mano review` maps to `skills/review.md`.
-   - You MUST read the general workflow constraints at `workflow.md`.
+   - `mano start` maps to `_mano/_mano/skills/start.md`.
+   - `mano spec` maps to `_mano/skills/spec.md`.
+   - `mano ux` maps to `_mano/skills/ux.md`.
+   - `mano rules` maps to `_mano/skills/rules.md`.
+   - `mano ui` maps to `_mano/skills/ui.md`.
+   - `mano stories` maps to `_mano/skills/stories.md`.
+   - `mano review` maps to `_mano/skills/review.md`.
+   - You MUST read the general workflow constraints at `_mano/workflow.md`.
    - Execute the logic exactly as described in the skill file.
 
 2. **One-Shot Execution:**
@@ -26,7 +26,7 @@ The framework relies on modular skill prompts located in the `skills/` directory
    - Once complete, output a short execution log (as defined in the skill file) to the console. Do NOT append conversational fluff.
 
 3. **Status Check:**
-   When the user types `mano status`, read `workflow.md` to see the logic for determining the current active phase and the next logical missing artifact.
+   When the user types `mano status`, read `_mano/workflow.md` to see the logic for determining the current active phase and the next logical missing artifact.
 
 4. **Code Execution Directive:**
    - **Actively refuse to write code.** As an agent executing a Mano skill, your directive is strict planning and spec-generation. You must explicitly refuse to modify source (`src/`) files or application code while running a Mano phase.
