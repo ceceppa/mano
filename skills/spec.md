@@ -101,6 +101,8 @@ If a library or decision is being **replaced** (e.g. swapping SQLite for an API,
 
 ## Spec Maintenance
 
+The spec captures current-state decisions: what the system is, what libraries it uses, what contracts hold, what is out of scope. It is not history. When the spec is updated, replace outdated content rather than appending "Phase N changed X to Y" sections. The spec should read as if the current system has always been this way.
+
 `tech-spec.md` reflects the **current technical state** of the project, not its history. Every time Helen updates it:
 
 - **Replace stale decisions.** If a decision was superseded, update the existing section or row in place. Do not preserve old and new side by side.
@@ -128,7 +130,7 @@ If the file doesn't exist, create it.
 - **Tech stack** — framework, language, toolchain. Specific, not vague.
 - **Libraries & dependencies** — concrete choices with reasons and install command. **Do not hallucinate exact version numbers.** Use `@latest` in the install command only for greenfield planning when no manifest or lockfile exists yet, unless a specific legacy version is absolutely required by platform constraints.
 
-  Be explicit, not implied. When using provisional install commands for a package manager like npm, pnpm, yarn, or bun, append `@latest` to each package name that should float to the newest release at planning time.
+  Be explicit, not implied. When using provisional install commands for a package manager like npm, pnpm, yarn, or bun, append `@latest` to each package name that should float to the newest release at planning time. `@latest` is provisional planning guidance — not an exact version. Once the project has a manifest or lockfile, that file is the source of truth for installed versions.
 
   Examples:
   - `npm install react-hook-form@latest zod@latest`

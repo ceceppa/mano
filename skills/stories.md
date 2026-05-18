@@ -89,105 +89,32 @@ Mandatory sections for every final story file, regardless of template choice:
 
 ### Implementation Reference (mandatory after Notes):
 
-Every generated story must include an **Implementation Reference** section.
+Every story must include an **Implementation Reference** section. Write it as a compact pointer list — field labels and terse fragments only, no prose or rationale. Assume the implementer reads the story first and may consult referenced artifacts when needed. Copy here only what they cannot easily find themselves: exact prop names, file paths, install commands, ownership boundaries, critical prohibitions.
 
-If supporting artifacts add no extra implementation context for a story, keep the section brief and say that no additional implementation constraints are known beyond the story body.
+Only include fields relevant to this story. Omit empty categories. Do not invent variants, props, states, or constraints not backed by an existing artifact.
 
-Marco may pull from any available source:
-- `_mano_output/tech-spec.md`
-- `_mano_output/ux-flow.md`
-- `_mano_output/design-brief.md`
-- `_mano_output/project-rules.md`
+When project rules or the tech spec name exact tokens — prop names, attribute names, file paths, state keys, install commands — copy them verbatim. Do not paraphrase. If a project rule implies a required file, module, or prohibition, translate the implication into an explicit instruction here rather than leaving the coding agent to infer it from the rule name.
 
-Only include fields backed by an existing file and relevant to the story. Omit empty categories inside the section, but do not omit the section itself.
+Common labels: `Build`, `Files`, `State`, `Contract`, `Data`, `Commands`, `UI`, `Components`, `A11y`, `Boundaries`, `Style`, `Do not`, `Rules`. Use only what applies.
 
-If a relevant project rule implies a required file, shared module, extraction threshold, setup step, or prohibition, translate that into an explicit instruction in the Implementation Reference. Do not assume the coding agent will infer the implication from the rule name alone.
+Adapt per story type:
+- Frontend: `Build`, `UI`, `Files`, `Components`, `State`, `A11y`, `Do not`
+- Backend: `Build`, `Files`, `Contract`, `Data`, `Boundaries`, `Do not`
+- Infrastructure / tooling: `Build`, `Commands`, `Files`, `Boundaries`, `Ops`, `Do not`
 
-The Implementation Reference should be sufficient to implement the story correctly without reopening other planning files for core requirements. Assume the implementer knows nothing about the project beyond this story file. Keep broader rationale or deeper project context in the source artifacts, but copy the critical implementation contract into the story. The coding agent may still consult `_mano_output/project-rules.md` for clarification or fuller context, but it should not need to reopen it just to discover critical rule details such as required variants, props, accessibility semantics, minimum sizes, ownership boundaries, persistence rules, or file/module responsibilities.
+Render install commands in fenced `bash` blocks, one per line, in execution order. Keep `npx expo install` separate from other package-manager commands.
 
-When a project rule defines a concrete contract, copy the contract into the story in concise form instead of reducing it to a label. This includes:
-- shared component APIs and required variants
-- accessibility semantics and minimum target sizes
-- extraction thresholds and file ownership boundaries
-- token sources and bans on inline visual values
-- required file paths or modules that must exist first
-- state ownership and persistence boundaries
-- routing/composition boundaries
-
-When a project rule names exact API tokens, prop names, attribute names, state keys, variant names, or file paths, preserve those exact tokens verbatim in the story. Do not paraphrase them into generic language. For example, if a rule says `aria-disabled`, `aria-busy`, `disabled`, `loading`, `screenTitle`, or `src/theme/tokens.ts`, the Implementation Reference should repeat those exact names.
-
-When the tech spec defines exact dependency choices, package-manager choice, or install commands that matter to the story, preserve those exact package names and commands verbatim in the story. Do not summarize them as "install the required libraries" or leave the implementer to rediscover them from `package.json`.
-
-Do not invent variants, props, states, files, or architectural constraints that are not explicitly supported by the phase brief, tech spec, UX flow, design brief, or project rules. If a shared component is required but its variants or props are not defined in the source artifacts, say that only the defined contract is known. Do not fill the gap with plausible defaults.
-
-Do not write compressed shorthand that assumes prior Mano knowledge. Replace vague summaries like `Feature-first app code under src/` or `Expo Router files compose screens only` with plain-language statements of what the implementer must actually do in this story.
-
-Inside Implementation Reference, optimize for token density rather than polished prose. Use stable field labels plus terse fragments, exact tokens, and compact lists. Good: `- **Build:** local SQLite layer; app boot open; auto-migrate; seed v1 catalog.` Bad: `- **What this story is building:** This story is building the local SQLite data layer for...`
-
-Keep the labels explicit and reusable across stories. `Build`, `Files`, `State`, `Commands`, `A11y`, `Do not`, and `Rules` are clear. Obscure shorthand like `Bld`, `Mods`, or project-specific abbreviations is not.
-
-Prefer compact lists or fenced code blocks over wide markdown tables when carrying exact names such as schema fields, routes, commands, file paths, variants, or state keys. Use markdown tables only when the table genuinely makes the relationship clearer.
-
-When commands matter, render them as distinct command groups in a fenced `bash` block with one command per line, in execution order.
-
-**For frontend stories (user-facing screen):**
+Example:
 ```markdown
 #### Implementation Reference
-- **Build:** [screen or slice; where it sits in the flow; core outcome]
-- **UI:** [visible structure only — layout, sections, key controls]
-- **Files:** [exact files/modules to create, update, or keep thin]
-- **Components:** [shared UI to use/create plus exact props, variants, states, ownership rules]
-- **State:** [owner, persisted vs transient, restart behaviour if relevant]
-- **Boundaries:** [routing/composition limits; where logic may and may not live]
-- **Style:** [token source, semantic names, styling bans if relevant]
-- **A11y:** [exact labels, min targets, focus/state semantics, API names]
-- **Commands:** [only when setup or install commands matter]
-- **Do not:** [critical prohibitions]
-- **Rules:** [only the project rules that materially change this story's implementation]
+- **Build:** auth screen; `src/screens/Login.tsx`; validates email + password, calls existing auth service
+- **A11y:** min 44×44 touch targets; `aria-label` on icon buttons; `aria-busy` on submit while loading
+- **Do not:** no inline colour values; use tokens from `src/theme/tokens.ts`; no new auth logic in this story
 ```
 
-Example of the level of detail expected:
-```markdown
-- **Files:** `src/theme/tokens.ts`; route files compose only; screen logic stays in feature modules named by the project rules.
-- **Components:** `Button` uses exact states `disabled`, `loading`; do not invent visual variants not defined in source artifacts.
-- **State:** draft owned by onboarding store; persists across restart; transient validation stays local.
-- **A11y:** min target `44x44`; preserve `aria-disabled={disabled}` and `aria-busy={loading}` where specified.
-- **Do not:** no inline color/spacing/radius; no extra file splits before extraction threshold.
-- **Rules:** route files compose only; business logic/data shaping stay outside route files.
-```
+For `story-0` and setup/dependency stories: copy exact package-manager choice, dependency names, and install commands from the tech spec verbatim. Preserve command grouping and tool choice. Keep `npx expo install` separate from `npm install`.
 
-**For backend stories (API endpoints, services):**
-```markdown
-#### Implementation Reference
-- **Build:** [endpoint/service/job; role in phase]
-- **Files:** [exact files/modules to create or extend]
-- **Contract:** [method/route, request/response shape, or service interface]
-- **Data:** [entities, persistence, validation, envelope, error format]
-- **Boundaries:** [ownership of validation, orchestration, persistence, transport]
-- **Commands:** [only when setup/tooling commands matter]
-- **Do not:** [critical prohibitions]
-- **Rules:** [only the project rules that materially change this story's implementation]
-```
-
-**For infrastructure stories (Docker, CI, config):**
-```markdown
-#### Implementation Reference
-- **Build:** [infrastructure slice and why it exists]
-- **Commands:** [exact install/setup commands from tech spec; preserve tool choice and grouping exactly]
-- **Files:** [files, folders, entrypoints, generated outputs]
-- **Boundaries:** [what this setup owns and must not absorb]
-- **Ops:** [expected runtime/build/dev behaviour once wired in]
-- **Do not:** [critical prohibitions]
-- **Rules:** [only the project rules that materially change this story's implementation]
-```
-
-The section adapts to the story type. The common rule is simple: include only the context the coding agent will actually need for that story, but write it as a compact execution brief rather than polished prose. Keep exact tokens and clear field labels; strip filler, repeated rationale, and conversational phrasing.
-
-When a story includes install commands, preserve them as distinct command groups in the order they should be run. Do not compress multiple commands into one line or normalize different tools into a single package-manager command for convenience.
-
-Special case for `story-0` and other setup/tooling/dependency stories: the Implementation Reference must copy the exact package-manager choice, dependency names, and install commands from the tech spec when those decisions exist. Preserve command grouping and tool choice exactly as written in the tech spec. Prefer a fenced `bash` block for commands instead of a prose sentence. Do not rely on the coding agent to reopen `tech-spec.md` just to discover which packages to install, whether provisional commands used `@latest`, or whether an Expo-managed dependency must stay under `npx expo install` instead of being rewritten into `npm install`.
-
-Special case for onboarding, form, settings, and other stateful frontend stories: if the tech spec says draft or saved data uses durable local storage, the Implementation Reference must name what persists across app restart, what remains transient, and which module or store owns that persistence.
+For stateful frontend stories: name what persists across restart, what stays transient, and which module owns it. Include a persistence criterion in Done when too — do not bury it only here.
 
 ## Story quality rules
 

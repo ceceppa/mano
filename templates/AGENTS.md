@@ -60,28 +60,25 @@ The story file remains a planning artifact, not an implementation log. This appl
 
 ## In-Flight Story Changes
 
-When the user requests a behavioural change to a story already in progress, treat it as a story change, not just a code change.
+The acceptance criteria are the behavioural contract for the current story. Do not invent new behaviour, validation, edge cases, or product rules beyond the story on your own initiative.
 
-Before making the code change:
+When implementation reveals a gap:
 
-1. Identify which acceptance criteria are affected.
-2. Suggest updated wording for the affected acceptance criteria.
-3. Ask the user to confirm or adjust the wording.
-4. After confirmation, append a one-line note to a `## Changes` section in the story file capturing what changed and why.
+- **Clear user-directed behaviour change:** implement it. Add a `## Changes` note only if the change affects future stories, tests, specs, rules, UX, or review.
+- **Ambiguous or scope-expanding change:** ask one clarification or suggest a follow-up story.
+- **Bug fix that satisfies existing AC:** implement it. No `## Changes` entry needed.
+- **Agent-discovered missing decision:** stop and tell the user which Mano flow owns the decision (`mano spec`, `mano rules`, or `mano stories`). Do not invent it.
+- **Change that may invalidate spec, rules, or UX:** mention it for the next `mano review`; do not reconcile artifacts mid-story.
 
-Bug fixes that preserve the intended observable behaviour do not require a `## Changes` entry.
+Principle: update the story file only when the change becomes future context.
 
-Never add a `## Changes` section on your own initiative. The only permitted trigger is an explicit user request to change a story's observable behaviour mid-implementation. Implementation decisions made during coding, discovered requirements, and logic added beyond the AC are not user-requested behaviour changes — they are scope additions. Surface those in your chat response as a deviation, not as a Changes entry in the story file.
-
-Use this format:
+When a `## Changes` note is warranted, use:
 
 ```md
 ## Changes
 
-- [Date or short context]: [what changed] because [why it changed].
+- [Short context]: [what changed] because [why it changed].
 ```
-
-Do not add an empty ## Changes section to every story. Add it only when behaviour changes during implementation.
 
 ### Do not
 
