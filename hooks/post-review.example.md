@@ -1,58 +1,56 @@
-# post-review hook
-
 ## Mode
 suggest
 
 ## Purpose
-Optional post-review check after `mano review` updates project learning or backlog direction.
+Optional post-review audit after `mano review` triages a phase and writes findings to the backlog.
 
 ## When useful
-- review introduced new risks
-- backlog changed substantially
-- phase outcome may invalidate earlier assumptions
-- new gaps were added to the backlog
-- project direction changed
+- A phase just closed and the user wants a deeper specialist look at code quality, architecture drift, or accumulated technical debt
+- Review identified spec gaps or rule gaps and the user wants a specialist confirmation before scoping the next phase
+- The user wants a structured comparison between what shipped and what the planning artifacts described
+
+## Inputs
+
+Allow the audit skill to read:
+- `_mano_output/reviews.md` — phase review findings and triaged items
+- `_mano_output/backlog.md` — items the review wrote, including spec-gaps and rule-gaps
+- `_mano_output/tech-spec.md` — technical decisions for comparison
+- `_mano_output/project-rules.md` if it exists
+- `_mano_output/design-brief.md` if it exists
+- `_mano_output/ux-flow.md` if it exists — user-flow assumptions that may need updates after review
+- `_mano_output/phase-[N]/phase-brief.md` — phase that was just reviewed
+
+Source code access for this hook: **allowed** but bounded. This is the only Mano hook where comparing artifacts to implementation is part of the job, since `mano review` is the drift-detection step. Inspection should be scoped to the modules and files that changed in the reviewed phase. Do not perform a project-wide audit unless the user explicitly asks.
+
+Optional files may be missing. Do not fail because an optional file is absent. Use only the context relevant to the review target. Do not invent missing context.
 
 ## How to run
 
-Run the relevant external or specialist review manually after reviewing and accepting the generated artifact.
+Run the relevant external or specialist review manually after reviewing and accepting the review findings.
 
 Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
-## Inputs
-
-Allow the review skill to read:
-
-- `_mano_output/reviews.md` — review findings, triage decisions, lessons, and phase outcomes
-- `_mano_output/backlog.md` — deferred work, resolved gaps, Core Product Principles, and item statuses
-- `_mano_output/phase-[N]/phase-brief.md` — phase scope, exit criteria, assumptions, and risks
-- `_mano_output/tech-spec.md` if it exists — technical decisions that may need updates after review
-- `_mano_output/project-rules.md` if it exists — implementation conventions that may need updates after review
-- `_mano_output/ux-flow.md` if it exists — user-flow assumptions that may need updates after review
-- `_mano_output/design-brief.md` if it exists — UI/component assumptions that may need updates after review
-- `_mano_output/phase-[N]/stories/README.md` if it exists — implementation status and story completion context
-
-Optional files may be missing. Do not fail because an optional file is absent.
-
-Use only the context relevant to the review target. Do not invent missing context.
-
 ## Suggested prompt
 
 ```text
-[external-review-command] review the phase review and backlog updates using the inputs listed in this hook.
+[external-review-command] audit the closed phase using the inputs listed in this hook.
 
-Focus on:
-- contradictions
-- stale assumptions
-- missed follow-up work
-- backlog quality
-- unresolved risks
-- whether future phases need adjustment
+Focus areas:
+- Drift between tech spec and implementation: are decisions in the spec actually reflected in the code that shipped?
+- Drift between project rules and implementation: are rules being followed consistently?
+- Drift between design brief and implementation: do shipped screens match the documented visual direction?
+- Backlog quality: are the spec-gaps, rule-gaps, and bugs that review identified well-scoped and actionable?
+- Missed concerns: are there issues visible in the changed code that review didn't surface?
 
-Report issues, risks, contradictions, and suggested improvements.
-Do not modify files unless explicitly asked.
+Limit findings to these focus areas. Do not propose new features, suggest architectural rewrites, or comment on code unrelated to the reviewed phase.
+
+Source code inspection: allowed and expected for this hook, but bounded to modules touched in the reviewed phase. Do not perform a project-wide code audit. Do not propose changes to unrelated code.
+
+Output format: one bullet per finding. Each finding states the issue, the affected artifact or code location, and either the suggested fix or which Mano flow owns the resolution (`mano spec`, `mano rules`, `mano start` for backlog adjustment). No prose preamble, no executive summary, no closing commentary.
+
+Do not modify any files. Report findings only. If the user wants changes made, they will run the appropriate Mano skill after reviewing your findings.
 ```
 
 ## Instruction for Mano

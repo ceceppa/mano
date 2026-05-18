@@ -1,17 +1,24 @@
-# post-ux hook
-
 ## Mode
 suggest
 
 ## Purpose
-Optional post-UX review after `mano ux` writes or updates UX artifacts.
+Optional post-UX review after `mano ux` creates or updates the UX flow.
 
 ## When useful
-- user flows changed
-- accessibility expectations changed
-- important product principles affect interaction design
-- the flow contains complex decisions or edge cases
-- the UX artifact may be too broad or too vague
+- New screens or flows were added
+- An existing flow was restructured
+- Branching paths, decision points, or user variants changed
+- The user wants a specialist sanity check on flow coherence before stories pick it up
+
+## Inputs
+
+Allow the review skill to read:
+- `_mano_output/ux-flow.md` — screen list, navigation structure, flow sequence, screen specs
+- `_mano_output/phase-[N]/phase-brief.md` — phase scope and goal
+- `_mano_output/design-brief.md` if it exists — visual inventory and shared components
+- `_mano_output/tech-spec.md` if it exists — for platform constraints that affect flow (offline, biometrics, etc.)
+
+Optional files may be missing. Do not fail because an optional file is absent. Use only the context relevant to the review target. Do not invent missing context.
 
 ## How to run
 
@@ -21,36 +28,26 @@ Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
-## Inputs
-
-Allow the review skill to read:
-
-- `_mano_output/ux-flow.md` — user flow, screen sequence, interaction expectations, and UX assumptions
-- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, user outcome, assumptions, and risks
-- `_mano_output/backlog.md` only if the hook is explicitly checking Core Product Principles or deferred UX work
-
-Optional files may be missing. Do not fail because an optional file is absent.
-
-Use only the context relevant to the review target. Do not invent missing context.
-
 ## Suggested prompt
 
 ```text
-[external-review-command] review the UX artifact using the inputs listed in this hook.
+[external-review-command] review the UX flow using the inputs listed in this hook.
 
-Focus on:
-- flow gaps
-- unclear assumptions
-- accessibility risks
-- unnecessary complexity
-- alignment with the phase brief
-- missing edge cases
+Focus areas:
+- Reachability: can every screen in the list be reached from a defined entry point, or are any orphaned?
+- Exit paths: does every screen have a clear way back, forward, or out?
+- Overloaded screens: does any screen handle more than two primary product actions or decisions?
+- Branching coverage: are choice-dependent paths fully described, or do branches trail off?
+- Phase alignment: does the flow cover the phase goal's user-visible outcomes?
+- State transitions: are loading, empty, and error states named where they materially affect the user?
 
-Report issues, risks, contradictions, and suggested improvements.
+Limit findings to these focus areas. Do not propose visual design, component layouts, copy, or styling decisions — those belong to `mano ui` and the design brief.
 
-Do not inspect source code.
-Do not compare the UX spec against the existing implementation.
-Do not modify files unless explicitly asked.
+Output format: one bullet per finding. Each finding states the issue, the affected screen or flow section, and the suggested fix. No prose preamble, no executive summary, no closing commentary.
+
+Do not inspect source code, build output, test output, or any current implementation state. The UX flow is the source of truth for this review — not the codebase. Do not request the user paste code or run commands to verify against. If the flow appears inconsistent with implementation, that is `mano review`'s concern, not this hook's.
+
+Do not modify any files. Report findings only. If the user wants changes made, they will run `mano ux` after reviewing your findings.
 ```
 
 ## Instruction for Mano

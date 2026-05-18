@@ -1,59 +1,56 @@
-# post-stories hook
-
 ## Mode
 suggest
 
 ## Purpose
-Optional post-stories review after `mano stories` writes implementation stories.
+Optional post-stories review after `mano stories` generates or updates story files for the current phase.
 
 ## When useful
-- stories touch high-risk areas
-- scope may be too broad
-- stories may not match the phase brief
-- story sequencing affects implementation safety
-- tests or acceptance criteria need specialist review
+- New phase with several stories worth a sanity check before implementation begins
+- Stories touch unfamiliar territory and the user wants a specialist look at sequencing, AC quality, or scope
+- The user wants a structural check on whether stories cover the phase goal and acknowledged risks
+
+## Inputs
+
+Allow the review skill to read:
+- `_mano_output/phase-[N]/stories/` — all story files for the current phase
+- `_mano_output/phase-[N]/stories/README.md` — story index
+- `_mano_output/phase-[N]/phase-brief.md` — phase scope, goal, exit criteria, acknowledged risks
+- `_mano_output/tech-spec.md` if it exists — to verify tech decisions appear in AC
+- `_mano_output/project-rules.md` if it exists — to verify relevant rules are translated into stories
+- `_mano_output/design-brief.md` if it exists — to verify visual contracts are referenced where needed
+- `_mano_output/ux-flow.md` if it exists — user flow and interaction sequencing
+
+Optional files may be missing. Do not fail because an optional file is absent. Use only the context relevant to the review target. Do not invent missing context.
 
 ## How to run
 
-Run the relevant external or specialist review manually after reviewing and accepting the generated artifact.
+Run the relevant external or specialist review manually after reviewing and accepting the generated stories.
 
 Use this hook as a reminder, not as automatic execution.
 
 Replace `[external-review-command]` in your active project hook with the command or skill you want to run.
 
-## Inputs
-
-Allow the review skill to read:
-
-- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, exit criteria, assumptions, and risks
-- `_mano_output/phase-[N]/stories/README.md` — story index, order, status, and dependencies
-- `_mano_output/phase-[N]/stories/*.md` — generated story files
-- `_mano_output/tech-spec.md` if it exists — technical decisions and contracts stories must reflect
-- `_mano_output/project-rules.md` if it exists — implementation conventions stories must reflect
-- `_mano_output/ux-flow.md` if it exists — user flow and interaction sequencing
-- `_mano_output/design-brief.md` if it exists — UI/component requirements that stories must reflect
-
-Optional files may be missing. Do not fail because an optional file is absent.
-
-Use only the context relevant to the review target. Do not invent missing context.
-
 ## Suggested prompt
 
 ```text
-[external-review-command] review the story artifacts using the inputs listed in this hook.
+[external-review-command] review the story set for the current phase using the inputs listed in this hook.
 
-Focus on:
-- scope
-- sequencing
-- testability
-- assumptions
-- alignment with the phase brief
-- missing acceptance criteria
-- story size
+Focus areas:
+- Phase goal coverage: does at least one AC verify each distinct outcome and quality word from the phase brief's Phase goal?
+- Acknowledged risks: is each risk in the phase brief addressed by at least one story's AC or explicitly flagged in Notes?
+- AC quality: are acceptance criteria observable behaviour, or do any reference internal data structures, function names, formulas, or implementation style?
+- Sequencing: can each story be verified through a real interface the moment it lands, or are there orphan stories with no externally verifiable exit?
+- Reachability: does each interactive story name the surface, trigger, and entry path?
+- Implementation Reference quality: are file paths, tokens, and ownership unambiguous (no "A or B", no "if not yet defined")?
+- Scope sizing: is any story carrying more than one focused session of work?
 
-Report issues, risks, contradictions, and suggested improvements.
+Limit findings to these focus areas. Do not propose new stories, rewrite acceptance criteria, or suggest implementation approaches.
 
-Do not modify files unless explicitly asked.
+Output format: one bullet per finding. Each finding states the issue, the affected story file, and the suggested fix. No prose preamble, no executive summary, no closing commentary.
+
+Do not inspect source code, build output, test output, or any current implementation state. The stories are the source of truth for this review — not the codebase. Do not request the user paste code or run commands to verify against. If a story appears inconsistent with implementation, that is `mano review`'s concern, not this hook's.
+
+Do not modify any files. Report findings only. If the user wants changes made, they will run `mano stories` after reviewing your findings.
 ```
 
 ## Instruction for Mano

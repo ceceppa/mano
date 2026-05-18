@@ -1,5 +1,3 @@
-# post-spec hook
-
 ## Mode
 suggest
 
@@ -8,24 +6,21 @@ Optional post-spec review after `mano spec` creates, updates, or validates techn
 
 ## When useful
 - API contract changed
-- data model changed
-- persistence strategy changed
-- external interface changed
-- high-impact technical decision changed
-- existing spec was checked and the user wants a specialist review before stories or implementation
+- Data model changed
+- Persistence strategy changed
+- External interface changed
+- High-impact technical decision changed
+- Existing spec was checked and the user wants a specialist review before stories or implementation
 
 ## Inputs
 
 Allow the review skill to read:
-
-- `_mano_output/tech-spec.md` — technical decisions, dependencies, API contracts, data model, persistence, and platform constraints
-- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, intended outcome, assumptions, and risks
+- `_mano_output/tech-spec.md` — technical decisions, dependencies, API contracts, data model, persistence, platform constraints
+- `_mano_output/phase-[N]/phase-brief.md` — current phase scope, intended outcome, assumptions, risks
 - `_mano_output/openapi.yaml` if it exists — machine-readable API contract
 - project manifest and lockfile if they exist — actual installed dependencies and package manager evidence
 
-Optional files may be missing. Do not fail because an optional file is absent.
-
-Use only the context relevant to the review target. Do not invent missing context.
+Optional files may be missing. Do not fail because an optional file is absent. Use only the context relevant to the review target. Do not invent missing context.
 
 ## How to run
 
@@ -38,22 +33,20 @@ Replace `[external-review-command]` in your active project hook with the command
 ## Suggested prompt
 
 ```text
-[external-review-command] review the technical design using the inputs listed in this hook
+[external-review-command] review the technical design using the inputs listed in this hook.
 
-Focus on:
-- API contract correctness
-- data model risks
-- persistence assumptions
-- interface consistency
-- missing edge cases
-- contradictions with the current phase brief
+Focus areas:
+- Correctness of what's specified: API contract shape, data model integrity, persistence assumptions, interface consistency
+- Cross-document consistency: contradictions or omissions relative to the phase brief
+- Coverage: edge cases the spec doesn't address but should
 
-Report issues, risks, contradictions, and suggested improvements.
+Limit findings to these focus areas. Do not add commentary on testing strategy, deployment, code style, project structure, or topics outside the spec's stated concerns.
 
-Do not inspect source code.
-Do not compare the spec against the existing implementation.
-Do not claim implementation bugs unless they are visible from the allowed documents.
-Do not modify files unless explicitly asked.
+Output format: one bullet per finding. Each finding states the issue, the location in the artifact (section name), and the suggested fix. No prose preamble, no executive summary, no closing commentary.
+
+Do not inspect source code, build output, test output, or any current implementation state. The artifact is the source of truth for this review — not the codebase. Do not request the user paste code or run commands to verify against. If the artifact appears inconsistent with implementation, that is `mano review`'s concern, not this hook's.
+
+Do not modify any files. Report findings only. If the user wants changes made, they will run the appropriate Mano skill after reviewing your findings.
 ```
 
 ## Instruction for Mano
