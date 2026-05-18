@@ -52,6 +52,7 @@ Focus on:
 - story size
 
 Report issues, risks, contradictions, and suggested improvements.
+
 Do not modify files unless explicitly asked.
 ```
 

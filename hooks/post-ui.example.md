@@ -49,6 +49,9 @@ Focus on:
 - implementation ambiguity
 
 Report issues, risks, contradictions, and suggested improvements.
+
+Do not inspect source code.
+Do not compare the design brief against the existing implementation.
 Do not modify files unless explicitly asked.
 ```
 

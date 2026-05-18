@@ -46,6 +46,9 @@ Focus on:
 - contradictions with the source brief
 
 Report issues, risks, contradictions, and suggested improvements.
+
+Do not inspect source code.
+Do not compare the phase brief spec against the existing implementation.
 Do not modify files unless explicitly asked.
 ```
 

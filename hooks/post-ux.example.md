@@ -47,6 +47,9 @@ Focus on:
 - missing edge cases
 
 Report issues, risks, contradictions, and suggested improvements.
+
+Do not inspect source code.
+Do not compare the UX spec against the existing implementation.
 Do not modify files unless explicitly asked.
 ```
 

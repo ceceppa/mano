@@ -49,6 +49,10 @@ Focus on:
 - rules that are too vague to enforce
 
 Report issues, risks, contradictions, and suggested improvements.
+
+Do not inspect source code.
+Do not compare the project rules spec against the existing implementation.
+Do not claim implementation bugs unless they are visible from the allowed documents.
 Do not modify files unless explicitly asked.
 ```
 
