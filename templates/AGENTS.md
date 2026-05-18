@@ -71,6 +71,8 @@ Before making the code change:
 
 Bug fixes that preserve the intended observable behaviour do not require a `## Changes` entry.
 
+Never add a `## Changes` section on your own initiative. The only permitted trigger is an explicit user request to change a story's observable behaviour mid-implementation. Implementation decisions made during coding, discovered requirements, and logic added beyond the AC are not user-requested behaviour changes — they are scope additions. Surface those in your chat response as a deviation, not as a Changes entry in the story file.
+
 Use this format:
 
 ```md

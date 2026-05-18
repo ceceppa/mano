@@ -386,6 +386,16 @@ Rules:
 
 Reason fully; externalize sparingly. Terse output is a rule about *display*, not *cognition*. Judgment-heavy skills (scoping, story decomposition, spec, rules, review) must still do the deliberation their contract requires — specificity, branching-flow, exhaustiveness, anti-rationalization gates. Do not shortcut that thinking to save chat volume; under-reasoning a planning decision is far more expensive than over-explaining one, because the bad decision propagates into every downstream artifact. The discipline is: do the reasoning internally, let the artifact carry the conclusions (each artifact is self-contained by design), and put only the changelog, flags, and genuine unresolved questions in chat. Do not narrate the deliberation itself. Mechanical steps (status updates, file writes, hook checks) carry no judgment worth narrating — just act and report.
 
+## Artifact Quality
+
+Planning artifacts are written for human readers — people who will read, discuss, edit, and act on them. They are not structured inputs for AI models.
+
+Write naturally. Use short paragraphs where prose works better than bullet lists. Concrete and specific beats abstract and hedged. A phase brief should read like a note to a colleague. A backlog item should read like something you'd write yourself. A project rule should read like a convention a team member can apply without a meeting.
+
+**The one exception:** the `Implementation Reference` section in story files is deliberately written for coding agents. Everything else in every artifact is for humans.
+
+If a section reads like structured machine-parseable metadata rather than human communication, it is too heavy. Trim it, merge it with adjacent content, or leave it out.
+
 ## Backlog Ownership Boundary
 
 Skye and Dave own backlog content and long-lived project continuity.

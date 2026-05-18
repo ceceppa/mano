@@ -284,9 +284,11 @@ If everything is clear, say so and move to 7c. Do not ask "still accurate?" — 
 
 Each phase brief carries everything needed to understand the phase. No external files required.
 
+**Only include sections that add something the other sections don't already say.** For correction and bug-fix phases, Vision, Design principle, and Phase goal often say the same thing in different words — merge or omit rather than fill each section redundantly. An empty or repetitive section makes the brief harder to read, not more complete.
+
 - **Why this phase** — one or two sentences
-- **Vision** — max 3 sentences. Write it like you're explaining to a friend, not writing a spec. No jargon, no technical framing. "Make categories visual with icons and let me reflect on goals when I complete them" not "Add shared category icons so category identity is easier to parse."
-- **Design principle** — one sentence
+- **Vision** — max 3 sentences. Write it like you're explaining to a friend, not writing a spec. No jargon, no technical framing. Omit entirely if it would just restate the Phase goal.
+- **Design principle** — one sentence. Omit if it restates Why this phase.
 - **Core product principles** — optional. Include only durable principles from the backlog that matter for this phase. Do not invent new principles here.
 - **Phase goal** — one sentence. The single most important outcome of this phase. If you have to cut scope, this is what survives. Example: "The user can complete a goal with a reflection" — everything else is secondary.
 - **Phase scope** — what ships, one line per item

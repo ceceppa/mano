@@ -81,7 +81,7 @@ Mandatory sections for every final story file, regardless of template choice:
 - [What this story does NOT cover]
 
 #### Notes
-[Optional — context, edge cases, technical hints]
+[Optional — dependencies between stories, scope clarifications, non-obvious edge cases. Write for a human reader. No implementation instructions, code snippets, or parameter detail — those belong in Implementation Reference.]
 
 ---
 <!-- ⚠️ When this story is implemented, update its status to `done` in the stories README.md index. -->
@@ -200,7 +200,11 @@ Special case for onboarding, form, settings, and other stateful frontend stories
   
   Bad: A caching layer stores responses in memory and checks the cache before making network calls.
 - **Use observer perspective in story framing.** Avoid "A developer…" or "the system does X" phrasing. Describe what the product or user experiences from the outside, not internal mechanics or implementation steps. Technical implementation belongs in `Implementation Reference`.
-- **Acceptance criteria are observable behaviour.** No implementation tasks.
+- **Acceptance criteria are observable behaviour.** No implementation tasks. This applies to technical and bug-fix stories too — criteria must describe what a user or tester can verify by running the product or a test, not by reading source code. Function signatures, variable names, formulas, and internal logic are not AC.
+
+  Good: Drag a column containing a mirror — the beam contact point shifts visually as the column moves.
+  
+  Bad: `trace_beam` passes `visual_offset_` to `grid_to_world` on every column-specific call.
 - **Group AC by component when a story involves multiple components.** If a story covers a parent and child (e.g. TodoList and TodoRow), separate the AC with component headers so it's clear which component owns which behaviour. This directly informs how tests are split.
 
   Example:
