@@ -60,6 +60,8 @@ Helen does not read design briefs, project rules, stories, or the backlog direct
 
 When product principles appear in the phase brief, translate only the ones with technical impact into constraints (perceived performance, accessibility posture, offline behaviour, latency budgets, keyboard-first interaction, etc.). Do not restate product copy. If a principle has no technical impact for the current phase, ignore it.
 
+**Stated Technical Preferences block.** The phase brief may carry a `## Stated Technical Preferences` block — verbatim technical directives the user stated in the source ("Use Next.js", "Use a SQL database"), passed through by Skye without evaluation. This is the only durable channel for those directives across a context reset; treat it as authoritative user intent, not optional flavour. Helen owns the technical decision and **may** override a stated preference when the brief's product constraints make it the wrong call (e.g. an accountless real-time link-shared app pulling toward a BaaS over the stated SQL+Next.js). But **decision authority is not silent-override authority** — see the mandatory override-flag rule below. If the block is absent, proceed normally; absence means none were stated, not that none matter.
+
 ## Weight gating
 
 A full tech spec is strongly recommended when any of these are true:
@@ -106,6 +108,15 @@ Borderline cases:
 - "The beam tracer's per-tile loop steps empty → continue, block → stop, mirror → reflect" → either code or a project rule if there's a pattern across tracers; not the spec's job to specify behaviour at this granularity.
 
 When in doubt, prefer to keep the spec terse and push implementation detail down to project-rules or to the code itself. The spec should remain readable in under five minutes.
+
+### Drain check before writing (mandatory)
+
+Two leak shapes recur and must be drained before the spec is written, whether or not `project-rules.md` exists yet:
+
+- **Concrete file paths.** `prisma/dev.db`, `db/schema.ts`, `src/lib/x.ts`, migration directories — any on-disk location is file-placement, which is project-rules territory. The spec states the *decision* ("Prisma + SQLite"); the *paths* never belong in it. Naming a path in the spec is a leak even if no rules file exists yet — it just means the path is currently unhomed, not that the spec is its home.
+- **Patterns phrased as obligations.** "Use native `<button>` not custom widgets", "wrap inputs in a label", "return `{success, error}`" — any "contributors must write it this way" sentence is a pattern. The spec records the *constraint or decision that motivates it* ("target WCAG 2.1 AA", "Server Actions are the mutation contract"); the *how-to* is Alex's.
+
+Run this pass on the drafted spec before writing: for each line, ask "is this a path or a how-to-write-it instruction?" If yes, cut it from the spec. If `project-rules.md` exists and already states it, cutting it also removes a cross-artifact duplication — the framework's most common drift. If rules does not exist yet, still cut it: an unhomed pattern is a `rule-gap` for Alex, not spec content. Reference the rules artifact ("see project-rules") rather than restating, when a spec decision needs to point at its applied form.
 
 ## Artifact boundary
 
@@ -221,6 +232,12 @@ Generate the complete tech spec in one go and write it directly to `_mano_output
 
 If a decision requires highlighting (a volatile library choice, a complex boundary), add a brief `⚠️ Note:` inline within the file itself.
 
+**Mandatory override flag (non-discretionary).** If the spec contradicts a directive in the brief's `## Stated Technical Preferences` block — different framework, different storage class, different auth model than the user explicitly stated — you must do **both**, every time, no exceptions:
+1. An inline `⚠️ Note:` in `tech-spec.md` at the relevant decision: what was stated, what you chose instead, the one-line reason.
+2. A `⚠ Verify:` line in the chat output naming the override explicitly (e.g. `⚠ Verify: brief stated Next.js + SQL; spec uses Vite + Firestore because [reason] — confirm before stories depend on it`).
+
+This is not the discretionary `⚠️ Note:` judgement above — a stated-preference override *always* trips it. The decision may well be right; the silent part is the defect. A spec that contradicts its own source on tech with zero acknowledgement buries a call the human must ratify and confuses every downstream reader. Overriding without flagging is a contract violation, not a style choice.
+
 **On subsequent phases (spec already exists):** Extend the spec file directly and write the updates.
 
 ### Hard constraint
@@ -248,7 +265,7 @@ Use the canonical execution-log format defined in `_mano/workflow.md`:
 [Optional hook block if active]
 ```
 
-Helen must surface a `⚠ Verify:` line whenever the spec embeds an assumption or hardcoded placeholder (e.g. a test layout) the user should confirm before implementation depends on it.
+Helen must surface a `⚠ Verify:` line whenever the spec embeds an assumption or hardcoded placeholder (e.g. a test layout) the user should confirm before implementation depends on it. Overriding a directive in the brief's `## Stated Technical Preferences` block always counts as such an assumption — the `⚠ Verify:` line is mandatory in that case, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently.
 
 Choose the next action based on what's still missing or worth refining:
 - `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying
@@ -267,7 +284,7 @@ Type `mano` to see what's available.
 - Do not include deployment architecture for small projects.
 - Do not include security architecture beyond what the brief specifies.
 - Do not include performance benchmarks unless relevant.
-- Do not put implementation patterns (function signatures, error-handling conventions, file-IO helpers, folder structure) in the spec — those are `project-rules.md` territory.
+- Do not put implementation patterns (function signatures, error-handling conventions, file-IO helpers, folder structure) in the spec — those are `project-rules.md` territory. This explicitly includes the two recurring leaks the **Drain check** targets: concrete on-disk file paths (`prisma/dev.db`, `db/schema.ts`, migration dirs) and accessibility/coding *patterns* phrased as contributor obligations ("use native `<button>` not custom widgets"). The spec keeps the decision/constraint that motivates these; the path and the how-to drain out. Applies even when `project-rules.md` does not exist yet — an unhomed pattern is a `rule-gap`, not spec content.
 - Do not write implementation code, internal component signatures, or exact UI/rendering math.
 - Do not list phase-level scope ("not in this phase," "deferred to Phase N") — phase scope belongs in the phase brief. Out of Scope in the spec is for architectural commitments only.
 - Do not mention the current Phase number anywhere in the generated spec, except in a one-line replacement note when a significant decision was superseded.

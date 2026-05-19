@@ -93,7 +93,7 @@ This is an example path, not a mandatory conveyor belt. After any step, choose t
 1. `mano start` → Skye scopes input, creates/updates the backlog, and suggests the next phase.
 2. Approve the phase brief scope.
 3. `mano stories` → Marco writes stories directly.
-3. Build.
+4. Build.
 
 Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal.
 
@@ -103,7 +103,7 @@ After a review, Dave closes the phase. If you don't need Mano for the rest — t
 ### Mid-build feedback
 Requirements change during implementation. You don't have to finish the phase to adjust:
 
-- **Found a bug or missing feature?** Use `mano stories` — Marco will create a new story (numbered 3a, 3b, etc.) and ask whether to implement it now or queue it for later.
+- **Found a bug or missing feature?** Use `mano stories` — Marco will create a new story, numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3), and ask whether to implement it now or queue it for later.
 - **Need to change scope?** Use `mano start` to talk to Skye — update assumptions, adjust scope, flag stories that turned out wrong.
 - **Need to regenerate specs or stories?** Run `mano [action]` again — the skill will check what exists and offer to update or regenerate.
 
@@ -136,7 +136,7 @@ Each phase brief is self-contained — problem, vision, design principle, scope,
 
 Planning artifacts live under `_mano_output/`. The only framework scaffold written outside that folder is `AGENTS.md` at the project root, copied during `mano start` so coding agents know where Mano artifacts live.
 
-Mano's installed runtime layout lives under `_mano/` inside the user's project. This repository contains the framework source files at the root for authoring, but the contract exposed to coding agents in real projects uses `_mano/skills`, `_mano/templates`, and `_mano/custom`.
+Mano's installed runtime layout lives under `_mano/` inside the user's project. This repository contains the framework source files at the root for authoring, but the contract exposed to coding agents in real projects uses `_mano/skills` and `_mano/templates`.
 
 ### A Warning on State Detection
 
@@ -292,33 +292,6 @@ Prefer:
 Avoid pulling every artifact into every skill. Mano should preserve useful reasoning quality by keeping context bounded.
 
 ## Optional Post-Skill Hooks
-
-Mano can support optional post-skill hooks through a local `hooks/` folder.
-
-Hooks are not part of the default workflow. They are a project-level extension point for users who want to run extra checks or external skills after a Mano skill creates or updates artifacts.
-
-This keeps Mano's core workflow small while allowing local experimentation.
-
-Post hooks should be:
-- optional
-- explicit
-- post-skill only
-- scoped to files touched by the original skill
-- advisory by default
-
-Example inactive hook files use the `.example.md` suffix:
-
-```text
-hooks/post-spec.example.md
-hooks/post-stories.example.md
-hooks/post-review.example.md
-```
-
-To test a hook, copy or rename it to the active post-hook name, for example `hooks/post-spec.md`.
-
-Hooks should not define the main workflow, automatically load broad context, or become mandatory gates unless the project deliberately chooses that convention.
-
-## Optional Hooks
 
 Mano can support optional post-skill hooks through a local `hooks/` folder.
 

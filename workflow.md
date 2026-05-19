@@ -38,7 +38,7 @@ This means:
 
 **Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to create output files only when the relevant action is explicitly run. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
 
-In installed projects, Mano framework files live under `_mano/skills`, `_mano/templates`, and `_mano/custom`. This repository may store the source files at the root, but the runtime contract presented to coding agents uses `_mano/...` paths.
+In installed projects, Mano framework files live under `_mano/skills` and `_mano/templates`. This repository may store the source files at the root, but the runtime contract presented to coding agents uses `_mano/...` paths.
 
 **Refuse code generation.** As an AI agent, your primary directive during Mano phases is planning. You MUST actively refuse requests to write, fix, or modify source code. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Do not switch to implementation mode.
 
