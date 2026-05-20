@@ -107,7 +107,7 @@ Requirements change during implementation. You don't have to finish the phase to
 - **Need to change scope?** Use `mano start` to talk to Skye — update assumptions, adjust scope, flag stories that turned out wrong.
 - **Need to regenerate specs or stories?** Run `mano [action]` again — the skill will check what exists and offer to update or regenerate.
 
-For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real `package.json` and lockfile, or anytime you add/remove/replace a library, run `mano spec` again so Helen can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain.
+For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real manifest and lockfile (any language — `package.json`/`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `go.sum`, `requirements.txt`/`uv.lock`, `CMakeLists.txt`, etc.), or anytime you add/remove/replace a library, run `mano spec` again so Helen can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain.
 
 The pipeline doesn't require you to finish before course-correcting.
 
@@ -164,7 +164,7 @@ Because Mano operates on a strictly "à la carte" file-based system, you can com
 - `project-rules.md`
 
 
-# Reality of Context
+## Reality of Context
 
 Mano does not create true agent isolation, persistent memory, or deterministic workflows.
 
@@ -178,7 +178,7 @@ Mano reduces planning entropy by encouraging bounded reasoning scopes and struct
 
 This is not a fully autonomous system. It is a collaboration framework for guiding LLM-assisted planning work.
 
-# Artifact Trust Hierarchy
+## Artifact Trust Hierarchy
 
 When artifacts conflict, prefer sources in this order:
 
@@ -191,7 +191,7 @@ When artifacts conflict, prefer sources in this order:
 
 Lower-level artifacts should be regenerated or updated when they drift from higher-priority decisions.
 
-# Artifact Drift
+## Artifact Drift
 
 Project artifacts may become outdated as decisions evolve.
 
@@ -203,7 +203,7 @@ Artifacts can exist in four states:
 
 When major decisions change, regenerate downstream artifacts rather than patching inconsistencies incrementally.
 
-# Common Failure Modes
+## Common Failure Modes
 
 Mano cannot eliminate typical LLM failure patterns.
 
@@ -237,17 +237,9 @@ The pattern is: Mano stays general; your project's AGENTS.md absorbs the specifi
 
 Mano artifacts are optimized for humans first. They should be easy to read, edit, trim, or replace manually without rerunning a skill. Skills accelerate planning, but they do not own the documents.
 
-The backlog may include a short optional `Core Product Principles` section for durable product intent that should survive across phases, such as speed, simplicity, interaction feel, accessibility posture, or other values that would be easy to lose during iterative planning. Keep it small and human-editable.
+The backlog may contain a short, optional `Core Product Principles` section for durable product values that should survive across phases — expectations such as speed, simplicity, interaction feel, accessibility level, or tone that are easy to lose during iterative planning. Keep it small and human-editable; it does not need a separate process or artifact.
 
-## Core Principles and Phase Context
-
-The backlog may contain a short, optional `Core Product Principles` section for durable product values that should survive across phases.
-
-This can include expectations such as speed, simplicity, interaction feel, accessibility level, tone, or other product values that are easy to lose during iterative planning.
-
-These principles do not need a separate process or artifact. They are human-readable backlog content.
-
-Skye owns this continuity and should copy only the principles relevant to the current phase into the phase brief. Downstream skills should operate from the phase brief and explicitly provided context rather than reading the backlog for general project memory.
+Skye owns this continuity and copies only the principles relevant to the current phase into the phase brief. Downstream skills operate from the phase brief and explicitly provided context rather than reading the backlog for general project memory.
 
 ## Skill Tightening Patterns
 

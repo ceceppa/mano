@@ -88,6 +88,13 @@ When project rules or the tech spec name exact tokens — prop names, attribute 
 
 **No hedged paths or ambiguous ownership.** Name one location. Do not write `src/foo.cpp or src/bar.cpp`, `either A or B`, `wherever the X helper lives`, or `if needed`. If ownership genuinely splits (computation in one file, enforcement in another), say so with each file's role: `compute in src/foo.cpp; enforce in src/bar.cpp`. If the correct location is genuinely unknown and not determinable from existing artifacts, flag it during the artifact gap check — do not ship the ambiguity.
 
+  Worked examples — the small-context implementer cannot resolve an `or` at runtime, so it defeats Implementation Reference's whole purpose:
+  - ❌ Don't: `Files: src/foo.cpp or src/bar.cpp` (single owner unstated)
+  - ❌ Don't: `State: include/foo.h or include/bar.h` (single owner unstated)
+  - ✅ Do, single owner: `Files: src/foo.cpp` (state transition X lives here)
+  - ✅ Do, genuinely split: `Files: compute in src/foo.cpp; commit in src/bar.cpp` (each file's role explicit, no `or`)
+  - ✅ Do, genuinely unknown: do not write the entry — flag it in the artifact gap check (Step 0a) so the upstream skill resolves it before the story ships.
+
 **Translate relevant project rules into the Implementation Reference.** Do not rely on the implementer to remember or rediscover project rules. Common translations:
 - Colour constant rules → add named colour constants; forbid inline colour values
 - Accessibility rules → add relevant `A11y` constraints
@@ -135,7 +142,16 @@ For stateful frontend stories: name what persists across restart, what stays tra
 
   Good: *Drag a column containing a mirror — the beam contact point shifts visually as the column moves.*
   Bad: *`trace_beam` passes `visual_offset_` to `grid_to_world` on every column-specific call.*
-  Bad: *The drag range is computed once at drag start.*
+
+  **Internal-state distinctions are also not AC, even without function/variable names.** "Uses X, not Y" naming two internal values is still implementation language — the user cannot observe which internal value was read. Rewrite to the visible effect:
+  - ❌ Don't: *"The save evaluation uses the committed value, not the in-progress draft value."* (names two internals; nothing visible)
+  - ✅ Do: *"Editing a field and then cancelling leaves the saved record unchanged, even if the change was visible on screen before cancelling."* (observable: edit → cancel → saved record unaffected)
+
+  **A whole story whose AC are all internal accumulation is an orphan story.** If every AC describes data being collected, appended, or stored — with no externally verifiable interface until a later story exposes it — the story has no exit. The implementer cannot tell when it's done from the outside. Two valid resolutions:
+  - Merge with the later story that exposes the state (preferred — they ship as one verifiable unit).
+  - Add an observable AC that exposes the state at runtime within *this* story: a developer toggle, a debug readout, a hidden command, or any surface that lets the implementer verify the AC by running the program. This is the **only** legitimate use of an "internal-but-exposed" AC; it is not a license to write "the field is set correctly" as AC.
+
+  This rule also closes the orphan-component failure mode covered elsewhere in this file: an orphan story passes acceptance individually but ships a feature the user cannot reach.
 
 - **Define vague correctness words.** Do not use bare words like "correctly", "properly", "works", "handles", "smoothly", or "in real time" unless the AC states what that means in observable terms.
 
@@ -158,7 +174,7 @@ For stateful frontend stories: name what persists across restart, what stays tra
   - [ ] Test: checkbox toggles completed state
   ```
 
-- **Stories must be small.** One focused session. Max five acceptance criteria.
+- **Stories must be small.** One focused session. Aim for five acceptance criteria or fewer; six is acceptable when the story is genuinely small and cohesive (the extra AC observes a distinct behaviour, not a rephrased one). Seven or more is a sizing signal — split the story, or merge AC that describe the same observable behaviour. Treat five as the soft target, not a hard ceiling: don't pad to reach it, don't artificially split a cohesive story to stay under it.
 
 - **Use `story-0` only for bootstrap work.** Typical uses: app shell, framework wiring, baseline routing, shared providers, API/server bootstrap, environment/config scaffolding, health-check plumbing. Not for product features, UX behaviour, or arbitrary chores.
 
@@ -183,6 +199,12 @@ Before drafting the story set, run these against the inputs. Each is a real chec
 - **Design brief.** If a story introduces or depends on a visual element, component, state, animation, layout, or styling distinction, check the design brief for matching guidance. If guidance exists, reference it in `Implementation Reference` instead of restating it as prose in AC. If no guidance exists and the choice affects the observable outcome, flag it during the artifact gap check.
 
 - **Acknowledged risks.** If the phase brief lists `Acknowledged risks`, each risk that describes an interaction, conflict, or possible failure mode the phase could ship with must be addressed by at least one story — covered by an AC that exercises the risk scenario, or explicitly flagged as a deferred concern in that story's `Notes`. Risks named in the brief but not surfaced anywhere in the story set are silently dropped. Pure outside-world risks ("library X may release a breaking change") that cannot be exercised by an AC may be acknowledged in the story set's execution-log `⚠ Verify` line instead.
+
+  Worked example — phase brief lists a risk such as *"Adding new controls could clutter the primary surface if not carefully restrained. Must keep them visually secondary per product principle."* One or more stories in the phase add those controls:
+  - ❌ Don't: ship the stories that introduce the controls with no AC anywhere verifying they stay visually secondary, even though the design brief specifies a low-contrast treatment. The risk is silently dropped.
+  - ✅ Do: add an AC to one of the introducing stories such as *"With the new controls rendered, the primary content area remains unobscured during normal use and the controls do not overlap it."* Observable, exercises the risk, ties to the brief's "visually secondary" intent.
+
+  Run this audit after drafting every story set: for each `Acknowledged risk` in the brief, identify which story's AC exercises it. If none does and it's not a pure outside-world risk, the audit fails — add the AC or, if the risk is genuinely deferred this phase, surface it in a story's `Notes` rather than dropping it.
 
 ### Test AC pattern
 

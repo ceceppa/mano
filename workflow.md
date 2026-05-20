@@ -136,8 +136,8 @@ When the user types `mano status`:
 2. Report: active phase, what files exist, what is missing, and what is present-but-incomplete.
 3. If multiple planning actions are still reasonable, show them as `Next options` instead of forcing a single `Suggested next action`.
 4. Only show one `Suggested next action` when the next move is genuinely narrower than the other valid options.
-6. For user-facing or mobile phases, missing `design-brief.md` and `design-preview.html` should keep `mano ui` visible as a valid next option unless the current phase is already obviously ready for stories without further design clarification.
-7. Do not activate any skill.
+5. For user-facing or mobile phases, missing `design-brief.md` and `design-preview.html` should keep `mano ui` visible as a valid next option unless the current phase is already obviously ready for stories without further design clarification.
+6. Do not activate any skill.
 
 ## Single obvious next action gates
 
@@ -226,7 +226,6 @@ Human approval boundary: `mano start` may create or update the backlog and sugge
 User types: mano start
 
 Step 1 — Skye activates
-  Creates _mano_output/ if it doesn't exist.
   Creates _mano_output/ if it doesn't exist.
   Copies AGENTS.md to the project root if it doesn't exist.
   Does not create optional artifacts such as project-rules.md.
@@ -317,7 +316,7 @@ When the phase is already clear and extra artifacts would add overhead instead o
 - Skills read only what they need (see skill files for specific inputs).
 
 
-# Human Oversight
+## Human Oversight
 
 Mano assumes humans actively supervise planning outputs.
 
@@ -335,7 +334,7 @@ Humans are responsible for:
 
 Mano structures collaboration. It does not replace judgment.
 
-# Compactness Guidelines
+## Compactness Guidelines
 
 Artifacts should prioritize clarity over completeness.
 

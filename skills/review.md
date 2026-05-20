@@ -109,9 +109,10 @@ When the user confirms (e.g., "close it", "yes"):
    - 🐛 Defects → `Type: bug`
    - 🔧 Refinements → `Type: refinement`
    - ✨ New ideas → `Type: feature`
-2. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
-3. Append the standard review entry to `_mano_output/reviews.md`.
-4. Fill the template sections concretely.
+2. **Resolve shipped items.** Read `_mano_output/backlog.md` and update every item currently marked `Status: in-phase-[N]` (for the phase being closed) to `Status: resolved`. This is what makes the phase officially closed and satisfies Skye's `mano start` completion gate on the next phase. Triaged items from STEP 2 are *separate* items — they were just written as `Status: backlog`, never touch their status here. The resolve sweep operates only on items that were already `in-phase-[N]` before this review began.
+3. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
+4. Append the standard review entry to `_mano_output/reviews.md`.
+5. Fill the template sections concretely.
 
 Output a cold execution log:
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
@@ -119,6 +120,7 @@ Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonica
 ```
 [Dave]: mano review — backlog.md, reviews.md
 - Triaged items inserted to backlog
+- Phase [N] items marked resolved
 - Phase [N] closed
 ⚠ Verify: [material triage decision worth checking — omit if none]
 ```
@@ -192,8 +194,6 @@ Output execution log (canonical format, see `_mano/workflow.md`):
 - Phase [N] follow-up closed
 ```
 That is your complete response.
-
-
 
 ## Review log
 
