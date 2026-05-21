@@ -79,6 +79,8 @@ When the user replies with their feedback, or when substantive feedback was alre
 - 📋 Spec gaps — missing or unclear tech spec (if applicable)
 - 📏 Rule gaps — missing or unclear rules (if applicable)
 
+**Splitting rule:** A single sentence can contain both a failure signal and an improvement detail — split them. If the user says "there's an issue with X, and it should also do Y", the failure is a 🐛 Defect and the improvement detail is a 🔧 Refinement. Defect signals: "issue", "broken", "doesn't work", "fails", "wrong", "missing". Do not collapse a defect into a refinement just because the user described a fix in the same breath.
+
 Present the triaged list to the user for confirmation:
 
 ```
