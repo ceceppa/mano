@@ -487,21 +487,26 @@ Only finalise after explicit human approval of the phase scope.
 2. Write final `phase-brief.md`, including relevant core product principles from the backlog if they affect this phase.
 3. **Write ALL deferred items to `_mano_output/backlog.md`.** Everything mentioned as "later", "Phase 2", "deferred", or "not in this phase" during scoping MUST be written to the backlog. No exceptions.
 4. **Update status in backlog:** Read `_mano_output/backlog.md` and update the `Status` of only the human-approved items from `backlog` to `in-phase-[N]`. Do not mark candidate items as in-phase before approval.
-5. Suggest next actions based on which useful artifacts are still missing:
+5. Suggest next actions based on which useful artifacts are still missing. Check which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist in `_mano_output/`. Then emit a next-action block that:
+   - Lists only artifacts that don't exist yet (skipping ones that are already present)
+   - Ends with a clear **recommended next step** — whichever single action is most likely to unblock implementation. Default recommendation is `mano stories` when the phase is self-contained (pure visual, pure refactor, or the brief already captures the full behaviour contract). Default to `mano spec` first when the phase introduces new data, new APIs, new external dependencies, or new integration points.
+   - Never lists `mano spec` with a hedge like "if technical decisions feel fuzzy" — either the phase needs a spec (new technical territory) or it doesn't (incremental on existing tech).
 
 ```
 Phase [N] brief is locked. What's next?
 
-Choose the next action based on what's still missing or worth refining:
-- `mano spec` — if technical decisions are still fuzzy
-- `mano ux` — if user-facing flows still need defining
-- `mano ui` — if visual direction or component language still need defining
-- `mano rules` — if project conventions or framework constraints still need codifying
-- `mano stories` — if the phase is already clear enough to break into implementable work
-- `mano continue` — if you want Mano to pick only when there is a single obvious next step
+Still missing:
+- `mano spec` — [one concrete reason: e.g. "phase introduces a new API integration"]   ← omit if tech-spec.md already exists
+- `mano ux` — [one concrete reason: e.g. "no UX flow defined for the onboarding screens"]   ← omit if ux-flow.md already exists
+- `mano ui` — [one concrete reason: e.g. "no design brief yet"]   ← omit if design-brief.md already exists
+- `mano rules` — [one concrete reason: e.g. "no project conventions on file yet"]   ← omit if project-rules.md already exists
+
+→ Recommended: `mano [action]` — [one sentence why this is the right next step]
 
 Type `mano` to see what's available.
 ```
+
+If all four optional artifacts already exist, omit the "Still missing" block entirely and just show the recommendation.
 
 ## Post-start hook suggestion
 

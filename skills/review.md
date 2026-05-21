@@ -113,7 +113,7 @@ When the user confirms (e.g., "close it", "yes"):
    - ✨ New ideas → `Type: feature`
 2. **Resolve shipped items.** Read `_mano_output/backlog.md` and update every item currently marked `Status: in-phase-[N]` (for the phase being closed) to `Status: resolved`. This is what makes the phase officially closed and satisfies Skye's `mano start` completion gate on the next phase. Triaged items from STEP 2 are *separate* items — they were just written as `Status: backlog`, never touch their status here. The resolve sweep operates only on items that were already `in-phase-[N]` before this review began.
 3. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
-4. Append the standard review entry to `_mano_output/reviews.md`.
+4. **Always append** the new review entry at the **bottom** of `_mano_output/reviews.md`. Never insert between existing entries.
 5. Fill the template sections concretely.
 
 Output a cold execution log:
@@ -185,15 +185,14 @@ That is your complete response. DO NOT write to files yet.
 When the user confirms (e.g., "close it", "yes"):
 1. Read `_mano_output/backlog.md`.
 2. Match resolved items to existing backlog items and update to `resolved`.
-3. Append any still open / new ideas to the backlog...
-4. Append follow-up review entry to `_mano_output/reviews.md`.
-5. Fill sections concretely.
+3. Append any still open / new ideas to the backlog.
+4. **Do not create a new `## Phase [N] Follow-up Review` section.** Find the existing `## Phase [N] Review` entry in `_mano_output/reviews.md` and append an `### Addendum — [Date]` subsection directly under it (before the next `---` separator). Use the addendum structure from `_mano/templates/phase-review.md`.
 
 Output execution log (canonical format, see `_mano/workflow.md`):
 ```
 [Dave]: mano review (follow-up) — backlog.md, reviews.md
 - Statuses updated in backlog
-- Phase [N] follow-up closed
+- Addendum appended to Phase [N] review entry
 ```
 That is your complete response.
 

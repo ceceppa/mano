@@ -25,10 +25,12 @@ Out of scope by default: `_mano_output/phase-[other]/` and everything beneath it
 
 Read this run, in this order:
 1. Current phase brief from `_mano_output/phase-[N]/phase-brief.md` (required)
-2. `_mano_output/tech-spec.md` if it exists — cross-check decisions appear in AC
-3. `_mano_output/ux-flow.md` if it exists — use when a story depends on screen flow or interaction sequencing
-4. `_mano_output/design-brief.md` if it exists — use when a story depends on screen composition, shared components, or visual direction; treat any dedicated section, subsection, token, or note as usable guidance and reference it directly
-5. `_mano_output/project-rules.md` if it exists — use when the story must follow project-specific coding or accessibility rules
+2. `_mano_output/tech-spec.md` if it exists
+3. `_mano_output/ux-flow.md` if it exists
+4. `_mano_output/design-brief.md` if it exists — treat any dedicated section, subsection, token, or note as usable guidance and reference it directly
+5. `_mano_output/project-rules.md` if it exists
+
+Read all present artifacts unconditionally. Do not skip one because the phase appears to have no UI or no rules implications — the gap check (Step 0d) cannot surface conflicts from artifacts it was never given to read.
 
 Spec, UX, rules, and design brief are optional inputs, not required gates. If an artifact is missing but the phase brief is clear enough to create small testable stories, proceed and mention the tradeoff briefly. If the missing artifact would force guessing, stop and offer the relevant Mano action.
 
