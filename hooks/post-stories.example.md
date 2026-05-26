@@ -46,7 +46,9 @@ Focus areas:
 
 Limit findings to these focus areas. Do not propose new stories, rewrite acceptance criteria, or suggest implementation approaches.
 
-Output format: one bullet per finding. Each finding states the issue, the affected story file, and the suggested fix. No prose preamble, no executive summary, no closing commentary.
+**Findings are diagnostic, not prescriptive.** Name the problem and, at most, point at a direction for the fix. Do not write replacement AC text, drafted wording, or "rewrite as: '…'" quotes — even as suggestions. The user owns the rewrite; the reviewer's job is to surface the issue precisely enough that the user (or a follow-up `mano stories` run) can act on it. "AC 7 uses internal enum names (DRAGGING, PENDING) — not observable to the player; rewrite to describe what the player sees" is a finding. "Rewrite as: 'Attempting column drag on an empty visual position…'" is a rewrite and is forbidden.
+
+Output format: one bullet per finding. Each finding states the issue, the affected story file, and where the fix should focus. No drafted replacement text. No prose preamble, no executive summary, no closing commentary.
 
 Do not inspect source code, build output, test output, or any current implementation state. The stories are the source of truth for this review — not the codebase. Do not request the user paste code or run commands to verify against. If a story appears inconsistent with implementation, that is `mano review`'s concern, not this hook's.
 
