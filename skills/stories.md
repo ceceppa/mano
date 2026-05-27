@@ -159,10 +159,15 @@ For stateful frontend stories: name what persists across restart, what stays tra
 
   This rule also closes the orphan-component failure mode covered elsewhere in this file: an orphan story passes acceptance individually but ships a feature the user cannot reach.
 
-- **Define vague correctness words.** Do not use bare words like "correctly", "properly", "works", "handles", "smoothly", or "in real time" unless the AC states what that means in observable terms.
+- **Define vague correctness words.** Do not use bare words like "correctly", "correct", "properly", "proper", "works", "handles", "smoothly", "smooth", or "in real time" unless the AC states what that means in observable terms. This applies to **every grammatical form** — adverb (*"snaps correctly"*), adjective (*"correct snap"*, *"proper alignment"*), and noun phrase (*"correct snap behaviour"*, *"smooth drag"*). The model often skips a rule that names only one form; the forbidden words above are forbidden in any form.
 
   Good: *While a column is being dragged, beam contact points stay aligned with the moving tiles instead of lagging behind or snapping to the resting grid.*
-  Bad: *The beam updates correctly in real time.*
+
+  Bad — adverbial: *The beam updates correctly in real time.*
+  Bad — adjectival: *After releasing column 1, correct snap behaviour.*
+  Bad — noun-phrase placeholder: *Smooth drag interaction.*
+
+  The adjectival and noun-phrase forms have an extra failure mode: they often *replace* the AC's verb instead of qualifying it. "After releasing column 1, correct snap behaviour" has no verb describing what the user observes — it labels a phase and gestures at it. Rewrite to name the observable: *"After releasing column 1, the row snaps to the nearest grid position within one frame and the beam path realigns to the new tile positions."*
 
 - **Move implementation mechanics to Implementation Reference.** If a detail is necessary but not directly observable — for example "compute once at drag start", "use a shared seam-width constant", or "fold committed offset into visual offset" — put it in `Implementation Reference`, not `Done when`. Pair it with an observable AC that describes the visible effect.
 
@@ -341,6 +346,14 @@ If wiring lives in another story, that story must already exist and run earlier 
 4. If any element has no owning AC, the story set is **incomplete**. Add the missing AC to the most appropriate story, add a story, or — if it is a quality that cannot be expressed as an observable AC — flag it explicitly. If a quality word from the phase goal does not appear (or have a direct synonym) in any AC across the story set, treat it as silently dropped — do not assume it is "implicitly covered" by feature stories.
 
 Report the mapping in the execution log only if something was missing and had to be added or flagged. A fully covered goal needs no narration. Never write story files until every element of the phase goal maps to a concrete AC or an explicit flag.
+
+**0g. Vague-AC self-audit.** Before writing any story file, scan every drafted AC across the entire story set for the forbidden vocabulary from the "Define vague correctness words" rule above. Check for *every grammatical form* — adverbial, adjectival, and noun-phrase — of: `correct`/`correctly`, `proper`/`properly`, `smooth`/`smoothly`, `works`, `handles`, `real time`/`real-time`, `instantly`, `seamless`/`seamlessly`. Also flag any AC that consists of a noun phrase with no verb describing what the user observes (e.g. *"correct snap behaviour"*, *"smooth drag interaction"*) — these are placeholder labels, not acceptance criteria.
+
+For each match: rewrite the AC to name the observable behaviour. Do not write the story file with a vague AC and a `TODO` note. Do not defer rewrites to a follow-up `mano stories` run. The audit happens *before* the first file write because every shipped vague AC creates downstream review burden — the hook catches it post-hoc, but the rule already exists and should have caught it pre-hoc.
+
+If a quality genuinely cannot be expressed as an observable AC (rare — usually a phase-goal element flagged in 0f), say so explicitly in `Notes` and ensure 0f has already surfaced it. Do not use that escape hatch to hide a rewrite the model could have done.
+
+Report nothing in the execution log if the audit found nothing. If rewrites happened, no narration needed — the rewritten AC is the artifact. Only surface an audit finding if it required adding a `Notes` flag for a genuinely-unobservable quality.
 
 ### Step 1 — Write all stories to files
 
