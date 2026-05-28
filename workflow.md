@@ -103,10 +103,6 @@ To detect story status: read `_mano_output/phase-[N]/stories/README.md` and chec
 
 Marco creates `_mano_output/phase-[N]/stories/README.md` the first time stories are generated. If the stories folder exists without that index, treat the phase artifacts as incomplete and fix the index before relying on state detection. This missing index is a local artifact-repair issue, not proof that `mano stories` is the only reasonable next planning action.
 
-To detect whether `project-rules.md` is substantive or still just the seeded default template:
-- If it contains only the stock template comments plus the workflow section, treat it as `present but still default` rather than as a fully useful planning artifact.
-- Only treat `project-rules.md` as substantive when Alex or Luna has added actual project-specific rules, accessibility content, or other non-template guidance.
-
 To detect the active phase: find the highest numbered `phase-[N]/` folder in `_mano_output/`.
 
 ## Help
@@ -288,10 +284,12 @@ Step 2 — Feedback capture
   Otherwise Dave shows the phase goal from the brief and asks the user to write freely about what's good, broken, annoying, new ideas.
 
 Step 3 — Triage
-  Dave categorises feedback into three buckets:
+  Dave categorises feedback into five buckets:
   🐛 Defects — broken things from this phase
   🔧 Refinements — things that work but could be better
   ✨ New ideas — emerged from usage, not originally scoped
+  📋 Spec gaps — missing or unclear tech spec (if applicable)
+  📏 Rule gaps — missing or unclear rules (if applicable)
 
   Defect descriptions stay as review input only.
   Dave does not debug, diagnose, or fix anything during `mano review`.
@@ -311,8 +309,10 @@ Step 4 — Close
 
 When the phase is already clear and extra artifacts would add overhead instead of clarity:
 - Skip `spec`, `ux`, `rules`, and `ui`.
-- Use `mano start` → `mano stories` → build.
+- Use `mano start` → `mano stories` → build → `mano review`.
 - Add optional planning artifacts later only if the work becomes ambiguous.
+
+`mano review` is the one non-optional step. It is what closes a phase: only `mano review` moves the phase's backlog items off `in-phase-[N]` to `resolved`, and Skye's `mano start` gate requires that closure before it will scope the next phase. The optional planning actions (`spec`, `ux`, `rules`, `ui`) can be skipped; review cannot.
 
 ## Rules
 

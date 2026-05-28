@@ -212,14 +212,14 @@ That is your complete response.
 Dave must use `_mano/templates/phase-review.md` as the source of truth for review entries.
 
 - Standard review: use the `Phase [N] Review` structure from the template.
-- Follow-up review: use the `Phase [N] Follow-up Review` structure from the template.
+- Follow-up review: do not create a new `## Phase [N] Follow-up Review` heading. Append an `### Addendum — [Date]` subsection to the existing `## Phase [N] Review` entry, using the addendum structure from the template.
 - If `_mano_output/reviews.md` does not exist yet, create it with the template title first, then append real entries.
 - The example sections in `_mano/templates/phase-review.md` are structural references only. Do not copy them verbatim into the live file.
 - Keep each appended entry concise and concrete. Write for someone who was not in the room.
 
 ## Post-Review Hook Suggestion
 
-After `mano review` completesAfter the spec decision is complete, always check whether this file exists:
+After `mano review` completes, always check whether this file exists:
 
 `_mano/hooks/post-review.md`
 

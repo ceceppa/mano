@@ -23,7 +23,7 @@ Every backlog item must use this exact format.
 Do not create phase sections such as `Phase 1`, `Complete in Phase`, or `Deferred`.
 Do not use checkbox task lists.
 Do not mark items as `in-phase-[N]` until the human has approved that phase scope.
-Current-phase implementation work belongs in `phase-brief.md` or `stories.md`, not as checklist tasks in the backlog.
+Current-phase implementation work belongs in `phase-brief.md` or the phase's story files, not as checklist tasks in the backlog.
 
 ### [Short title]
 - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap

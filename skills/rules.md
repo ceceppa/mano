@@ -52,7 +52,7 @@ Only write rules relevant to what is being built now or in the current phase. Do
 If `project-rules.md` already exists:
 - Merge and extend the rules.
 - Keep existing rules unless they explicitly conflict with the new phase.
-- Preserve any existing `Accessibility level:` line and the Workflow section (do not modify it).
+- Preserve any existing `Accessibility level:` line.
 
 Make specific implementation-convention decisions instead of asking the user. Do not pick libraries or frameworks — those belong to Helen in `mano spec`.
 

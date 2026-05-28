@@ -41,11 +41,19 @@
 
 | Assumption | Risk if wrong |
 |---|---|
-| | | | |
+| | |
 
 ## Acknowledged Risks
 
 -
+-
+
+## Stated Technical Preferences
+
+<!-- Pass-through appendix, not part of the phase narrative. Include ONLY if the source input explicitly stated a stack, framework, storage, auth, or other technical directive. Transcribe each strictly verbatim — quote the source sentence unchanged, one per line. Do not paraphrase, evaluate, rank, or tidy. Skye is a courier here, not an editor. Omit this whole section if the source stated no technical preference — never invent one to fill it. This is the single durable channel for stated tech directives across a context reset; Helen evaluates them at `mano spec` and must flag any override. -->
+
+<!-- Verbatim from the source; not scoped or decided by Skye. Helen evaluates these at `mano spec` and must flag any override. -->
+
 -
 
 <!-- Future work, deferred items, and ideas live in _mano_output/backlog.md — not here. -->

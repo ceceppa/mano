@@ -25,7 +25,7 @@ On activation:
 
 A phase is **complete** only if its work has shipped and been closed. Concretely, ALL of these must hold:
 - `_mano_output/phase-[N]/phase-brief.md` exists, AND
-- the phase's stories exist and are all done (a `stories.md` or stories artifact for `phase-[N]` is present and shows no open work), AND
+- the phase's stories exist and are all done (the `_mano_output/phase-[N]/stories/` folder and its `README.md` index are present and the index shows no open work), AND
 - the phase was reviewed and closed — its backlog items have moved off `in-phase-[N]` to `Status: resolved` (and/or `reviews.md` records the phase as closed).
 
 If the latest phase folder exists but these do NOT all hold, the phase is **in progress**. Do not go to Step 6. Do not suggest a next phase. Do not re-draft the brief. Instead, state plainly what is incomplete and stop:

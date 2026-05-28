@@ -73,7 +73,9 @@ The user owns scope, priorities, and product tradeoffs. Helen can recommend conc
 
 Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) planning** system.
 
-You only pay the cognitive tax for what you are building *today*. Only two planning actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks — then `mano dev` to implement each story. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
+You only pay the cognitive tax for what you are building *today*. Two planning actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks — then `mano dev` to implement each story, and `mano review` to close the phase. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
+
+The optional actions can be skipped; `mano review` cannot. Review is what closes a phase — it is the only action that moves the phase's backlog items off `in-phase-[N]` to `resolved`, and `mano start` will not scope the next phase until the current one is closed that way.
 
 Optional actions can be created now, reused from existing work, copied from a similar project, adapted from external inputs, or skipped entirely when they would add noise. Only run them when the current phase needs more clarity, constraints, or alignment. You never run the whole pipeline "just in case."
 
@@ -98,8 +100,9 @@ This is an example path, not a mandatory conveyor belt. After any step, choose t
 2. Approve the phase brief scope.
 3. `mano stories` → Marco writes stories directly.
 4. `mano dev` → implement the next pending story, repeat until the phase is built.
+5. `mano review` → Dave triages feedback and closes the phase. Required — this is what lets the next `mano start` proceed.
 
-Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal.
+Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal. The optional planning actions are what you skip here; review still closes the phase.
 
 ### Escape hatch
 After a review, Dave closes the phase. If you don't need Mano for the rest — that's fine. A tool that never lets go is a dependency, not a tool.
