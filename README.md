@@ -40,8 +40,11 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano status` | Scans output folder. Where am I? What's next? |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (Skye) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
+| `mano dev` | Implement the next pending story for the active phase. The bridge from a finished `stories/` folder into code. Follows the implementation contract in `AGENTS.md`. |
 | `mano continue` | Auto-run only when there is a single obvious next planning step. If several planning actions are still reasonable, it stops and shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
+
+`mano dev` is the named path into implementation, but you don't have to remember the command — plain phrasing like "implement the next story" routes to the same flow. Either way the agent follows the implementation contract in `AGENTS.md`.
 
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
@@ -60,6 +63,7 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 | **Luna** | Establishes visual language and component guide | `skills/ui.md` |
 | **Marco** | Breaks specs into implementable stories | `skills/stories.md` |
 | **Dave** | Phase review, triage, closes the phase | `skills/review.md` |
+| *(implementer)* | Implements the next pending story (thin pointer to the `AGENTS.md` contract) | `skills/dev.md` |
 
 These are structured constraint lenses, not simulated experts. They surface issues through mechanical rules and focused responsibilities, not through genuine independent thought.
 
@@ -69,7 +73,7 @@ The user owns scope, priorities, and product tradeoffs. Helen can recommend conc
 
 Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) planning** system.
 
-You only pay the cognitive tax for what you are building *today*. Only two actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
+You only pay the cognitive tax for what you are building *today*. Only two planning actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks — then `mano dev` to implement each story. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
 
 Optional actions can be created now, reused from existing work, copied from a similar project, adapted from external inputs, or skipped entirely when they would add noise. Only run them when the current phase needs more clarity, constraints, or alignment. You never run the whole pipeline "just in case."
 
@@ -84,7 +88,7 @@ On first-run PRD or project-brief ingestion, `mano start` creates or updates the
 4. `mano rules` → Alex defines project rules (recommended for new projects).
 5. `mano ui` → Luna creates or updates design brief + preview.
 6. `mano stories` → Marco breaks into stories.
-7. Build. Ship. Gather feedback.
+7. `mano dev` → implement the next pending story (repeat until the phase is built). Ship. Gather feedback.
 8. `mano review` → Dave triages feedback into the backlog, writes the review log, closes the phase.
 
 This is an example path, not a mandatory conveyor belt. After any step, choose the next action from the artifacts that are still missing or need revision.
@@ -93,7 +97,7 @@ This is an example path, not a mandatory conveyor belt. After any step, choose t
 1. `mano start` → Skye scopes input, creates/updates the backlog, and suggests the next phase.
 2. Approve the phase brief scope.
 3. `mano stories` → Marco writes stories directly.
-4. Build.
+4. `mano dev` → implement the next pending story, repeat until the phase is built.
 
 Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal.
 

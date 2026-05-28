@@ -23,13 +23,18 @@ Examples:
 - `mano rules` → read `_mano/skills/rules.md` and follow that flow
 - `mano stories` → read `_mano/skills/stories.md` and follow that flow
 - `mano review` → read `_mano/skills/review.md` and follow that flow
+- `mano dev` → implement the next pending story; read `_mano/skills/dev.md` and follow the "Implementing a story" contract below
 - `mano continue` → read `_mano/workflow.md` and determine the next useful Mano action
+
+Note: `mano dev` is the one Mano command that produces code. Every other command above is planning only. `mano dev` runs the "Implementing a story" contract in this file; `_mano/skills/dev.md` is a thin pointer back here.
 
 If a platform skill named `mano` is not available, that is not an error. Continue by using the local `_mano/` files.
 
 Only use external/platform skills when the user explicitly invokes them or when a Mano hook asks whether to run one and the user confirms.
 
 ### Implementing a story
+
+This is the contract for `mano dev` — the sanctioned path from a finished `stories/` folder into code. When the user wants to implement, this is the section to follow. `_mano/skills/dev.md` only points here; the steps below are authoritative.
 
 1. Find the active phase: highest numbered `phase-[N]/` folder in `_mano_output/`.
 2. Check `_mano_output/phase-[N]/stories/README.md` for the story index and status.

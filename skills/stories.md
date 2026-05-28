@@ -376,6 +376,7 @@ When all stories are written, output the execution log:
 [Only if dependencies are unambiguous: "Stories 3-5 are independent once story 2 is complete"]
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 Status: Ready. Review files in editor.
+-> Implement: mano dev (implements the next pending story)
 ```
 
 **Dependency honesty.** Only claim stories are independent when it's obvious from the AC (separate endpoints on the same existing database, separate screens with no shared state). If unsure, state sequential order only. False parallelisation claims are worse than no claims.
@@ -410,6 +411,7 @@ When the user reports something mid-build:
 ```
 -> Active Updates:
    - Inserted: story [N][letter] at _mano_output/phase-[N]/stories/story-[N][letter]-[slug].md
+-> Implement: mano dev (implements the next pending story)
 ```
 
 ## Addressing post-stories hook findings

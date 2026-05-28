@@ -7,11 +7,14 @@ mano                    → Show available commands and current status.
 mano status             → Scan _mano_output/ and show where you are + what to do next.
 mano start              → Scope a new project or phase. (Skye)
 mano continue           → Auto-run the next logical action if unambiguous.
-mano [action]           → Run an action: spec, ux, rules, ui, stories, review.
+mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
+mano dev                → Implement the next pending story for the active phase.
 mano help [skill]     → Show what a skill does and when to use it.
 ```
 
 `mano start` is a dedicated command. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
+
+`mano dev` is **not** a planning action — it is the implementation entry point. It does not generate planning artifacts; it implements the next pending story by following the contract in `AGENTS.md`. See `skills/dev.md` (a thin pointer to that contract). The "Refuse code generation" rule below applies to the planning actions, not to `mano dev`.
 
 `mano [action]` handles everything — first run, extending, and regeneration. When an action executes, it checks what already exists:
 - **Output doesn't exist yet** → generate it directly to the file (first run).
@@ -92,7 +95,7 @@ There is no single progress file. You are expected to determine where the user i
 
 - No `_mano_output/` folder → no project started → suggest `mano start`
 - Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist, which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough. If `mano rules` or `mano ui` would still add useful clarity, list them as separate valid options instead of hiding them behind a single suggestion.
-- `stories/` folder exists, stories are `pending` → build mode. No Mano planning command is required until the user wants to adjust scope or add planning context.
+- `stories/` folder exists, stories are `pending` → build mode. The next step is implementation: suggest `mano dev` to implement the next pending story. No Mano planning command is required until the user wants to adjust scope or add planning context.
 - `stories/` folder exists, all stories are `done`, and the latest phase has no review entry → phase is built, suggest `mano review`
 - `reviews.md` has an entry for the latest phase → phase is reviewed, suggest `mano start` for next phase
 
@@ -128,6 +131,7 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog | Design brief, design preview |
 | **Marco** | `mano stories` | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
 | **Dave** | `mano review` | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
+| *(implementer)* | `mano dev` | Implements the next pending story for the active phase. Not a planning lens — follows the `AGENTS.md` implementation contract. | Stories index, the selected story, `AGENTS.md` contract | Source code, story marked `done` |
 
 ## Status
 
@@ -173,6 +177,7 @@ Build mode: Phase [N]
 
 - Active phase: phase-[N]
 - Status: Stories are still pending, so no planning action was auto-run.
+- Use `mano dev` to implement the next pending story.
 - Use `mano stories` only if you need to add or adjust planned work.
 - Use `mano start` only if the phase scope itself has changed.
 - Use `mano review` after all stories in the phase are done.
@@ -204,10 +209,13 @@ Available Mano commands for Phase [N]:
   ui       — Design brief and component guide (Luna)
   stories  — Break phase into implementable stories (Marco)
   review   — Triage feedback, close the phase (Dave)
+  dev      — Implement the next pending story
 
 → marks the suggested next action.
-Type: mano start or mano [action]
+Type: mano start, mano [action], or mano dev
 ```
+
+When the phase is in build mode (stories exist and some are `pending`), mark `dev` as the suggested next action.
 
 When the user types `mano [action]`:
 - Execute the specific action logic defined in the `skills/` file.
