@@ -106,9 +106,9 @@ When project rules or the tech spec name exact tokens — prop names, attribute 
 - Accessibility rules → add relevant `A11y` constraints
 - File ownership rules → add relevant `Files` or `Boundaries`
 - Naming rules → copy the exact naming contract
-- Shared constants or measurements → require one named source of truth instead of per-file literals
+- Shared constants or measurements → require one named source of truth instead of per-file literals, per "Shared Values: One Canonical Home" in workflow.md
 
-If a required constant, token, rule, or shared measurement is needed and no artifact defines its value, do not write "if not yet defined." Make the requirement explicit and point to the owning artifact. If choosing the value would be guesswork, flag it during artifact gap check.
+If a required constant, token, rule, or shared measurement is needed and no artifact defines its value, do not write "if not yet defined." Make the requirement explicit and point to the owning artifact. If choosing the value would be guesswork, flag it during artifact gap check. If the value already exists in another artifact but with a different number or unit, do not silently pick one — surface the conflict, per "Conflicting Values: Surface, Do Not Reconcile" in workflow.md.
 
 Common labels: `Build`, `Files`, `State`, `Contract`, `Data`, `Commands`, `UI`, `Components`, `A11y`, `Boundaries`, `Style`, `Design`, `Rules`, `Do not`. Use only what applies.
 
