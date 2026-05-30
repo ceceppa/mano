@@ -403,6 +403,22 @@ Write naturally. Use short paragraphs where prose works better than bullet lists
 
 If a section reads like structured machine-parseable metadata rather than human communication, it is too heavy. Trim it, merge it with adjacent content, or leave it out.
 
+## Shared Values: One Canonical Home
+
+A shared fact — a measurement, constant, threshold, contract value, token, or any number a future contributor must apply consistently — has exactly **one owning artifact** that states its value, its unit, and the rationale for it. The owner is the artifact closest to the decision: usually `tech-spec.md` for a technical constraint, `design-brief.md` for a purely visual token. When the value is enforced at runtime, it is mirrored by exactly one named code constant (e.g. `TOUCH_TARGET_MIN_PX`), and the code constant is the runtime source of truth.
+
+Every other artifact **references the owner by name** ("touch targets meet the minimum defined in `tech-spec.md`") instead of restating the number. The number lives once, in the one place a reader would look for it.
+
+Stating the same value in a second artifact is drift, not redundancy — and stating it in a *different unit* (e.g. `44pt` in one file, `88px` in another, `36px` in a third) is the most dangerous form, because it hides agreement and disagreement equally: a reader cannot tell whether `44pt` and `88px` are the same fact or a conflict. When you find a value expressed in mixed units across artifacts, converge them on the owner's single unit, or convert and cite ("44pt = 88px at 2× DPI") only in the owning artifact.
+
+This applies to **every** artifact edit, whether made inside a skill or as a direct request. Propagating one value into several files and reporting that as completed alignment is the failure this rule exists to prevent — alignment means converging on the reference, never replicating the literal.
+
+## Conflicting Values: Surface, Do Not Reconcile
+
+Before writing a value that already appears in another artifact, check whether the existing copies agree — comparing the *fact*, not the *string* (`44pt` and `88px at 2×` agree; `44pt` and `36px` do not).
+
+If they differ in number or in unit, **stop and surface the conflict for a human decision** before writing anything. State what each artifact currently holds and which one the human's instruction would change. Never silently converge the values, never silently pick the number from the latest instruction, and never report a reconciliation as completed work. A pre-existing cross-artifact disagreement is a decision the human owns — it may encode an intentional difference, a forgotten backport, or a real bug — and the agent's job is to make it visible, not to flatten it. Reporting "updated all N files to the same value" over a conflict the human never resolved is the exact failure this rule prevents.
+
 ## Backlog Ownership Boundary
 
 Skye and Dave own backlog content and long-lived project continuity.

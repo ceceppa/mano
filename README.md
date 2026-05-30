@@ -46,6 +46,8 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 
 `mano dev` is the named path into implementation, but you don't have to remember the command — plain phrasing like "implement the next story" routes to the same flow. Either way the agent follows the implementation contract in `AGENTS.md`.
 
+`mano dev` is a *generic* implementer, not a language specialist. If you have a dedicated coding skill (e.g. a C++ specialist), you can have it implement instead — just point it at the contract: something like *"@cpp-pro, implement the next pending story following the 'Implementing a story' contract in `AGENTS.md`."* The specialist then writes the code under the same rules as the default implementer (AC only, one-line done, stop on a gap rather than inventing). The key is the contract reference — invoking a specialist with a bare "implement the next story" skips the discipline that keeps implementation supervised and on-scope.
+
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
 When a user types a Mano command in their AI IDE's chat interface, the agent is instructed to carry out that planning command directly. Since this relies entirely on the agent's context window and instruction-following capabilities, you must actively steer the agent if it hallucinates state or breaks character.
@@ -209,6 +211,14 @@ Artifacts can exist in four states:
 - Deprecated — retained only for historical reference
 
 When major decisions change, regenerate downstream artifacts rather than patching inconsistencies incrementally.
+
+### Aligning drift
+
+Drift is the normal cost of staying in control: as you change direction, edit code, or rescope, the artifacts that described the old state fall behind. Mano treats this as expected, not a fault.
+
+Re-running the relevant skill (for example `mano rules`) can **align** artifacts that have drifted — updating a stale reference to match what its source-of-truth artifact now says, rather than restating the same fact in several places. Each shared value or decision has one owning artifact; the others reference it, so alignment means re-pointing the references, not copying the value around.
+
+Alignment is a supervised step, not an automatic sync. When a value or decision conflicts across artifacts — the same fact stated differently in two places — Mano surfaces the conflict for you to resolve instead of silently picking one. A reconciliation you did not approve is not a success. For small drift, alignment is the low-cost fix; for major decision changes, prefer full regeneration (above).
 
 ## Common Failure Modes
 
