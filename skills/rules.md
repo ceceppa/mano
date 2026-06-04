@@ -69,6 +69,8 @@ Belongs in `tech-spec.md`, not project rules:
 - Deployment assumptions
 - Domain mechanics and business logic (what makes an entity valid, win conditions, state machine definitions, game rules)
 - Specific tuning values and interaction math (exact velocity thresholds, animation durations, easing curves)
+- **A single data-model field's name, type, or rationale** (e.g. "the destination field is named `final_position` so a future grouping feature extends cleanly"). The spec's data model owns specific field decisions. A rule may state a *general naming convention* (e.g. "fields use the language's standard case style"), never re-specify one field the spec already defines.
+- **One feature's implementation mechanism** (e.g. "the camera boundary is read from a configurable scene reference and recomputed each frame"). A single feature's how-it-works belongs in the spec. A rule may extract a *general, repeatable principle* the feature exemplifies (e.g. "spatial extents are always read from configuration at runtime, never hardcoded") — but only if that principle genuinely applies project-wide, not as a paraphrase of the one feature.
 
 Belongs in `project-rules.md`:
 - File placement conventions and folder structure
@@ -83,6 +85,10 @@ Belongs in `project-rules.md`:
 - "Do not do this" constraints that prevent common mistakes
 
 When a rule depends on a decision defined elsewhere, reference the source artifact instead of restating it. If a rule body mixes a domain mechanic with a coding convention (e.g. "scrollability is computed from tile types AND must be cached in a field after level load"), extract only the convention — the mechanic stays in the spec.
+
+**Generality test — run on every drafted rule before keeping it.** A rule must constrain a *class* of code, not a single decision. For each rule ask: *"Does this apply to code I haven't written yet, across more than one place — or is it one specific fact?"*
+- A general convention (one case style everywhere — `snake_case`, `camelCase`, whatever the language standardises on; all id comparisons use the same comparison rule; spatial extents are read from config at runtime, never hardcoded) → keep.
+- A single fact the spec already owns (this one field is named X; this one feature works like Y) → **drop it, or replace it with a one-line pointer to the spec.** Restating a spec fact as a rule adds no constraint and creates a drift hazard: when the spec changes, the rules copy silently goes stale. If you cannot phrase the rule so it governs more than the one decision the spec already made, it is not a rule — it is spec duplication.
 
 ## Rule format
 
