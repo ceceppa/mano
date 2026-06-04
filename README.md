@@ -81,6 +81,8 @@ The optional actions can be skipped; `mano review` cannot. Review is what closes
 
 Optional actions can be created now, reused from existing work, copied from a similar project, adapted from external inputs, or skipped entirely when they would add noise. Only run them when the current phase needs more clarity, constraints, or alignment. You never run the whole pipeline "just in case."
 
+**Skipping is not free, though.** "Optional" means *you* decide where the decision gets made — not that the decision goes away. If a phase genuinely needs a constraint that a skipped artifact would have captured (a folder convention, an API contract, a visual rule), the coding agent doesn't stop and ask — it invents one on the spot, per-story, with no record. That's fine when the choice is inconsequential and bad when it isn't: skip an artifact when its decisions are obvious or don't matter yet; run it when leaving those decisions to an implementer would let them drift. Where it's relevant, a skill's next-action recommendation will note what an absent artifact leaves unpinned, so you can choose deliberately rather than by omission.
+
 ### Human approval before phase briefs
 
 On first-run PRD or project-brief ingestion, `mano start` creates or updates the backlog, suggests a candidate first phase, and then stops. It must not create `phase-[N]/phase-brief.md`, create stories, or mark backlog items as `in-phase-[N]` until the human explicitly approves the phase scope.
@@ -162,8 +164,10 @@ This optional file manages architectural patterns, routing formats, workflow pre
 
 > **Spec vs Rules:** What's the difference? 
 > Mano enforces a strict separation of concerns to prevent AI context bloat:
-> - **`tech-spec.md` is the WHAT (The Blueprint):** It defines libraries, database schemas, and API contracts (e.g., "We will use PostgreSQL, and the `/users` endpoint returns JSON").
+> - **`tech-spec.md` is the WHAT (The Blueprint):** It defines libraries, data schemas, and interface contracts (e.g., "We will use PostgreSQL, and the `/users` endpoint returns JSON").
 > - **`project-rules.md` is the HOW (The Building Codes):** It defines architectural patterns, folder structures, and styling guidelines (e.g., "All API handlers must be wrapped in `catchAsync`, and we separate UI logic from data fetching").
+>
+> **The quick test:** the spec answers a *reviewer's* question — *"is this the right technical approach?"* Rules answer a *contributor's* question — *"where do I put this file and what do I name it?"* A decision the spec already settled (which library, which data format) becomes a rule the moment someone has to act on it consistently (where those files live, what they're named). Folder structure, naming, and file-placement conventions are **always** rules, never spec — even before `project-rules.md` exists.
 
 ### 2. Bring Your Own Artifacts
 Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a skill by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:

@@ -268,7 +268,7 @@ Use the canonical execution-log format defined in `_mano/workflow.md`:
 Helen must surface a `⚠ Verify:` line whenever the spec embeds an assumption or hardcoded placeholder (e.g. a test layout) the user should confirm before implementation depends on it. Overriding a directive in the brief's `## Stated Technical Preferences` block always counts as such an assumption — the `⚠ Verify:` line is mandatory in that case, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently.
 
 Choose the next action based on what's still missing or worth refining:
-- `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying
+- `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced layout (e.g. Godot).
 - `mano stories` — if the phase is technically clear enough to break into implementable work
 - `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase

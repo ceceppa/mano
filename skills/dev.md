@@ -1,5 +1,5 @@
 ---
-name: dev
+name: mano-dev
 description: Use to implement the next pending story for the active phase. Thin entry point — the implementation contract lives in AGENTS.md, not here.
 ---
 
@@ -17,7 +17,7 @@ This skill is a **pointer**, not a contract. The implementation contract is `AGE
 
 ## Hard stops (from AGENTS.md — repeated here only so they are never skipped)
 
-- **No implementable story → stop.** If every story is already `done`, or the requested story does not exist, output one line stating the phase is complete and that `mano review` or `mano start` is the user's call. Do not start, scope, or plan a new phase. Do not run `mano start` or `mano stories`.
+- **No implementable story → stop.** If every story is already `done`, or the requested story does not exist, output one line: the phase's stories are all done but the phase is **not closed** until `mano review` runs — review is mandatory, not optional. Direct the user to `mano review`. Do not call the phase "complete" (a phase is complete only once review moves its backlog items off `in-phase-[N]`), and do not present `mano start` as an equal option — `mano start` will refuse to scope the next phase until review closes this one. Do not start, scope, or plan a new phase. Do not run `mano start` or `mano stories`.
 - **Respect order.** If an earlier story is still `pending`, stop and tell the user which story would be skipped. Do not bypass without explicit confirmation.
 - **AC only.** Implement the story's acceptance criteria — nothing beyond them. On a genuine gap, stop and name the Mano flow that owns the decision; do not invent behaviour.
 - **One-line done.** After implementing, the entire chat response is `Story [N] done — status updated in stories/README.md`. No recap, no checklist, no AC restatement. The only permitted additions are a real deviation or a project-relevant decision worth preserving (offered for capture) — per `AGENTS.md` step 12 and "Implementation Output Discipline". Nothing else.

@@ -96,7 +96,7 @@ There is no single progress file. You are expected to determine where the user i
 - No `_mano_output/` folder → no project started → suggest `mano start`
 - Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist, which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough. If `mano rules` or `mano ui` would still add useful clarity, list them as separate valid options instead of hiding them behind a single suggestion.
 - `stories/` folder exists, stories are `pending` → build mode. The next step is implementation: suggest `mano dev` to implement the next pending story. No Mano planning command is required until the user wants to adjust scope or add planning context.
-- `stories/` folder exists, all stories are `done`, and the latest phase has no review entry → phase is built, suggest `mano review`
+- `stories/` folder exists, all stories are `done`, and the latest phase has no review entry → phase is **built but not closed**. Direct the user to `mano review` — review is mandatory to close a phase, not an optional suggestion. Do not call the phase "complete" and do not offer `mano start` as an equal alternative: `mano start` will refuse to scope the next phase until review moves this phase's backlog items off `in-phase-[N]`.
 - `reviews.md` has an entry for the latest phase → phase is reviewed, suggest `mano start` for next phase
 
 To detect story status: read `_mano_output/phase-[N]/stories/README.md` and check the Status column. If all stories are `done`, the phase is built and ready for review.
