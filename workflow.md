@@ -14,6 +14,12 @@ mano help [skill]     → Show what a skill does and when to use it.
 
 `mano start` is a dedicated command. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
 
+**Dispatch only to Mano's own skills — never a similarly-named built-in.** Every `mano <action>` resolves to the matching skill in `_mano/skills/` and to nothing else. The host environment may contain built-in, harness, plugin, or third-party skills whose names overlap a Mano action word — do **not** invoke those for a `mano` command, even if their name looks like an exact match. Resolve the command by its Mano role (the agent and contract below), not by keyword similarity to an ambient skill. Two known, high-impact collisions to call out explicitly:
+- **`mano review` → Dave** (`_mano/skills/review.md`): collect feedback, triage into the backlog, write the review log, close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run Dave instead.
+- **`mano dev` → the implementer** (`_mano/skills/dev.md` → `AGENTS.md` contract): implement the next pending story. It is **not** a dev server, build/run command, or editor launch. If you find yourself starting a server or opening the project in an editor, you have invoked the wrong skill.
+
+Every Mano skill's exact name is `mano-<action>` (`mano-review`, `mano-dev`, `mano-spec`, …). When a user types the spaced form of a colliding action (`mano review`, `mano dev`), resolve it to that **exact** Mano skill name — the same as if they had typed `mano-review` / `mano-dev` — never to a built-in that merely shares the bare keyword. The hyphenated name matches a Mano skill and no built-in, so it is the unambiguous target; the space is only a friendlier spelling of it. If a user re-issues a command in hyphenated form after a misfire, that is them forcing the exact match — honour it as the Mano skill.
+
 `mano dev` is **not** a planning action — it is the implementation entry point. It does not generate planning artifacts; it implements the next pending story by following the contract in `AGENTS.md`. See `skills/dev.md` (a thin pointer to that contract). The "Refuse code generation" rule below applies to the planning actions, not to `mano dev`.
 
 `mano [action]` handles everything — first run, extending, and regeneration. When an action executes, it checks what already exists:

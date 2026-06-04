@@ -39,6 +39,12 @@ This is the contract for `mano dev` — the sanctioned path from a finished `sto
 1. Find the active phase: highest numbered `phase-[N]/` folder in `_mano_output/`.
 2. Check `_mano_output/phase-[N]/stories/README.md` for the story index and status.
 3. **Hard stop — no implementable story remains.** If every story in the index is already `done`, or the requested / "next" story does not exist, STOP. Do not start, scope, or plan a new phase. Do not run `mano start`, `mano stories`, or any other Mano action. Do not invent, infer, or pick work. The phase being complete is not a trigger to advance — advancing is the user's explicit decision. Output one line stating the phase is complete and that `mano review` or `mano start` is the user's call, then stop. This is a hard stop, not a guideline.
+
+   **The `Status` column is the only signal — read it, do not interpret around it.** A story is implementable if and only if its Status is not `done` (e.g. `pending`). This decision is made *purely* from the Status column. A story's number, letter, title, or description carries **no** authority over whether it is in scope:
+   - There is no "refinement", "extra", "optional", "addendum", or "follow-up" class of story that the user must separately ask for. If a row is in the index and not `done`, it is in scope. Never invent such a category to justify stopping.
+   - A lettered story (`4a`, `4b`) is **not** a sub-part of a done story `4` that inherits its done-ness. It is its own ordered, pending work. Letters and numbers are ordering only, never a done-ness signal.
+   - "The core stories are done" / "the main work is finished" is **not** a stop condition. The only stop condition is *every row is `done`*. If even one row is `pending`, the phase is not done — implement the next pending story; do not announce the phase complete.
+   - Before stating the phase is complete, count the rows whose Status is not `done`. If that count is greater than zero, you may not call the phase complete — you have pending work to implement.
 4. Before implementing the requested story, check whether any earlier story in the index is still `pending`. Treat numbered stories and lettered insertions as ordered work unless the README or story notes explicitly say otherwise.
 5. If an earlier story is still `pending`, stop and tell the user which story would be skipped. Do not implement the later story unless the user explicitly confirms they want to bypass the suggested order.
 6. Read the story file first. Treat it as the primary implementation contract and expect it to be sufficient for correct implementation. The Implementation Reference section should carry the applicable rules plus any required files, modules, contracts, constraints, ownership boundaries, and prohibitions for that story. Treat exact prop names, attribute names, variant names, state keys, ownership statements, file paths, dependency names, and install commands written there as normative.
@@ -66,6 +72,8 @@ The story file remains a planning artifact, not an implementation log. This appl
 ## In-Flight Story Changes
 
 The acceptance criteria are the behavioural contract for the current story. Do not invent new behaviour, validation, edge cases, or product rules beyond the story on your own initiative.
+
+**`Not this story` is a hard boundary, not advice.** If the story has a `Not this story` (or equivalently-named out-of-scope) section, every item in it is a prohibition with the same force as a `Do not:` line. Implement none of it, even when the surrounding code, the chosen node/type/component, or a library default makes that behaviour the "natural" or "obvious" thing to add. A common trap: the story names a type whose typical use implies a behaviour the story excludes (e.g. an animated-sprite type used to show a *static* frame, a form widget used without its usual validation). The named type does not authorise the implied behaviour — the `Not this story` line overrides what the type "wants" to do. When a `Not this story` item and your instinct conflict, the `Not this story` item wins; if you believe an excluded item is genuinely required for the AC to work, that is a gap — stop and surface it, do not implement it on your own initiative.
 
 When implementation reveals a gap:
 

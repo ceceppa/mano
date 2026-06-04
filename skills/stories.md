@@ -88,6 +88,11 @@ Default format:
 
 Every story must include an Implementation Reference. Write it as a compact pointer list — field labels and terse fragments only, no prose or rationale. Assume the implementer reads the story first and may consult referenced artifacts when needed. Copy here only what they cannot easily find themselves: exact prop names, file paths, install commands, ownership boundaries, critical prohibitions.
 
+**Inline OR reference a value — never both.** The Implementation Reference exists so the implementer can build from the story *without opening other artifacts*; every avoidable read enlarges the small-context implementer's working set and defeats the point. So for any concrete value (a constant, token, name, path):
+- If you inline the value (`ANIM_SLEEP = "sleep"`), the story is now its authoritative source — do **not** also append "per project-rules" / "see tech-spec" / "defined in X" pointing at the same value. A value that is both stated *and* pointed-elsewhere reads as "the real version is over there," and the implementer dutifully opens the file it already had the answer for. Inline the value and state the *constraint* instead (e.g. "define as a named constant; no inline string at call sites") without sending them to read the rule that says so.
+- If the value is too large or volatile to inline, do not inline it — give only the reference, so there is exactly one place to look.
+- Either way, when the story already carries every value the implementer needs, say so plainly (e.g. "all values needed are in this story") so they do not go hunting in the spec or rules for something already in hand. The implementer should open another artifact only when the story *omits* something and explicitly points there — not to re-fetch a value the story already states.
+
 Only include fields relevant to this story. Omit empty categories. Do not invent variants, props, states, or constraints not backed by an existing artifact.
 
 When project rules or the tech spec name exact tokens — prop names, attribute names, file paths, state keys, install commands, constants — copy them verbatim. Do not paraphrase. When a project rule implies a required file, module, constant, or prohibition, translate the implication into an explicit instruction.

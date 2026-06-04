@@ -490,6 +490,10 @@ Only finalise after explicit human approval of the phase scope.
 5. Suggest next actions based on which useful artifacts are still missing. Check which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist in `_mano_output/`. Then emit a next-action block that:
    - Lists only artifacts that don't exist yet (skipping ones that are already present)
    - Ends with a clear **recommended next step** — whichever single action is most likely to unblock implementation. Default recommendation is `mano stories` when the phase is self-contained (pure visual, pure refactor, or the brief already captures the full behaviour contract). Default to `mano spec` first when the phase introduces new data, new APIs, new external dependencies, or new integration points.
+   - **"Incremental on existing tech" is not the same as "no new external API."** Recommend `mano spec` first whenever *any* of these hold, even if no new external dependency is added:
+     - The phase **replaces or overturns an existing tech-spec decision** — e.g. swapping an established approach for a different one (a straight-line move becomes pathfinding, in-memory becomes persisted, polling becomes push). Reversing a committed decision is new technical territory, not an increment on it.
+     - The phase introduces a **new internal model, algorithm, or representation** the spec doesn't yet describe (a navigation/walkability model, a state machine, a scheduling scheme) — "internal, not an external API" does not make it spec-free.
+     - The brief's own **Acknowledged Risks or Assumption Log names an unresolved technical question** ("what counts as a blocking tile", "where does X state live"). A technical question the brief admits is open is a spec-gap by definition — do not recommend skipping spec while the brief itself flags one. Scan those sections before defaulting to `mano stories`.
    - Never lists `mano spec` with a hedge like "if technical decisions feel fuzzy" — either the phase needs a spec (new technical territory) or it doesn't (incremental on existing tech).
 
 ```

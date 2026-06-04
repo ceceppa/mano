@@ -24,7 +24,11 @@ On activation:
 2. Read `_mano_output/tech-spec.md` if it exists.
 3. Read any package manifest and matching lockfile if they exist (`package.json` + `package-lock.json` / `pnpm-lock.yaml` / `yarn.lock` / `bun.lockb`).
 4. If no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
-5. If spec already exists, compare it against the current phase brief, any explicitly provided `spec-gap` context, and any manifest or lockfile evidence of the actual installed toolchain. Present the diff:
+5. If spec already exists, compare it against the current phase brief, any explicitly provided `spec-gap` context, and any manifest or lockfile evidence of the actual installed toolchain. **Brief-consistency is not the only pass condition.** A spec can match the brief and still be defective on its own terms — most commonly because the brief carries the same unhomed magic number the spec does, so diffing them surfaces nothing. Before presenting the diff, run the **Drain check**, the **Unhomed-value check**, and the **Domain model completeness check** (all below) against the *existing* spec, not just against the brief. These are quality passes on the spec itself, mandatory on every re-run, not only when drafting from scratch. An unhomed quantity is a defect even when the spec is "consistent with the brief" — surface it as an `⚙️` row.
+
+**Change-ripple — when the requested change introduces a new mechanism.** A change is rarely just the line it names. When a requested edit swaps in a new node type, interface, entity, or capability (e.g. a plain sprite becomes an animated one, a value becomes a collection, a static field becomes computed), that new mechanism *brings its own required data* — and the localized edit will home the named thing while silently leaving the new data unhomed. Do not apply such a change as a one-line swap. Re-run the Domain model completeness check on what the new mechanism requires: list the properties/state it needs to work, and for each, either home it in the data model or **explicitly defer it in writing** (an Assumption Log / deferral note), naming which entity will own it once a deferred item lands. This is decisive, not interrogative — make the logical assumption and record it; do not stop to ask the user step-by-step. Surface anything newly required-but-unhomed as an `⚙️` row.
+
+Do not conclude "consistent, no updates needed" until all three checks have run clean. Present the diff:
 
    ```
    [Helen]: I've compared the Phase [N] brief against the existing spec. Here's what needs updating:
@@ -32,6 +36,7 @@ On activation:
    - ✅ [existing item] — still correct
    - 🆕 [new item from phase brief] — not in the spec yet. My recommendation: [library/approach]
    - ✏️ [changed item] — phase brief says X, spec says Y
+   - ⚙️ [unhomed value] — "[quantity]" drives behaviour but has no field/config/constant that owns it; needs a home in [entity]
    - 🧾 [toolchain sync item] — detected [package manager] from [manifest/lockfile], so installed versions should replace provisional planning versions where they differ
    - 🔍 [spec-gap from backlog] — flagged during review: [context from backlog item]
 
@@ -117,6 +122,14 @@ Two leak shapes recur and must be drained before the spec is written, whether or
 - **Patterns phrased as obligations.** "Use native `<button>` not custom widgets", "wrap inputs in a label", "return `{success, error}`" — any "contributors must write it this way" sentence is a pattern. The spec records the *constraint or decision that motivates it* ("target WCAG 2.1 AA", "Server Actions are the mutation contract"); the *how-to* is Alex's.
 
 Run this pass on the drafted spec before writing: for each line, ask "is this a path or a how-to-write-it instruction?" If yes, cut it from the spec. If `project-rules.md` exists and already states it, cutting it also removes a cross-artifact duplication — the framework's most common drift (see "Shared Values: One Canonical Home" in workflow.md). If rules does not exist yet, still cut it: an unhomed pattern is a `rule-gap` for Alex, not spec content. Reference the rules artifact ("see project-rules") rather than restating, when a spec decision needs to point at its applied form. When the spec *is* the owning artifact for a shared value (a measurement, threshold, or constraint other artifacts must apply), state the value once here with its unit and rationale, so other artifacts can reference it instead of restating the number.
+
+### Unhomed-value check before writing (mandatory)
+
+The Drain check removes things that don't belong; this one captures things that do. A behaviour the brief describes using a bare quantity — a count, a limit, a duration, a threshold — needs that quantity to have a **home in the spec**, not just a mention. Stating the value in a sentence is not the same as homing it: an implementer who finds a magic literal with no field, config value, or named constant behind it must invent where it lives, and may attach it to the wrong entity.
+
+**Mentioned ≠ homed — the trap this check exists to catch.** A spec that says "the worker retries 3 times" or "spawn 5 workers" has *mentioned* the number, and a reviewer skimming for "is the retry count covered?" will tick it ✅. That tick is the failure. The test is not "is the value present in prose?" — it is "**is there a named field, config value, or constant the code reads it from?**" If the only occurrence is a literal inside a descriptive sentence, the value is **unhomed** even though it is mentioned, and the check has *not* passed. Do not mark a quantity satisfied because the spec talks about it; mark it satisfied only when you can point to the field or constant that owns it.
+
+Run it mechanically: list every quantity the implementation will need (scan the spec and the brief it came from). For each, write down the named field/config/constant that holds it and **which entity owns it** — and be deliberate about values that belong to a collection or process rather than to an individual record (e.g. "how many to spawn" belongs to whatever does the spawning, not to the thing being spawned), since those are the ones most easily attached to the wrong entity. Any quantity for which you cannot name a home is the defect: add the field or named constant to the spec before writing. This is the capture-direction face of "one canonical home": the Drain check pushes mislocated values out, this check pulls unhomed values in.
 
 ## Artifact boundary
 
@@ -209,6 +222,8 @@ Include developer tooling (linting, formatting, type-checking, testing, codegen)
 ## Domain model completeness check
 
 When the phase includes domain mechanics, game rules, workflows, entities, state machines, or non-trivial business logic, Helen must define the minimum data model needed to implement and test the phase.
+
+This check runs in **two situations**, not one: (a) when drafting the spec from a phase brief, and (b) on a re-run, whenever a requested change introduces a new mechanism — a new node type, interface, entity, or capability. Case (b) is the easily-missed one: a change request looks localized ("swap A for B"), but B may require data A did not, and applying it as a one-line edit leaves that data unhomed. In both cases, run the questions below against the model as it stands *after* the change.
 
 Before writing or confirming the spec, check:
 - What entities or objects exist?

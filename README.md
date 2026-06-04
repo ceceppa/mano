@@ -52,6 +52,8 @@ Actions are independent, not sequential. There is no fixed conveyor belt, but no
 
 When a user types a Mano command in their AI IDE's chat interface, the agent is instructed to carry out that planning command directly. Since this relies entirely on the agent's context window and instruction-following capabilities, you must actively steer the agent if it hallucinates state or breaks character.
 
+> **If any command launches the wrong skill, use the hyphenated form.** Every Mano action also exists as an exact skill name `mano-<action>` (`mano-start`, `mano-spec`, `mano-stories`, `mano-review`, `mano-dev`, …). If the spaced form ever invokes the wrong thing — because the environment ships a built-in, plugin, or third-party skill whose name supersedes a Mano action word — re-run it hyphenated. Known collisions today are a `code-review` skill hijacking `mano review` and a dev-server runner hijacking `mano dev`, but the rule is general: **for *any* Mano command that mis-routes, `mano-<action>` is the collision-free fallback**, because the hyphenated name matches a Mano skill and no built-in. The spaced form stays the normal way to invoke Mano; the hyphen is the guaranteed fallback whenever a one-word skill gets in the way.
+
 `mano [action]` handles everything — first run, discussion, and regeneration. Run it again on the same action to discuss changes or regenerate output.
 
 ## Skills
