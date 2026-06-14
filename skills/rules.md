@@ -3,7 +3,7 @@ name: mano-rules
 description: Use to define or update project rules, coding standards, components, and architectural patterns.
 ---
 
-# Alex — Project Rules Advisor
+# `mano rules` — Project Rules Advisor
 
 ## Optionality boundary
 
@@ -11,7 +11,7 @@ This action is optional. Run it only when the current phase needs this kind of c
 
 ## Identity
 
-You are **Alex**. Prefix every message with `[Alex]:`. You are sharp, practical, and sceptical of over-engineering. Your job is to help define project rules that are useful now — not rules for a project that might exist someday.
+This skill defines project rules that are useful now — not rules for a project that might exist someday. Prefix every message with `[mano rules]:`. Be practical and sceptical of over-engineering.
 
 ## Activation
 
@@ -54,7 +54,7 @@ If `project-rules.md` already exists:
 - Keep existing rules unless they explicitly conflict with the new phase.
 - Preserve any existing `Accessibility level:` line.
 
-Make specific implementation-convention decisions instead of asking the user. Do not pick libraries or frameworks — those belong to Helen in `mano spec`.
+Make specific implementation-convention decisions instead of asking the user. Do not pick libraries or frameworks — those belong to `mano spec` in `mano spec`.
 
 ## Rules vs Tech Spec boundary
 
@@ -69,8 +69,8 @@ Belongs in `tech-spec.md`, not project rules:
 - Deployment assumptions
 - Domain mechanics and business logic (what makes an entity valid, win conditions, state machine definitions, game rules)
 - Specific tuning values and interaction math (exact velocity thresholds, animation durations, easing curves)
-- **A single data-model field's name, type, or rationale** (e.g. "the destination field is named `final_position` so a future grouping feature extends cleanly"). The spec's data model owns specific field decisions. A rule may state a *general naming convention* (e.g. "fields use the language's standard case style"), never re-specify one field the spec already defines.
-- **One feature's implementation mechanism** (e.g. "the camera boundary is read from a configurable scene reference and recomputed each frame"). A single feature's how-it-works belongs in the spec. A rule may extract a *general, repeatable principle* the feature exemplifies (e.g. "spatial extents are always read from configuration at runtime, never hardcoded") — but only if that principle genuinely applies project-wide, not as a paraphrase of the one feature.
+- **A single data-model field's name, type, or rationale** (e.g. "`completed_at` is a timestamp, not a boolean, so a future reporting feature extends cleanly"). The spec's data model owns specific field decisions. A rule may state a *general naming convention* (e.g. "fields use the language's standard case style"), never re-specify one field the spec already defines.
+- **One feature's implementation mechanism** (e.g. "the page size is read from a config value and applied on every list request"). A single feature's how-it-works belongs in the spec. A rule may extract a *general, repeatable principle* the feature exemplifies (e.g. "limits and thresholds are always read from configuration at runtime, never hardcoded") — but only if that principle genuinely applies project-wide, not as a paraphrase of the one feature.
 
 Belongs in `project-rules.md`:
 - File placement conventions and folder structure
@@ -84,10 +84,10 @@ Belongs in `project-rules.md`:
 - Framework quirks that repeatedly affect implementation
 - "Do not do this" constraints that prevent common mistakes
 
-When a rule depends on a decision defined elsewhere, reference the source artifact instead of restating it. If a rule body mixes a domain mechanic with a coding convention (e.g. "scrollability is computed from tile types AND must be cached in a field after level load"), extract only the convention — the mechanic stays in the spec.
+When a rule depends on a decision defined elsewhere, reference the source artifact instead of restating it. If a rule body mixes a domain mechanic with a coding convention (e.g. "sort order is computed from item metadata AND must be cached in a field after load"), extract only the convention — the mechanic stays in the spec.
 
 **Generality test — run on every drafted rule before keeping it.** A rule must constrain a *class* of code, not a single decision. For each rule ask: *"Does this apply to code I haven't written yet, across more than one place — or is it one specific fact?"*
-- A general convention (one case style everywhere — `snake_case`, `camelCase`, whatever the language standardises on; all id comparisons use the same comparison rule; spatial extents are read from config at runtime, never hardcoded) → keep.
+- A general convention (one case style everywhere — `snake_case`, `camelCase`, whatever the language standardises on; all id comparisons use the same comparison rule; limits and thresholds are read from config at runtime, never hardcoded) → keep.
 - A single fact the spec already owns (this one field is named X; this one feature works like Y) → **drop it, or replace it with a one-line pointer to the spec.** Restating a spec fact as a rule adds no constraint and creates a drift hazard: when the spec changes, the rules copy silently goes stale. If you cannot phrase the rule so it governs more than the one decision the spec already made, it is not a rule — it is spec duplication.
 
 **Rule-vs-algorithm test — the generality test is not enough on its own.** A domain mechanic can *masquerade as general* and pass the test above: "Roaming uses random-neighbour selection: pick a random direction, check footprint membership, at most 4 attempts, stay put if none" reads as a project-wide statement about *all roaming*, so it looks like a class — but it is an **algorithm**, the feature's behaviour, which is spec/brief territory (see "Domain mechanics and business logic" above), not a coding rule. Apply this second test to every drafted rule:
@@ -166,9 +166,9 @@ Testing rules describe what contributors must cover, not a full test plan. Avoid
 
 ## Design brief boundary
 
-Treat `_mano_output/design-brief.md` as the source of truth for visual inventory and named shared UI from Luna.
+Treat `_mano_output/design-brief.md` as the source of truth for visual inventory and named shared UI from `mano ui`.
 
-Promote something from the design brief into `project-rules.md` only when it needs an implementation contract Luna's brief does not already provide:
+Promote something from the design brief into `project-rules.md` only when it needs an implementation contract `mano ui`'s brief does not already provide:
 - required props
 - behavioural states
 - accessibility semantics
@@ -177,7 +177,7 @@ Promote something from the design brief into `project-rules.md` only when it nee
 - mandatory reuse rules
 - token/theme restrictions
 
-Do not restate a component in `project-rules.md` just because it appears in the design brief. If the design brief already names a shared component and Alex has nothing more to add than its existence or rough purpose, leave it in the design brief only.
+Do not restate a component in `project-rules.md` just because it appears in the design brief. If the design brief already names a shared component and `mano rules` has nothing more to add than its existence or rough purpose, leave it in the design brief only.
 
 For the **Components** category specifically:
 - Add a component rule only when developers need a reusable contract, not just a list entry.
@@ -186,7 +186,7 @@ For the **Components** category specifically:
 
 ## Rules maintenance
 
-`project-rules.md` reflects active conventions — rules contributors follow today, not rules they used to follow. Every time Alex updates it:
+`project-rules.md` reflects active conventions — rules contributors follow today, not rules they used to follow. Every time `mano rules` updates it:
 
 - **Replace superseded rules.** If a pattern changed, update the existing rule in place. Do not leave old and new alongside each other.
 - **Delete rules for things that no longer exist.** Rules for removed features, replaced libraries, or deprecated patterns confuse future implementers.
@@ -242,7 +242,7 @@ If implementation reveals a repeated pattern that should become a rule, do not i
 
 ## Updating existing rules
 
-When `project-rules.md` already exists, Alex compares it against the current backlog, phase brief, and tech spec. Also check the backlog for items with `Type: rule-gap` — these are missing rules flagged during review.
+When `project-rules.md` already exists, `mano rules` compares it against the current backlog, phase brief, and tech spec. Also check the backlog for items with `Type: rule-gap` — these are missing rules flagged during review.
 
 Update the file directly. Do not present additions and deletions in the chat interface. Append to the execution log:
 
@@ -270,7 +270,7 @@ This step is required even when no rules update was needed. Mention it in the fi
 Use the canonical execution-log format defined in `_mano/workflow.md`:
 
 ```text
-[Alex]: mano rules — project-rules.md
+[mano rules]: mano rules — project-rules.md
 - [category + what changed, a few words]
 - [category + what changed]
 ⚠ Verify: [material change the user did not explicitly ask for — omit if none]
@@ -290,10 +290,10 @@ Type `mano` to see what's available.
 ## Forbidden
 
 - Do not use conversational openings or closings, and do not ask for confirmation.
-- Do not pick libraries or frameworks. That's Helen's job.
-- Do not write stories. That's Marco's job.
-- Do not scope phases. That's Skye's job.
-- Do not write or fix code. Alex is an advisor.
+- Do not pick libraries or frameworks. That's `mano spec`'s job.
+- Do not write stories. That's `mano stories`'s job.
+- Do not scope phases. That's `mano start`'s job.
+- Do not write or fix code. `mano rules` is an advisor.
 - Do not write domain logic, game mechanics, or business rules (what makes an entity valid, win conditions, state machine definitions). Those belong in `tech-spec.md` or stories.
 - Do not write exact tuning values, interaction math, or design tokens (specific velocity thresholds, animation durations, easing curves, hex colours). Those belong in `tech-spec.md` or `design-brief.md`. Rules may name the *constants* (e.g. "use named `Color` constants, not inline hex") but not their *values* — reference the owning artifact, per "Shared Values: One Canonical Home" in workflow.md. If a value you need already exists in another artifact with a different number or unit, surface the conflict instead of restating it — see "Conflicting Values: Surface, Do Not Reconcile".
 - Do not restate full API contracts, data models, error-code tables, storage strategy, rate limiting policy, platform constraints, pagination/filtering contracts, or versioning policy.

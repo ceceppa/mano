@@ -1,6 +1,6 @@
 # Tech Spec — [Project Name]
 
-<!-- Project-wide. Generated once by Helen, extended on later phases. -->
+<!-- Project-wide. Generated once by `mano spec`, extended on later phases. -->
 
 ## Tech Stack
 

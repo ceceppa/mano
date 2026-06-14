@@ -1,7 +1,7 @@
 # Backlog — [Project Name]
 
 <!-- Future work, deferred items, and ideas. -->
-<!-- Skye owns backlog curation during scoping. Dave appends or resolves items during review. -->
+<!-- `mano start` owns backlog curation during scoping. `mano review` appends or resolves items during review. -->
 <!-- You can edit this file directly at any time. -->
 
 ## Core Product Principles

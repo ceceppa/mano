@@ -51,7 +51,7 @@ Possible uses:
 
 ## Accessibility
 
-<!-- Record the agreed accessibility baseline here. Luna may seed the `Accessibility level:` line if it is still blank during `mano ui`. Alex maintains the rest of this section. Example:
+<!-- Record the agreed accessibility baseline here. `mano ui` may seed the `Accessibility level:` line if it is still blank during `mano ui`. `mano rules` maintains the rest of this section. Example:
 
 Accessibility level: WCAG 2.1 AA
 

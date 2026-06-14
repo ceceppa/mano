@@ -1,6 +1,6 @@
 # Design Brief — [Project Name]
 
-<!-- Project-wide. Generated once by Luna, extended on later phases if needed. -->
+<!-- Project-wide. Generated once by `mano ui`, extended on later phases if needed. -->
 
 ## Visual Direction
 
@@ -52,7 +52,7 @@
 - **Layout / hierarchy notes:**
 
 <!-- This screen-level list is the inventory of shared UI used by the design.
-If a component later needs a hard implementation contract such as required props, accessibility semantics, mandatory reuse, or ownership rules, Alex may codify that separately in project-rules.md. -->
+If a component later needs a hard implementation contract such as required props, accessibility semantics, mandatory reuse, or ownership rules, `mano rules` may codify that separately in project-rules.md. -->
 
 ---
 

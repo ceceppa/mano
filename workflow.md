@@ -5,7 +5,7 @@
 ```
 mano                    → Show available commands and current status.
 mano status             → Scan _mano_output/ and show where you are + what to do next.
-mano start              → Scope a new project or phase. (Skye)
+mano start              → Scope a new project or phase.
 mano continue           → Auto-run the next logical action if unambiguous.
 mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
 mano dev                → Implement the next pending story for the active phase.
@@ -15,7 +15,7 @@ mano help [skill]     → Show what a skill does and when to use it.
 `mano start` is a dedicated command. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
 
 **Dispatch only to Mano's own skills — never a similarly-named built-in.** Every `mano <action>` resolves to the matching skill in `_mano/skills/` and to nothing else. The host environment may contain built-in, harness, plugin, or third-party skills whose names overlap a Mano action word — do **not** invoke those for a `mano` command, even if their name looks like an exact match. Resolve the command by its Mano role (the agent and contract below), not by keyword similarity to an ambient skill. Two known, high-impact collisions to call out explicitly:
-- **`mano review` → Dave** (`_mano/skills/review.md`): collect feedback, triage into the backlog, write the review log, close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run Dave instead.
+- **`mano review` → `mano review`** (`_mano/skills/review.md`): collect feedback, triage into the backlog, write the review log, close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run `mano review` instead.
 - **`mano dev` → the implementer** (`_mano/skills/dev.md` → `AGENTS.md` contract): implement the next pending story. It is **not** a dev server, build/run command, or editor launch. If you find yourself starting a server or opening the project in an editor, you have invoked the wrong skill.
 
 Every Mano skill's exact name is `mano-<action>` (`mano-review`, `mano-dev`, `mano-spec`, …). When a user types the spaced form of a colliding action (`mano review`, `mano dev`), resolve it to that **exact** Mano skill name — the same as if they had typed `mano-review` / `mano-dev` — never to a built-in that merely shares the bare keyword. The hyphenated name matches a Mano skill and no built-in, so it is the unambiguous target; the space is only a friendlier spelling of it. If a user re-issues a command in hyphenated form after a misfire, that is them forcing the exact match — honour it as the Mano skill.
@@ -38,9 +38,9 @@ When a skill activates, it checks for its inputs:
 - **Would be guesswork without the missing artifact** → warn the user what's missing and redirect to the action that creates it.
 
 This means:
-- You can skip Helen and go straight from Skye to Marco.
-- You can skip Luna entirely if you have your own design direction.
-- You can run Marco without running Alex first.
+- You can skip `mano spec` and go straight from `mano start` to `mano stories`.
+- You can skip `mano ui` entirely if you have your own design direction.
+- You can run `mano stories` without running `mano rules` first.
 - Each skill adapts to what's available instead of assuming the full pipeline already exists.
 
 **No invented files.** Skills only write files defined by the Mano contract: planning artifacts under `_mano_output/` plus the root-level `AGENTS.md` scaffold copied during `mano start`. Do not create tracking files, progress files, or any other artifact not specified by the framework.
@@ -51,20 +51,20 @@ In installed projects, Mano framework files live under `_mano/skills` and `_mano
 
 **Refuse code generation.** As an AI agent, your primary directive during Mano phases is planning. You MUST actively refuse requests to write, fix, or modify source code. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Do not switch to implementation mode.
 
-**Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any skill is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every skill: Skye on scope, Helen on libraries, Alex on rules, Marco on story boundaries.
+**Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any skill is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every skill: `mano start` on scope, `mano spec` on libraries, `mano rules` on rules, `mano stories` on story boundaries.
 
-**Concrete defaults, user override.** Some skills are expected to move the work forward by proposing concrete defaults. Helen can recommend technical choices, Luna can set a visual direction, and Alex can recommend project rules. These are working defaults, not final authority. The user can override them at any time.
+**Concrete defaults, user override.** Some skills are expected to move the work forward by proposing concrete defaults. `mano spec` can recommend technical choices, `mano ui` can set a visual direction, and `mano rules` can recommend project rules. These are working defaults, not final authority. The user can override them at any time.
 
-**Reject out-of-scope instructions.** If a user gives a skill an instruction outside its role (e.g., typing `mano spec I want shared button components` or telling Alex to design an API schema), the skill MUST NOT execute the out-of-scope instruction. They must not pollute their own file (e.g., Helen should not put UI components in the tech spec). Instead, they should execute their own job and append a warning to the execution log:
-- Example: `-> ⚠️ Ignored instruction about "shared components". That's Alex's area — run mano rules.`
+**Reject out-of-scope instructions.** If a user gives a skill an instruction outside its role (e.g., typing `mano spec I want shared button components` or telling `mano rules` to design an API schema), the skill MUST NOT execute the out-of-scope instruction. They must not pollute their own file (e.g., `mano spec` should not put UI components in the tech spec). Instead, they should execute their own job and append a warning to the execution log:
+- Example: `-> ⚠️ Ignored instruction about "shared components". That's `mano rules`'s area — run mano rules.`
 
 Routing guide for rejected instructions:
-- Technical decisions (API contracts, data model, libraries) → "That's Helen's area — run `mano spec`"
-- UX flows (screens, navigation) → "That's Rob's area — run `mano ux`"
-- Project rules (naming, patterns, a11y, folder structure) → "That's Alex's area — run `mano rules`"
-- Visual design (colours, typography) → "That's Luna's area — run `mano ui`"
-- Stories (breaking work into units) → "That's Marco's area — run `mano stories`"
-- Review (phase feedback, triage) → "That's Dave's area — run `mano review`"
+- Technical decisions (API contracts, data model, libraries) → "That's `mano spec`'s area — run `mano spec`"
+- UX flows (screens, navigation) → "That's `mano ux`'s area — run `mano ux`"
+- Project rules (naming, patterns, a11y, folder structure) → "That's `mano rules`'s area — run `mano rules`"
+- Visual design (colours, typography) → "That's `mano ui`'s area — run `mano ui`"
+- Stories (breaking work into units) → "That's `mano stories`'s area — run `mano stories`"
+- Review (phase feedback, triage) → "That's `mano review`'s area — run `mano review`"
 
 ## Missing input protocol
 
@@ -72,7 +72,7 @@ When a skill is missing context, classify the gap before responding:
 
 - **Optional** → proceed. Mention the tradeoff only if it changes output quality.
 - **Recommended but skippable** → warn briefly and offer two paths: continue anyway or run the upstream Mano command that creates the missing artifact.
-- **Blocking** → stop and redirect because continuing would be guesswork. Dave's pre-review gate is a blocking check.
+- **Blocking** → stop and redirect because continuing would be guesswork. `mano review`'s pre-review gate is a blocking check.
 
 If more than one next step is reasonable, do not fake certainty. Present the options instead of inventing a hidden sequence.
 
@@ -107,7 +107,7 @@ There is no single progress file. You are expected to determine where the user i
 
 To detect story status: read `_mano_output/phase-[N]/stories/README.md` and check the Status column. If all stories are `done`, the phase is built and ready for review.
 
-Marco creates `_mano_output/phase-[N]/stories/README.md` the first time stories are generated. If the stories folder exists without that index, treat the phase artifacts as incomplete and fix the index before relying on state detection. This missing index is a local artifact-repair issue, not proof that `mano stories` is the only reasonable next planning action.
+`mano stories` creates `_mano_output/phase-[N]/stories/README.md` the first time stories are generated. If the stories folder exists without that index, treat the phase artifacts as incomplete and fix the index before relying on state detection. This missing index is a local artifact-repair issue, not proof that `mano stories` is the only reasonable next planning action.
 
 To detect the active phase: find the highest numbered `phase-[N]/` folder in `_mano_output/`.
 
@@ -124,16 +124,16 @@ When the user types `mano help [skill]`:
 
 Show a brief description of the skill — what it does, when to use it, what it reads, and what it produces. Do not activate the skill.
 
-| Skill | Command | Role | Reads | Produces |
-|---------|---------|------|-------|----------|
-| **Skye** | `mano start` | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
-| **Helen** | `mano spec` | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, explicit spec-gap context | Tech spec |
-| **Rob** | `mano ux` | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
-| **Alex** | `mano rules` | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
-| **Luna** | `mano ui` | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog | Design brief, design preview |
-| **Marco** | `mano stories` | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
-| **Dave** | `mano review` | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
-| *(implementer)* | `mano dev` | Implements the next pending story for the active phase. Not a planning lens — follows the `AGENTS.md` implementation contract. | Stories index, the selected story, `AGENTS.md` contract | Source code, story marked `done` |
+| Command | Role | Reads | Produces |
+|---------|------|-------|----------|
+| **`mano start`** | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
+| **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, explicit spec-gap context | Tech spec |
+| **`mano ux`** | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
+| **`mano rules`** | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
+| **`mano ui`** | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog | Design brief, design preview |
+| **`mano stories`** | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
+| **`mano review`** | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
+| **`mano dev`** | Implements the next pending story for the active phase. Not a planning lens — follows the `AGENTS.md` implementation contract. | Stories index, the selected story, `AGENTS.md` contract | Source code, story marked `done` |
 
 ## Status
 
@@ -204,13 +204,13 @@ When the user types `mano` with no argument (or just wants to see available acti
 ```
 Available Mano commands for Phase [N]:
 
-  start    — Scope a new project or phase (Skye)
-→ spec     — Tech spec (Helen)
-  ux       — UX flow (Rob)
-  rules    — Project rules (Alex)
-  ui       — Design brief and component guide (Luna)
-  stories  — Break phase into implementable stories (Marco)
-  review   — Triage feedback, close the phase (Dave)
+  start    — Scope a new project or phase (`mano start`)
+→ spec     — Tech spec (`mano spec`)
+  ux       — UX flow (`mano ux`)
+  rules    — Project rules (`mano rules`)
+  ui       — Design brief and component guide (`mano ui`)
+  stories  — Break phase into implementable stories (`mano stories`)
+  review   — Triage feedback, close the phase (`mano review`)
   dev      — Implement the next pending story
 
 → marks the suggested next action.
@@ -222,11 +222,11 @@ When the phase is in build mode (stories exist and some are `pending`), mark `de
 When the user types `mano [action]`:
 - Execute the specific action logic defined in the `skills/` file.
 - Default to **One-Shot** generation for write flows unless the skill file explicitly defines a multi-turn conversation.
-- `mano review` is not one-shot during feedback capture and triage; follow Dave's multi-turn contract exactly.
-- `mano ui` must begin with one brief preference-capture step on first-run design generation when visual preferences are not already defined; after that reply, Luna generates files in one shot.
+- `mano review` is not one-shot during feedback capture and triage; follow `mano review`'s multi-turn contract exactly.
+- `mano ui` must begin with one brief preference-capture step on first-run design generation when visual preferences are not already defined; after that reply, `mano ui` generates files in one shot.
 - Output a single execution log snippet to the user, not conversational dialogue.
 
-Valid actions: `spec` (Helen — `tech-spec.md`), `ux` (Rob — `ux-flow.md`), `rules` (Alex — `project-rules.md`), `ui` (Luna — `design-brief.md` + `design-preview.html`), `stories` (Marco — `phase-[N]/stories/`), `review` (Dave — `reviews.md`).
+Valid actions: `spec` (`mano spec` — `tech-spec.md`), `ux` (`mano ux` — `ux-flow.md`), `rules` (`mano rules` — `project-rules.md`), `ui` (`mano ui` — `design-brief.md` + `design-preview.html`), `stories` (`mano stories` — `phase-[N]/stories/`), `review` (`mano review` — `reviews.md`).
 
 ## First run — new project
 
@@ -235,14 +235,14 @@ Human approval boundary: `mano start` may create or update the backlog and sugge
 ```
 User types: mano start
 
-Step 1 — Skye activates
+Step 1 — `mano start` activates
   Creates _mano_output/ if it doesn't exist.
   Copies AGENTS.md to the project root if it doesn't exist.
   Does not create optional artifacts such as project-rules.md.
   Presents numbered intake prompt or reads the provided PRD/brief.
 
 Step 2 — Understand the why
-  Skye asks about the pain point and existing solutions.
+  `mano start` asks about the pain point and existing solutions.
   Skip if already explained.
 
 Step 3 — Clarification
@@ -282,15 +282,15 @@ Step 8 — Finalise
 User types: mano review
 
 Step 1 — Pre-review gate
-  Dave checks stories README index.
+  `mano review` checks stories README index.
   If stories are pending, asks user to mark done, cut, or come back later.
 
 Step 2 — Feedback capture
-  If the activation message already includes review feedback, Dave uses it directly once the pre-review gate is clear.
-  Otherwise Dave shows the phase goal from the brief and asks the user to write freely about what's good, broken, annoying, new ideas.
+  If the activation message already includes review feedback, `mano review` uses it directly once the pre-review gate is clear.
+  Otherwise `mano review` shows the phase goal from the brief and asks the user to write freely about what's good, broken, annoying, new ideas.
 
 Step 3 — Triage
-  Dave categorises feedback into five buckets:
+  `mano review` categorises feedback into five buckets:
   🐛 Defects — broken things from this phase
   🔧 Refinements — things that work but could be better
   ✨ New ideas — emerged from usage, not originally scoped
@@ -298,17 +298,17 @@ Step 3 — Triage
   📏 Rule gaps — missing or unclear rules (if applicable)
 
   Defect descriptions stay as review input only.
-  Dave does not debug, diagnose, or fix anything during `mano review`.
+  `mano review` does not debug, diagnose, or fix anything during `mano review`.
 
   Presents categorised list.
   User can reclassify items between buckets.
 
 Step 4 — Close
   User confirms triage.
-  Dave writes ALL items to backlog with categories preserved.
-  Dave writes review summary to reviews.md.
+  `mano review` writes ALL items to backlog with categories preserved.
+  `mano review` writes review summary to reviews.md.
   Phase is closed.
-  Dave suggests: mano start for next phase, or stop.
+  `mano review` suggests: mano start for next phase, or stop.
 ```
 
 ## Minimal pipeline
@@ -318,11 +318,11 @@ When the phase is already clear and extra artifacts would add overhead instead o
 - Use `mano start` → `mano stories` → build → `mano review`.
 - Add optional planning artifacts later only if the work becomes ambiguous.
 
-`mano review` is the one non-optional step. It is what closes a phase: only `mano review` moves the phase's backlog items off `in-phase-[N]` to `resolved`, and Skye's `mano start` gate requires that closure before it will scope the next phase. The optional planning actions (`spec`, `ux`, `rules`, `ui`) can be skipped; review cannot.
+`mano review` is the one non-optional step. It is what closes a phase: only `mano review` moves the phase's backlog items off `in-phase-[N]` to `resolved`, and `mano start`'s `mano start` gate requires that closure before it will scope the next phase. The optional planning actions (`spec`, `ux`, `rules`, `ui`) can be skipped; review cannot.
 
 ## Rules
 
-- The user owns scope, priorities, and product tradeoffs. Helen may recommend technical defaults, Luna may set visual defaults, and Alex may recommend project rules, but every recommendation is overridable.
+- The user owns scope, priorities, and product tradeoffs. `mano spec` may recommend technical defaults, `mano ui` may set visual defaults, and `mano rules` may recommend project rules, but every recommendation is overridable.
 - Keep phase briefs concise enough to read in under two minutes. Target roughly 250-500 words plus short lists.
 - Actions are a la carte, but some require upstream context or will redirect instead of guessing.
 - Each phase brief is self-contained. No external files needed to understand it.
@@ -427,11 +427,11 @@ If they differ in number or in unit, **stop and surface the conflict for a human
 
 ## Backlog Ownership Boundary
 
-Skye and Dave own backlog content and long-lived project continuity.
+`mano start` and `mano review` own backlog content and long-lived project continuity.
 
 Other skills should not edit the backlog except for narrow gap-resolution status updates:
-- Helen may mark an explicitly provided `spec-gap` as resolved after updating the technical specification.
-- Alex may mark an explicitly provided `rule-gap` as resolved after updating project rules.
+- `mano spec` may mark an explicitly provided `spec-gap` as resolved after updating the technical specification.
+- `mano rules` may mark an explicitly provided `rule-gap` as resolved after updating project rules.
 
 Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
 

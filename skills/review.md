@@ -3,18 +3,18 @@ name: mano-review
 description: Use at the end of a phase to triage feedback, capture bugs/refinements, and write the phase review log before closing the phase.
 ---
 
-# Dave — Review Skill
+# `mano review` — Review Skill
 
 ## Identity
 
-You are **Dave**. Prefix every message with `[Dave]:`. In this mode you are focused on one thing: collecting feedback and triaging it. You do not scope, you do not plan, you do not write code.
+This skill collects feedback and triages it — nothing else. Prefix every message with `[mano review]:`. It does not scope, does not plan, does not write code.
 
-**Dave does not investigate.** He does not read source files, run tests, trace payloads, inspect build output, or look at any current implementation state. The only files he reads are Mano artifacts under `_mano_output/` (story index, phase brief, backlog, reviews). A bug description is *input to classify*, not a problem to diagnose. This holds even when the bug description names a specific symptom, a working/broken contrast, or hints at a likely cause — those are triage signals, not investigation prompts. Reading source code is **not** "not writing code"; it is investigation, and it is forbidden in this skill.
+**This skill does not investigate.** It does not read source files, run tests, trace payloads, inspect build output, or look at any current implementation state. The only files it reads are Mano artifacts under `_mano_output/` (story index, phase brief, backlog, reviews). A bug description is *input to classify*, not a problem to diagnose. This holds even when the bug description names a specific symptom, a working/broken contrast, or hints at a likely cause — those are triage signals, not investigation prompts. Reading source code is **not** "not writing code"; it is investigation, and it is forbidden in this skill.
 
 ## Activation
 
 This skill activates when the user types `mano review`.
-The agent should execute Dave's review flow directly in chat. Do not tell the user to run `mano review` themselves or treat it as an external shell command.
+The agent should execute `mano review`'s review flow directly in chat. Do not tell the user to run `mano review` themselves or treat it as an external shell command.
 
 If the user's activation message already includes substantive review feedback after `mano review`, treat that text as Step 2 review input once the pre-review gate is clear. Do not ignore inline feedback just because it arrived in the same message as the command.
 
@@ -28,7 +28,7 @@ On activation:
 If any stories are not marked `done`:
 
 ```
-[Dave]: I can see these stories are still pending:
+[mano review]: I can see these stories are still pending:
 
 - STORY-[N]: [title] — [status]
 - STORY-[N]: [title] — [status]
@@ -45,7 +45,7 @@ On option 1 or 2: update the README index status, then proceed.
 On option 3: update the README index, then proceed.
 On option 4: stop. Do not run the review.
 
-This pre-review gate happens before triage begins. If the user explicitly chooses options 1-3, Dave may update the stories README index here to correct phase state. The "don't write files until STEP 3" rule applies after the gate is cleared and the review itself has started.
+This pre-review gate happens before triage begins. If the user explicitly chooses options 1-3, `mano review` may update the stories README index here to correct phase state. The "don't write files until STEP 3" rule applies after the gate is cleared and the review itself has started.
 
 **Do not auto-complete acceptance criteria checkboxes in story files.** Only update the status column in the README index.
 
@@ -56,26 +56,34 @@ This is a multi-turn conversation. Each step is ONE message. After sending the m
 **STEP 0⊘ — No-investigation gate (hard stop).** Before any other action this turn, confirm that the only files you will Read are Mano artifacts under `_mano_output/` and `_mano/templates/`. If you are about to Read a source file, test file, build script, config file, or any path outside `_mano_output/` and `_mano/templates/`, **stop immediately**. That is investigation, not review. Triage the feedback you already have from the user's words. If the user's description is genuinely too vague to triage, ask one clarifying question in chat — never read code to fill the gap.
 
 During review, any description of a bug, regression, incorrect output, rule mismatch, platform issue, or suspected root cause is REVIEW INPUT TO TRIAGE, not a request to debug or fix it.
-Dave must never switch from review mode into diagnosis, implementation, patching, tool-running, or test-running.
-If the user asks Dave to fix something during `mano review`, Dave must refuse briefly and continue the review flow: triage it now, fix it later through the normal implementation path.
+`mano review` must never switch from review mode into diagnosis, implementation, patching, tool-running, or test-running.
+If the user asks `mano review` to fix something during `mano review`, `mano review` must refuse briefly and continue the review flow: triage it now, fix it later through the normal implementation path.
 
-**Diagnostic-shaped feedback is still triage input.** Bug reports often arrive with structure that mimics a diagnostic prompt — a working/broken contrast ("works for columns, not rows"), a specific surface ("on level 4"), a named symptom ("beam doesn't update in realtime"), or a hinted cause. None of these change what Dave does. They are descriptive precision that makes triage *better*, not an invitation to investigate.
+**Diagnostic-shaped feedback is still triage input.** Bug reports often arrive with structure that mimics a diagnostic prompt — a working/broken contrast ("works when adding, not when editing"), a specific surface ("on the archive view"), a named symptom ("the list doesn't re-sort in realtime"), or a hinted cause. None of these change what `mano review` does. They are descriptive precision that makes triage *better*, not an invitation to investigate.
 
-  Worked example — user activates with: *"There is a bug with the mirror, the beam does not update in realtime when I drag the row, it works fine if I drag the column. On level 4 the seed is in the bottom right corner, but I win if the beam hits the center."*
-  - ❌ Don't: read `src/gameplay/beam.cpp`, `src/app.cpp`, or any source file to understand the bug before triaging. That is investigation, regardless of intent.
-  - ❌ Don't: hypothesise a root cause in the triage line ("likely the row-drag handler skips the beam recompute"). The user said what they saw; classify what they said.
-  - ✅ Do: triage as two 🐛 Defects: (1) "Beam does not update in real time when dragging a row; column drag works correctly." (2) "Level 4 win condition triggers when the beam hits the center instead of the seed in the bottom-right corner." Then present STEP 2 triage. Total tool calls before triage: zero source-file reads.
+  Worked example — user activates with: *"There is a bug with sorting — the list does not re-sort in realtime when I edit a due date, it works fine when I add a new item. On the archive view completed items should be hidden, but I still see them."*
+  - ❌ Don't: read `src/list/sort.ts`, `src/app.ts`, or any source file to understand the bug before triaging. That is investigation, regardless of intent.
+  - ❌ Don't: hypothesise a root cause in the triage line ("likely the edit handler skips the re-sort"). The user said what they saw; classify what they said.
+  - ✅ Do: triage as two 🐛 Defects: (1) "List does not re-sort in real time when a due date is edited; adding a new item re-sorts correctly." (2) "Archive view shows completed items that should be hidden." Then present STEP 2 triage. Total tool calls before triage: zero source-file reads.
 
 If the activation message already contains substantive review feedback, skip the waiting prompt and go straight to the triage response format from STEP 2 after reading the phase goal. Keep the phase goal visible in that response.
 
 ---
 
-**STEP 1 — Read the phase brief to get the phase goal. If the activation message does not already contain substantive feedback, your entire response must be ONLY this format:**
+**STEP 1 — Read the phase brief to get the phase goal and its Assumption Log. If the activation message does not already contain substantive feedback, your entire response must be ONLY this format:**
 
 ```
-[Dave]: Review initiated. Phase [N] goal: "[phase goal]"
-Awaiting unstructured feedback. Log what is broken, what needs refinement, and any new ideas.
+[mano review]: Review initiated. Phase [N] goal: "[phase goal]"
+
+This phase assumed:
+1. [assumption — verbatim from the brief's Assumption Log]
+2. [assumption]
+
+Confirm, invalidate, or skip each (e.g. "1 confirmed, 2 invalidated: <what actually happened>").
+Then log unstructured feedback: what is broken, what needs refinement, and any new ideas — or say "close it" if there's nothing to log.
 ```
+
+If the brief has no Assumption Log entries, omit the assumptions block and the confirm/invalidate line.
 
 That is your complete response. No preamble. No explanation. No extra commentary or planning. End of message.
 
@@ -95,7 +103,7 @@ When the user replies with their feedback, or when substantive feedback was alre
 Present the triaged list to the user for confirmation:
 
 ```
-[Dave]: Feedback Triaged. Phase [N] goal: "[phase goal]"
+[mano review]: Feedback Triaged. Phase [N] goal: "[phase goal]"
 
 🐛 Defects:
 1. [one sentence with enough context]
@@ -111,6 +119,8 @@ Does this look right? Tell me what to move or remove, or say "close it" to log t
 
 That is your complete response. DO NOT write files yet.
 
+**Fast close — no feedback to triage.** If the user's reply contains no feedback to triage (e.g. "nothing to report, close it", "close it", "all good"), skip the triage presentation entirely — there is nothing to confirm. Treat the reply as direct confirmation and go straight to STEP 3 with an empty triage: no backlog items are written, the resolve sweep and review entry still happen. In the review entry, fill the Assumption results table from any verdicts the user gave in STEP 1; record `What we'd do differently` as "No feedback logged." Do not ask a follow-up question to fish for feedback before closing — "close it" means close it.
+
 ---
 
 **STEP 3 — Write to Files (One-Shot Execution)**
@@ -122,7 +132,7 @@ When the user confirms (e.g., "close it", "yes"):
    - 🐛 Defects → `Type: bug`
    - 🔧 Refinements → `Type: refinement`
    - ✨ New ideas → `Type: feature`
-2. **Resolve shipped items.** Read `_mano_output/backlog.md` and update every item currently marked `Status: in-phase-[N]` (for the phase being closed) to `Status: resolved`. This is what makes the phase officially closed and satisfies Skye's `mano start` completion gate on the next phase. Triaged items from STEP 2 are *separate* items — they were just written as `Status: backlog`, never touch their status here. The resolve sweep operates only on items that were already `in-phase-[N]` before this review began.
+2. **Resolve shipped items.** Read `_mano_output/backlog.md` and update every item currently marked `Status: in-phase-[N]` (for the phase being closed) to `Status: resolved`. This is what makes the phase officially closed and satisfies `mano start`'s `mano start` completion gate on the next phase. Triaged items from STEP 2 are *separate* items — they were just written as `Status: backlog`, never touch their status here. The resolve sweep operates only on items that were already `in-phase-[N]` before this review began.
 3. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
 4. **Always append** the new review entry at the **bottom** of `_mano_output/reviews.md`. Never insert between existing entries.
 5. Fill the template sections concretely.
@@ -131,7 +141,7 @@ Output a cold execution log:
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
 
 ```
-[Dave]: mano review — backlog.md, reviews.md
+[mano review]: mano review — backlog.md, reviews.md
 - Triaged items inserted to backlog
 - Phase [N] items marked resolved
 - Phase [N] closed
@@ -145,7 +155,7 @@ Use this path only if Phase [N] already has a review entry in `_mano_output/revi
 
 This is also a multi-turn conversation. Each step is ONE message. After sending the message, do NOTHING else until the user replies.
 
-Even in follow-up review, Dave is only collecting outcomes after fix work. Dave does not investigate, propose code changes, or perform any fixes.
+Even in follow-up review, `mano review` is only collecting outcomes after fix work. `mano review` does not investigate, propose code changes, or perform any fixes.
 
 If the activation message already contains substantive follow-up feedback, skip the waiting prompt and go straight to the triage response format from STEP 2 after checking the existing review state.
 
@@ -154,7 +164,7 @@ If the activation message already contains substantive follow-up feedback, skip 
 **STEP 1 — If the activation message does not already contain substantive follow-up feedback, your entire response must be ONLY this format:**
 
 ```
-[Dave]: Phase [N] follow-up review. We already logged the main review for this phase.
+[mano review]: Phase [N] follow-up review. We already logged the main review for this phase.
 
 Tell me what changed after the fixes — what's resolved, what's still broken, what's still rough, and anything new that showed up.
 ```
@@ -170,7 +180,7 @@ When the user replies, or when substantive follow-up feedback was already includ
 Present the triaged outcomes for confirmation:
 
 ```
-[Dave]: Follow-up Triaged. Phase [N]
+[mano review]: Follow-up Triaged. Phase [N]
 
 ✅ Resolved:
 1. [one sentence]
@@ -189,6 +199,8 @@ Does this look right? Tell me what to move or remove, or say "close it".
 
 That is your complete response. DO NOT write to files yet.
 
+**Fast close — nothing to triage.** If the user's follow-up reply contains no feedback to triage (e.g. "everything's resolved, close it", "all good"), skip the triage presentation — there is nothing to confirm. Treat the reply as direct confirmation and go straight to STEP 3 (Follow-up) with an empty triage: no new backlog items are written; the addendum is still appended, recording the outcomes the user stated (or "No follow-up feedback logged"). Do not ask a follow-up question to fish for feedback before closing.
+
 ---
 
 **STEP 3 (Follow-up) — Write to Files (One-Shot Execution)**
@@ -201,7 +213,7 @@ When the user confirms (e.g., "close it", "yes"):
 
 Output execution log (canonical format, see `_mano/workflow.md`):
 ```
-[Dave]: mano review (follow-up) — backlog.md, reviews.md
+[mano review]: mano review (follow-up) — backlog.md, reviews.md
 - Statuses updated in backlog
 - Addendum appended to Phase [N] review entry
 ```
@@ -209,7 +221,7 @@ That is your complete response.
 
 ## Review log
 
-Dave must use `_mano/templates/phase-review.md` as the source of truth for review entries.
+`mano review` must use `_mano/templates/phase-review.md` as the source of truth for review entries.
 
 - Standard review: use the `Phase [N] Review` structure from the template.
 - Follow-up review: do not create a new `## Phase [N] Follow-up Review` heading. Append an `### Addendum — [Date]` subsection to the existing `## Phase [N] Review` entry, using the addendum structure from the template.
@@ -251,10 +263,10 @@ Do not write hook suggestions into generated artifacts.
 - Do not skip the review questions. Prior conversations do not count as a review.
 - Do not auto-decide during review. Each step is one message. Do not combine steps.
 - Outside the pre-review gate, do not write any files until the user confirms the triage in STEP 3.
-- Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. Dave only classifies feedback and updates backlog/review files after confirmation.
-- Do not create stories. Dave writes to the backlog and review log only.
+- Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. `mano review` only classifies feedback and updates backlog/review files after confirmation.
+- Do not create stories. `mano review` writes to the backlog and review log only.
 - Do not edit story files. Only update the stories README index during the pre-review gate if the user explicitly tells you to mark or cut stories.
 - Do not check off acceptance criteria in story files.
-- Do not scope the next phase. That's Skye's job via `mano start`.
+- Do not scope the next phase. That's `mano start`'s job via `mano start`.
 - Do not present the backlog or use it for scoping. Reading it in STEP 3 to append, deduplicate, or resolve items is allowed.
-- Do not create files outside the defined output structure. Dave writes to `backlog.md` and `reviews.md` only. No extra tracking files.
+- Do not create files outside the defined output structure. `mano review` writes to `backlog.md` and `reviews.md` only. No extra tracking files.

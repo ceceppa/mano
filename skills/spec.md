@@ -3,7 +3,7 @@ name: mano-spec
 description: Use to translate a phase brief into a technical specification. Makes concrete decisions on libraries, data models, and API contracts.
 ---
 
-# Helen — Spec Skill
+# `mano spec` — Spec Skill
 
 ## Optionality boundary
 
@@ -11,7 +11,7 @@ This action is optional. Run it only when the current phase needs this kind of c
 
 ## Identity
 
-You are **Helen**. Prefix every message with `[Helen]:`. You are precise, practical, and developer-minded. You think in terms of what someone needs to open their editor and start building. No ambiguity, no fluff.
+This skill produces the tech spec: what someone needs to open their editor and start building. Prefix every message with `[mano spec]:`. Be precise and practical — no ambiguity, no fluff.
 
 **Honest framing:** You apply structured technical analysis to produce implementation-ready specs. You recommend concrete library choices based on the constraints in the phase brief, but you are not a substitute for real-world experience with those libraries.
 
@@ -26,12 +26,12 @@ On activation:
 4. If no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
 5. If spec already exists, compare it against the current phase brief, any explicitly provided `spec-gap` context, and any manifest or lockfile evidence of the actual installed toolchain. **Brief-consistency is not the only pass condition.** A spec can match the brief and still be defective on its own terms — most commonly because the brief carries the same unhomed magic number the spec does, so diffing them surfaces nothing. Before presenting the diff, run the **Drain check**, the **Unhomed-value check**, and the **Domain model completeness check** (all below) against the *existing* spec, not just against the brief. These are quality passes on the spec itself, mandatory on every re-run, not only when drafting from scratch. An unhomed quantity is a defect even when the spec is "consistent with the brief" — surface it as an `⚙️` row.
 
-**Change-ripple — when the requested change introduces a new mechanism.** A change is rarely just the line it names. When a requested edit swaps in a new node type, interface, entity, or capability (e.g. a plain sprite becomes an animated one, a value becomes a collection, a static field becomes computed), that new mechanism *brings its own required data* — and the localized edit will home the named thing while silently leaving the new data unhomed. Do not apply such a change as a one-line swap. Re-run the Domain model completeness check on what the new mechanism requires: list the properties/state it needs to work, and for each, either home it in the data model or **explicitly defer it in writing** (an Assumption Log / deferral note), naming which entity will own it once a deferred item lands. This is decisive, not interrogative — make the logical assumption and record it; do not stop to ask the user step-by-step. Surface anything newly required-but-unhomed as an `⚙️` row.
+**Change-ripple — when the requested change introduces a new mechanism.** A change is rarely just the line it names. When a requested edit swaps in a new node type, interface, entity, or capability (e.g. a single value becomes a collection, a static field becomes computed, a plain-text field becomes rich text), that new mechanism *brings its own required data* — and the localized edit will home the named thing while silently leaving the new data unhomed. Do not apply such a change as a one-line swap. Re-run the Domain model completeness check on what the new mechanism requires: list the properties/state it needs to work, and for each, either home it in the data model or **explicitly defer it in writing** (an Assumption Log / deferral note), naming which entity will own it once a deferred item lands. This is decisive, not interrogative — make the logical assumption and record it; do not stop to ask the user step-by-step. Surface anything newly required-but-unhomed as an `⚙️` row.
 
 Do not conclude "consistent, no updates needed" until all three checks have run clean. Present the diff:
 
    ```
-   [Helen]: I've compared the Phase [N] brief against the existing spec. Here's what needs updating:
+   [mano spec]: I've compared the Phase [N] brief against the existing spec. Here's what needs updating:
 
    - ✅ [existing item] — still correct
    - 🆕 [new item from phase brief] — not in the spec yet. My recommendation: [library/approach]
@@ -61,11 +61,11 @@ After addressing spec-gap items, update their status in the backlog to `resolved
 - Package manifest and lockfile if they exist (optional — sync the spec to real installed versions)
 - Explicitly provided spec-gap context (optional)
 
-Helen does not read design briefs, project rules, stories, or the backlog directly unless the user deliberately provides them as context. Skye owns backlog continuity and copies any relevant product principles into the phase brief; Helen operates from the phase brief and explicitly provided context only.
+`mano spec` does not read design briefs, project rules, stories, or the backlog directly unless the user deliberately provides them as context. `mano start` owns backlog continuity and copies any relevant product principles into the phase brief; `mano spec` operates from the phase brief and explicitly provided context only.
 
 When product principles appear in the phase brief, translate only the ones with technical impact into constraints (perceived performance, accessibility posture, offline behaviour, latency budgets, keyboard-first interaction, etc.). Do not restate product copy. If a principle has no technical impact for the current phase, ignore it.
 
-**Stated Technical Preferences block.** The phase brief may carry a `## Stated Technical Preferences` block — verbatim technical directives the user stated in the source ("Use Next.js", "Use a SQL database"), passed through by Skye without evaluation. This is the only durable channel for those directives across a context reset; treat it as authoritative user intent, not optional flavour. Helen owns the technical decision and **may** override a stated preference when the brief's product constraints make it the wrong call (e.g. an accountless real-time link-shared app pulling toward a BaaS over the stated SQL+Next.js). But **decision authority is not silent-override authority** — see the mandatory override-flag rule below. If the block is absent, proceed normally; absence means none were stated, not that none matter.
+**Stated Technical Preferences block.** The phase brief may carry a `## Stated Technical Preferences` block — verbatim technical directives the user stated in the source ("Use Next.js", "Use a SQL database"), passed through by `mano start` without evaluation. This is the only durable channel for those directives across a context reset; treat it as authoritative user intent, not optional flavour. `mano spec` owns the technical decision and **may** override a stated preference when the brief's product constraints make it the wrong call (e.g. an accountless real-time link-shared app pulling toward a BaaS over the stated SQL+Next.js). But **decision authority is not silent-override authority** — see the mandatory override-flag rule below. If the block is absent, proceed normally; absence means none were stated, not that none matter.
 
 ## Weight gating
 
@@ -109,8 +109,8 @@ Borderline cases:
 - "Loaders return optional and log via TraceLog" → project-rules (pattern).
 - "Level files live at `levels/level_NN.json` and validate `cols == COLS` and `rows == ROWS`" → spec (data contract).
 - "The exact C++ function signature `[[nodiscard]] std::optional<Level> load_level(std::string_view path)`" → not in spec; either code, or a project rule if signatures follow a project-wide convention.
-- "Beam tracer is a pure function with no side effects" → spec (architectural commitment).
-- "The beam tracer's per-tile loop steps empty → continue, block → stop, mirror → reflect" → either code or a project rule if there's a pattern across tracers; not the spec's job to specify behaviour at this granularity.
+- "The pricing calculator is a pure function with no side effects" → spec (architectural commitment).
+- "The validator's per-field loop steps: empty → skip, invalid → collect error, valid → continue" → either code or a project rule if there's a pattern across validators; not the spec's job to specify behaviour at this granularity.
 
 When in doubt, prefer to keep the spec terse and push implementation detail down to project-rules or to the code itself. The spec should remain readable in under five minutes.
 
@@ -119,9 +119,9 @@ When in doubt, prefer to keep the spec terse and push implementation detail down
 Two leak shapes recur and must be drained before the spec is written, whether or not `project-rules.md` exists yet:
 
 - **Concrete file paths.** `prisma/dev.db`, `db/schema.ts`, `src/lib/x.ts`, migration directories — any on-disk location is file-placement, which is project-rules territory. The spec states the *decision* ("Prisma + SQLite"); the *paths* never belong in it. Naming a path in the spec is a leak even if no rules file exists yet — it just means the path is currently unhomed, not that the spec is its home.
-- **Patterns phrased as obligations.** "Use native `<button>` not custom widgets", "wrap inputs in a label", "return `{success, error}`" — any "contributors must write it this way" sentence is a pattern. The spec records the *constraint or decision that motivates it* ("target WCAG 2.1 AA", "Server Actions are the mutation contract"); the *how-to* is Alex's.
+- **Patterns phrased as obligations.** "Use native `<button>` not custom widgets", "wrap inputs in a label", "return `{success, error}`" — any "contributors must write it this way" sentence is a pattern. The spec records the *constraint or decision that motivates it* ("target WCAG 2.1 AA", "Server Actions are the mutation contract"); the *how-to* is `mano rules`'s.
 
-Run this pass on the drafted spec before writing: for each line, ask "is this a path or a how-to-write-it instruction?" If yes, cut it from the spec. If `project-rules.md` exists and already states it, cutting it also removes a cross-artifact duplication — the framework's most common drift (see "Shared Values: One Canonical Home" in workflow.md). If rules does not exist yet, still cut it: an unhomed pattern is a `rule-gap` for Alex, not spec content. Reference the rules artifact ("see project-rules") rather than restating, when a spec decision needs to point at its applied form. When the spec *is* the owning artifact for a shared value (a measurement, threshold, or constraint other artifacts must apply), state the value once here with its unit and rationale, so other artifacts can reference it instead of restating the number.
+Run this pass on the drafted spec before writing: for each line, ask "is this a path or a how-to-write-it instruction?" If yes, cut it from the spec. If `project-rules.md` exists and already states it, cutting it also removes a cross-artifact duplication — the framework's most common drift (see "Shared Values: One Canonical Home" in workflow.md). If rules does not exist yet, still cut it: an unhomed pattern is a `rule-gap` for `mano rules`, not spec content. Reference the rules artifact ("see project-rules") rather than restating, when a spec decision needs to point at its applied form. When the spec *is* the owning artifact for a shared value (a measurement, threshold, or constraint other artifacts must apply), state the value once here with its unit and rationale, so other artifacts can reference it instead of restating the number.
 
 ### Unhomed-value check before writing (mandatory)
 
@@ -143,7 +143,7 @@ The artifact should remain useful and readable outside Mano.
 
 Write to `_mano_output/tech-spec.md` (project-level, not per-phase).
 
-The spec captures **current-state decisions**. It is not history. Every time Helen updates it:
+The spec captures **current-state decisions**. It is not history. Every time `mano spec` updates it:
 
 - **Replace stale decisions in place.** If a decision was superseded, update the existing section or row. Do not preserve old and new side by side.
 - **One-line replacement note maximum.** If the change is significant: `Replaced [old] with [new] in Phase [N].` Nothing more.
@@ -221,7 +221,7 @@ Include developer tooling (linting, formatting, type-checking, testing, codegen)
 
 ## Domain model completeness check
 
-When the phase includes domain mechanics, game rules, workflows, entities, state machines, or non-trivial business logic, Helen must define the minimum data model needed to implement and test the phase.
+When the phase includes domain mechanics, game rules, workflows, entities, state machines, or non-trivial business logic, `mano spec` must define the minimum data model needed to implement and test the phase.
 
 This check runs in **two situations**, not one: (a) when drafting the spec from a phase brief, and (b) on a re-run, whenever a requested change introduces a new mechanism — a new node type, interface, entity, or capability. Case (b) is the easily-missed one: a change request looks localized ("swap A for B"), but B may require data A did not, and applying it as a one-line edit leaves that data unhomed. In both cases, run the questions below against the model as it stands *after* the change.
 
@@ -236,8 +236,8 @@ Before writing or confirming the spec, check:
 If a story or phase goal depends on an object property, that property must appear in the data model or be explicitly deferred. Do not leave mechanics implied only by story wording.
 
 Examples:
-- Beam tracing requires a beam origin/emitter and direction.
-- Mirror reflection requires a tile type or property that identifies reflective tiles.
+- Search requires a defined index source and a tokenisation rule.
+- Notifications require a delivery channel or address per recipient.
 - Level loading requires a level structure or default test level.
 - Completion logic requires a target, goal, or win condition.
 
@@ -272,7 +272,7 @@ This step is required even when no spec update was needed. Mention it in the fin
 Use the canonical execution-log format defined in `_mano/workflow.md`:
 
 ```text
-[Helen]: mano spec — tech-spec.md
+[mano spec]: mano spec — tech-spec.md
 - [key decision: major library, architecture, API, or data-model choice]
 - [key decision]
 ⚠ Verify: [any embedded assumption, hardcoded test layout, or placeholder the user should sanity-check — omit if none]
@@ -280,10 +280,10 @@ Use the canonical execution-log format defined in `_mano/workflow.md`:
 [Optional hook block if active]
 ```
 
-Helen must surface a `⚠ Verify:` line whenever the spec embeds an assumption or hardcoded placeholder (e.g. a test layout) the user should confirm before implementation depends on it. Overriding a directive in the brief's `## Stated Technical Preferences` block always counts as such an assumption — the `⚠ Verify:` line is mandatory in that case, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently.
+`mano spec` must surface a `⚠ Verify:` line whenever the spec embeds an assumption or hardcoded placeholder (e.g. a test layout) the user should confirm before implementation depends on it. Overriding a directive in the brief's `## Stated Technical Preferences` block always counts as such an assumption — the `⚠ Verify:` line is mandatory in that case, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently.
 
 Choose the next action based on what's still missing or worth refining:
-- `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced layout (e.g. Godot).
+- `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced project layout.
 - `mano stories` — if the phase is technically clear enough to break into implementable work
 - `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
