@@ -1,0 +1,29 @@
+{
+  "name": "mano-init",
+  "version": "0.1.0",
+  "description": "Installer for Mano — a supervised, à la carte planning framework for coding agents.",
+  "bin": {
+    "mano-init": "bin/mano-init.js"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ],
+  "keywords": [
+    "mano",
+    "planning",
+    "ai",
+    "agents",
+    "coding-agent"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ceceppa/mano.git"
+  }
+}
