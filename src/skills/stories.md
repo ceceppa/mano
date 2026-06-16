@@ -381,13 +381,10 @@ When all stories are written, output the execution log:
 - 1. [title] (story-1-[slug].md)
 - 2. ...
 - Suggested order: [0 →] 1 → 2 → 3
-[Only if dependencies are unambiguous: "Stories 3-5 are independent once story 2 is complete"]
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 Status: Ready. Review files in editor.
 -> Implement: mano dev (implements the next pending story)
 ```
-
-**Dependency honesty.** Only claim stories are independent when it's obvious from the AC (separate endpoints on the same existing database, separate screens with no shared state). If unsure, state sequential order only. False parallelisation claims are worse than no claims.
 
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor.
 
