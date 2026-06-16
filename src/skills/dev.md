@@ -15,6 +15,8 @@ This skill is a **pointer**, not a contract. The implementation contract is `AGE
 2. Implement only the selected story's acceptance criteria.
 3. Mark the story `done` in the stories README index.
 
+**Determine the active phase fresh from disk, not from the chat.** Re-scan `_mano_output/` and take the highest-numbered `phase-[N]/` folder as the active phase, even if the conversation already carries an earlier phase's context — a newer phase may have been added since. Trusting the loaded chat context here is the common way `mano dev` ends up reporting on a stale, already-closed phase instead of the open one. (AGENTS.md step 1 is authoritative.)
+
 ## Hard stops (from AGENTS.md — repeated here only so they are never skipped)
 
 - **No implementable story → stop — but only when *every* row is `done`.** The `Status` column is the only signal; a story's number, letter, or title grants no exemption, and lettered stories (`4a`) are their own pending work. The full selection rule lives in `AGENTS.md` → "The `Status` column is the only signal" — it is authoritative; do not paraphrase around it. Only when every row is `done` (or the requested story does not exist): output one line — the phase's stories are all done but the phase is **not closed** until `mano review` runs. Do not call the phase "complete", do not present `mano start` as an equal option, and do not start, scope, or plan a new phase.

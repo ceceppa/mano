@@ -36,7 +36,7 @@ Only use external/platform skills when the user explicitly invokes them or when 
 
 This is the contract for `mano dev` — the sanctioned path from a finished `stories/` folder into code. When the user wants to implement, this is the section to follow. `_mano/skills/dev.md` only points here; the steps below are authoritative.
 
-1. Find the active phase: highest numbered `phase-[N]/` folder in `_mano_output/`.
+1. Find the active phase: highest numbered `phase-[N]/` folder in `_mano_output/`. **Determine this fresh from the filesystem this turn — do not infer the active phase from the conversation.** If the chat already carries context from an earlier phase (a previous phase's stories, a closed phase, an earlier `mano dev`/`mano review` run), that snapshot is stale: a newer phase folder may exist on disk. Re-scan `_mano_output/` and take the highest-numbered `phase-[N]/` as authoritative. The filesystem is the source of truth, a context snapshot is not.
 2. Check `_mano_output/phase-[N]/stories/README.md` for the story index and status.
 3. **Hard stop — no implementable story remains.** If every story in the index is already `done`, or the requested / "next" story does not exist, STOP. Do not start, scope, or plan a new phase. Do not run `mano start`, `mano stories`, or any other Mano action. Do not invent, infer, or pick work. The phase being complete is not a trigger to advance — advancing is the user's explicit decision. Output one line stating the phase is complete and that `mano review` or `mano start` is the user's call, then stop. This is a hard stop, not a guideline.
 
