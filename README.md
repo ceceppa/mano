@@ -10,6 +10,31 @@ Mano does this by breaking work into small shippable phases, using only the cont
 
 > **Important:** Mano is not a compiled CLI tool, a deterministic software framework, or an autonomous planning system. It is a set of skills, templates, and instructions that rely entirely on your AI agent's context window. You, the human, are the ultimate enforcer of scope, context, and quality.
 
+## Installation
+
+Run this in your project's root directory:
+
+```bash
+npx mano-init install
+```
+
+This installs Mano into your project:
+
+- `_mano/` — the skills, templates, hooks, and workflow Mano reads at runtime
+- `AGENTS.md` — the agent contract, dropped at your project root (always)
+- `CLAUDE.md` and `.cursorrules` — optional editor entry points; the installer asks which you want
+
+Pin a version with npm's own syntax:
+
+```bash
+npx mano-init@latest install     # newest published version
+npx mano-init@0.1.0 install      # a specific version
+```
+
+**Updating:** re-run `npx mano-init install` in the same project. Existing files are left untouched — your edits are safe. Use `--force` to overwrite Mano's files with the newer versions, or `--yes` to accept defaults without prompts.
+
+Once installed, type `mano` in your AI IDE's chat to see available commands, or `mano start` to begin.
+
 ## Core Principles
 
 ### Human judgment stays in control
@@ -262,11 +287,11 @@ The backlog may contain a short, optional `Core Product Principles` section for 
 
 `mano start` owns this continuity and copies only the principles relevant to the current phase into the phase brief. Downstream skills operate from the phase brief and explicitly provided context rather than reading the backlog for general project memory.
 
-## Skill Tightening Patterns
+## How Skills Stay Disciplined
 
-Mano can use small skill-tightening patterns without changing its philosophy.
+A few design principles keep Mano's skills predictable — especially with smaller models — without adding process.
 
-These patterns are not extra process steps. They are lightweight guardrails that make skills more predictable, especially with smaller models.
+These are not extra steps. They are lightweight guardrails baked into how each skill behaves.
 
 ### Anti-Rationalization
 
