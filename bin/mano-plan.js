@@ -2,15 +2,15 @@
 "use strict";
 
 /**
- * mano-init — installs Mano into the current project.
+ * mano-plan — installs Mano into the current project.
  *
  * Usage:
- *   npx mano-init install            interactive install into the current directory
- *   npx mano-init install --force    overwrite existing Mano files without asking
- *   npx mano-init install --yes      accept defaults, no prompts (installs CLAUDE.md, skips .cursorrules)
- *   npx mano-init --help
+ *   npx mano-plan install            interactive install into the current directory
+ *   npx mano-plan install --force    overwrite existing Mano files without asking
+ *   npx mano-plan install --yes      accept defaults, no prompts (installs CLAUDE.md, skips .cursorrules)
+ *   npx mano-plan --help
  *
- * Version is selected at the npm layer, e.g. `npx mano-init@next install`.
+ * Version is selected at the npm layer, e.g. `npx mano-plan@1.0.0 install`.
  *
  * Source layout (inside this package) -> runtime layout (user's project):
  *   src/skills/ src/templates/ src/hooks/ src/workflow.md  ->  ./_mano/
@@ -52,16 +52,16 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  log(`mano-init — install Mano into the current project
+  log(`mano-plan — install Mano into the current project
 
 Usage:
-  npx mano-init install           Install Mano into the current directory
-  npx mano-init install --yes     Non-interactive (installs CLAUDE.md, skips .cursorrules)
-  npx mano-init install --force   Overwrite existing Mano files
+  npx mano-plan install           Install Mano into the current directory
+  npx mano-plan install --yes     Non-interactive (installs CLAUDE.md, skips .cursorrules)
+  npx mano-plan install --force   Overwrite existing Mano files
 
 Pin a version with npm's own syntax, e.g.:
-  npx mano-init@next install
-  npx mano-init@0.1.0 install
+  npx mano-plan@latest install
+  npx mano-plan@1.0.0 install
 
 Always installed:
   ./_mano/        skills, templates, hooks, workflow

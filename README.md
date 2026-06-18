@@ -15,7 +15,7 @@ Mano does this by breaking work into small shippable phases, using only the cont
 Run this in your project's root directory:
 
 ```bash
-npx mano-init install
+npx mano-plan install
 ```
 
 This installs Mano into your project:
@@ -27,11 +27,11 @@ This installs Mano into your project:
 Pin a version with npm's own syntax:
 
 ```bash
-npx mano-init@latest install     # newest published version
-npx mano-init@0.1.0 install      # a specific version
+npx mano-plan@latest install     # newest published version
+npx mano-plan@1.0.0 install      # a specific version
 ```
 
-**Updating:** re-run `npx mano-init install` in the same project. Existing files are left untouched — your edits are safe. Use `--force` to overwrite Mano's files with the newer versions, or `--yes` to accept defaults without prompts.
+**Updating:** re-run `npx mano-plan install` in the same project. Existing files are left untouched — your edits are safe. Use `--force` to overwrite Mano's files with the newer versions, or `--yes` to accept defaults without prompts.
 
 Once installed, type `mano` in your AI IDE's chat to see available commands, or `mano start` to begin.
 

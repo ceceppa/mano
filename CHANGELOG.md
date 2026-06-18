@@ -25,7 +25,7 @@ period of refinement against real projects.
   acceptance criteria and stops; one-line output, no narrative, no scope creep.
 - **Action-named skills** — `mano start`, `mano spec`, `mano stories`, `mano review`,
   and more, each a focused constraint lens that reads only what it needs.
-- **`npx mano-init install`** — one command drops Mano into any project; re-run it to update.
+- **`npx mano-plan install`** — one command drops Mano into any project; re-run it to update.
 - **Token-efficient by design** — Mano loads one skill at a time rather than a whole
   pipeline, and keeps the implementer's per-story contract small, so the build loop
   spends its context on your code rather than on the framework.

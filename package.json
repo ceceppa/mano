@@ -1,9 +1,9 @@
 {
-  "name": "mano-init",
+  "name": "mano-plan",
   "version": "1.0.0",
   "description": "Installer for Mano — a supervised, à la carte planning framework for coding agents.",
   "bin": {
-    "mano-init": "bin/mano-init.js"
+    "mano-plan": "bin/mano-plan.js"
   },
   "type": "commonjs",
   "engines": {
