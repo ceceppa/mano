@@ -202,6 +202,7 @@ For stateful frontend stories: name what persists across restart, what stays tra
 - **Linked stories must own integration.** When a behaviour spans more than one story, the final story in the chain must include at least one AC that exercises the full end-to-end path, not just the slice that story adds. Each story passing in isolation is not enough — somebody must own the composition.
 
 - **Sequence for earliest continuous verifiability.** Prefer ordering where each story can be verified through a real interface the moment it lands — a usable path, observable output, command, endpoint, screen, file, log, or test fixture. A thin end-to-end slice usually beats an internals-first sequence. Avoid more than one consecutive story with no externally verifiable exit. If `mano stories` chooses internals-first, state why in that story's `Notes`. Judgment heuristic, not a hard gate.
+- **The story numbers ARE the order — number them in the sequence they should be built.** Once you decide the sequence above, assign story numbers so that ascending order (`1, 2, 3, …`) is the intended build order. `mano dev` implements the next pending story by the README index order; the numbering is the only durable, consumed record of sequence. Do not number stories in one order and intend a different one — there is no separate "suggested order" channel, and a mismatch between numbering and intended order will silently mislead the implementer. If story B genuinely must follow story A but they aren't adjacent, also state `Depends on: story-A` in B's `Notes` (per the linked-stories rule), but the primary signal is the number.
 
 - **Out of scope is mandatory.** Every story, even if brief.
 
@@ -380,7 +381,6 @@ When all stories are written, output the execution log:
 - 0. [title] (story-0-[slug].md)   [only when a bootstrap story exists]
 - 1. [title] (story-1-[slug].md)
 - 2. ...
-- Suggested order: [0 →] 1 → 2 → 3
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 Status: Ready. Review files in editor.
 -> Implement: mano dev (implements the next pending story)
