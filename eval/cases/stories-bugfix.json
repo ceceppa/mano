@@ -1,0 +1,19 @@
+{
+  "name": "stories-bugfix",
+  "description": "mano stories decomposes a 2-bug fix phase into stories. Checks format rules and phase-goal coverage.",
+  "fixture": "bugfix-phase",
+  "phase": 2,
+  "prompt": "mano stories",
+  "assertions": [
+    "stories_were_written",
+    "readme_index_exists",
+    "filenames_have_slug",
+    "no_arrows_in_stories",
+    "no_phase_number_leak",
+    "done_when_has_no_code_signature",
+    "has_out_of_scope",
+    "has_implementation_reference",
+    "tests_present_when_rules_require",
+    "phase_goal_quality_covered"
+  ]
+}
