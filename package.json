@@ -5,6 +5,9 @@
   "bin": {
     "mano-plan": "bin/mano-plan.js"
   },
+  "scripts": {
+    "eval": "python3 eval/run.py"
+  },
   "type": "commonjs",
   "engines": {
     "node": ">=18"
@@ -27,4 +30,3 @@
     "url": "git+https://github.com/ceceppa/mano.git"
   }
 }
-
