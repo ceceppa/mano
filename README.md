@@ -63,6 +63,7 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 |---------|-------------|
 | `mano` | Show available commands and current status. |
 | `mano status` | Scans output folder. Where am I? What's next? |
+| `mano import [doc]` | Turn an existing PRD or document into a backlog, then stop. Run `mano start` afterwards to scope the first phase. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano dev` | Implement the next pending story for the active phase. The bridge from a finished `stories/` folder into code. Follows the implementation contract in `AGENTS.md`. |
@@ -85,7 +86,8 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 
 | Command | Role | File |
 |------|------|------|
-| **`mano start`** | Scopes the idea, populates the backlog, proposes phases | `skills/start.md` |
+| **`mano import`** | Decomposes an existing PRD/document into a backlog, then stops | `skills/import.md` |
+| **`mano start`** | Scopes the idea, populates the backlog (from conversation), proposes phases | `skills/start.md` |
 | **`mano rules`** | Defines and updates project rules — components, patterns, architecture | `skills/rules.md` |
 | **`mano spec`** | Translates the phase brief into tech spec | `skills/spec.md` |
 | **`mano ux`** | Defines UX flows — screens, navigation, user interactions | `skills/ux.md` |
@@ -110,9 +112,10 @@ Optional actions can be created now, reused from existing work, copied from a si
 
 ### Human approval before phase briefs
 
-On first-run PRD or project-brief ingestion, `mano start` creates or updates the backlog, suggests a candidate first phase, and then stops. It must not create `phase-[N]/phase-brief.md`, create stories, or mark backlog items as `in-phase-[N]` until the human explicitly approves the phase scope.
+On a new project, `mano start` populates the backlog (from conversation), suggests a candidate first phase, and then stops. It must not create `phase-[N]/phase-brief.md`, create stories, or mark backlog items as `in-phase-[N]` until the human explicitly approves the phase scope. If you're starting from an existing PRD or document, run `mano import <doc>` first — it decomposes the document into the backlog — then `mano start` to scope the phase.
 
 ### Example fuller pass
+0. *(Optional)* `mano import <doc>` → decompose an existing PRD/document into the backlog first. Skip if you're starting from a conversation.
 1. `mano start` → `mano start` scopes input, populates the backlog, suggests the next phase, and waits for approval before writing the phase brief.
 2. `mano spec` → `mano spec` writes tech spec.
 3. `mano ux` → `mano ux` defines UX flow (for user-facing phases).
@@ -151,7 +154,7 @@ The pipeline doesn't require you to finish before course-correcting.
 
 ```
 _mano_output/
-├── backlog.md               ← future work, deferred items, review follow-ups (owned by `mano start`, updated by `mano review`, editable by you)
+├── backlog.md               ← future work, deferred items, review follow-ups (created by `mano import` or `mano start`, owned by `mano start`, updated by `mano review`, editable by you)
 ├── tech-spec.md             ← project-wide, cumulative (`mano spec` extends per phase)
 ├── ux-flow.md               ← project-wide, cumulative (`mano ux` extends per phase)
 ├── design-brief.md          ← project-wide visual language (if generated)
