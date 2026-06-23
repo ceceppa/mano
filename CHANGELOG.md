@@ -1,6 +1,21 @@
 # Changelog
 
-A narrative history of Mano's releases — what each version is, why it exists, and what it doesn't do yet.
+A history of Mano's releases — what each version changes and why.
+
+## 1.1.0 — June 24, 2026
+
+### Added
+- **`mano import`** — a dedicated skill that turns an existing PRD or document into a backlog, then stops. Decomposition logic (the central-noun gate, resolution test, pre-send filter) moved out of `mano start`'s PRD path into its own command. Run `mano import <doc>`, review the backlog, then `mano start` to scope the first phase.
+- **Eval harness** (`eval/`) — a runner-agnostic test suite that installs Mano into a throwaway project, invokes a skill headless (claude / codex / opencode), and asserts on the files it produces. Run with `npm run eval`. Ships with format, behavioural, and refusal assertions plus fixtures for `mano stories` and `mano import`. This retires the "no automated test/eval suite" limitation noted in 1.0.0.
+- **`post-import` hook** example, for parity with the other skills.
+
+### Changed
+- **Intake Boundaries (B1–B4)** now live canonically in `workflow.md`, shared by `mano start` and `mano import` instead of being duplicated. One source of truth, no drift.
+- **Skills slimmed** — `mano start` (Path C extracted), `mano stories` (intake simplified, redundant test/Implementation-Reference prose cut, the story index drops its Description column), and `mano review` trimmed. Less context loaded per run.
+- **`mano review` no longer manages story state** — if stories aren't `done` it refuses and points to `mano dev` or a manual README edit, rather than marking or cutting stories itself.
+
+### Fixed
+- **`mano review` double-confirm** — saying "all valid, close it" in one message now closes the phase immediately instead of asking to confirm a second time.
 
 ## 1.0.0 — Initial Release: June 18, 2026
 
