@@ -5,6 +5,7 @@
 ```
 mano                    → Show available commands and current status.
 mano status             → Scan _mano_output/ and show where you are + what to do next.
+mano import [doc]       → Turn an existing PRD/document into a backlog, then stop.
 mano start              → Scope a new project or phase.
 mano continue           → Auto-run the next logical action if unambiguous.
 mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
@@ -66,6 +67,45 @@ Routing guide for rejected instructions:
 - Stories (breaking work into units) → "That's `mano stories`'s area — run `mano stories`"
 - Review (phase feedback, triage) → "That's `mano review`'s area — run `mano review`"
 
+## Intake Boundaries (B1–B4)
+
+Shared by the intake skills — `mano start` and `mano import` — that turn an idea or a document into backlog items. This is the **single source of truth** for what an intake skill may and may not ask, and when. Those skills reference these by name instead of restating them. If a skill step and this section ever disagree, this section wins.
+
+### B1 — Tech-boundary (every question, every path, every step)
+
+Intake asks *what the product does and for whom*, never *how it's built*. Before asking any question, check it is not a tech question in disguise.
+
+- **Forbidden:** tech stack, frameworks, libraries, styling, state management, persistence mechanism (localStorage vs. file vs. SQLite vs. server DB), API shape, hosting, schema. These are `mano spec`'s during `mano spec`. Never present the user a menu of storage or implementation options.
+- **Allowed (the scope half):** "Does Phase 1 run fully locally with no login?" is a scope boundary — keep it. "How does data persist — localStorage, a file, or SQLite?" is implementation — drop it. When a question has both a scope half and a mechanism half, ask only the scope half.
+- A missing technical detail in a brief or document (auth mechanism, error format, persistence, API shape) is **not a gap intake fills**. "Stores data" without saying how is correct for this stage.
+- **Pass-through, not silence:** B1 forbids intake *eliciting, evaluating, or deciding* tech. It does **not** license *discarding a technical preference the source already states*. When the input explicitly states a stack/framework/storage/auth directive ("Use Next.js", "Use a SQL database", "auth can be deferred if Phase 1 is a local prototype"), intake does not act on it, decide it, or weigh it — but **must transcribe it verbatim** into the phase brief's `## Stated Technical Preferences` block (see `mano start`'s phase brief output) so it survives a context reset and reaches `mano spec`. When the intake skill produces only a backlog (`mano import`), preserve the stated directive verbatim in the relevant backlog item's context so `mano start` can carry it into the brief later. Dropping a stated directive because "tech isn't intake's job" is the failure: ignoring-for-scoping is correct; discarding-from-the-record is not. Intake still asks no tech question and makes no tech choice — this is a courier duty, not a decision.
+
+### B2 — Closed-scope (every question, every path)
+
+Do not re-open scope the input already closed. If the brief says "manual entry only," do not ask whether import could be added "as a shortcut" — that expands scope. If an adjacent capability is worth recording, note it as a candidate backlog item, never as a clarifying question.
+
+### B3 — Scope-sizing-deferral (intake only)
+
+Intake clarifies *what the product is*, not *what goes in Phase 1*. Phase sizing and slicing happen at `mano start` Step 6, against the one-testable-layer constraint, after the backlog exists.
+
+- Do not ask the user whether Phase 1 should be narrowed, what the minimum viable set is, or whether they're "open to" a smaller slice. That is Step 6's decision to *propose*, not intake's to *ask*.
+- Do not float a candidate decomposition ("e.g. dashboard view-only, no CRUD") during intake. Suggesting a slice shape is proposing a solution — forbidden by the planner role.
+- Do not resolve a deferral-vs-reference contradiction by asking the user to size Phase 1. When the document defers a capability ("recurring later") but also references it elsewhere ("dashboard shows upcoming recurring expenses"), that is a foundation conflict for `mano start` Step 7b, not an intake question. B2 already closed the deferral and B3 forbids the sizing — so **both the sizing form and the confirmation form are forbidden**. The confirmation form is the subtler trap: rewording a banned sizing question as a yes/no does not make it askable, because the answer is still "what's in Phase 1," not "what the product is."
+
+  Worked example — capability is deferred ("early phases can start with one-off expenses") but the dashboard references "upcoming recurring expenses":
+  - ❌ Don't (sizing form): *"For this phase, only one-off expenses, or model recurring too?"*
+  - ❌ Don't (confirmation form): *"Does that mean recurring expenses are fully out of Phase 1?"* — still phase-sizing; the document already answered it.
+  - ✅ Do: ask nothing. Log an Assumption Log candidate for `mano start` Step 7b: *"Phase 1 deliberately models one-off expenses only; the deferred recurring item must extend this model, not rework it."*
+
+  Log it for the Foundation-conflict check; never ask it, in any form.
+- An input that looks too large for one phase is *expected* and is exactly what Step 6 resolves. Note it to yourself, decompose it fully into the backlog, and let a tight Step 6 shortlist solve the sizing — never by interrogating the user up front.
+
+### B4 — No solutioning (every step)
+
+Intake is planning. Do not propose architecture, decomposition shapes, libraries, or implementation approaches at any step — not in questions, not in findings, not in the brief or backlog.
+
+These boundaries are also enforced negatively in each intake skill's **Forbidden** list, which points back here rather than restating the detail.
+
 ## Missing input protocol
 
 When a skill is missing context, classify the gap before responding:
@@ -99,7 +139,7 @@ Whenever a skill suggests what to do next, base that suggestion on the artifacts
 There is no single progress file. You are expected to determine where the user is by reading the contents of `_mano_output/`:
 *(Note to the human user: Agents only know what is in their context window. If the agent hallucinates state, explicitly @-mention the relevant files to ground it).*
 
-- No `_mano_output/` folder → no project started → suggest `mano start`
+- No `_mano_output/` folder → no project started → suggest `mano start` (or `mano import <doc>` if the user has a PRD/document to decompose first)
 - Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist, which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough. If `mano rules` or `mano ui` would still add useful clarity, list them as separate valid options instead of hiding them behind a single suggestion.
 - `stories/` folder exists, stories are `pending` → build mode. The next step is implementation: suggest `mano dev` to implement the next pending story. No Mano planning command is required until the user wants to adjust scope or add planning context.
 - `stories/` folder exists, all stories are `done`, and the latest phase has no review entry → phase is **built but not closed**. Direct the user to `mano review` — review is mandatory to close a phase, not an optional suggestion. Do not call the phase "complete" and do not offer `mano start` as an equal alternative: `mano start` will refuse to scope the next phase until review moves this phase's backlog items off `in-phase-[N]`.
@@ -126,7 +166,8 @@ Show a brief description of the skill — what it does, when to use it, what it 
 
 | Command | Role | Reads | Produces |
 |---------|------|-------|----------|
-| **`mano start`** | Scopes projects and phases. Populates the backlog, suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews, PRD (if provided) | Phase brief, backlog updates |
+| **`mano import`** | Turns an existing PRD or document into a backlog. Decomposes the document into items, then stops. Does not scope phases. | A PRD/document (path or pasted), existing backlog | Backlog (items `Status: backlog`) |
+| **`mano start`** | Scopes projects and phases. Populates the backlog (from conversation), suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews | Phase brief, backlog updates |
 | **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, explicit spec-gap context | Tech spec |
 | **`mano ux`** | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
 | **`mano rules`** | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |

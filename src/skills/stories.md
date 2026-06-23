@@ -36,19 +36,9 @@ Read this run, in this order:
 
 Read all present artifacts unconditionally. Do not skip one because the phase appears to have no UI or no rules implications — the gap check (Step 0d) cannot surface conflicts from artifacts it was never given to read.
 
-Spec, UX, rules, and design brief are optional inputs, not required gates. If an artifact is missing but the phase brief is clear enough to create small testable stories, proceed and mention the tradeoff briefly. If the missing artifact would force guessing, stop and offer the relevant Mano action.
+**No phase brief → stop.** The phase brief is the one required input. If `_mano_output/phase-[N]/phase-brief.md` does not exist, do nothing: state that there is no phase brief to decompose and that `mano start` creates one. Do not proceed, do not improvise stories from other context.
 
-If no phase brief exists, warn and ask if the user wants to proceed. If tech spec or UX flow don't exist, tell the user:
-
-```
-[mano stories]: No tech spec or UX flow exists yet.
-
-You can generate them first:
-  - `mano spec` — `mano spec` will create a tech spec.
-  - `mano ux` — `mano ux` will create a UX flow.
-
-Or I can proceed with the phase brief alone.
-```
+Spec, UX, rules, and design brief are optional inputs, not required gates — do not warn that they are missing. If an artifact is absent but the phase brief is clear enough to create small testable stories, proceed silently. Only stop and offer the relevant Mano action when a *specific* missing artifact would force guessing for a *specific* story.
 
 ## Story format
 
@@ -393,11 +383,11 @@ Do not ask for per-story approval. The user reviews the files at their own pace 
 ```markdown
 # Stories — [Project Name] — Phase [N]
 
-| # | Story | Description | File | Status |
-|---|-------|-------------|------|--------|
-| 0 | App bootstrap | Framework and baseline wiring for the phase | story-0-app-bootstrap.md | pending |
-| 1 | Fix overdue timing | Goals only go overdue after their own window passes | story-1-fix-overdue-timing.md | pending |
-| 2 | Widget layout | Two-line row model for multiple items | story-2-widget-layout.md | pending |
+| # | Story | File | Status |
+|---|-------|------|--------|
+| 0 | App bootstrap | story-0-app-bootstrap.md | pending |
+| 1 | Fix overdue timing | story-1-fix-overdue-timing.md | pending |
+| 2 | Widget layout | story-2-widget-layout.md | pending |
 ```
 
 ## Mid-build additions

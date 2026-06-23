@@ -18,6 +18,7 @@ Instead, execute the corresponding Mano planning flow by reading the local files
 
 Examples:
 
+- `mano import` → read `_mano/skills/import.md` and follow that flow (PRD/document → backlog)
 - `mano start` → read `_mano/skills/start.md` and follow that flow
 - `mano spec` → read `_mano/skills/spec.md` and follow that flow
 - `mano rules` → read `_mano/skills/rules.md` and follow that flow

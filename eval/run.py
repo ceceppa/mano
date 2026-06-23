@@ -55,10 +55,23 @@ def install_mano(project: Path) -> None:
     )
 
 
-def seed_fixture(project: Path, fixture: str, phase: int) -> None:
+def seed_fixture(project: Path, fixture: str, mode: str, phase: int | None) -> None:
+    """Place fixture files into the temp project.
+
+    mode "seed":     fixture files are existing project state → copied into
+                     _mano_output/ (phase-scoped ones under phase-{N}/).
+    mode "document": the fixture is a raw input document the skill will read →
+                     copied to the project root as-is (e.g. a PRD for mano import).
+    """
     src = FIXTURES_DIR / fixture
+    if mode == "document":
+        for f in src.iterdir():
+            if f.is_file():
+                shutil.copyfile(f, project / f.name)
+        return
+
     out = project / "_mano_output"
-    phase_dir = out / f"phase-{phase}"
+    phase_dir = out / f"phase-{phase}" if phase is not None else out
     phase_dir.mkdir(parents=True, exist_ok=True)
     for f in src.iterdir():
         if not f.is_file():
@@ -70,13 +83,14 @@ def seed_fixture(project: Path, fixture: str, phase: int) -> None:
 def run_case(case_path: Path, runner_name: str, keep: bool, timeout: int) -> bool:
     case = json.loads(case_path.read_text())
     name = case["name"]
-    phase = case["phase"]
+    phase = case.get("phase")  # None for non-phase-scoped skills (import)
+    mode = case.get("fixture_mode", "seed")
     print(f"\n=== case: {name} (runner: {runner_name}) ===")
 
     tmp = Path(tempfile.mkdtemp(prefix=f"mano-eval-{name}-"))
     try:
         install_mano(tmp)
-        seed_fixture(tmp, case["fixture"], phase)
+        seed_fixture(tmp, case["fixture"], mode, phase)
 
         runner = RUNNERS[runner_name]
         result = runner(str(tmp), case["prompt"], timeout)

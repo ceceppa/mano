@@ -1,6 +1,6 @@
 ---
 name: mano-start
-description: Use when the user wants to start a new project or scope a new phase. Responsible for requirements intake, backlog population, and drafting the phase brief.
+description: Use when the user wants to start a new project or scope a new phase from a conversation or an existing backlog. Suggests phase scope and drafts the phase brief. To turn a PRD or document into a backlog first, use mano import.
 ---
 
 # `mano start` — Intake Skill
@@ -44,7 +44,7 @@ Finish Phase [N] first, then run `mano start` again to scope Phase [N+1].
 It is fine — and useful — to also note any structural defects you spotted in the Phase [N] artifacts (principle drift, unsliced items, unflagged foundation conflicts) so they can be fixed. But spotting defects never licenses advancing to the next phase: report them, then stop at the gate.
 
 Edge cases:
-- No `_mano_output/` or no phase folder at all → not "returning"; this is a new project, follow Path B/C.
+- No `_mano_output/` or no phase folder at all → not "returning"; this is a new project. Follow Path B (conversation). If the user has a PRD/document, point them to `mano import` first, then Path A.
 - A phase folder exists but is empty / has no `phase-brief.md` → the previous `mano start` didn't finalise; resume drafting that phase, do not start a new one.
 - User explicitly says the phase is abandoned/cancelled, or explicitly instructs you to scope the next phase anyway → honour the explicit instruction, but state that you're proceeding past an incomplete phase at their request.
 
@@ -75,42 +75,9 @@ Capture the idea, understand the pain, calibrate depth, propose a shippable phas
 
 ## Boundaries — what `mano start` asks and when
 
-This is the **single source of truth** for what `mano start` may and may not ask, and at which step. Every step below references these by name instead of restating them. If a step and this section ever disagree, this section wins.
+What `mano start` may and may not ask, and when, is governed by **Intake Boundaries (B1–B4)** in `_mano/workflow.md` — the single source of truth shared with `mano import`. Every step below references B1–B4 by name. If a step and that section ever disagree, the workflow section wins.
 
-### B1 — Tech-boundary (every question, every path, every step)
-
-`mano start` asks *what the product does and for whom*, never *how it's built*. Before asking any question, check it is not a tech question in disguise.
-
-- **Forbidden:** tech stack, frameworks, libraries, styling, state management, persistence mechanism (localStorage vs. file vs. SQLite vs. server DB), API shape, hosting, schema. These are `mano spec`'s during `mano spec`. Never present the user a menu of storage or implementation options.
-- **Allowed (the scope half):** "Does Phase 1 run fully locally with no login?" is a scope boundary — keep it. "How does data persist — localStorage, a file, or SQLite?" is implementation — drop it. When a question has both a scope half and a mechanism half, ask only the scope half.
-- A missing technical detail in a brief or document (auth mechanism, error format, persistence, API shape) is **not a gap `mano start` fills**. "Stores data" without saying how is correct for this stage.
-- **Pass-through, not silence:** B1 forbids `mano start` *eliciting, evaluating, or deciding* tech. It does **not** license *discarding a technical preference the source already states*. When the input explicitly states a stack/framework/storage/auth directive ("Use Next.js", "Use a SQL database", "auth can be deferred if Phase 1 is a local prototype"), `mano start` does not act on it, decide it, or weigh it — but **must transcribe it verbatim** into the phase brief's `## Stated Technical Preferences` block (see Phase brief output) so it survives a context reset and reaches `mano spec`. Dropping a stated directive because "tech isn't `mano start`'s job" is the failure: ignoring-for-scoping is correct; discarding-from-the-record is not. `mano start` still asks no tech question and makes no tech choice — this is a courier duty, not a decision.
-
-### B2 — Closed-scope (every question, every path)
-
-Do not re-open scope the input already closed. If the brief says "manual entry only," do not ask whether import could be added "as a shortcut" — that expands scope. If an adjacent capability is worth recording, note it as a candidate backlog item, never as a clarifying question.
-
-### B3 — Scope-sizing-deferral (intake only — Path B Step 3, Path C Step 1)
-
-Intake clarifies *what the product is*, not *what goes in Phase 1*. Phase sizing and slicing happen at **Step 6**, against the one-testable-layer constraint, after the backlog exists.
-
-- Do not ask the user whether Phase 1 should be narrowed, what the minimum viable set is, or whether they're "open to" a smaller slice. That is Step 6's decision to *propose*, not intake's to *ask*.
-- Do not float a candidate decomposition ("e.g. dashboard view-only, no CRUD") during intake. Suggesting a slice shape is proposing a solution — forbidden by `mano start`'s planner role.
-- Do not resolve a deferral-vs-reference contradiction by asking the user to size Phase 1. When the document defers a capability ("recurring later") but also references it elsewhere ("dashboard shows upcoming recurring expenses"), that is a foundation conflict for Step 7b, not a Step 1 question. B2 already closed the deferral and B3 forbids the sizing — so **both the sizing form and the confirmation form are forbidden**. The confirmation form is the subtler trap: rewording a banned sizing question as a yes/no does not make it askable, because the answer is still "what's in Phase 1," not "what the product is."
-
-  Worked example — capability is deferred ("early phases can start with one-off expenses") but the dashboard references "upcoming recurring expenses":
-  - ❌ Don't (sizing form): *"For this phase, only one-off expenses, or model recurring too?"*
-  - ❌ Don't (confirmation form): *"Does that mean recurring expenses are fully out of Phase 1?"* — still phase-sizing; the document already answered it.
-  - ✅ Do: ask nothing. Log an Assumption Log candidate for Step 7b: *"Phase 1 deliberately models one-off expenses only; the deferred recurring item must extend this model, not rework it."*
-
-  Log it for the Foundation-conflict check; never ask it, in any form.
-- An input that looks too large for one phase is *expected* and is exactly what Step 6 resolves. Note it to yourself, decompose it fully into the backlog, and let a tight Step 6 shortlist solve the sizing — never by interrogating the user up front.
-
-### B4 — No solutioning (every step)
-
-`mano start` is a planner. Do not propose architecture, decomposition shapes, libraries, or implementation approaches at any step — not in questions, not in findings, not in the brief.
-
-These boundaries are also enforced negatively in **Forbidden** at the end of this file; that list points back here rather than restating the detail.
+In short: B1 tech-boundary (ask *what*, never *how*; transcribe stated tech preferences verbatim, never decide them), B2 closed-scope (don't re-open scope the input closed), B3 scope-sizing-deferral (don't ask what goes in Phase 1 — that's Step 6), B4 no solutioning. Read the full text in `_mano/workflow.md` before relying on the summary.
 
 ## Human approval gate
 
@@ -173,73 +140,11 @@ Decompose everything discussed into backlog items using the Backlog item format 
 
 Then proceed to Step 6.
 
-### Path C — New project from a PRD or document
+### Already have a PRD or document?
 
-#### Step 1 — Read and check
+`mano start` does not ingest documents. To turn a PRD, spec, or brief into a backlog, run `mano import <doc>` first — it decomposes the document into backlog items and stops. Then run `mano start`, which takes Path A (the backlog already has items) and proceeds to scope suggestion.
 
-Read the entire document. Before decomposing, check for:
-
-- **Ambiguities** — terms that sound specific but aren't defined ("basic metadata," "simple UI," "standard CRUD"). Ask what these mean concretely.
-- **Gaps** — things the document assumes but doesn't state. Ask only about *product/scope* gaps (what behaviour, for whom, which boundary). Technical gaps are out of scope per **Boundaries** B1.
-- **Contradictions** — if the document says "simple" but lists 8 success criteria, flag it.
-- **Hidden branches** — flows that sound linear but contain choice-dependent steps, variant-specific inputs, or example lists that are not obviously complete.
-
-When asking for a formula or a computed value's definition, phrase the relationship in plain language ("balance plus expected money, minus upcoming costs and tax reserve"), not as a code-style expression with variable names (`available_balance + expected_incoming - ...`). The latter is the shape of a B1 implementation brush even when only illustrative — you want the *product meaning*, not a candidate expression.
-
-**Mandatory: the central-noun definition gate.** The checks above are permissive — they let you ask, they do not force you to. This one is not optional. Identify the single noun (occasionally two) the core experience is built around — the thing the document's "answers one question" / "the core experience is" / headline value sentence names: the *safe-to-spend number*, the *readiness indicator*, the *per-person budget estimate*. For that noun, ask: does the document define it in **observable terms** — a concrete rule, threshold, or relationship a non-developer could verify? If it is centred but only named, never defined, **asking what it concretely means is mandatory, not a candidate you may drop.** This is the single highest-value Step 1 question and the one most often silently skipped.
-
-Bound it so it does not manufacture filler:
-- Exactly the central noun(s). Not every undefined term — incidental nouns stay under the permissive checks above.
-- Skip if the document already defines it observably (a stated formula, an explicit threshold, an enumerated rule). Do not ask the user to re-confirm a definition the document gives.
-- Ask the *meaning*, in plain language, never a candidate code expression (the formula rule above still applies).
-- This gate forces *inclusion*; it never overrides B1/B2/B3. If the only honest version of the question is "how is it built" or "what's in Phase 1", it is still barred — but a centred core noun almost always has a legitimate product-definition form, so find that form rather than dropping it.
-
-**Classify every candidate before it becomes a question — the resolution test.** For each ambiguity, gap, or contradiction you found, ask: *what kind of answer resolves this?*
-
-- Resolved by knowing **what the product is** (a definition, an entity distinction, a behaviour, a missing branch) → it is a Step 1 question. Ask it, phrased product-first.
-- Resolved by knowing **what goes in Phase 1** (which slice ships first, one-off vs. the fuller version, view-only vs. CRUD, narrowed vs. complete) → it is **not** a Step 1 question. Do not ask it. Record it as a note to yourself and carry it to Step 7b — the Foundation-conflict check and Demo-sketch checkpoint exist to resolve exactly these. This holds **even when the trigger is a genuine contradiction** (e.g. the dashboard lists a capability the document defers): finding the contradiction is correct; *asking the user to resolve it by sizing Phase 1* is the B3 violation. Log it, don't ask it.
-- Resolved by knowing **how it's built** (persistence, schema, stack, API shape) → not a question at all (B1). Not even as a sub-option or a parenthetical "(e.g. opening balance vs. emergent)".
-
-A single document point can yield a Step 1 question *and* a Step 7b note — split it, ask only the product half now, and never anchor the question with "Since Phase 1…" or "For this phase…". Intake is phase-agnostic; Phase 1 does not exist yet at Step 1.
-
-Every question here is governed by **Boundaries** B1–B4 and the scope-layer rule from Path B Step 3. Resolve enough branching detail to shape the backlog correctly, then defer.
-
-Present findings:
-
-```
-[mano start]: I've read the document. Before I break it down, a few things to clarify:
-
-1. [Ambiguity or gap] — [what's unclear and why it matters for scoping]
-2. [Ambiguity or gap] — [what's unclear]
-3. [Contradiction or assumption] — [what I noticed]
-
-Answer what's relevant, skip what isn't.
-```
-
-**Pre-send filter — run mechanically on the drafted question list, do not rely on judgment alone.** Before sending, take each numbered question and apply these checks literally. Any question that hits a check is deleted from the list (and, if it flagged a real foundation conflict, recorded as a Step 7b Assumption Log candidate instead — not asked):
-
-1. Does the document already state the answer (including by deferring the capability — "later", "eventually", "early phases can start with…")? → delete. You are asking the user to confirm a boundary the document drew. This catches the **confirmation form** ("Does that mean X is fully out of Phase 1?") regardless of how reasonable it sounds.
-2. Is the answer "what goes in Phase 1 / which slice ships first" rather than "what the product is"? → delete, log for 7b.
-3. Does the question contain "Phase 1", "this phase", "for this phase", "fully out of", or "only … this phase"? → it is almost certainly phase-sizing in disguise; delete unless it is unambiguously a product-definition question that merely mentions the phase by accident.
-4. Does the answer change *how it's built* (storage, schema, stack, API)? → delete (B1), no sub-option or parenthetical either.
-
-A question survives only if its answer is a product definition, an entity distinction, a behaviour, or a missing branch — and the document does not already give it.
-
-**Then the inclusion pass — the filter deletes, this one re-adds.** After deleting, confirm the central-noun definition gate is satisfied: if the document's central noun is centred-but-undefined and no surviving question asks what it concretely means, the list is incomplete — add that question before sending. The filter is suppressive by design; it must not be allowed to strip the one mandatory question. A check-1 deletion never applies to the central noun unless the document genuinely defines it observably.
-
-Wait for the user's response before decomposing. Per **Boundaries** B3, do not ask phase-selection or scope-sizing questions here — including ones disguised as contradictions or as yes/no confirmations ("the document defers X but the dashboard shows it — only X this phase, or also Y?", "does that mean X is out of Phase 1?"). A brief that looks too big, or that defers a capability it also references, is normal and is resolved by full decomposition plus the Step 7b checks and a tight Step 6 shortlist — not by interrogating the user.
-
-#### Step 2 — Design principle and core principles
-
-Propose a phase-level design principle based on the document's priorities. Confirm with the user. If durable product principles are present, write or update them per **Backlog format → Core product principles section** below.
-
-#### Step 3 — Populate the backlog
-
-Decompose the entire document into backlog items. Every feature, requirement, non-functional criterion, and success criterion. Preserve specific detail from the source.
-
-Write all items to `_mano_output/backlog.md` with `Status: backlog`. Then proceed to Step 6.
-
-### Step 6 — Suggest phase scope (all paths converge here)
+### Step 6 — Suggest phase scope (both intake paths converge here)
 
 **Precondition: the Current-phase completion gate must have passed.** If a phase folder exists and its phase is in progress, you must not be here — return to the gate and stop. Never suggest a next phase while the latest phase is unfinished, even if you noticed defects in its artifacts.
 
@@ -472,6 +377,7 @@ This is the one case where editing an existing item's title and context is requi
 
 ### Who can write to the backlog
 
+- **`mano import`** populates the backlog from a PRD or document (initial creation, all items `Status: backlog`)
 - **`mano start`** writes deferred items during scoping
 - **`mano review`** writes deferred items during triage
 - **The user** can edit directly at any time

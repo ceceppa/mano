@@ -25,29 +25,22 @@ On activation:
 
 ## Pre-review gate
 
-If any stories are not marked `done`:
+If any stories are not marked `done`, **refuse and stop**. Review does not manage story state — that is not its job. Report what's pending and point to the right path:
 
 ```
-[mano review]: I can see these stories are still pending:
+[mano review]: These stories aren't marked `done` yet:
 
 - STORY-[N]: [title] — [status]
 - STORY-[N]: [title] — [status]
 
-Can't run a proper review until the phase work is complete. What would you like to do?
+I can't review a phase that isn't complete, and managing story status isn't my job. Depending on what's true:
 
-1. ✅ Mark them all done — They're implemented, I just didn't update the status.
-2. ☑️ Mark specific ones done — Tell me which (e.g. "done 3, 5").
-3. 🗑️ Cut unneeded stories — Remove ones we decided to skip (e.g. "cut 4").
-4. ❌ Not ready for review — I'll come back when the work is finished.
+- Still unimplemented → run `mano dev` to finish them.
+- Implemented but the index is stale → mark them `done` in `_mano_output/phase-[N]/stories/README.md` yourself, then re-run `mano review`.
+- Abandoned → remove them from the README index, then re-run `mano review`.
 ```
 
-On option 1 or 2: update the README index status, then proceed.
-On option 3: update the README index, then proceed.
-On option 4: stop. Do not run the review.
-
-This pre-review gate happens before triage begins. If the user explicitly chooses options 1-3, `mano review` may update the stories README index here to correct phase state. The "don't write files until STEP 3" rule applies after the gate is cleared and the review itself has started.
-
-**Do not auto-complete acceptance criteria checkboxes in story files.** Only update the status column in the README index.
+That is your complete response. Do not edit the README index, do not mark or cut stories, do not proceed to triage. Re-running `mano review` after the index shows every story `done` (or no longer lists the cut ones) clears this gate.
 
 ## Standard review
 
@@ -120,6 +113,8 @@ Does this look right? Tell me what to move or remove, or say "close it" to log t
 That is your complete response. DO NOT write files yet.
 
 **Fast close — no feedback to triage.** If the user's reply contains no feedback to triage (e.g. "nothing to report, close it", "close it", "all good"), skip the triage presentation entirely — there is nothing to confirm. Treat the reply as direct confirmation and go straight to STEP 3 with an empty triage: no backlog items are written, the resolve sweep and review entry still happen. In the review entry, fill the Assumption results table from any verdicts the user gave in STEP 1; record `What we'd do differently` as "No feedback logged." Do not ask a follow-up question to fish for feedback before closing — "close it" means close it.
+
+**The close instruction is terminal — never re-confirm it.** When a single message carries both the assumption verdicts and a close instruction (e.g. "all valid, close it", "1 confirmed 2 invalidated, close it", "all good close it"), that one message clears STEP 1 *and* is the STEP 3 confirmation. Go straight to writing files. Do **not** emit an empty-triage "Does this look right? Say close it to log" message — that is a second confirmation gate the user already satisfied, and it is the exact double-confirm this rule forbids. Re-prompting after the user has already said "close it" is a bug, not caution.
 
 ---
 
@@ -262,10 +257,10 @@ Do not write hook suggestions into generated artifacts.
 
 - Do not skip the review questions. Prior conversations do not count as a review.
 - Do not auto-decide during review. Each step is one message. Do not combine steps.
-- Outside the pre-review gate, do not write any files until the user confirms the triage in STEP 3.
+- Do not write any files until the user confirms the triage in STEP 3.
 - Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. `mano review` only classifies feedback and updates backlog/review files after confirmation.
 - Do not create stories. `mano review` writes to the backlog and review log only.
-- Do not edit story files. Only update the stories README index during the pre-review gate if the user explicitly tells you to mark or cut stories.
+- Do not manage story state. Do not edit story files, mark stories `done`, cut stories, or touch the stories README index — not even in the pre-review gate. If stories aren't `done`, refuse per the pre-review gate and point the user to `mano dev` or their own README edit.
 - Do not check off acceptance criteria in story files.
 - Do not scope the next phase. That's `mano start`'s job via `mano start`.
 - Do not present the backlog or use it for scoping. Reading it in STEP 3 to append, deduplicate, or resolve items is allowed.

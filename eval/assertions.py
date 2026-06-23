@@ -22,15 +22,19 @@ class Failure:
 
 
 class Ctx:
-    """Read-only view of what a skill produced, plus the inputs it ran against."""
+    """Read-only view of what a skill produced, plus the inputs it ran against.
 
-    def __init__(self, output_dir: Path, phase: int):
+    `phase` is only meaningful for phase-scoped skills (stories). Import-style
+    skills that produce project-level artifacts (the backlog) pass phase=None.
+    """
+
+    def __init__(self, output_dir: Path, phase: int | None = None):
         self.output_dir = output_dir
         self.phase = phase
-        self.stories_dir = output_dir / f"phase-{phase}" / "stories"
+        self.stories_dir = output_dir / f"phase-{phase}" / "stories" if phase is not None else None
 
     def story_files(self) -> list[Path]:
-        if not self.stories_dir.is_dir():
+        if self.stories_dir is None or not self.stories_dir.is_dir():
             return []
         return sorted(p for p in self.stories_dir.glob("story-*.md"))
 
@@ -38,8 +42,19 @@ class Ctx:
         return {p.name: p.read_text(encoding="utf-8") for p in self.story_files()}
 
     def readme(self) -> str | None:
+        if self.stories_dir is None:
+            return None
         r = self.stories_dir / "README.md"
         return r.read_text(encoding="utf-8") if r.is_file() else None
+
+    def backlog(self) -> str | None:
+        b = self.output_dir / "backlog.md"
+        return b.read_text(encoding="utf-8") if b.is_file() else None
+
+    def phase_dirs(self) -> list[Path]:
+        if not self.output_dir.is_dir():
+            return []
+        return sorted(p for p in self.output_dir.glob("phase-*") if p.is_dir())
 
 
 # --- Structural / existence ---------------------------------------------------
@@ -151,6 +166,72 @@ def phase_goal_quality_covered(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+# --- mano import: backlog contract --------------------------------------------
+
+def backlog_was_written(ctx: Ctx) -> list[Failure]:
+    if ctx.backlog() is None:
+        return [Failure("backlog_was_written", f"no backlog.md in {ctx.output_dir}")]
+    return []
+
+
+def backlog_has_items(ctx: Ctx) -> list[Failure]:
+    bl = ctx.backlog() or ""
+    # Item block format uses `### [title]` headings under `## Items`.
+    items = re.findall(r"^###\s+\S", bl, re.MULTILINE)
+    if len(items) < 2:
+        return [Failure("backlog_has_items", f"expected multiple backlog items, found {len(items)}")]
+    return []
+
+
+def all_items_status_backlog(ctx: Ctx) -> list[Failure]:
+    # import must leave every item Status: backlog — never in-phase-N or resolved.
+    bl = ctx.backlog() or ""
+    bad = re.findall(r"\*\*Status:\*\*\s*(in-phase-\d+|resolved)", bl, re.IGNORECASE)
+    if bad:
+        return [Failure("all_items_status_backlog", f"items not in 'backlog' status: {bad}")]
+    statuses = re.findall(r"\*\*Status:\*\*\s*(\w[\w-]*)", bl)
+    nonbacklog = [s for s in statuses if s.lower() != "backlog"]
+    if nonbacklog:
+        return [Failure("all_items_status_backlog", f"unexpected statuses: {nonbacklog}")]
+    return []
+
+
+def no_phase_brief_written(ctx: Ctx) -> list[Failure]:
+    # import produces ONLY a backlog. A phase brief means it overstepped into start's job.
+    for pd in ctx.phase_dirs():
+        if (pd / "phase-brief.md").is_file():
+            return [Failure("no_phase_brief_written",
+                            f"import wrote a phase brief ({pd.name}/phase-brief.md) — that is mano start's job")]
+    return []
+
+
+def backlog_covers_document_features(ctx: Ctx) -> list[Failure]:
+    # The fixture PRD lists four features. Their key nouns should each surface
+    # somewhere in the backlog (coverage, not exact wording).
+    bl = (ctx.backlog() or "").lower()
+    expected = {
+        "add a book": r"add\b.*book|book.*add",
+        "mark finished": r"finish|mark.*done|complete",
+        "next-read suggestion": r"next.?read|suggest|what to read",
+        "reading history": r"history|finished books",
+    }
+    fails = []
+    for label, pat in expected.items():
+        if not re.search(pat, bl):
+            fails.append(Failure("backlog_covers_document_features", f"no item covers '{label}'"))
+    return fails
+
+
+def stated_tech_preference_preserved(ctx: Ctx) -> list[Failure]:
+    # The PRD states "Use a local SQLite database". B1 pass-through: import must
+    # preserve this verbatim in item context, never drop it or decide it away.
+    bl = ctx.backlog() or ""
+    if not re.search(r"sqlite", bl, re.IGNORECASE):
+        return [Failure("stated_tech_preference_preserved",
+                        "stated tech preference 'SQLite' from the PRD was dropped from the backlog")]
+    return []
+
+
 # --- helpers ------------------------------------------------------------------
 
 def _section(text: str, heading: str) -> str | None:
@@ -188,4 +269,11 @@ REGISTRY = {
     "has_implementation_reference": has_implementation_reference,
     "tests_present_when_rules_require": tests_present_when_rules_require,
     "phase_goal_quality_covered": phase_goal_quality_covered,
+    # mano import
+    "backlog_was_written": backlog_was_written,
+    "backlog_has_items": backlog_has_items,
+    "all_items_status_backlog": all_items_status_backlog,
+    "no_phase_brief_written": no_phase_brief_written,
+    "backlog_covers_document_features": backlog_covers_document_features,
+    "stated_tech_preference_preserved": stated_tech_preference_preserved,
 }

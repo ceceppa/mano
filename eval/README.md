@@ -56,15 +56,30 @@ rule you add to a skill has a latent assertion here — that's the point.
 
 ## Adding a case
 
-Drop a fixture folder under `fixtures/`, then a `cases/<name>.json`:
+Drop a fixture folder under `fixtures/`, then a `cases/<name>.json`.
+
+Phase-scoped skill (fixture files are existing project state seeded into `_mano_output/`):
 
 ```json
 {
-  "name": "...", "fixture": "...", "phase": 2,
+  "name": "stories-bugfix", "fixture": "bugfix-phase", "phase": 2,
   "prompt": "mano stories",
   "assertions": ["stories_were_written", "..."]
 }
 ```
+
+Document-intake skill (fixture is a raw input doc placed at the project root; no phase):
+
+```json
+{
+  "name": "import-prd", "fixture": "import-prd",
+  "fixture_mode": "document",
+  "prompt": "mano import product-brief.md",
+  "assertions": ["backlog_was_written", "all_items_status_backlog", "no_phase_brief_written", "..."]
+}
+```
+
+`fixture_mode` defaults to `"seed"` (project state) when omitted; use `"document"` for a raw input file. Omit `phase` for non-phase-scoped skills.
 
 ## Notes / limits
 
