@@ -1,0 +1,15 @@
+{
+  "name": "import-prd",
+  "description": "mano import decomposes a PRD into a backlog and stops. Checks the backlog contract: items written, all Status: backlog, no phase brief, document features covered, stated tech preference preserved.",
+  "fixture": "import-prd",
+  "fixture_mode": "document",
+  "prompt": "mano import product-brief.md",
+  "assertions": [
+    "backlog_was_written",
+    "backlog_has_items",
+    "all_items_status_backlog",
+    "no_phase_brief_written",
+    "backlog_covers_document_features",
+    "stated_tech_preference_preserved"
+  ]
+}
