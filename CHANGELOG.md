@@ -2,7 +2,7 @@
 
 A history of Mano's releases — what each version changes and why.
 
-## 1.1.0 — June 24, 2026
+## 1.1.0 — June 26, 2026
 
 ### Added
 - **`mano import`** — a dedicated skill that turns an existing PRD or document into a backlog, then stops. Decomposition logic (the central-noun gate, resolution test, pre-send filter) moved out of `mano start`'s PRD path into its own command. Run `mano import <doc>`, review the backlog, then `mano start` to scope the first phase.
@@ -10,12 +10,19 @@ A history of Mano's releases — what each version changes and why.
 - **`post-import` hook** example, for parity with the other skills.
 
 ### Changed
-- **Intake Boundaries (B1–B4)** now live canonically in `workflow.md`, shared by `mano start` and `mano import` instead of being duplicated. One source of truth, no drift.
+- **Repositioned around the planning loop** — the README and npm description now lead with Mano as *"a fast planning loop: plan in small phases and validate each assumption before it becomes code, with the human in control at every step."* The token-efficiency framing is demoted to a scoped greenfield note rather than a headline claim.
+- **Intake Boundaries (B1–B5)** now live canonically in `workflow.md`, shared by `mano start` and `mano import` instead of being duplicated. One source of truth, no drift.
 - **Skills slimmed** — `mano start` (Path C extracted), `mano stories` (intake simplified, redundant test/Implementation-Reference prose cut, the story index drops its Description column), and `mano review` trimmed. Less context loaded per run.
 - **`mano review` no longer manages story state** — if stories aren't `done` it refuses and points to `mano dev` or a manual README edit, rather than marking or cutting stories itself.
+- **`mano start` drops the redundant brief confirmation** — once you've approved the phase scope and answered the clarifying questions, it drafts the brief, writes it, and stamps the backlog in one turn instead of pausing again to ask "happy with the draft?". The brief is shown immediately; edit the file or re-run if anything's off.
 
 ### Fixed
 - **`mano review` double-confirm** — saying "all valid, close it" in one message now closes the phase immediately instead of asking to confirm a second time.
+- **`mano stories` no longer edits input artifacts** — when you point out the phase brief (or any input) has a stale/incorrect assumption, it now uses the correction to generate the stories and flags the staleness for the owning skill, instead of editing the brief itself. The no-implementation gate now explicitly covers other Mano artifacts, not just source code.
+- **Intake no longer mines source code to scope (new boundary B5)** — `mano start` and `mano import` scope from planning artifacts and your answers, not by reading the codebase to enumerate the work list or verify defects. A quick structural glance to ground a scoping question is still allowed; building the missing-work inventory from source is now forbidden and left to `mano stories`. Applies even to "document/refactor the code" phases.
+- **Command dispatch: hyphen, not colon** — `mano import` (and any `mano <action>`) now reliably resolves to the `mano-import` skill. Agents were transforming the spaced form into `mano:import` (plugin-namespace syntax), which matches no Mano skill and made the command look unavailable. Dispatch rules in `workflow.md`, `AGENTS.md`, and `CLAUDE.md` now state the separator is a hyphen and tell the agent to try `mano-<action>` before concluding a command doesn't exist.
+- **Backlog item format inlined where it's written** — `mano import` invented a non-standard backlog shape (`**ID:** / **Title:** / **Description:**`) because it only *referenced* the format defined in `mano start` instead of containing it. The exact item block (`### title`, `**Type:**`, `**Source:**`, `**Context:**`, `**Status:**`) is now inlined in both `mano import` and `mano review`, with an explicit "do not invent fields" guard. This matters because `mano start` parses these items later — mismatched field names make them unreadable.
+- **`Source` is now optional in backlog items** — it's provenance only and no skill reads it, so hand-added items can omit it instead of inventing a value. `Type`, `Context`, and `Status` remain required. Skills that auto-write items still fill `Source` when it's obvious (the document name, the review phase).
 
 ## 1.0.0 — Initial Release: June 18, 2026
 

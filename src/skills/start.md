@@ -15,9 +15,8 @@ This skill activates when the user types `mano start`.
 
 On activation:
 1. Create `_mano_output/` folder if it doesn't exist.
-2. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This is the one allowed root-level scaffold write.
-3. Scan `_mano_output/` to determine state — check for existing backlog, phase folders, briefs, **stories, and `reviews.md`**. Identify the highest-numbered phase folder `phase-[N]`.
-4. **Run the Current-phase completion gate (below) before deciding the path.** Only if the latest phase is complete (or no phase exists yet) may you treat this as "returning for a new phase." When returning, read `_mano_output/phase-[N]/phase-brief.md`, `_mano_output/backlog.md` (filtered to `Status: backlog` items plus any `## Core Product Principles` section), and `_mano_output/reviews.md` for latest review insights. Then go straight to Step 6 — do not greet conversationally.
+2. Scan `_mano_output/` to determine state — check for existing backlog, phase folders, briefs, **stories, and `reviews.md`**. Identify the highest-numbered phase folder `phase-[N]`.
+3. **Run the Current-phase completion gate (below) before deciding the path.** Only if the latest phase is complete (or no phase exists yet) may you treat this as "returning for a new phase." When returning, read `_mano_output/phase-[N]/phase-brief.md`, `_mano_output/backlog.md` (filtered to `Status: backlog` items plus any `## Core Product Principles` section), and `_mano_output/reviews.md` for latest review insights. Then go straight to Step 6 — do not greet conversationally.
 
 ## Current-phase completion gate
 
@@ -75,9 +74,9 @@ Capture the idea, understand the pain, calibrate depth, propose a shippable phas
 
 ## Boundaries — what `mano start` asks and when
 
-What `mano start` may and may not ask, and when, is governed by **Intake Boundaries (B1–B4)** in `_mano/workflow.md` — the single source of truth shared with `mano import`. Every step below references B1–B4 by name. If a step and that section ever disagree, the workflow section wins.
+What `mano start` may and may not ask, and when, is governed by **Intake Boundaries (B1–B5)** in `_mano/workflow.md` — the single source of truth shared with `mano import`. Every step below references B1–B5 by name. If a step and that section ever disagree, the workflow section wins.
 
-In short: B1 tech-boundary (ask *what*, never *how*; transcribe stated tech preferences verbatim, never decide them), B2 closed-scope (don't re-open scope the input closed), B3 scope-sizing-deferral (don't ask what goes in Phase 1 — that's Step 6), B4 no solutioning. Read the full text in `_mano/workflow.md` before relying on the summary.
+In short: B1 tech-boundary (ask *what*, never *how*; transcribe stated tech preferences verbatim, never decide them), B2 closed-scope (don't re-open scope the input closed), B3 scope-sizing-deferral (don't ask what goes in Phase 1 — that's Step 6), B4 no solutioning, B5 source-read (scope from artifacts and the user's answers, not by mining the codebase for the work list). Read the full text in `_mano/workflow.md` before relying on the summary.
 
 ## Human approval gate
 
@@ -234,7 +233,7 @@ Do not silently mark a broad item `in-phase-[N]`.
 - **Interactions** — items that might affect each other.
 - **Scope gaps** — things items assume but don't state, including system state, starting conditions, and referenced-but-undefined nouns. If the phase goal or scope mentions "the workspace," "the session," "the dashboard," "the default view," or any concept not defined in Phase 1 or this brief, ask what it is concretely.
 
-**Boundaries** B1 (tech), B2 (closed-scope), and B4 (no solutioning) still apply here. B3 (scope-sizing-deferral) does not — phase scope is already selected, so slicing questions are now in-scope.
+**Boundaries** B1 (tech), B2 (closed-scope), B4 (no solutioning), and B5 (source-read) still apply here. B3 (scope-sizing-deferral) does not — phase scope is already selected, so slicing questions are now in-scope. Resolve a scope gap by **asking the user**, not by reading source to answer it yourself — even for a "document the code" or refactor phase where the work lives in the codebase. A quick structural glance to ground a question is fine; enumerating the work list or verifying defects from source is B5 overreach and belongs to `mano stories`.
 
 **Demo-sketch checkpoint.** Before drafting the brief, write out the Exit Criteria as a concrete user-action sequence — open the app, what loads, what the user does, what happens next, what proves it worked. If that sequence requires nouns you cannot ground in either Phase 1 or this brief (e.g. "the workspace," "the default view," "the starting state"), surface them as scope-gap questions here. Do not draft the brief with hand-wavy placeholders for system state the implementer will have to invent.
 
@@ -253,7 +252,7 @@ Answer what's relevant, skip what isn't.
 
 If everything is clear, say so and move to 7c. Do not ask "still accurate?" — they've just seen the context.
 
-**7c — Draft the phase brief.** Present to user for confirmation. Once confirmed, move to finalisation.
+**7c — Draft the phase brief and finalise.** By this point the user has already approved the phase scope (Step 6) and answered every 7b clarification, so the brief is a rendering of decisions already made — do not pause for a separate "are you happy with the draft?" confirmation. Draft the brief, write it to the file, mark the approved items `in-phase-[N]`, and move to finalisation in the same turn. Show the brief (or its key sections) in the final response so the user sees it immediately; if anything is wrong they edit the file or re-run `mano start`. The phase-scope approval from Step 6 is the gate; the brief draft is not a second one.
 
 ## Phase brief output
 
@@ -335,13 +334,15 @@ Rules:
 ```markdown
 ### [Short title]
 - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
-- **Source:** Phase [N] / User idea / Review triage / Product brief
+- **Source:** Phase [N] / User idea / Review triage / Product brief   ← optional, omit if no meaningful source
 - **Context:**
   [Line 1 — what it is]
   [Line 2 — why it matters or key detail]
   [Line 3 — optional, any extra context]
 - **Status:** backlog
 ```
+
+`Type`, `Context`, and `Status` are required. **`Source` is optional** — it is provenance only and no skill reads it, so omit the line entirely when there is no meaningful source (e.g. a hand-added item). When a skill writes an item and the source is obvious (a review, a document), include it; never invent one to fill the field.
 
 **Type values:**
 - `bug` — something broken
@@ -433,6 +434,7 @@ This list is the negative restatement of rules defined in full elsewhere. Where 
 - Do not propose solutions, architecture, or decomposition shapes — see **Boundaries** B4.
 - Do not ask about tech, persistence, or implementation, or re-open closed scope — see **Boundaries** B1 and B2.
 - Do not ask scope-sizing or phase-selection questions during intake, or float a candidate decomposition before the backlog exists — see **Boundaries** B3.
+- Do not read source code to enumerate the work or verify defects — a structural glance to ground a question is fine, mining the codebase for the work list is not — see **Boundaries** B5.
 - Do not suggest, draft, or advance to a new phase while the latest phase is in progress — see **Current-phase completion gate**. Spotting defects does not license advancing.
 - Do not create optional artifacts during `mano start` (`project-rules.md`, `tech-spec.md`, `ux-flow.md`, `design-brief.md`, `design-preview.html`).
 - Do not write a phase brief, create a phase folder, create stories, or mark backlog items as `in-phase-[N]` before explicit human approval of the phase scope.

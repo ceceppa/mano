@@ -31,6 +31,8 @@ Note: `mano dev` is the one Mano command that produces code. Every other command
 
 If a platform skill named `mano` is not available, that is not an error. Continue by using the local `_mano/` files.
 
+The skill name uses a **hyphen, never a colon**: `mano import` → `mano-import` (read `_mano/skills/import.md`), not `mano:import`. The colon form is plugin-namespace syntax and matches no Mano skill. If a `mano <action>` seems unavailable, try the hyphenated `mano-<action>` before concluding it doesn't exist.
+
 Only use external/platform skills when the user explicitly invokes them or when a Mano hook asks whether to run one and the user confirms.
 
 ### Implementing a story

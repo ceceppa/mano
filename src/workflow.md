@@ -19,7 +19,9 @@ mano help [skill]     → Show what a skill does and when to use it.
 - **`mano review` → `mano review`** (`_mano/skills/review.md`): collect feedback, triage into the backlog, write the review log, close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run `mano review` instead.
 - **`mano dev` → the implementer** (`_mano/skills/dev.md` → `AGENTS.md` contract): implement the next pending story. It is **not** a dev server, build/run command, or editor launch. If you find yourself starting a server or opening the project in an editor, you have invoked the wrong skill.
 
-Every Mano skill's exact name is `mano-<action>` (`mano-review`, `mano-dev`, `mano-spec`, …). When a user types the spaced form of a colliding action (`mano review`, `mano dev`), resolve it to that **exact** Mano skill name — the same as if they had typed `mano-review` / `mano-dev` — never to a built-in that merely shares the bare keyword. The hyphenated name matches a Mano skill and no built-in, so it is the unambiguous target; the space is only a friendlier spelling of it. If a user re-issues a command in hyphenated form after a misfire, that is them forcing the exact match — honour it as the Mano skill.
+Every Mano skill's exact name is `mano-<action>` — **hyphen-separated**: `mano-import`, `mano-review`, `mano-dev`, `mano-spec`, …. When a user types the spaced form (`mano import`, `mano review`, `mano dev`), resolve it to that **exact hyphenated** skill name — the same as if they had typed `mano-import` / `mano-review` — never to a built-in that merely shares the bare keyword. The hyphenated name matches a Mano skill and no built-in, so it is the unambiguous target; the space is only a friendlier spelling of it.
+
+**The separator is a hyphen, never a colon.** Do not transform `mano <action>` into `mano:<action>` — the colon form is plugin-namespace syntax (`plugin:skill`) and matches no Mano skill; trying it wastes a turn and makes the command look unavailable. If a `mano <action>` command appears not to resolve, **try the hyphenated `mano-<action>` skill before concluding it is unavailable** — that is the canonical name, and the most common cause of a "skill not found" is having looked for the spaced or colon form instead of the hyphen. If a user re-issues a command in hyphenated form after a misfire, that is them forcing the exact match — honour it as the Mano skill.
 
 `mano dev` is **not** a planning action — it is the implementation entry point. It does not generate planning artifacts; it implements the next pending story by following the contract in `AGENTS.md`. See `skills/dev.md` (a thin pointer to that contract). The "Refuse code generation" rule below applies to the planning actions, not to `mano dev`.
 
@@ -67,7 +69,7 @@ Routing guide for rejected instructions:
 - Stories (breaking work into units) → "That's `mano stories`'s area — run `mano stories`"
 - Review (phase feedback, triage) → "That's `mano review`'s area — run `mano review`"
 
-## Intake Boundaries (B1–B4)
+## Intake Boundaries (B1–B5)
 
 Shared by the intake skills — `mano start` and `mano import` — that turn an idea or a document into backlog items. This is the **single source of truth** for what an intake skill may and may not ask, and when. Those skills reference these by name instead of restating them. If a skill step and this section ever disagree, this section wins.
 
@@ -103,6 +105,15 @@ Intake clarifies *what the product is*, not *what goes in Phase 1*. Phase sizing
 ### B4 — No solutioning (every step)
 
 Intake is planning. Do not propose architecture, decomposition shapes, libraries, or implementation approaches at any step — not in questions, not in findings, not in the brief or backlog.
+
+### B5 — Source-read boundary (every path, every step)
+
+Intake scopes from planning artifacts (backlog, previous brief, reviews) and the user's answers — not from the codebase. Do not read source code to enumerate the work or to verify defects.
+
+- **Forbidden:** reading source files, type/export indexes, or implementation to build the work inventory ("which exports lack docs", "which screens are missing a test"), to confirm a defect exists, or to diff current code against a desired state. That gap analysis is `mano stories`' job (decomposition) or the implementation's; producing it during intake pre-decides scope the human is supposed to set, and loads the expensive context planning is meant to avoid.
+- **Allowed (narrow):** a quick *structural* glance — directory layout, where a kind of file lives, whether a folder exists — solely to ground a scoping *question* you then ask the user. "Docs live in `packages/*/docs`, one page per export — should the phase be 'every public export has a doc page'?" is grounded-question territory. Enumerating the actual missing pages from the export list is not.
+- The test: are you reading to **ask a better question**, or to **answer it yourself from code**? The first is allowed and minimal; the second is the overreach. When in doubt, ask the user rather than open a source file.
+- This holds even for "document/refactor the code" phases where the code is the subject. The code being the subject makes it tempting to mine, not licensed to. Scope the intent with the user; let `mano stories` enumerate against source.
 
 These boundaries are also enforced negatively in each intake skill's **Forbidden** list, which points back here rather than restating the detail.
 

@@ -11,6 +11,8 @@ This skill writes stories a developer can pick up without a meeting and a non-te
 
 **This skill only writes story files. It never edits, creates, or fixes source code, runs builds, or modifies any file outside `_mano_output/phase-[N]/stories/` — even if the chat history suggests implementation was in progress or the user previously asked for code changes.**
 
+**This includes other Mano artifacts.** The phase brief, tech spec, UX flow, design brief, and project rules are *inputs* to `mano stories` — read-only. Never edit them, even when the user points out one is wrong. If the user says an input is stale, incorrect, or out of date (e.g. "that assumption in the brief is wrong"), that is a correction to *use* when generating stories and a thing to *flag*, not a license to edit the input. Apply the corrected understanding to the stories, and surface the staleness in your output so the owning skill (`mano start` for the brief, `mano spec` for the tech spec, etc.) can fix the source. Editing another skill's artifact is out of lane — it belongs to whoever owns that artifact, never to `mano stories`.
+
 ## Activation
 
 This skill activates when the user types `mano stories`. When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
@@ -261,7 +263,7 @@ Verify the filename matches this contract before writing any story file.
 
 Run these before writing any stories. Resolve each before moving on.
 
-**0⊘. No-implementation gate (hard stop).** Before any other step, confirm the only file-writing tools you will call this turn target `_mano_output/phase-[N]/stories/` or its README. If you find yourself about to Edit, Write, or run a shell command that modifies any source file, config, build script, or anything outside `_mano_output/phase-[N]/stories/`, **stop immediately**. That is not a `mano stories` action — it is an implementation action and belongs to a separate user-initiated turn. This applies even if the chat history shows implementation was the prior intent, even if a bug was just reported, and even if it seems efficient to combine. Write the bug story; do not fix the bug.
+**0⊘. No-implementation gate (hard stop).** Before any other step, confirm the only file-writing tools you will call this turn target `_mano_output/phase-[N]/stories/` or its README. If you find yourself about to Edit, Write, or run a shell command that modifies any source file, config, build script, **another Mano artifact (the phase brief, tech spec, UX flow, design brief, project rules)**, or anything else outside `_mano_output/phase-[N]/stories/`, **stop immediately**. That is not a `mano stories` action. For source code it is implementation; for another artifact it is out-of-lane editing that belongs to the skill that owns it. Either way, belongs to a separate user-initiated turn. This applies even if the chat history shows implementation was the prior intent, even if a bug was just reported, even if the user just told you an input artifact is wrong, and even if it seems efficient to combine. Write the bug story; do not fix the bug. Flag the stale brief; do not edit the brief.
 
 **0a. Overloaded screens.** If a UX flow screen handles more than two primary actions (excluding back/close/cancel/continue unless they perform mutation or branching), flag it before story generation.
 

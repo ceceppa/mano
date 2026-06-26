@@ -1,7 +1,7 @@
 {
   "name": "mano-plan",
   "version": "1.1.0",
-  "description": "Installer for Mano — a supervised, à la carte planning framework for coding agents.",
+  "description": "Installer for Mano — a fast planning loop for AI-assisted development: plan in small phases and validate each assumption before it becomes code, with the human in control at every step.",
   "bin": {
     "mano-plan": "bin/mano-plan.js"
   },

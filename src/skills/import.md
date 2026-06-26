@@ -20,12 +20,11 @@ This skill activates when the user types `mano import` (optionally with a path: 
 
 On activation:
 1. Create `_mano_output/` if it doesn't exist.
-2. If `AGENTS.md` doesn't exist in the project root, copy it from `_mano/templates/AGENTS.md`. This is the one allowed root-level scaffold write — it tells coding agents where Mano artifacts live.
-3. Read `_mano_output/backlog.md` if it already exists. If it does and already has items, this is not a fresh import — tell the user the backlog already exists and ask whether to merge new items from this document or stop. Do not silently overwrite or duplicate.
+2. Read `_mano_output/backlog.md` if it already exists. If it does and already has items, this is not a fresh import — tell the user the backlog already exists and ask whether to merge new items from this document or stop. Do not silently overwrite or duplicate.
 
 ## Boundaries
 
-Every question `mano import` asks is governed by **Intake Boundaries (B1–B4)** in `_mano/workflow.md` — the single source of truth shared with `mano start`. In short: B1 tech-boundary (ask *what*, never *how*; transcribe stated tech preferences verbatim into the backlog item context, never decide them), B2 closed-scope, B3 scope-sizing-deferral (never ask what goes in Phase 1 — phases do not exist yet at import time), B4 no solutioning. Read the full text before relying on the summary.
+Every question `mano import` asks is governed by **Intake Boundaries (B1–B5)** in `_mano/workflow.md` — the single source of truth shared with `mano start`. In short: B1 tech-boundary (ask *what*, never *how*; transcribe stated tech preferences verbatim into the backlog item context, never decide them), B2 closed-scope, B3 scope-sizing-deferral (never ask what goes in Phase 1 — phases do not exist yet at import time), B4 no solutioning, B5 source-read (decompose the document, not the codebase — do not read source to enumerate or verify work). Read the full text before relying on the summary.
 
 `mano import` never marks items `in-phase-[N]`, never drafts a brief, and never suggests phase scope. Phases do not exist at import time.
 
@@ -91,7 +90,22 @@ If the document clearly states durable product values (product feel, interaction
 
 Decompose the entire document into backlog items. Every feature, requirement, non-functional criterion, and success criterion. Preserve specific detail from the source — including any stated technical preference, transcribed verbatim into the relevant item's context per B1 (pass-through, not silence).
 
-Write all items to `_mano_output/backlog.md` with `Status: backlog`, using the **Item block format** defined in `mano start`'s Backlog format section. Preserve the required file structure (`# Backlog`, optional `## Core Product Principles`, `## Items`). Check for duplicates before adding.
+Write all items to `_mano_output/backlog.md` with `Status: backlog`. **Use exactly this item block format — do not invent fields.** No `ID`, no `Title`, no `Description`, no checkboxes, no numbering. The exact block is:
+
+```markdown
+### [Short title]
+- **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
+- **Source:** [document name]
+- **Context:**
+  [Line 1 — what it is]
+  [Line 2 — why it matters or key detail]
+  [Line 3 — optional, any extra context]
+- **Status:** backlog
+```
+
+`Type` values: `bug` (broken), `refinement` (works but could be better), `feature` (new capability), `tech-debt` (refactoring/infra), `test` (missing coverage), `spec-gap` (unclear tech spec), `rule-gap` (unclear project rule). For a document import, most items are `feature`. `Type`, `Context`, and `Status` are required. `Source` is optional provenance — since every item here comes from the document, set it to the document's name (e.g. `product-brief.md`). Max 5 lines of context per item.
+
+Preserve the required file structure in this order: `# Backlog`, then optional `## Core Product Principles`, then `## Items`, then the item blocks. Check for duplicates before adding. This format is shared with `mano start` (see its Backlog format section) — `mano start` reads these items later, so the field names must match exactly or it will misread them.
 
 ### Step 4 — Stop and hand off
 

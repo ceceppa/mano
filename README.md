@@ -1,12 +1,12 @@
 # Mano
 
-Mano is a lightweight context-discipline protocol for adaptive AI-assisted software planning.
+**Mano is a fast planning loop for AI-assisted development.**
 
-It helps developers use AI as a thinking partner while keeping humans in charge of scope, architecture, product tradeoffs, and implementation decisions.
+Plan in small phases and validate each assumption before it becomes code. You stay in control of the direction — correcting course at the brief, not after dozens of tasks have already shipped.
 
-Mano is built around a simple assumption: software projects rarely move in a straight line. User feedback, testing, technical discovery, and changing priorities invalidate early assumptions. The goal is not to generate a perfect upfront plan. The goal is to keep planning cheap to revise as understanding changes.
+Mano is built on a simple assumption: software projects rarely move in a straight line. Feedback, testing, and technical discovery invalidate early assumptions. So the goal isn't a perfect upfront plan — it's a tight loop where each small phase is scoped, reviewed, and corrected before the next one starts. You catch the wrong turn early, while it's still cheap to change.
 
-Mano does this by breaking work into small shippable phases, using only the context needed for the current phase, and keeping artifacts explicit, lightweight, and disposable when they stop being useful.
+Each phase breaks into self-contained stories an agent implements one at a time. On greenfield work this keeps the build loop focused — but the point throughout is that **you** approve the direction at every seam. Mano never hands the wheel to an agent that generates everything and asks once.
 
 > **Important:** Mano is not a compiled CLI tool, a deterministic software framework, or an autonomous planning system. It is a set of skills, templates, and instructions that rely entirely on your AI agent's context window. You, the human, are the ultimate enforcer of scope, context, and quality.
 

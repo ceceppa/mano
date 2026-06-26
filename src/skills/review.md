@@ -121,7 +121,20 @@ That is your complete response. DO NOT write files yet.
 **STEP 3 — Write to Files (One-Shot Execution)**
 
 When the user confirms (e.g., "close it", "yes"):
-1. Write ALL confirmed triaged items to `_mano_output/backlog.md` using the standard backlog item format. **Crucial Mapping Rule**: You must map the triage categories to exact `Type` values in the backlog:
+1. Write ALL confirmed triaged items to `_mano_output/backlog.md` using the standard backlog item format. **Use exactly these fields — do not invent `ID`, `Title`, or `Description` fields:**
+
+   ```markdown
+   ### [Short title]
+   - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
+   - **Source:** Phase [N] review
+   - **Context:**
+     [what it is; why it matters]
+   - **Status:** backlog
+   ```
+
+   (`Type`, `Context`, `Status` required; `Source` optional but meaningful here — these came from this phase's review, so keep `Phase [N] review`.)
+
+   **Crucial Mapping Rule**: map the triage categories to exact `Type` values:
    - 📋 Spec gaps → `Type: spec-gap`
    - 📏 Rule gaps → `Type: rule-gap`
    - 🐛 Defects → `Type: bug`
