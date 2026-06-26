@@ -2,6 +2,11 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.1.1 — June 26, 2026
+
+### Fixed
+- **Install no longer overwrites or silently skips existing bootstrap files** — `AGENTS.md`, `CLAUDE.md`, and `.cursorrules` previously were written only if absent and skipped entirely if present, so installing into a project that already had an `AGENTS.md` never added Mano's instructions. The installer now fences Mano's content in `<!-- MANO:BEGIN -->` / `<!-- MANO:END -->` markers and: writes the file if it doesn't exist, **appends** the Mano section if the file exists without one (preserving your content), **skips** if a Mano section is already present (idempotent re-install), and with `--force` replaces only the fenced Mano block rather than the whole file.
+
 ## 1.1.0 — June 26, 2026
 
 ### Added

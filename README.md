@@ -1,5 +1,7 @@
 # Mano
 
+![Mano — a fast planning loop for AI-assisted development](https://raw.githubusercontent.com/ceceppa/mano/main/mano.jpg)
+
 **Mano is a fast planning loop for AI-assisted development.**
 
 Plan in small phases and validate each assumption before it becomes code. You stay in control of the direction — correcting course at the brief, not after dozens of tasks have already shipped.

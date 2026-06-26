@@ -91,6 +91,59 @@ function copyFile(src, dest, force) {
   return "written";
 }
 
+// Markers that fence Mano's content inside a host bootstrap file (AGENTS.md,
+// CLAUDE.md, .cursorrules). HTML comments are invisible in rendered markdown
+// and harmless as plain text, so they work across all three formats.
+const MANO_BEGIN = "<!-- MANO:BEGIN -->";
+const MANO_END = "<!-- MANO:END -->";
+
+// Install a bootstrap file that may collide with an existing project file.
+// Returns one of:
+//   "written"   target didn't exist — wrote Mano's content (fenced)
+//   "appended"  target existed without a Mano section — appended one
+//   "replaced"  target had a Mano section and --force — replaced just that section
+//   "present"   target already has a Mano section, no --force — left untouched
+function installBootstrapFile(src, dest, force) {
+  const manoBody = fs.readFileSync(src, "utf8").replace(/\s+$/, "");
+  const block = `${MANO_BEGIN}\n${manoBody}\n${MANO_END}\n`;
+
+  if (!fs.existsSync(dest)) {
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, block);
+    return "written";
+  }
+
+  const existing = fs.readFileSync(dest, "utf8");
+  const begin = existing.indexOf(MANO_BEGIN);
+  const end = existing.indexOf(MANO_END);
+  const hasSection = begin !== -1 && end !== -1 && end > begin;
+
+  if (hasSection) {
+    if (!force) return "present";
+    // Replace only the fenced region, preserving everything around it.
+    const before = existing.slice(0, begin);
+    const after = existing.slice(end + MANO_END.length);
+    const next = before.replace(/\s+$/, "") + (before.trim() ? "\n\n" : "") + block + after.replace(/^\s+/, "");
+    fs.writeFileSync(dest, next);
+    return "replaced";
+  }
+
+  // Existing file, no Mano section — append one, separated by a blank line.
+  const sep = existing.endsWith("\n") ? "\n" : "\n\n";
+  fs.writeFileSync(dest, existing.replace(/\s+$/, "") + "\n" + sep + block);
+  return "appended";
+}
+
+function bootstrapStatusLabel(result) {
+  switch (result) {
+    case "written": return "written";
+    case "appended": return "appended Mano section (existing file preserved)";
+    case "replaced": return "Mano section replaced";
+    case "present": return "skipped (Mano section already present)";
+    default: return result;
+  }
+}
+
 // Recursively copy a directory. Returns { written, skipped } counts.
 function copyDir(srcDir, destDir, force) {
   let written = 0;
@@ -141,10 +194,12 @@ async function install(args) {
   }
   log(`  _mano/        ${totalWritten} file(s) written` + (totalSkipped ? `, ${totalSkipped} skipped (already present)` : ""));
 
-  // 2. AGENTS.md at root (always). Source lives in bootstrap/.
+  // 2. AGENTS.md at root (always). Source lives in bootstrap/. If the project
+  // already has an AGENTS.md, append Mano's section rather than overwriting; if
+  // a Mano section is already there, leave it untouched (idempotent re-install).
   const agentsSrc = path.join(SRC, "bootstrap", "AGENTS.md");
-  const agentsResult = copyFile(agentsSrc, path.join(CWD, "AGENTS.md"), args.force);
-  log(`  AGENTS.md     ${agentsResult === "written" ? "written" : "skipped (already present — left untouched)"}`);
+  const agentsResult = installBootstrapFile(agentsSrc, path.join(CWD, "AGENTS.md"), args.force);
+  log(`  AGENTS.md     ${bootstrapStatusLabel(agentsResult)}`);
 
   // 3. Optional root files. Source name (in bootstrap/) -> destination name (in project root).
   // Note `cursorrules` -> `.cursorrules`: the dot is added at the destination.
@@ -172,8 +227,8 @@ async function install(args) {
       log(`  ${opt.dest}  skipped`);
       continue;
     }
-    const r = copyFile(src, path.join(CWD, opt.dest), args.force);
-    log(`  ${opt.dest}  ${r === "written" ? "written" : "skipped (already present — left untouched)"}`);
+    const r = installBootstrapFile(src, path.join(CWD, opt.dest), args.force);
+    log(`  ${opt.dest}  ${bootstrapStatusLabel(r)}`);
   }
   if (rl) rl.close();
 
