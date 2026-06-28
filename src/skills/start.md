@@ -15,37 +15,17 @@ This skill activates when the user types `mano start`.
 
 On activation:
 1. Create `_mano_output/` folder if it doesn't exist.
-2. Scan `_mano_output/` to determine state — check for existing backlog, phase folders, briefs, **stories, and `reviews.md`**. Identify the highest-numbered phase folder `phase-[N]`.
-3. **Run the Current-phase completion gate (below) before deciding the path.** Only if the latest phase is complete (or no phase exists yet) may you treat this as "returning for a new phase." When returning, read `_mano_output/phase-[N]/phase-brief.md`, `_mano_output/backlog.md` (filtered to `Status: backlog` items plus any `## Core Product Principles` section), and `_mano_output/reviews.md` for latest review insights. Then go straight to Step 6 — do not greet conversationally.
+2. **Run the state script and obey its decision — do not scan `_mano_output/` yourself:**
+   ```
+   node _mano/scripts/state.js --scope
+   ```
+   - `DECISION: STOP` → you can't scope a phase now. Relay the script's one-line reason (prefixed `[mano start]:`) and stop. Don't re-derive or re-explain it — for the full picture, run `node _mano/scripts/state.js --verbose`. You may note any artifact defect you happened to spot, but it never licenses advancing.
+   - `DECISION: PROCEED` → act on `NEXT:`:
+     - `scope-backlog` → **Path A.** The script prints a `SCOPE INPUT` block — the `Status: backlog` items, core product principles, and latest review. That is everything you need; go straight to Step 6 using it. **Do not open any file under `_mano_output/`** (no `backlog.md`, no `reviews.md`, and especially not the finished phase's folder — it's shipped). Don't greet conversationally.
+     - `conversation` → **Path B** (new project).
+     - `resume-draft` → a previous run left a phase folder without a brief; finish drafting that phase, don't start a new one.
 
-## Current-phase completion gate
-
-`mano start` scopes the **next** phase. It must not suggest, draft, or advance to a new phase while the latest phase is still in progress. Before any Path-A / Step-6 behaviour, evaluate the highest-numbered phase folder `phase-[N]`:
-
-A phase is **complete** only if its work has shipped and been closed. Concretely, ALL of these must hold:
-- `_mano_output/phase-[N]/phase-brief.md` exists, AND
-- the phase's stories exist and are all done (the `_mano_output/phase-[N]/stories/` folder and its `README.md` index are present and the index shows no open work), AND
-- the phase was reviewed and closed — its backlog items have moved off `in-phase-[N]` to `Status: resolved` (and/or `reviews.md` records the phase as closed).
-
-If the latest phase folder exists but these do NOT all hold, the phase is **in progress**. Do not go to Step 6. Do not suggest a next phase. Do not re-draft the brief. Instead, state plainly what is incomplete and stop:
-
-```
-[mano start]: Phase [N] isn't complete yet — `mano start` scopes the next phase, so there's nothing for me to do here.
-
-Outstanding for Phase [N]:
-- [e.g. no stories created — run `mano stories`]
-- [e.g. stories not all done]
-- [e.g. phase not reviewed — items still marked in-phase-[N], no entry in reviews.md]
-
-Finish Phase [N] first, then run `mano start` again to scope Phase [N+1].
-```
-
-It is fine — and useful — to also note any structural defects you spotted in the Phase [N] artifacts (principle drift, unsliced items, unflagged foundation conflicts) so they can be fixed. But spotting defects never licenses advancing to the next phase: report them, then stop at the gate.
-
-Edge cases:
-- No `_mano_output/` or no phase folder at all → not "returning"; this is a new project. Follow Path B (conversation). If the user has a PRD/document, point them to `mano import` first, then Path A.
-- A phase folder exists but is empty / has no `phase-brief.md` → the previous `mano start` didn't finalise; resume drafting that phase, do not start a new one.
-- User explicitly says the phase is abandoned/cancelled, or explicitly instructs you to scope the next phase anyway → honour the explicit instruction, but state that you're proceeding past an incomplete phase at their request.
+   **Override:** an explicit user instruction ("the phase is abandoned", "scope the next phase anyway") beats a `STOP` — honour it, stating you're proceeding past an incomplete phase at their request. **No Node / script missing?** Detect state by reading `_mano_output/` per the state-detection rules in `_mano/workflow.md`.
 
 For a new project:
 
@@ -60,9 +40,8 @@ Provide detail to minimize clarifying queries.
 
 ## Inputs
 
-- Previous phase brief (if returning for a new phase)
-- `_mano_output/backlog.md` if it exists, including optional `## Core Product Principles`
-- `_mano_output/reviews.md` if returning — read the latest review for insights and lessons
+- The state script's `SCOPE INPUT` block (Path A) — it carries the `Status: backlog` items, `## Core Product Principles`, and latest review, so you never open `backlog.md` / `reviews.md` to scope
+- `_mano_output/backlog.md` — owned here: created on Path B and stamped at Step 7; on Path A you write to it but don't read it to scope
 - `_mano_output/project-rules.md` only if it already exists and is explicitly relevant to scoping
 - PRD or reference document if provided by the user
 
@@ -101,7 +80,7 @@ Every `mano start` follows the same pattern: understand the input → populate t
 
 ### Path A — Returning for a new phase (latest phase complete, backlog has items)
 
-Only valid if the **Current-phase completion gate** passed — i.e. the latest phase shipped and closed. A populated backlog alone does NOT mean the previous phase is done; items marked `in-phase-[N]` are evidence the phase is still open, not finished. If the gate did not pass, do not enter Path A.
+Only valid when the script's verdict is `READY_FIRST_PHASE` or `READY_NEXT_PHASE` — i.e. the latest phase shipped and closed, or none exists yet. A populated backlog alone does NOT mean the previous phase is done; items marked `in-phase-[N]` are evidence the phase is still open, not finished. For any in-progress or not-closed verdict, do not enter Path A.
 
 Skip intake. Go straight to Step 6.
 
@@ -145,9 +124,9 @@ Then proceed to Step 6.
 
 ### Step 6 — Suggest phase scope (both intake paths converge here)
 
-**Precondition: the Current-phase completion gate must have passed.** If a phase folder exists and its phase is in progress, you must not be here — return to the gate and stop. Never suggest a next phase while the latest phase is unfinished, even if you noticed defects in its artifacts.
+**Precondition: the state script returned `DECISION: PROCEED`.** If a phase folder exists and its phase is in progress, you must not be here — the script's `STOP` is binding, so relay it and stop. Never suggest a next phase while the latest phase is unfinished, even if you noticed defects in its artifacts.
 
-Read the backlog. Estimate complexity of each item based on its context.
+Work from the state script's `SCOPE INPUT` block (the `Status: backlog` items, `## Core Product Principles`, and latest review) — it's already in context from activation, so don't reopen `backlog.md`, `reviews.md`, or the completed phase's folder. Estimate complexity of each item based on its context.
 
 **Hard constraint: one testable layer per phase.** A phase should deliver one cohesive slice that can be verified independently. If the suggestion includes both a backend AND a frontend, it's too big — pick one. If it includes a feature AND all its prerequisites as separate items, collapse them into the feature. Ask: "can someone test this phase's output without building the next phase first?" If no, the scope is wrong.
 
@@ -203,7 +182,7 @@ Run only after explicit human approval of the phase scope.
    Context: [2-3 lines from the backlog item]
 ```
 
-If `reviews.md` has relevant insights, surface them — max 2-3 bullets, only ones with a clear connection to the selected items. Skip the block entirely if no review insight clearly applies.
+If the latest review (in the `SCOPE INPUT` block) has relevant insights, surface them — max 2-3 bullets, only ones with a clear connection to the selected items. Skip the block entirely if no review insight clearly applies.
 
 ```
 Worth noting from previous reviews:
@@ -435,7 +414,7 @@ This list is the negative restatement of rules defined in full elsewhere. Where 
 - Do not ask about tech, persistence, or implementation, or re-open closed scope — see **Boundaries** B1 and B2.
 - Do not ask scope-sizing or phase-selection questions during intake, or float a candidate decomposition before the backlog exists — see **Boundaries** B3.
 - Do not read source code to enumerate the work or verify defects — a structural glance to ground a question is fine, mining the codebase for the work list is not — see **Boundaries** B5.
-- Do not suggest, draft, or advance to a new phase while the latest phase is in progress — see **Current-phase completion gate**. Spotting defects does not license advancing.
+- Do not suggest, draft, or advance to a new phase while the latest phase is in progress — the state script's `DECISION: STOP` is binding. Spotting defects does not license advancing.
 - Do not create optional artifacts during `mano start` (`project-rules.md`, `tech-spec.md`, `ux-flow.md`, `design-brief.md`, `design-preview.html`).
 - Do not write a phase brief, create a phase folder, create stories, or mark backlog items as `in-phase-[N]` before explicit human approval of the phase scope.
 - Do not put implementation tokens in the phase brief — specific hex values, pixel sizes, animation durations, function signatures, API contracts, file paths, or data-model decisions (schema fields, column names, storage shape). Applies everywhere in the brief, including the Assumption Log and Acknowledged Risks. Express the *constraint or intent*, not the *mechanism*. (This is the brief-output face of B1.) **Sole exemption:** the `## Stated Technical Preferences` pass-through block, which is a verbatim quoted record of a directive the user themselves stated — not `mano start` introducing or deciding tech. The exemption covers only verbatim transcription there; everywhere else, including paraphrasing those preferences into other sections, remains forbidden.

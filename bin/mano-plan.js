@@ -33,7 +33,7 @@ const SRC = path.join(PKG_ROOT, "src");
 const CWD = process.cwd();
 
 // What lands inside ./_mano/ (read from src/)
-const MANO_DIRS = ["skills", "templates", "hooks"];
+const MANO_DIRS = ["skills", "templates", "hooks", "scripts"];
 const MANO_FILES = ["workflow.md"];
 
 function log(msg) {
