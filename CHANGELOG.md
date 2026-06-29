@@ -2,6 +2,12 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.1.2 — June 29, 2026
+
+### Added
+- **`LICENSE` (MIT)** — the package already declared `"license": "MIT"` but shipped no license text. npm always includes a `LICENSE` file in the tarball, so the published package now carries the full license. No functional change to `npx mano-plan install`.
+- **`CONTRIBUTING.md`** — a contributor guide covering what Mano is (skills-as-prompts, no runtime engine), the bar a change must clear (lower the human's cost per decision, keep the human in the loop, be backed by a real incident, stay un-opinionated and stack-agnostic), the repo layout, and the eval/shrink-a-persona workflow. GitHub-facing; not shipped in the npm tarball.
+
 ## 1.1.1 — June 26, 2026
 
 ### Fixed
