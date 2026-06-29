@@ -33,6 +33,13 @@
 -
 -
 
+## Not This Phase
+
+<!-- The negative of Phase Scope: capabilities the selected items imply but this phase does NOT ship, slices deferred during scoping, and adjacent work a reader would assume is included. One behaviour-level line each — what is excluded, not how. Keeps the implementer and `mano stories` from widening the phase by inference. Omit only when nothing was deferred or excluded. -->
+
+-
+-
+
 ## Exit Criteria
 
 <!-- What a real person can do when this phase is done. -->

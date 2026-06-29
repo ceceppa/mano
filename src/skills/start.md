@@ -14,8 +14,7 @@ This skill scopes the project and the next phase. Prefix every message with `[ma
 This skill activates when the user types `mano start`.
 
 On activation:
-1. Create `_mano_output/` folder if it doesn't exist.
-2. **Run the state script and obey its decision — do not scan `_mano_output/` yourself:**
+1. **Run the state script and obey its decision — do not scan `_mano_output/` yourself** (don't `ls` the phase folders or stat the dir; the script reports the state you need). Don't create `_mano_output/` here — it's made when the phase actually starts (the first backlog write, or the phase folder at finalisation):
    ```
    node _mano/scripts/state.js --scope
    ```
@@ -114,7 +113,13 @@ Also detect durable product principles from the user's input when clearly presen
 
 #### Step 5 — Populate the backlog
 
-Decompose everything discussed into backlog items using the Backlog item format below. Every feature, requirement, and non-functional criterion gets written with `Status: backlog`. Preserve specific detail — don't summarise away.
+Decompose everything discussed into backlog items — every feature, requirement, and non-functional criterion, all `Status: backlog`. Preserve specific detail; don't summarise away. Then write them in one call via the script, which owns the format and creates the file: produce a JSON array of `{ "title", "type", "context", "source"? }` objects, write it to a temp file (e.g. `_mano_output/.add.json`), and run
+
+```
+node _mano/scripts/backlog.js add --file _mano_output/.add.json
+```
+
+then delete the temp file. Don't hand-write `### ` blocks. (For just one or two items, the flag form — `backlog.js add --title "..." --type ... --context "..."` — is simpler.)
 
 Then proceed to Step 6.
 
@@ -237,6 +242,8 @@ If everything is clear, say so and move to 7c. Do not ask "still accurate?" — 
 
 Each phase brief carries everything needed to understand the phase. No external files required.
 
+**Write the brief from the structure below — never by reading a previous phase's `phase-brief.md`.** Completed briefs are shipped history; the full structure you need is specified right here (use `_mano/templates/phase-brief.md` if you want a blank scaffold). Reaching for the last phase's brief is the exact over-read to avoid.
+
 **Only include sections that add something the others don't already say.** For correction and bug-fix phases, Vision, Design principle, and Phase goal often say the same thing in different words — merge or omit rather than fill each section redundantly. An empty or repetitive section makes the brief harder to read, not more complete.
 
 - **Why this phase** — one or two sentences. Do not reference previous phases or treat this as a changelog.
@@ -248,6 +255,8 @@ Each phase brief carries everything needed to understand the phase. No external 
 
   Good: *Card visual polish to match design-brief targets (border, hover shadow, status dot, drag highlight).*
   Bad: *Card visual polish: 1px Slate Grey border, 8px shadow at 20%, 6px Leaf Green status dot, pale blue drag highlight.*
+
+- **Not this phase** — the negative of Phase scope: capabilities the selected items' titles imply but this phase does **not** ship, slices deferred during the Slice check (Step 7b), and adjacent work a reader would reasonably assume is included. One behaviour-level line each (B1 applies — say *what* is excluded, not how). This exists so the implementer and `mano stories` don't widen the phase by inference. Omit only when genuinely nothing was deferred or excluded — rare once any item was split.
 
 - **Exit criteria** — concrete sequence of user actions that proves the phase landed end-to-end. Never use arrows (→). Numbered top-level categories; action sub-bullets using a colon to separate action from result. Single result: keep inline after the colon. Multiple distinct results: break into a third level. Three levels maximum. Example:
 
@@ -348,10 +357,13 @@ Rules:
 A backlog item is `in-phase-[N]` only if **everything in its title and context** ships in that phase. If the approved phase covers only part of an item — a narrower version, fewer capabilities, a subset of what the title promises — you MUST split it before finalising. Do not mark a broad item `in-phase-[N]` when the phase delivers a slice of it.
 
 To split:
-1. Rewrite the original item so its title and context describe **only** the slice entering this phase, then mark it `Status: in-phase-[N]`. The title must not name capabilities that are not in this phase.
-2. Create a new item for the deferred remainder, with a title and context describing only the not-yet-built part, `Status: backlog`. Cross-reference it in one line (e.g. "Extends the Phase [N] X once shipped").
+1. Rewrite the original item in `backlog.md` so its title and context describe **only** the slice entering this phase — a direct hand-edit (the one place you edit `backlog.md` by hand instead of through the script). Leave its `Status: backlog`; Finalisation step 4's `assign` stamps it. The title must not name capabilities that are not in this phase.
+2. Add a new item for the deferred remainder via the script — title and context describing only the not-yet-built part — cross-referencing it in one line (e.g. "Extends the Phase [N] X once shipped"):
+   ```
+   node _mano/scripts/backlog.js add --title "..." --type [type] --context "..."
+   ```
 
-This is the one case where editing an existing item's title and context is required rather than append-only. Splitting is not removal — both halves remain traceable.
+Splitting is the one case where editing an existing item's title and context is required rather than append-only. It is not removal — both halves remain traceable.
 
 **Self-check before finalising:** for every item you are about to mark `in-phase-[N]`, read its title and context out loud against the Phase Scope. If the item names or describes anything not in Phase Scope, it is not split correctly — split it.
 
@@ -365,14 +377,24 @@ This is the one case where editing an existing item's title and context is requi
 - **`mano rules`** may only mark explicitly provided `rule-gap` items as resolved after updating project rules
 - No other skill may write to the backlog
 
+Item additions and `backlog → in-phase-[N]` stamps go through `_mano/scripts/backlog.js` (`add` / `assign`), which owns the item format so every writer produces the same shape. The only direct hand-edits to `backlog.md` are the `## Core Product Principles` section and an item's title/context when splitting.
+
 ## Finalisation
 
 Only finalise after explicit human approval of the phase scope.
 
-1. Create `_mano_output/phase-[N]/` subfolder.
-2. Write final `phase-brief.md`, including relevant core product principles from the backlog if they affect this phase.
-3. **Write ALL deferred items to `_mano_output/backlog.md`.** Everything mentioned as "later", "Phase 2", "deferred", or "not in this phase" during scoping MUST be written to the backlog. No exceptions.
-4. **Update status in backlog:** Read `_mano_output/backlog.md` and update the `Status` of only the human-approved items from `backlog` to `in-phase-[N]`. Do not mark candidate items as in-phase before approval.
+1. Create `_mano_output/phase-[N]/` — `[N]` is the `PHASE:` number the state script printed at activation. **Don't `ls` the output dir to re-derive it**; the script already told you.
+2. **Fill the blank scaffold — do not open a sibling brief.** Copy `_mano/templates/phase-brief.md` into `_mano_output/phase-[N]/phase-brief.md` and fill each section per the **Phase brief output** structure above, drawing content only from the `SCOPE INPUT` block and the 7b answers (include only the core product principles that affect this phase). The previous phase's `phase-[N-1]/phase-brief.md` **exists, and opening it is a trap**: it carries *that* phase's goal, scope, and "Not this phase" lines, and reading it to "see the shape" drags that stale scope into this brief. The blank template is the only shape you need. Don't `ls` the output dir hunting for a prior brief to model, and don't re-derive the phase number — the state script already reported the phase state and `PHASE: [N]`, and `phase-[N]/` (created in step 1) is the only folder this step writes to.
+3. **Write ALL deferred items to the backlog via the script** — don't hand-write `### ` blocks into `backlog.md`. Everything mentioned as "later", "Phase 2", "deferred", or "not in this phase" during scoping MUST be added. One shell-safe call per item:
+   ```
+   node _mano/scripts/backlog.js add --title "..." --type feature --context "what it is\nwhy it matters"
+   ```
+   Use `\n` in `--context` for line breaks (max 5), and `--source` when there's an obvious one. The script owns the item format and skips a title that already exists. (Many at once: write them as a JSON array to a temp file and run `backlog.js add --file <path>`.)
+4. **Stamp approved items to this phase via the script** — don't edit `backlog.md` by hand:
+   ```
+   node _mano/scripts/backlog.js assign --phase [N] --title "Exact item title"
+   ```
+   One `--title` per human-approved item. The script flips only items currently `Status: backlog` and reports any it can't match (wrong title, or already moved). If an approved item covers only a *slice* of a backlog item, split it (see **Splitting an item**) before assigning. Never mark candidate items in-phase before approval.
 5. Suggest next actions based on which useful artifacts are still missing. Check which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist in `_mano_output/`. Then emit a next-action block that:
    - Lists only artifacts that don't exist yet (skipping ones that are already present)
    - Ends with a clear **recommended next step** — whichever single action is most likely to unblock implementation. Default recommendation is `mano stories` when the phase is self-contained (pure visual, pure refactor, or the brief already captures the full behaviour contract). Default to `mano spec` first when the phase introduces new data, new APIs, new external dependencies, or new integration points.
