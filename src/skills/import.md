@@ -112,7 +112,7 @@ Preserve the required file structure in this order: `# Backlog`, then optional `
 The backlog is the deliverable. Do not scope a phase, draft a brief, or suggest what ships first. Output the execution log:
 
 ```
-[mano import]: mano import — backlog.md
+[mano import]: mano import — _mano_output/backlog.md
 - [N] items decomposed from [document name]
 - Core Product Principles captured: [yes / none found]
 ⚠ Verify: [any assumption or unresolved ambiguity worth checking — omit if none]

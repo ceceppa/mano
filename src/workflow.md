@@ -445,6 +445,7 @@ Next:
 
 Rules:
 - Header is one line: who, which command, which file(s). Nothing else.
+- **Reference every touched file by its path relative to the project root** — `_mano_output/phase-3/stories/README.md`, `_mano_output/tech-spec.md` — never a bare filename or just a directory. Editors and agent UIs turn a workspace-relative path into a tap-to-open link (the same way `spec-kit` does); a bare name isn't resolvable, so it isn't clickable. Where a host doesn't linkify, it still degrades to a readable path. When a log lists many files (e.g. one per story), give each its own full relative path so each line is independently tappable — do not print the shared directory once and bare names under it.
 - Bullets carry only substantive content (key decisions, screens/categories changed, stories inserted, palette). Never process narration.
 - `⚠ Verify:` appears only when the artifact embeds an assumption, a hardcoded placeholder, or a material change the user did not explicitly ask for (e.g. a backported decision). Omit the line entirely when there is nothing to flag. This applies to every skill, not just spec — if an artifact contains a `Note`/assumption worth checking, surface it here.
 - `Next:` keeps the existing next-action options; it is not boilerplate and stays.

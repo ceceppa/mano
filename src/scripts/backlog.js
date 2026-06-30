@@ -19,11 +19,13 @@
  * Commands:
  *   add      append item(s) under `## Items`
  *   assign   move approved items from `Status: backlog` to `in-phase-<N>`
+ *   resolve  mano review's close sweep: `in-phase-<N>` -> `resolved` (whole phase)
  *
  * Usage:
  *   node backlog.js add --title "X" --type feature --context "..." [--source "..."]
  *   node backlog.js add --file items.json        (JSON array, for bulk)
  *   node backlog.js assign --phase 9 --title "X" --title "Y"
+ *   node backlog.js resolve --phase 9
  *   node backlog.js --help
  *
  * The `add` input is a single item from flags (the shell-safe path — no JSON to
@@ -46,6 +48,7 @@ const HELP = `mano backlog — deterministic writer for _mano_output/backlog.md
 Commands:
   add      append item(s) under '## Items'
   assign   move approved items from 'Status: backlog' to 'in-phase-<N>'
+  resolve  mano review's close sweep: flip every 'in-phase-<N>' to 'resolved'
 
 add — one item from flags (the shell-safe path):
   --title "..."     required
@@ -62,6 +65,13 @@ assign:
   --phase N         the phase the approved items enter (required)
   --title "..."     one per approved item, repeatable
   Flips only items currently 'Status: backlog'; reports anything it can't.
+
+resolve:
+  --phase N         the phase being closed (required)
+  Flips every item currently 'Status: in-phase-<N>' to 'resolved'. Not
+  title-scoped — it sweeps the whole phase. Matches only 'in-phase-<N>', so
+  items still 'Status: backlog' (e.g. this review's freshly triaged items) are
+  never touched.
 
 A trailing positional argument = project root (default: current dir).
 
@@ -286,6 +296,43 @@ function cmdAssign(args) {
   }
 }
 
+// ---- resolve --------------------------------------------------------------
+
+// mano review's close sweep and the twin of assign: flip every item currently
+// `Status: in-phase-<N>` to `Status: resolved`. It matches only in-phase-<N>,
+// so freshly-added `Status: backlog` items (the items review triaged this same
+// turn) are never touched. Not title-scoped — it sweeps the whole phase.
+function cmdResolve(args) {
+  if (args.phase == null || !/^\d+$/.test(String(args.phase))) {
+    fail("resolve needs --phase <N> (an integer).");
+  }
+  const phase = Number(args.phase);
+  const want = `in-phase-${phase}`;
+
+  const file = backlogPath(args.root);
+  const text = readText(file);
+  if (text == null) fail(`resolve: no backlog at ${file}.`);
+
+  const lines = text.split("\n");
+  let curTitle = null;
+  const flipped = [];
+  for (let i = 0; i < lines.length; i++) {
+    const h = /^###\s+(.+?)\s*$/.exec(lines[i]);
+    if (h) { curTitle = h[1].trim(); continue; }
+    if (/^##\s+/.test(lines[i])) { curTitle = null; continue; }
+    const m = /^(\s*-\s*\*\*Status:\*\*\s*)(.+?)\s*$/.exec(lines[i]);
+    if (m && m[2].trim().toLowerCase() === want) {
+      lines[i] = `${m[1]}resolved`;
+      flipped.push(curTitle || "(untitled)");
+    }
+  }
+
+  if (flipped.length) fs.writeFileSync(file, lines.join("\n"));
+  process.stdout.write(`[mano backlog] resolve → phase ${phase}: ${flipped.length} item(s) marked resolved\n`);
+  if (flipped.length === 0) process.stdout.write(`  (no items with Status: in-phase-${phase})\n`);
+  for (const t of flipped) process.stdout.write(`  + ${t}\n`);
+}
+
 // ---- main -----------------------------------------------------------------
 
 function main() {
@@ -296,7 +343,8 @@ function main() {
   }
   if (args.command === "add") cmdAdd(args);
   else if (args.command === "assign") cmdAssign(args);
-  else fail(`unknown command "${args.command}". Use add or assign (--help for usage).`);
+  else if (args.command === "resolve") cmdResolve(args);
+  else fail(`unknown command "${args.command}". Use add, assign, or resolve (--help for usage).`);
 }
 
 main();

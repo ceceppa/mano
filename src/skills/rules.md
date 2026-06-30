@@ -270,7 +270,7 @@ This step is required even when no rules update was needed. Mention it in the fi
 Use the canonical execution-log format defined in `_mano/workflow.md`:
 
 ```text
-[mano rules]: mano rules — project-rules.md
+[mano rules]: mano rules — _mano_output/project-rules.md
 - [category + what changed, a few words]
 - [category + what changed]
 ⚠ Verify: [material change the user did not explicitly ask for — omit if none]

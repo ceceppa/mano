@@ -134,7 +134,7 @@ Output a cold, structured execution log to the user indicating completion, point
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
 
 ```
-[mano ui]: mano ui — design-brief.md, design-preview.html
+[mano ui]: mano ui — _mano_output/design-brief.md, _mano_output/design-preview.html
 - Aesthetics: [brief summary of style/palette used or extended]
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 

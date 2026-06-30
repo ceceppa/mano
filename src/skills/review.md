@@ -121,7 +121,22 @@ That is your complete response. DO NOT write files yet.
 **STEP 3 — Write to Files (One-Shot Execution)**
 
 When the user confirms (e.g., "close it", "yes"):
-1. Write ALL confirmed triaged items to `_mano_output/backlog.md` using the standard backlog item format. **Use exactly these fields — do not invent `ID`, `Title`, or `Description` fields:**
+1. Write ALL confirmed triaged items to the backlog **via the writer — don't hand-write the item blocks.** **Map each triage category to its exact `Type` first** (this classification is the review's job; the script only takes the result):
+   - 📋 Spec gaps → `spec-gap`
+   - 📏 Rule gaps → `rule-gap`
+   - 🐛 Defects → `bug`
+   - 🔧 Refinements → `refinement`
+   - ✨ New ideas → `feature`
+
+   One item — shell-safe flags:
+   ```
+   node _mano/scripts/backlog.js add --title "[short title]" --type [type] --context "[what it is; why it matters]" --source "Phase [N] review"
+   ```
+   Several items — write a JSON array to a temp file with your file tool (no shell quoting), each element `{ "title", "type", "context", "source": "Phase [N] review" }`, and pass it:
+   ```
+   node _mano/scripts/backlog.js add --file [tmp].json
+   ```
+   The script owns the `### / **Type:** / **Context:** / **Status:**` shape, starts every item at `Status: backlog`, and skips any title already present — so you can't misname, invent, or duplicate a field. **No Node / script missing?** Hand-write each item in this format instead (and use exactly these fields — no `ID`/`Title`/`Description`):
 
    ```markdown
    ### [Short title]
@@ -131,16 +146,11 @@ When the user confirms (e.g., "close it", "yes"):
      [what it is; why it matters]
    - **Status:** backlog
    ```
-
-   (`Type`, `Context`, `Status` required; `Source` optional but meaningful here — these came from this phase's review, so keep `Phase [N] review`.)
-
-   **Crucial Mapping Rule**: map the triage categories to exact `Type` values:
-   - 📋 Spec gaps → `Type: spec-gap`
-   - 📏 Rule gaps → `Type: rule-gap`
-   - 🐛 Defects → `Type: bug`
-   - 🔧 Refinements → `Type: refinement`
-   - ✨ New ideas → `Type: feature`
-2. **Resolve shipped items.** Read `_mano_output/backlog.md` and update every item currently marked `Status: in-phase-[N]` (for the phase being closed) to `Status: resolved`. This is what makes the phase officially closed and satisfies `mano start`'s `mano start` completion gate on the next phase. Triaged items from STEP 2 are *separate* items — they were just written as `Status: backlog`, never touch their status here. The resolve sweep operates only on items that were already `in-phase-[N]` before this review began.
+2. **Resolve shipped items — via the writer's close sweep:**
+   ```
+   node _mano/scripts/backlog.js resolve --phase [N]
+   ```
+   It flips every item currently `Status: in-phase-[N]` to `resolved` — the whole phase in one call — which is what officially closes the phase and satisfies `mano start`'s completion gate on the next phase. It matches only `in-phase-[N]`, so the items you just triaged (still `Status: backlog`) are structurally safe — never touched. **No Node / script missing?** Read `_mano_output/backlog.md` and flip each `Status: in-phase-[N]` line to `resolved` by hand, leaving the fresh `backlog` items alone.
 3. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
 4. **Always append** the new review entry at the **bottom** of `_mano_output/reviews.md`. Never insert between existing entries.
 5. Fill the template sections concretely.
@@ -149,7 +159,7 @@ Output a cold execution log:
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
 
 ```
-[mano review]: mano review — backlog.md, reviews.md
+[mano review]: mano review — _mano_output/backlog.md, _mano_output/reviews.md
 - Triaged items inserted to backlog
 - Phase [N] items marked resolved
 - Phase [N] closed
@@ -215,13 +225,13 @@ That is your complete response. DO NOT write to files yet.
 
 When the user confirms (e.g., "close it", "yes"):
 1. Read `_mano_output/backlog.md`.
-2. Match resolved items to existing backlog items and update to `resolved`.
-3. Append any still open / new ideas to the backlog.
+2. Match resolved items to existing backlog items and flip each to `Status: resolved` by hand (these are specific `backlog` items now fixed — a title-scoped edit, not the `resolve --phase` sweep).
+3. Append any still open / new ideas to the backlog **via `node _mano/scripts/backlog.js add`** (same flags / `--file` as the standard STEP 3.1) — don't hand-write the blocks.
 4. **Do not create a new `## Phase [N] Follow-up Review` section.** Find the existing `## Phase [N] Review` entry in `_mano_output/reviews.md` and append an `### Addendum — [Date]` subsection directly under it (before the next `---` separator). Use the addendum structure from `_mano/templates/phase-review.md`.
 
 Output execution log (canonical format, see `_mano/workflow.md`):
 ```
-[mano review]: mano review (follow-up) — backlog.md, reviews.md
+[mano review]: mano review (follow-up) — _mano_output/backlog.md, _mano_output/reviews.md
 - Statuses updated in backlog
 - Addendum appended to Phase [N] review entry
 ```
@@ -239,15 +249,13 @@ That is your complete response.
 
 ## Post-Review Hook Suggestion
 
-After `mano review` completes, always check whether this file exists:
+After `mano review` completes, always check whether this exact file exists:
 
 `_mano/hooks/post-review.md`
 
-Ignore this file:
+Test for that one path directly (a targeted existence check, e.g. `test -f _mano/hooks/post-review.md`). Do **not** `ls` the hooks directory and reason about its contents: the directory always ships a `post-review.example.md` template, which is **not** an active hook, and listing-then-classifying is where it gets mistaken for one. Only the exact `post-review.md` (no `.example`) counts.
 
-`_mano/hooks/post-review.example.md`
-
-If an active `post-review.md` hook exists, prepare the generic hook block for the final chat response.
+If that active `post-review.md` hook exists, prepare the generic hook block for the final chat response.
 
 Do not run the hook automatically.
 

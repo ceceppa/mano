@@ -373,14 +373,16 @@ For each story:
 When all stories are written, output the execution log:
 
 ```
-[mano stories]: mano stories — phase-[N]/stories/ ([N] stories)
-- 0. [title] (story-0-[slug].md)   [only when a bootstrap story exists]
-- 1. [title] (story-1-[slug].md)
+[mano stories]: mano stories — _mano_output/phase-[N]/stories/ ([N] stories)
+- 0. [title] — _mano_output/phase-[N]/stories/story-0-[slug].md   [only when a bootstrap story exists]
+- 1. [title] — _mano_output/phase-[N]/stories/story-1-[slug].md
 - 2. ...
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 Status: Ready. Review files in editor.
 -> Implement: mano dev (implements the next pending story)
 ```
+
+Give each story its **full project-root-relative path** (as above), not a bare `story-N-[slug].md` — that is what makes each line tap-to-open in the editor. The path replaces the old parenthesised filename.
 
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor.
 

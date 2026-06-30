@@ -272,7 +272,7 @@ This step is required even when no spec update was needed. Mention it in the fin
 Use the canonical execution-log format defined in `_mano/workflow.md`:
 
 ```text
-[mano spec]: mano spec — tech-spec.md
+[mano spec]: mano spec — _mano_output/tech-spec.md
 - [key decision: major library, architecture, API, or data-model choice]
 - [key decision]
 ⚠ Verify: [any embedded assumption, hardcoded test layout, or placeholder the user should sanity-check — omit if none]

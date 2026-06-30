@@ -102,7 +102,7 @@ Output a cold, structured execution log to the user indicating completion, point
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
 
 ```
-[mano ux]: mano ux — ux-flow.md
+[mano ux]: mano ux — _mano_output/ux-flow.md
 - Screens/states updated: [list of screens or UX states added or modified]
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 
