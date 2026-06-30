@@ -22,6 +22,9 @@
  *   node state.js --scope         on a PROCEED to scope-backlog, also print the
  *                                 scope input (backlog items + principles +
  *                                 latest review) so the skill needn't reopen files
+ *   node state.js --next          for mano dev: the active phase + next pending
+ *                                 story (#, file) + ordered story list, so the
+ *                                 implementer needn't ls or reopen the index
  *   node state.js --json          machine-readable output
  *   node state.js --help
  *
@@ -33,25 +36,29 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 function parseArgs(argv) {
-  const args = { root: process.cwd(), json: false, verbose: false, scope: false, help: false };
+  const args = { root: process.cwd(), json: false, verbose: false, scope: false, next: false, help: false };
   for (const a of argv) {
     if (a === "--json") args.json = true;
     else if (a === "--verbose" || a === "-v") args.verbose = true;
     else if (a === "--scope") args.scope = true;
+    else if (a === "--next") args.next = true;
     else if (a === "--help" || a === "-h") args.help = true;
     else if (!a.startsWith("-")) args.root = path.resolve(a);
   }
   return args;
 }
 
-const HELP = `mano state — read-only projection of _mano_output/ for mano start
+const HELP = `mano state — read-only projection of _mano_output/ for mano start / mano dev
 
 Usage:
-  node state.js [projectRoot] [--scope] [--verbose] [--json]
+  node state.js [projectRoot] [--scope | --next] [--verbose] [--json]
 
   projectRoot   directory containing _mano_output/ (default: current dir)
   --scope       on a PROCEED to scope-backlog, also print the scope input —
                 the Status: backlog items, core principles, and latest review
+  --next        for mano dev: the active phase, the next pending story (its #
+                and file path) and the ordered story list, computed fresh from
+                disk so the implementer needn't ls or reopen the index
   --verbose     also print the evidence (phase, stories, reviewed, backlog)
   --json        emit the full structured state as JSON
 
@@ -94,13 +101,14 @@ function latestPhase(outputDir) {
 }
 
 // Stories index: | # | Story | File | Status |. A row counts as a story when
-// its first cell is an integer. Returns { total, done, openTitles } or null if
-// the index is absent.
+// its first cell is a story number — an integer or a sub-row like 3a. Returns
+// { total, done, openTitles, rows } or null if the index is absent. `rows` is
+// every story row in file order ({ num, title, file, status }) — the ordered
+// list mano dev needs to pick the next pending story and honour story order.
 function readStories(storiesReadme) {
   const text = readText(storiesReadme);
   if (text === null) return null;
-  let total = 0, done = 0;
-  const openTitles = [];
+  const rows = [];
   for (const line of text.split("\n")) {
     if (!line.includes("|")) continue;
     const cells = line.split("|").map((c) => c.trim());
@@ -108,13 +116,22 @@ function readStories(storiesReadme) {
     while (cells.length && cells[0] === "") cells.shift();
     while (cells.length && cells[cells.length - 1] === "") cells.pop();
     if (cells.length < 4) continue;
-    if (!/^\d+$/.test(cells[0])) continue; // header / separator / non-story row
-    total++;
-    const status = cells[cells.length - 1].toLowerCase();
-    if (status === "done") done++;
-    else openTitles.push(`${cells[0]} ${cells[1]} (${status || "—"})`);
+    if (!/^\d+[a-z]*$/i.test(cells[0])) continue; // header / separator / non-story row (allows sub-rows like 3a)
+    rows.push({
+      num: cells[0],
+      title: cells[1],
+      file: cells[2],
+      status: cells[cells.length - 1].toLowerCase(),
+    });
   }
-  return { total, done, openTitles };
+  let total = 0, done = 0;
+  const openTitles = [];
+  for (const r of rows) {
+    total++;
+    if (r.status === "done") done++;
+    else openTitles.push(`${r.num} ${r.title} (${r.status || "—"})`);
+  }
+  return { total, done, openTitles, rows };
 }
 
 // Backlog Status counts. Matches `- **Status:** <value>` exactly (the format
@@ -405,6 +422,57 @@ function renderScope(s) {
   return L.join("\n");
 }
 
+// The mano dev projection: what to implement right now, computed fresh from
+// disk. Surfaces the active phase, the FIRST pending story (in file order) with
+// its file path, and the ordered story list — so the implementer needn't ls for
+// the phase or reopen the index, and can't be fooled by a stale phase carried in
+// the chat. It only *reports* the next pending row; it never decides to skip an
+// earlier pending one (that bypass stays the user's call — AGENTS.md step 5).
+function renderNext(s) {
+  const L = [];
+
+  // Nothing to implement: no project / no phase folder.
+  if (!s.outputExists || s.phase === null) {
+    L.push("DEV: no phase started — nothing to implement.");
+    L.push("Run mano start to scope a phase (or mano import a doc to populate the backlog first). Do NOT invent work.");
+    return L.join("\n");
+  }
+  // Phase exists but isn't ready for dev — point at the skill that owns the gap.
+  if (!s.briefExists) {
+    L.push(`DEV: phase ${s.phase} draft is unfinished — no phase-brief.md. Finish mano start. Nothing for mano dev yet.`);
+    L.push(`PHASE: ${s.phase}`);
+    return L.join("\n");
+  }
+  if (!s.stories || s.stories.total === 0) {
+    L.push(`DEV: phase ${s.phase} has a brief but no stories yet — run mano stories. Nothing for mano dev yet.`);
+    L.push(`PHASE: ${s.phase}`);
+    return L.join("\n");
+  }
+
+  const next = s.stories.rows.find((r) => r.status !== "done") || null;
+  if (!next) {
+    L.push(`DEV: phase ${s.phase} — nothing to implement.`);
+    L.push(`PHASE: ${s.phase}`);
+    L.push(`All ${s.stories.total} stories are done. The phase is built but NOT closed — run mano review. Do NOT scope or start a new phase; that is the user's call.`);
+  } else {
+    L.push(`DEV: phase ${s.phase} — next pending story.`);
+    L.push(`PHASE: ${s.phase}`);
+    L.push(`STORY: ${next.num}`);
+    L.push(`FILE: _mano_output/phase-${s.phase}/stories/${next.file}`);
+    L.push("Read only that story file; implement its acceptance criteria only; then mark it done via stories.js set-status (AGENTS.md step 11).");
+  }
+
+  // The ordered list, so honouring story order (AGENTS.md steps 4-5) for a
+  // user-named story needs no index reopen. `→` marks the next pending row.
+  L.push("");
+  L.push("Stories (Status is the only signal; → = next pending):");
+  for (const r of s.stories.rows) {
+    const mark = next && r.num === next.num ? "→" : " ";
+    L.push(`${mark} ${r.num.padEnd(3)} ${r.status.padEnd(8)} ${r.title}`);
+  }
+  return L.join("\n");
+}
+
 function renderJson(s) {
   return JSON.stringify({
     projectRoot: s.projectRoot,
@@ -439,6 +507,9 @@ function main() {
   let out;
   if (args.json) {
     out = renderJson(s);
+  } else if (args.next) {
+    out = renderNext(s);
+    if (args.verbose) out += "\n\n" + renderEvidence(s);
   } else {
     out = renderDecision(s);
     if (args.scope && s.scope) out += "\n\n" + renderScope(s);

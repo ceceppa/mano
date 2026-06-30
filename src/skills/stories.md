@@ -73,7 +73,7 @@ Default format:
 [See guidance below.]
 
 ---
-<!-- ⚠️ When this story is implemented, update its status to `done` in the stories README.md index. -->
+<!-- ⚠️ When this story is implemented, mark it done via `stories.js set-status` (AGENTS.md step 11) — don't hand-edit the index. -->
 ```
 
 ### Implementation Reference
@@ -364,7 +364,11 @@ For each story:
 1. Short titles (max 6 words — scannable, not descriptive)
 2. If the phase needs foundational setup, create `story-0-[slug].md` first. Otherwise start at `story-1`
 3. Use the Story Filename Contract for every file. The slug is mandatory
-4. Create `_mano_output/phase-[N]/stories/README.md` if it doesn't exist, using the Index format below; update it after each story
+4. Register each story in the index via the writer — don't hand-write the README table:
+   ```
+   node _mano/scripts/stories.js add-row --phase [N] --story [num] --title "[title]" --file "story-[num]-[slug].md" --project "[project]"
+   ```
+   It creates `README.md` (Index format below) on the first call and inserts each row in number order; `--project` (from the brief title) is used only when the file is created. Rows start `pending`. **No Node / script missing?** Hand-write the index using the Index format below.
 
 When all stories are written, output the execution log:
 
@@ -381,6 +385,8 @@ Status: Ready. Review files in editor.
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor.
 
 ### Index format
+
+This is the shape `stories.js add-row` emits and `state.js` parses — it's a reference for the no-Node fallback, not a table to hand-write when the script is available.
 
 ```markdown
 # Stories — [Project Name] — Phase [N]
@@ -402,7 +408,10 @@ When the user reports something mid-build:
 
 1. Create a new story using sub-numbering based on the last completed story (e.g. `story-3a`, then `story-3b`). Sub-numbers attach to the most recently *completed* story, not to an upcoming one — even if the bug is about behaviour an upcoming story will introduce. Sub-numbering follows ship order, not scope order. Lettered insertions only block the subsequent number if explicitly marked as a blocker in story dependencies.
 2. Write the file as `_mano_output/phase-[N]/stories/story-[N][letter]-[slug].md`.
-3. Update the stories README index in the right position.
+3. Add it to the index via the writer — it splices the lettered row (`3a`) into the right position automatically:
+   ```
+   node _mano/scripts/stories.js add-row --phase [N] --story [N][letter] --title "[title]" --file "story-[N][letter]-[slug].md"
+   ```
 4. Output execution log:
 
 ```

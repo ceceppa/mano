@@ -13,9 +13,9 @@ This skill is a **pointer**, not a contract. The implementation contract is `AGE
 
 1. Read `AGENTS.md` → "Implementing a story" and follow it step by step.
 2. Implement only the selected story's acceptance criteria.
-3. Mark the story `done` in the stories README index.
+3. Mark the story `done` via `node _mano/scripts/stories.js set-status` (the exact call is `AGENTS.md` step 11) — don't hand-edit the index table.
 
-**Determine the active phase fresh from disk, not from the chat.** Re-scan `_mano_output/` and take the highest-numbered `phase-[N]/` folder as the active phase, even if the conversation already carries an earlier phase's context — a newer phase may have been added since. Trusting the loaded chat context here is the common way `mano dev` ends up reporting on a stale, already-closed phase instead of the open one. (AGENTS.md step 1 is authoritative.)
+**Determine the active phase and next story fresh from disk via `node _mano/scripts/state.js --next`, not from the chat** (AGENTS.md step 1 is authoritative). The script reads the filesystem this turn and reports the active phase + next pending story; a newer phase may have been added since the conversation's context was loaded. Trusting the loaded chat context here is the common way `mano dev` ends up reporting on a stale, already-closed phase instead of the open one.
 
 ## Hard stops (from AGENTS.md — repeated here only so they are never skipped)
 
