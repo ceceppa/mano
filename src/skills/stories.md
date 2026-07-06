@@ -377,12 +377,15 @@ When all stories are written, output the execution log:
 - 0. [title] — _mano_output/phase-[N]/stories/story-0-[slug].md   [only when a bootstrap story exists]
 - 1. [title] — _mano_output/phase-[N]/stories/story-1-[slug].md
 - 2. ...
-⚠ Verify: [embedded assumption worth checking — omit if none]
+⚠ Verify: [embedded assumption worth checking — advisory, omit if none]
+❓ Decide: [decision to confirm or change before the affected story is implemented, phrased as a question with the inferred value — omit if none]
 Status: Ready. Review files in editor.
 -> Implement: mano dev (implements the next pending story)
 ```
 
 Give each story its **full project-root-relative path** (as above), not a bare `story-N-[slug].md` — that is what makes each line tap-to-open in the editor. The path replaces the old parenthesised filename.
+
+Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact should have stated a behaviour-driving value and didn't (a default, a threshold, a severity), infer the most consistent value, build the story with it, and raise the inference as a `❓ Decide:` — never leave the implementer to invent it, and never edit the upstream artifact yourself (flag the gap for its owning skill). **(2)** A pending `❓ Decide:` caps the `Status:` line — say which story it blocks (`Status: Ready except story 2 — severity call pending.`), not an unconditional "Ready".
 
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor.
 

@@ -131,6 +131,8 @@ The Drain check removes things that don't belong; this one captures things that 
 
 Run it mechanically: list every quantity the implementation will need (scan the spec and the brief it came from). For each, write down the named field/config/constant that holds it and **which entity owns it** — and be deliberate about values that belong to a collection or process rather than to an individual record (e.g. "how many to spawn" belongs to whatever does the spawning, not to the thing being spawned), since those are the ones most easily attached to the wrong entity. Any quantity for which you cannot name a home is the defect: add the field or named constant to the spec before writing. This is the capture-direction face of "one canonical home": the Drain check pushes mislocated values out, this check pulls unhomed values in.
 
+**Quantities are not the only unhomed values.** A **policy default** — a new rule's default severity, an enabled/disabled default, an enum choice — drives behaviour exactly like a number does, and slips past a scan that only looks for counts and thresholds. When the spec introduces a mechanism that carries a policy (a new validation rule, a new mode, a new check), its default is a value this check covers: name where it's stated. And **sweep the brief's `Acknowledged Risks`**: when a risk names a decision the spec owns ("severity needs a deliberate call, not a default guess"), the spec must either state that decision — with its one-line reason — or raise it as a `❓ Decide:` in the completion output. Leaving it unstated hands the call to the implementer, which is the exact outcome the risk was recorded to prevent.
+
 ## Artifact boundary
 
 When writing `_mano_output/tech-spec.md`, include only the technical specification content.
@@ -249,7 +251,7 @@ If a decision requires highlighting (a volatile library choice, a complex bounda
 
 **Mandatory override flag (non-discretionary).** If the spec contradicts a directive in the brief's `## Stated Technical Preferences` block — different framework, different storage class, different auth model than the user explicitly stated — you must do **both**, every time, no exceptions:
 1. An inline `⚠️ Note:` in `tech-spec.md` at the relevant decision: what was stated, what you chose instead, the one-line reason.
-2. A `⚠ Verify:` line in the chat output naming the override explicitly (e.g. `⚠ Verify: brief stated Next.js + SQL; spec uses Vite + Firestore because [reason] — confirm before stories depend on it`).
+2. A `❓ Decide:` line in the chat output naming the override explicitly (e.g. `❓ Decide: brief stated Next.js + SQL; spec uses Vite + Firestore because [reason] — confirm before stories depend on it?`). It asks for ratification before the next command, so it is a decide, not an advisory verify — see the canonical execution-log format in `_mano/workflow.md`.
 
 This is not the discretionary `⚠️ Note:` judgement above — a stated-preference override *always* trips it. The decision may well be right; the silent part is the defect. A spec that contradicts its own source on tech with zero acknowledgement buries a call the human must ratify and confuses every downstream reader. Overriding without flagging is a contract violation, not a style choice.
 
@@ -275,12 +277,13 @@ Use the canonical execution-log format defined in `_mano/workflow.md`:
 [mano spec]: mano spec — _mano_output/tech-spec.md
 - [key decision: major library, architecture, API, or data-model choice]
 - [key decision]
-⚠ Verify: [any embedded assumption, hardcoded test layout, or placeholder the user should sanity-check — omit if none]
+⚠ Verify: [embedded assumption or placeholder worth a sanity-check — advisory, omit if none]
+❓ Decide: [open decision the user must confirm or change before the next command, phrased as a question with the provisional value — omit if none]
 
 [Optional hook block if active]
 ```
 
-`mano spec` must surface a `⚠ Verify:` line whenever the spec embeds an assumption or hardcoded placeholder (e.g. a test layout) the user should confirm before implementation depends on it. Overriding a directive in the brief's `## Stated Technical Preferences` block always counts as such an assumption — the `⚠ Verify:` line is mandatory in that case, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently.
+`mano spec` must surface embedded assumptions on the right channel (see the canonical execution-log format in `_mano/workflow.md`): `⚠ Verify:` for assumptions the user can sanity-check at leisure; `❓ Decide:` whenever the confirmation should happen **before the next command** — a provisional default, a value the brief demanded a deliberate call on, a stated-preference override. If you catch yourself writing "confirm before stories" into a verify line, it's a decide. A pending `❓ Decide:` makes the `Next:` recommendation conditional on it — never announce "ready to decompose" above an unanswered decision. Overriding a directive in the brief's `## Stated Technical Preferences` block always trips a `❓ Decide:`, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently. When the user answers a decide, apply the answer to `tech-spec.md` in place — the provisional value becomes a stated decision, the hedge comes off — and reply with a one-line changelog.
 
 Choose the next action based on what's still missing or worth refining:
 - `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced project layout.
