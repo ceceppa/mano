@@ -51,7 +51,7 @@ Possible uses:
 
 ## Accessibility
 
-<!-- Record the agreed accessibility baseline here. `mano ui` may seed the `Accessibility level:` line if it is still blank during `mano ui`. `mano rules` maintains the rest of this section. Example:
+<!-- Record the agreed accessibility baseline here when `mano rules` establishes implementation rules. `mano ui` records its visual accessibility target in `design-brief.md` and does not edit this file. Example:
 
 Accessibility level: WCAG 2.1 AA
 

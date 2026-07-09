@@ -44,7 +44,7 @@ Establish the visual language for the project. Generate two files: a design brie
 
 ### Step 1 — Context and preference capture
 
-Check what's already known from project-rules and backlog. 
+Check what's already known from the phase brief, existing design brief, UX flow, project rules, and explicitly provided context.
 
 If visual style, colour direction, or mode are not explicitly defined, and no existing `design-brief.md` already establishes them, `mano ui` must ask one short preference checkpoint before generating files. Do not skip straight to defaults unless the user explicitly says they do not care, says "default it", or has already provided equivalent direction elsewhere.
 
@@ -73,13 +73,12 @@ If the user gives no preference, says to default it, or says they have no strong
 
 If the user names a similar app, brand, or mood, translate that into concrete design decisions. Do not copy another product's branding literally.
 
-If the Accessibility section in `project-rules.md` does not have a level yet, seed: `Accessibility level: WCAG 2.1 AA` (or whatever was detected).
-
-`mano rules` owns the broader Accessibility section in `project-rules.md`. `mano ui` only seeds the level when it is missing.
+Use the chosen accessibility target in `design-brief.md`. Do not edit `project-rules.md`; if broader implementation rules still need the target recorded, keep `mano rules` visible as a next action.
 
 ### Step 2 — Generate design brief
 
 Write `_mano_output/design-brief.md`:
+- Accessibility target
 - Framework / component library
 - Colour palette (6-8 colours, hex values)
 - Typography (font, heading sizes, body, caption)
@@ -138,15 +137,12 @@ Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonica
 - Aesthetics: [brief summary of style/palette used or extended]
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 
-Choose the next action based on what's still missing or worth refining:
+[Optional hook block if active]
+
+Next:
 - `mano rules` — if project conventions, accessibility rules, or shared-component boundaries still need codifying
 - `mano stories` — if the phase is already clear enough to break into implementable work
 - `mano continue` — if you want Mano to pick only when there is a single obvious next step
-
-Type `mano` to see what's available.
-
-📂 Open: _mano_output/design-preview.html
-💡 Right-click → Open with Live Server, or open directly in browser.
 ```
 
 Rules for the next-action block:
@@ -187,7 +183,7 @@ Do not run the hook automatically.
 
 Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
 
-This step is required even when no spec update was needed.
+This step is required even when no UI update was needed.
 
 Mention it in the final chat response before the next-action block.
 
@@ -204,7 +200,7 @@ Do not write hook suggestions into generated artifacts.
 
 - Do not generate per-screen wireframes beyond the single sample screen allowed in the HTML preview.
 - Do not make product decisions — ask the user.
-- Do not proactively suggest creating shared components via `mano rules` or `mano rules` just because something in the design looks reusable. `mano ui` describes the UI; shared-component extraction is a project-rule decision that should surface only if the user asks or a missing rule is blocking clarity.
+- Do not proactively suggest creating shared components via `mano rules` just because something in the design looks reusable. `mano ui` describes the UI; shared-component extraction is a project-rule decision that should surface only if the user asks or a missing rule is blocking clarity.
 - Do not use external CDNs or network-dependent resources in the HTML preview.
 
 ## Backlog Boundary
@@ -214,4 +210,3 @@ Do not write hook suggestions into generated artifacts.
 Backlog-level principles, including accessibility expectations, should be surfaced by `mano start` in the current phase brief when they are relevant to the design scope.
 
 `mano ui` should rely on the phase brief, UX flow, design brief, project rules, and explicitly provided context.
-

@@ -22,9 +22,9 @@ On activation:
    - `DECISION: PROCEED` → act on `NEXT:`:
      - `scope-backlog` → **Path A.** The script prints a `SCOPE INPUT` block — the `Status: backlog` items, core product principles, and latest review. That is everything you need; go straight to Step 6 using it. **Do not open any file under `_mano_output/`** (no `backlog.md`, no `reviews.md`, and especially not the finished phase's folder — it's shipped). Don't greet conversationally.
      - `conversation` → **Path B** (new project).
-     - `resume-draft` → a previous run left a phase folder without a brief; finish drafting that phase, don't start a new one.
+     - `resume-draft` → a previous run left a phase folder without a brief. The script prints all backlog items and recent continuity in `SCOPE INPUT`. Do not infer which items were approved: show the likely `in-phase-[N]` items if any, then ask the user to confirm or restate the exact approved scope for this phase. Once confirmed, resume at Step 7; do not start a new phase.
 
-   **Override:** an explicit user instruction ("the phase is abandoned", "scope the next phase anyway") beats a `STOP` — honour it, stating you're proceeding past an incomplete phase at their request. **No Node / script missing?** Detect state by reading `_mano_output/` per the state-detection rules in `_mano/workflow.md`.
+   An explicit abandonment does not silently bypass closure. Tell the user to remove or cut unfinished story rows as appropriate, run `mano review` to record and close the phase, then re-run `mano start`. **Script failing?** Stop and report the error — do not derive the go/no-go by scanning `_mano_output/` yourself (see "Scripts are mandatory" in `_mano/workflow.md`).
 
 For a new project:
 
@@ -39,7 +39,7 @@ Provide detail to minimize clarifying queries.
 
 ## Inputs
 
-- The state script's `SCOPE INPUT` block (Path A) — it carries the `Status: backlog` items, `## Core Product Principles`, and latest review, so you never open `backlog.md` / `reviews.md` to scope
+- The state script's `SCOPE INPUT` block — on Path A it carries the `Status: backlog` items; on `resume-draft` it carries all item statuses so the human can restore the lost approved subset. Both include `## Core Product Principles` and the latest review, so you never reopen `backlog.md` / `reviews.md` to scope.
 - `_mano_output/backlog.md` — owned here: created on Path B and stamped at Step 7; on Path A you write to it but don't read it to scope
 - `_mano_output/project-rules.md` only if it already exists and is explicitly relevant to scoping
 - PRD or reference document if provided by the user
@@ -97,7 +97,7 @@ Ask about the pain point and what existing solutions fail at. Skip if already ex
 
 Ask focused questions where the answer changes what gets built. Skip if input is clear. No hard limit on questions, but don't interrogate — stop when you have enough to decompose into backlog items.
 
-- **Platform-dependent rule:** If features involve platform-specific capability (camera, biometrics, offline, OCR, push, widgets, NFC, Bluetooth, GPS), ask about the target platform and technology.
+- **Platform-dependent rule:** If features involve platform-specific capability (camera, biometrics, offline, OCR, push, widgets, NFC, Bluetooth, GPS), ask about the target platform and the observable capability required there. Do not ask which technology implements it.
 - **Specificity rule:** If the user uses vague terms ("simple UI," "basic CRUD," "standard auth"), push back: "What does 'basic' mean to you? What fields does a todo have? What does done look like?"
 - **Branching-flow rule:** If the user describes a flow with branching choices, conditional follow-up questions, multiple selectable options, or sport/mode/plan variants, ask for the concrete branches that change scope. Do not accept "for example" lists as complete requirements when the real set of options affects onboarding, validation, or downstream screens.
 - **Exhaustiveness rule:** When the user gives a short list that might be illustrative rather than complete, ask whether the list is exhaustive. If later choices depend on earlier answers, ask for those dependencies explicitly before drafting the brief.
@@ -119,7 +119,7 @@ Decompose everything discussed into backlog items — every feature, requirement
 node _mano/scripts/backlog.js add --file _mano_output/.add.json
 ```
 
-then delete the temp file. Don't hand-write `### ` blocks. (For just one or two items, the flag form — `backlog.js add --title "..." --type ... --context "..."` — is simpler.)
+then delete the temp file. Don't hand-write `### ` blocks. (For just one or two items, the flag form — `backlog.js add --title "..." --type ... --context "..."` — is simpler.) **Script failing?** Stop and report the error — never hand-write the blocks instead (see "Scripts are mandatory" in `_mano/workflow.md`).
 
 Then proceed to Step 6.
 
@@ -236,7 +236,7 @@ Answer what's relevant, skip what isn't.
 
 If everything is clear, say so and move to 7c. Do not ask "still accurate?" — they've just seen the context.
 
-**7c — Draft the phase brief and finalise.** By this point the user has already approved the phase scope (Step 6) and answered every 7b clarification, so the brief is a rendering of decisions already made — do not pause for a separate "are you happy with the draft?" confirmation. Draft the brief, write it to the file, mark the approved items `in-phase-[N]`, and move to finalisation in the same turn. Show the brief (or its key sections) in the final response so the user sees it immediately; if anything is wrong they edit the file or re-run `mano start`. The phase-scope approval from Step 6 is the gate; the brief draft is not a second one.
+**7c — Draft the phase brief and finalise.** By this point the user has already approved the phase scope (Step 6) and answered every 7b clarification, so the brief is a rendering of decisions already made — do not pause for a separate "are you happy with the draft?" confirmation. Draft the brief, write it to the file, mark the approved items `in-phase-[N]`, and move to finalisation in the same turn. The artifact is the deliverable; report it through the canonical execution log rather than reproducing the brief in chat. If anything is wrong the user edits the file or re-runs `mano start`. The phase-scope approval from Step 6 is the gate; the brief draft is not a second one.
 
 ## Phase brief output
 
@@ -363,6 +363,8 @@ To split:
    node _mano/scripts/backlog.js add --title "..." --type [type] --context "..."
    ```
 
+   **Script failing?** Stop and report the error — do not append the item by hand.
+
 Splitting is the one case where editing an existing item's title and context is required rather than append-only. It is not removal — both halves remain traceable.
 
 **Self-check before finalising:** for every item you are about to mark `in-phase-[N]`, read its title and context out loud against the Phase Scope. If the item names or describes anything not in Phase Scope, it is not split correctly — split it.
@@ -390,11 +392,13 @@ Only finalise after explicit human approval of the phase scope.
    node _mano/scripts/backlog.js add --title "..." --type feature --context "what it is\nwhy it matters"
    ```
    Use `\n` in `--context` for line breaks (max 5), and `--source` when there's an obvious one. The script owns the item format and skips a title that already exists. (Many at once: write them as a JSON array to a temp file and run `backlog.js add --file <path>`.)
+   **Script failing?** Stop and report the error — do not append items by hand.
 4. **Stamp approved items to this phase via the script** — don't edit `backlog.md` by hand:
    ```
    node _mano/scripts/backlog.js assign --phase [N] --title "Exact item title"
    ```
    One `--title` per human-approved item. The script flips only items currently `Status: backlog` and reports any it can't match (wrong title, or already moved). If an approved item covers only a *slice* of a backlog item, split it (see **Splitting an item**) before assigning. Never mark candidate items in-phase before approval.
+   **Script failing?** Stop and report the error — do not hand-edit `Status` lines.
 5. Suggest next actions based on which useful artifacts are still missing. Check which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist in `_mano_output/`. Then emit a next-action block that:
    - Lists only artifacts that don't exist yet (skipping ones that are already present)
    - Ends with a clear **recommended next step** — whichever single action is most likely to unblock implementation. Default recommendation is `mano stories` when the phase is self-contained (pure visual, pure refactor, or the brief already captures the full behaviour contract). Default to `mano spec` first when the phase introduces new data, new APIs, new external dependencies, or new integration points.
@@ -404,21 +408,22 @@ Only finalise after explicit human approval of the phase scope.
      - The brief's own **Acknowledged Risks or Assumption Log names an unresolved technical question** ("what counts as a duplicate record", "where does X state live"). A technical question the brief admits is open is a spec-gap by definition — do not recommend skipping spec while the brief itself flags one. Scan those sections before defaulting to `mano stories`.
    - Never lists `mano spec` with a hedge like "if technical decisions feel fuzzy" — either the phase needs a spec (new technical territory) or it doesn't (incremental on existing tech).
 
+Use the canonical execution-log format. List only useful actions whose artifacts are missing or need refinement; put the recommended action first, but keep other genuinely valid options visible:
+
+```text
+[mano start]: mano start — _mano_output/phase-[N]/phase-brief.md, _mano_output/backlog.md
+- Phase [N] scope locked: [short item list]
+- Backlog statuses updated
+⚠ Verify: [embedded assumption worth checking — omit if none]
+
+[Optional hook block if active]
+
+Next:
+- `mano [recommended action]` — [why it most directly unblocks this phase]
+- `mano [other useful action]` — [when it applies; omit if not useful]
 ```
-Phase [N] brief is locked. What's next?
 
-Still missing:
-- `mano spec` — [one concrete reason: e.g. "phase introduces a new API integration"]   ← omit if tech-spec.md already exists
-- `mano ux` — [one concrete reason: e.g. "no UX flow defined for the onboarding screens"]   ← omit if ux-flow.md already exists
-- `mano ui` — [one concrete reason: e.g. "no design brief yet"]   ← omit if design-brief.md already exists
-- `mano rules` — [one concrete reason: e.g. "no project conventions on file yet"]   ← omit if project-rules.md already exists
-
-→ Recommended: `mano [action]` — [one sentence why this is the right next step]
-
-Type `mano` to see what's available.
-```
-
-If all four optional artifacts already exist, omit the "Still missing" block entirely and just show the recommendation.
+If all four optional artifacts already exist, recommend only the action that is useful from the current state.
 
 ## Post-start hook suggestion
 

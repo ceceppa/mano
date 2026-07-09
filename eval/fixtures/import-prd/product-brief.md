@@ -15,7 +15,8 @@ Solo readers who keep a backlog of books and lose track of what to pick up next.
 - **Add a book** to the to-read list with title, author, and an optional priority note.
 - **Mark a book as finished**, which removes it from the to-read list and records the finish date.
 - **The next-read suggestion**: the app surfaces one book from the to-read list as the
-  thing to read next.
+  thing to read next. It always chooses the unfinished book added earliest; the
+  optional priority note is context for the reader and does not change the order.
 - **Reading history**: a list of finished books with their finish dates.
 
 ## Success criteria

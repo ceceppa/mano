@@ -31,12 +31,13 @@ Out of scope by default: `_mano_output/phase-[other]/` and everything beneath it
 
 Read this run, in this order:
 1. Current phase brief from `_mano_output/phase-[N]/phase-brief.md` (required)
-2. `_mano_output/tech-spec.md` if it exists
-3. `_mano_output/ux-flow.md` if it exists
-4. `_mano_output/design-brief.md` if it exists — treat any dedicated section, subsection, token, or note as usable guidance and reference it directly
-5. `_mano_output/project-rules.md` if it exists
+2. Current `_mano_output/phase-[N]/stories/README.md` and its indexed story files if the index exists — this determines fresh, re-run, and mid-build mode before pre-flight checks
+3. `_mano_output/tech-spec.md` if it exists
+4. `_mano_output/ux-flow.md` if it exists
+5. `_mano_output/design-brief.md` if it exists — treat any dedicated section, subsection, token, or note as usable guidance and reference it directly
+6. `_mano_output/project-rules.md` if it exists
 
-Read all present artifacts unconditionally. Do not skip one because the phase appears to have no UI or no rules implications — the gap check (Step 0d) cannot surface conflicts from artifacts it was never given to read.
+Read all present artifacts unconditionally. Do not skip one because the phase appears to have no UI or no rules implications — the gap check (Step 0d) cannot surface conflicts from artifacts it was never given to read. When an index exists, classify the run before pre-flight: apply the checks only to new or explicitly affected pending stories, never to done or unrelated pending stories.
 
 **No phase brief → stop.** The phase brief is the one required input. If `_mano_output/phase-[N]/phase-brief.md` does not exist, do nothing: state that there is no phase brief to decompose and that `mano start` creates one. Do not proceed, do not improvise stories from other context.
 
@@ -78,16 +79,13 @@ Default format:
 
 ### Implementation Reference
 
-Every story must include an Implementation Reference. Write it as a compact pointer list — field labels and terse fragments only, no prose or rationale. Assume the implementer reads the story first and may consult referenced artifacts when needed. Copy here only what they cannot easily find themselves: exact prop names, file paths, install commands, ownership boundaries, critical prohibitions.
+Every story must include an Implementation Reference. Write it as a compact pointer list — field labels and terse fragments only, no prose or rationale. Assume the implementer reads the story first and may consult narrowly referenced artifact sections when needed. Put story-owned details here; point to the canonical owner for shared values and contracts.
 
-**Inline OR reference a value — never both.** The Implementation Reference exists so the implementer can build from the story *without opening other artifacts*; every avoidable read enlarges the small-context implementer's working set and defeats the point. So for any concrete value (a constant, token, name, path):
-- If you inline the value (`ANIM_SLEEP = "sleep"`), the story is now its authoritative source — do **not** also append "per project-rules" / "see tech-spec" / "defined in X" pointing at the same value. A value that is both stated *and* pointed-elsewhere reads as "the real version is over there," and the implementer dutifully opens the file it already had the answer for. Inline the value and state the *constraint* instead (e.g. "define as a named constant; no inline string at call sites") without sending them to read the rule that says so.
-- If the value is too large or volatile to inline, do not inline it — give only the reference, so there is exactly one place to look.
-- Either way, when the story already carries every value the implementer needs, say so plainly (e.g. "all values needed are in this story") so they do not go hunting in the spec or rules for something already in hand. The implementer should open another artifact only when the story *omits* something and explicitly points there — not to re-fetch a value the story already states.
+**One canonical home per shared value.** A value that already belongs to `tech-spec.md`, `design-brief.md`, or `project-rules.md` stays there: reference the owning artifact and section, and do not copy the literal into the story. Inline only story-specific values that no other artifact owns. Never state a shared value and point elsewhere for the same value; that creates two apparent authorities. Keep references narrow enough that the implementer opens only the named section.
 
 Only include fields relevant to this story. Omit empty categories. Do not invent variants, props, states, or constraints not backed by an existing artifact.
 
-When project rules or the tech spec name exact tokens — prop names, attribute names, file paths, state keys, install commands, constants — copy them verbatim. Do not paraphrase. When a project rule implies a required file, module, constant, or prohibition, translate the implication into an explicit instruction.
+When project rules or the tech spec own exact tokens — prop names, attribute names, file paths, state keys, install commands, constants — point to the exact owning section instead of copying the value. When a project rule implies a required file, module, constant, or prohibition, make the obligation explicit while leaving any shared literal at its canonical home.
 
 **No hedged paths or ambiguous ownership.** Name one location. Do not write `src/foo.cpp or src/bar.cpp`, `either A or B`, `wherever the X helper lives`, or `if needed`. If ownership genuinely splits (computation in one file, enforcement in another), say so with each file's role: `compute in src/foo.cpp; enforce in src/bar.cpp`. If the correct location is genuinely unknown and not determinable from existing artifacts, flag it during the artifact gap check — do not ship the ambiguity.
 
@@ -102,14 +100,14 @@ When project rules or the tech spec name exact tokens — prop names, attribute 
 - Colour constant rules → add named colour constants; forbid inline colour values
 - Accessibility rules → add relevant `A11y` constraints
 - File ownership rules → add relevant `Files` or `Boundaries`
-- Naming rules → copy the exact naming contract
+- Naming rules → point to the exact naming-contract section
 - Shared constants or measurements → require one named source of truth instead of per-file literals, per "Shared Values: One Canonical Home" in workflow.md
 
 If a required constant, token, rule, or shared measurement is needed and no artifact defines its value, do not write "if not yet defined." Make the requirement explicit and point to the owning artifact. If choosing the value would be guesswork, flag it during artifact gap check. If the value already exists in another artifact but with a different number or unit, do not silently pick one — surface the conflict, per "Conflicting Values: Surface, Do Not Reconcile" in workflow.md.
 
-**An ambiguous behaviour-driving quantity is a gap to surface, not an ambiguity to resolve silently.** The "surface, don't pick" rule above covers *missing* values and *conflicting* values — but a *single stated value whose phrasing supports two materially different behaviours* slips through both, because it is neither missing nor conflicting. It is the most dangerous case, because nothing looks wrong: the brief states a quantity, you pick a reading, and the wrong behaviour ships looking fully specified. Watch especially for **rate/scope quantifiers** like "one per tick at each position", "remove a tile each interval", "N per step", "expands by one" — where it is unclear whether the unit applies *once globally* or *once per location/side/item*. Worked example: *"one tile removed per decay tick at each boundary position"* can mean **(a)** one tile total per tick, or **(b)** one tile at every boundary position per tick (a full ring) — a slow ragged nibble versus an even closing front, completely different feel. Do **not** collapse it to one reading and harden it into an AC or a `Do not` (e.g. "remove no more than one tile per tick"); that locks the guess in. Flag it at the artifact gap check (0d) and let the upstream skill (Skye) resolve which behaviour is meant before the story ships.
+**An ambiguous behaviour-driving quantity is a gap to surface, not an ambiguity to resolve silently.** The "surface, don't pick" rule above covers *missing* values and *conflicting* values — but a *single stated value whose phrasing supports two materially different behaviours* slips through both, because it is neither missing nor conflicting. It is the most dangerous case, because nothing looks wrong: the brief states a quantity, you pick a reading, and the wrong behaviour ships looking fully specified. Watch especially for **rate/scope quantifiers** like "one per tick at each position", "remove a tile each interval", "N per step", "expands by one" — where it is unclear whether the unit applies *once globally* or *once per location/side/item*. Worked example: *"one tile removed per decay tick at each boundary position"* can mean **(a)** one tile total per tick, or **(b)** one tile at every boundary position per tick (a full ring) — a slow ragged nibble versus an even closing front, completely different feel. Do **not** collapse it to one reading and harden it into an AC or a `Do not` (e.g. "remove no more than one tile per tick"); that locks the guess in. Flag it at the artifact gap check (0d) and route it to the upstream Mano skill that owns the ambiguous artifact before the story ships.
 
-**"The spec defines it" is not "it exists in code" — never assert present-tense existence you cannot verify.** Marco reads only `_mano_output/` artifacts, never the source, so it cannot know whether a field, entity, function, or schema the spec *describes* has actually been *implemented*. The spec is a planning artifact and routinely runs ahead of the code. Therefore: when a story depends on a data-model field, type, or other code-level thing that you know only from the spec/brief (not from having seen it in the source), do **not** write "already defined / already exists / do not add — fields are already in the resource." That asserts present-tense existence you have no way to confirm, and it silently turns a *create-and-wire* story into a *just-wire* story — the implementer trusts the claim, confirms it in the spec the story pointed to, and never adds the field that was actually missing. Instead phrase it as an explicit requirement: **"ensure `Animal` has `move_speed`/`diagonal_mode` (per spec); add them if not present, then wire the movement code to read them."** State it as an acceptance criterion, not a `Do not`. The only time "already exists, do not add" is safe is when an *earlier story in this same phase* created it (you can see that in the story set) — spec presence alone never licenses it.
+**"The spec defines it" is not "it exists in code" — never assert present-tense existence you cannot verify.** `mano stories` reads only `_mano_output/` artifacts, never the source, so it cannot know whether a field, entity, function, or schema the spec *describes* has actually been *implemented*. The spec is a planning artifact and routinely runs ahead of the code. Therefore: when a story depends on a data-model field, type, or other code-level thing that you know only from the spec/brief (not from having seen it in the source), do **not** write "already defined / already exists / do not add — fields are already in the resource." That asserts present-tense existence you have no way to confirm, and it silently turns a *create-and-wire* story into a *just-wire* story — the implementer trusts the claim, confirms it in the spec the story pointed to, and never adds the field that was actually missing. Instead phrase it as an explicit requirement: **"ensure `Animal` has `move_speed`/`diagonal_mode` (per spec); add them if not present, then wire the movement code to read them."** State it as an acceptance criterion, not a `Do not`. The only time "already exists, do not add" is safe is when an *earlier story in this same phase* created it (you can see that in the story set) — spec presence alone never licenses it.
 Common labels: `Build`, `Files`, `State`, `Contract`, `Data`, `Commands`, `UI`, `Components`, `A11y`, `Boundaries`, `Style`, `Design`, `Rules`, `Do not`. Use only what applies.
 
 Adapt per story type:
@@ -124,10 +122,10 @@ Example:
 #### Implementation Reference
 - **Build:** auth screen; `src/screens/Login.tsx`; validates email + password, calls existing auth service
 - **A11y:** min 44×44 touch targets; `aria-label` on icon buttons; `aria-busy` on submit while loading
-- **Do not:** no inline colour values; use tokens from `src/theme/tokens.ts`; no new auth logic in this story
+- **Do not:** no inline colour values (see `project-rules.md §Colour constants`); no new auth logic in this story
 ```
 
-For `story-0` and setup/dependency stories: copy exact package-manager choice, dependency names, and install commands from the tech spec verbatim. Preserve command grouping and tool choice.
+For `story-0` and setup/dependency stories: point to the exact package-manager, dependency, and install-command section in the tech spec. AGENTS.md step 7 requires the implementer to read it; do not create a second copy in the story.
 
 For stateful frontend stories: name what persists across restart, what stays transient, and which module owns it. Include a persistence criterion in `Done when` too — do not bury it only here.
 
@@ -358,7 +356,13 @@ Report nothing in the execution log if the audit found nothing. If rewrites happ
 
 ### Step 1 — Write all stories to files
 
-Generate all stories and write them to `_mano_output/phase-[N]/stories/`. Do not print stories in the chat — write them to files only. This keeps context lean and lets multiple developers pick up stories simultaneously.
+Before writing, check whether `_mano_output/phase-[N]/stories/README.md` already exists and read the current phase's index and story files if it does:
+- **No index yet** → fresh generation: write the complete story set below.
+- **Index exists and the user reported new or changed work** → use **Mid-build additions** or update only pending stories explicitly affected by the request. Never regenerate the full set.
+- **Index exists and the command carries no concrete change request** → report the existing set and ask what should change; do not rewrite files merely because the command was re-run.
+- A row marked `done` is immutable on every path. Any change to shipped behaviour becomes a lettered insertion.
+
+For fresh generation, generate all stories and write them to `_mano_output/phase-[N]/stories/`. Do not print stories in the chat — write them to files only. This keeps context lean and lets multiple developers pick up stories simultaneously.
 
 For each story:
 1. Short titles (max 6 words — scannable, not descriptive)
@@ -368,30 +372,33 @@ For each story:
    ```
    node _mano/scripts/stories.js add-row --phase [N] --story [num] --title "[title]" --file "story-[num]-[slug].md" --project "[project]"
    ```
-   It creates `README.md` (Index format below) on the first call and inserts each row in number order; `--project` (from the brief title) is used only when the file is created. Rows start `pending`. **No Node / script missing?** Hand-write the index using the Index format below.
+   It creates `README.md` (Index format below) on the first call and inserts each row in number order; `--project` (from the brief title) is used only when the file is created. Rows start `pending`. **Script failing?** Stop and report the error — never hand-write the index (see "Scripts are mandatory" in `_mano/workflow.md`).
 
 When all stories are written, output the execution log:
 
 ```
-[mano stories]: mano stories — _mano_output/phase-[N]/stories/ ([N] stories)
+[mano stories]: mano stories — _mano_output/phase-[N]/stories/README.md, story files listed below
 - 0. [title] — _mano_output/phase-[N]/stories/story-0-[slug].md   [only when a bootstrap story exists]
 - 1. [title] — _mano_output/phase-[N]/stories/story-1-[slug].md
 - 2. ...
 ⚠ Verify: [embedded assumption worth checking — advisory, omit if none]
 ❓ Decide: [decision to confirm or change before the affected story is implemented, phrased as a question with the inferred value — omit if none]
-Status: Ready. Review files in editor.
--> Implement: mano dev (implements the next pending story)
+
+[Optional hook block if active]
+
+Next:
+- `mano dev` — implement the next pending story
 ```
 
 Give each story its **full project-root-relative path** (as above), not a bare `story-N-[slug].md` — that is what makes each line tap-to-open in the editor. The path replaces the old parenthesised filename.
 
-Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact should have stated a behaviour-driving value and didn't (a default, a threshold, a severity), infer the most consistent value, build the story with it, and raise the inference as a `❓ Decide:` — never leave the implementer to invent it, and never edit the upstream artifact yourself (flag the gap for its owning skill). **(2)** A pending `❓ Decide:` caps the `Status:` line — say which story it blocks (`Status: Ready except story 2 — severity call pending.`), not an unconditional "Ready".
+Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact should have stated a behaviour-driving value and didn't (a default, a threshold, a severity), infer the most consistent value, build the story with it, and raise the inference as a `❓ Decide:` — never leave the implementer to invent it, and never edit the upstream artifact yourself (flag the gap for its owning skill). **(2)** A pending `❓ Decide:` makes the affected next action conditional: name which story is blocked and write `mano dev` as available only after that decision. Do not add a separate `Status:` line.
 
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor.
 
 ### Index format
 
-This is the shape `stories.js add-row` emits and `state.js` parses — it's a reference for the no-Node fallback, not a table to hand-write when the script is available.
+This is the shape `stories.js add-row` emits and `state.js` parses — a reference for readers, not a table to hand-write. The writer owns it.
 
 ```markdown
 # Stories — [Project Name] — Phase [N]
@@ -417,12 +424,17 @@ When the user reports something mid-build:
    ```
    node _mano/scripts/stories.js add-row --phase [N] --story [N][letter] --title "[title]" --file "story-[N][letter]-[slug].md"
    ```
+   **Script failing?** Stop and report the error — do not insert the row by hand.
 4. Output execution log:
 
-```
--> Active Updates:
-   - Inserted: story [N][letter] at _mano_output/phase-[N]/stories/story-[N][letter]-[slug].md
--> Implement: mano dev (implements the next pending story)
+```text
+[mano stories]: mano stories — _mano_output/phase-[N]/stories/README.md, _mano_output/phase-[N]/stories/story-[N][letter]-[slug].md
+- Inserted story [N][letter]: [title]
+
+[Optional hook block if active]
+
+Next:
+- `mano dev` — implement the next pending story
 ```
 
 ## Addressing post-stories hook findings

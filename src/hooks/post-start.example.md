@@ -7,7 +7,7 @@ suggest
 Optional post-start review after `mano start` creates or updates the backlog, phase suggestion, or phase brief.
 
 ## When useful
-- new backlog was created from a brief or PRD
+- a phase was scoped from a backlog that originated in conversation or a prior `mano import`
 - phase scope was suggested or approved
 - Core Product Principles changed
 - backlog structure or statuses changed

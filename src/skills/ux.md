@@ -82,7 +82,7 @@ Do not run the hook automatically.
 
 Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
 
-This step is required even when no spec update was needed.
+This step is required even when no UX update was needed.
 
 Mention it in the final chat response before the next-action block.
 
@@ -106,13 +106,13 @@ Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonica
 - Screens/states updated: [list of screens or UX states added or modified]
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 
-Choose the next action based on what's still missing or worth refining:
+[Optional hook block if active]
+
+Next:
 - `mano ui` — if visual direction or component language still need defining
 - `mano rules` — if project conventions or framework constraints still need codifying
 - `mano stories` — if the phase is already clear enough to break into implementable work
 - `mano continue` — if you want Mano to pick only when there is a single obvious next step
-
-Type `mano` to see what's available.
 ```
 
 Rules for the next-action block:

@@ -13,15 +13,16 @@
  * IMPORTANT — this script is a *projection*, not a source of truth. It only
  * reads. It must never write a "current phase" or any state file: the
  * filesystem under _mano_output/ stays the single source of truth. The verdict
- * is advice for the agent; the skill still owns the decision (e.g. an explicit
- * "scope the next phase anyway" from the user overrides a BLOCK).
+ * is a projection consumed by the skill. Human decisions resolve the condition
+ * it reports (for example by closing or repairing a phase); the script never
+ * changes state or silently advances past a gate.
  *
  * Usage:
  *   node state.js                 scan ./_mano_output
  *   node state.js <projectRoot>   scan <projectRoot>/_mano_output
- *   node state.js --scope         on a PROCEED to scope-backlog, also print the
- *                                 scope input (backlog items + principles +
- *                                 latest review) so the skill needn't reopen files
+ *   node state.js --scope         on a PROCEED to scope-backlog or resume-draft,
+ *                                 also print the relevant backlog items,
+ *                                 principles, and latest review
  *   node state.js --next          for mano dev: the active phase + next pending
  *                                 story (#, file) + ordered story list, so the
  *                                 implementer needn't ls or reopen the index
@@ -54,8 +55,8 @@ Usage:
   node state.js [projectRoot] [--scope | --next] [--verbose] [--json]
 
   projectRoot   directory containing _mano_output/ (default: current dir)
-  --scope       on a PROCEED to scope-backlog, also print the scope input —
-                the Status: backlog items, core principles, and latest review
+  --scope       on a PROCEED to scope-backlog or resume-draft, also print the
+                relevant backlog items, core principles, and latest review
   --next        for mano dev: the active phase, the next pending story (its #
                 and file path) and the ordered story list, computed fresh from
                 disk so the implementer needn't ls or reopen the index
@@ -265,8 +266,9 @@ function scan(projectRoot) {
 function finalize(s) {
   const storiesAllDone = !!(s.stories && s.stories.total > 0 && s.stories.done === s.stories.total);
   const storiesMissing = !s.stories || s.stories.total === 0;
-  // Gate condition 3: reviewed/closed — a review entry, and/or in-phase items resolved.
-  const closed = s.reviewEntry || s.inPhaseRemaining === 0;
+  // Gate condition 3: reviewed/closed — review is mandatory, and its close sweep
+  // must have moved every item for this phase off `in-phase-<N>`.
+  const closed = s.reviewEntry && s.inPhaseRemaining === 0;
 
   let verdict, action;
 
@@ -294,7 +296,13 @@ function finalize(s) {
     action = `Phase ${s.phase} has open stories (${s.stories.done}/${s.stories.total} done). Not complete — run mano dev. mano start must NOT scope a next phase.`;
   } else if (!closed) {
     verdict = "PHASE_BUILT_NOT_CLOSED";
-    action = `Phase ${s.phase} is built (stories all done) but not closed — no review entry and ${s.inPhaseRemaining} item(s) still in-phase-${s.phase}. Run mano review. mano start must NOT scope a next phase.`;
+    const blockers = [];
+    if (!s.reviewEntry) blockers.push("no review entry");
+    if (s.inPhaseRemaining > 0) blockers.push(`${s.inPhaseRemaining} item(s) still in-phase-${s.phase}`);
+    const repair = s.reviewEntry
+      ? "The review entry exists but its backlog close sweep is incomplete — re-run mano review to repair it."
+      : "Run mano review.";
+    action = `Phase ${s.phase} is built (stories all done) but not closed — ${blockers.join("; ")}. ${repair} mano start must NOT scope a next phase.`;
   } else {
     // Phase complete.
     if (s.backlogItems > 0) {
@@ -303,9 +311,6 @@ function finalize(s) {
     } else {
       verdict = "COMPLETE_BACKLOG_EMPTY";
       action = `Phase ${s.phase} is complete and no items have Status: backlog. Nothing to scope — add backlog items (or mano import a doc) before mano start.`;
-    }
-    if (storiesAllDone && !s.reviewEntry) {
-      action += " (Note: closure inferred from no remaining in-phase items; no review entry found in reviews.md.)";
     }
   }
 
@@ -334,13 +339,23 @@ function finalize(s) {
   else if (s.next === "resume-draft") s.targetPhase = s.phase;
   else s.targetPhase = null;
 
-  // On a backlog-scoping PROCEED, attach the exact material mano start needs so
-  // the skill never has to open backlog.md / reviews.md itself.
+  // Attach the exact material mano start needs so the skill never has to reopen
+  // backlog.md / reviews.md itself. A resume-draft includes every item because
+  // an interrupted finalisation may have stopped before assignment recorded the
+  // approved subset; the human must confirm that subset again.
   s.scope = null;
   if (s.next === "scope-backlog") {
     s.scope = {
+      mode: "scope-backlog",
       coreProductPrinciples: extractCoreProductPrinciples(s._backlogText),
       backlogItems: extractBacklogItems(s._backlogText, "backlog"),
+      latestReview: extractLatestReview(s._reviewsText, s.phase),
+    };
+  } else if (s.next === "resume-draft") {
+    s.scope = {
+      mode: "resume-draft",
+      coreProductPrinciples: extractCoreProductPrinciples(s._backlogText),
+      backlogItems: extractBacklogItems(s._backlogText, null),
       latestReview: extractLatestReview(s._reviewsText, s.phase),
     };
   }
@@ -407,7 +422,8 @@ function renderScope(s) {
     L.push(s.scope.coreProductPrinciples);
   }
   L.push("");
-  L.push(`## Backlog items — Status: backlog (${s.scope.backlogItems.length})`);
+  const itemLabel = s.scope.mode === "resume-draft" ? "all statuses" : "Status: backlog";
+  L.push(`## Backlog items — ${itemLabel} (${s.scope.backlogItems.length})`);
   if (s.scope.backlogItems.length === 0) {
     L.push("(none)");
   } else {
@@ -453,13 +469,13 @@ function renderNext(s) {
   if (!next) {
     L.push(`DEV: phase ${s.phase} — nothing to implement.`);
     L.push(`PHASE: ${s.phase}`);
-    L.push(`All ${s.stories.total} stories are done. The phase is built but NOT closed — run mano review. Do NOT scope or start a new phase; that is the user's call.`);
+    L.push(`All ${s.stories.total} stories are done. The phase is built but NOT closed — run mano review. Do NOT scope or start a new phase before review closes this one.`);
   } else {
     L.push(`DEV: phase ${s.phase} — next pending story.`);
     L.push(`PHASE: ${s.phase}`);
     L.push(`STORY: ${next.num}`);
     L.push(`FILE: _mano_output/phase-${s.phase}/stories/${next.file}`);
-    L.push("Read only that story file; implement its acceptance criteria only; then mark it done via stories.js set-status (AGENTS.md step 11).");
+    L.push("Read that story file first, then follow AGENTS.md steps 6-10 for any required tech-spec or project-rules context; implement only its acceptance criteria; then mark it done via stories.js set-status (step 11).");
   }
 
   // The ordered list, so honouring story order (AGENTS.md steps 4-5) for a

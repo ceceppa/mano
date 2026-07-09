@@ -7,6 +7,7 @@
 - **Style:**
 - **Mode:**
 - **Reference apps:**
+- **Accessibility target:**
 
 ## Framework / Component Library
 

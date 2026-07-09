@@ -44,6 +44,7 @@ src/
   skills/      the action prompts: start, import, spec, ux, rules, ui, stories, dev, review …
   templates/   artifact scaffolds copied into a project's _mano_output/
   hooks/       optional post-action hook examples
+  scripts/     deterministic helpers copied into _mano/scripts/: state.js (read-only projection), backlog.js and stories.js (format-owning writers)
   bootstrap/   root files dropped into a project: AGENTS.md, CLAUDE.md, cursorrules
   workflow.md  the shared protocol: command table, state detection, Intake Boundaries (B1–B5)
 bin/

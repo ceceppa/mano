@@ -22,7 +22,7 @@ npx mano-plan install
 
 This installs Mano into your project:
 
-- `_mano/` — the skills, templates, hooks, and workflow Mano reads at runtime
+- `_mano/` — the skills, templates, hooks, scripts, and workflow Mano reads at runtime
 - `AGENTS.md` — the agent contract, dropped at your project root (always)
 - `CLAUDE.md` and `.cursorrules` — optional editor entry points; the installer asks which you want
 
@@ -144,7 +144,7 @@ After a review, `mano review` closes the phase. If you don't need Mano for the r
 ### Mid-build feedback
 Requirements change during implementation. You don't have to finish the phase to adjust:
 
-- **Found a bug or missing feature?** Use `mano stories` — `mano stories` will create a new story, numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3), and ask whether to implement it now or queue it for later.
+- **Found a bug or missing feature?** Use `mano stories` — it creates a pending story numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3). Run `mano dev` when you want to implement the next pending row.
 - **Need to change scope?** Use `mano start` to talk to `mano start` — update assumptions, adjust scope, flag stories that turned out wrong.
 - **Need to regenerate specs or stories?** Run `mano [action]` again — the skill will check what exists and offer to update or regenerate.
 
@@ -175,7 +175,7 @@ _mano_output/
 
 Each phase brief is self-contained — problem, vision, design principle, scope, assumptions, and risks. Technical decisions and UX flow live at project level and grow only when they are useful. Future work lives in `backlog.md`. Artifacts are living working documents, not permanent contracts.
 
-Planning artifacts live under `_mano_output/`. The only framework scaffold written outside that folder is `AGENTS.md` at the project root, copied during `mano start` so coding agents know where Mano artifacts live.
+Planning artifacts live under `_mano_output/`. The installer writes the only framework scaffold outside that folder: `AGENTS.md` at the project root, so coding agents know where Mano artifacts live before any Mano command runs.
 
 Mano's installed runtime layout lives under `_mano/` inside the user's project. This repository contains the framework source files at the root for authoring, but the contract exposed to coding agents in real projects uses `_mano/skills` and `_mano/templates`.
 
@@ -354,6 +354,7 @@ Hooks are useful for optional external review, validation, or specialist checks 
 Default example hooks include:
 
 ```text
+hooks/post-import.example.md
 hooks/post-start.example.md
 hooks/post-spec.example.md
 hooks/post-rules.example.md

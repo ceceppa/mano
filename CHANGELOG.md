@@ -2,6 +2,18 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## Unreleased
+
+### Changed
+- **The scripts are a hard requirement — the no-Node hand-edit fallbacks are gone.** Every "No Node / script missing? do it by hand" escape hatch has been removed: if `state.js`, `backlog.js`, or `stories.js` cannot run, the skill stops and reports the exact failure instead of hand-writing a script-owned format or re-deriving the state projection by scanning. Mano is installed with `npx`, so Node is present by construction; the fallback was a drift channel — any script error became a license to do exactly the hand-editing the writers were built to eliminate. The rule lives canonically in `workflow.md` ("Scripts are mandatory"); sanctioned hand-edits (Core Product Principles, split title/context edits, the follow-up review's title-scoped resolves, the user's own edits) are unchanged.
+
+### Fixed
+- **Review closure is enforced consistently** — `AGENTS.md`, `mano dev`, `mano start`, and `state.js` now agree that all stories being `done` means built, not closed; only `mano review` permits the next phase, interrupted backlog close sweeps have a repair path, and a missing requested story no longer makes a phase with other pending work look complete.
+- **Existing story sets are protected on re-run** — `mano stories` reads the current index before writing, never regenerates a set without a concrete change request, preserves `done` stories, and lettered insertions go through the index writer.
+- **Writer and boundary wiring matches the shared contracts** — `mano import` uses `backlog.js`, the writer enforces its five-line context limit, `mano ui` no longer reads the backlog or edits project rules, and routine spec re-runs update in one shot without an extra confirmation gate.
+- **Eval coverage now exercises failure paths** — the import fixture satisfies its mandatory central-noun gate, assertions verify exact contract text more closely, and new cases cover pending-review refusal and immutable mid-build story insertion.
+- **Stale cross-references cleaned up** — the workflow help table no longer claims `mano ui` reads the backlog; `mano spec` no longer points at the removed `⚙️`-row diff format; `post-import` appears in every hook example list; the installer/README/AGENTS.md docs now mention `_mano/scripts/`; and leftover doubled skill-name phrases from the persona removal ("that's `mano start`'s job via `mano start`") read normally again.
+
 ## 1.1.2 — June 29, 2026
 
 ### Added

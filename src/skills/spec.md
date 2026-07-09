@@ -24,26 +24,11 @@ On activation:
 2. Read `_mano_output/tech-spec.md` if it exists.
 3. Read any package manifest and matching lockfile if they exist (`package.json` + `package-lock.json` / `pnpm-lock.yaml` / `yarn.lock` / `bun.lockb`).
 4. If no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
-5. If spec already exists, compare it against the current phase brief, any explicitly provided `spec-gap` context, and any manifest or lockfile evidence of the actual installed toolchain. **Brief-consistency is not the only pass condition.** A spec can match the brief and still be defective on its own terms — most commonly because the brief carries the same unhomed magic number the spec does, so diffing them surfaces nothing. Before presenting the diff, run the **Drain check**, the **Unhomed-value check**, and the **Domain model completeness check** (all below) against the *existing* spec, not just against the brief. These are quality passes on the spec itself, mandatory on every re-run, not only when drafting from scratch. An unhomed quantity is a defect even when the spec is "consistent with the brief" — surface it as an `⚙️` row.
+5. If spec already exists, compare it against the current phase brief, any explicitly provided `spec-gap` context, and any manifest or lockfile evidence of the actual installed toolchain. **Brief-consistency is not the only pass condition.** A spec can match the brief and still be defective on its own terms — most commonly because the brief carries the same unhomed magic number the spec does, so diffing them surfaces nothing. Before presenting the diff, run the **Drain check**, the **Unhomed-value check**, and the **Domain model completeness check** (all below) against the *existing* spec, not just against the brief. These are quality passes on the spec itself, mandatory on every re-run, not only when drafting from scratch. An unhomed quantity is a defect even when the spec is "consistent with the brief" — home it and report it as a bullet in the completion log.
 
-**Change-ripple — when the requested change introduces a new mechanism.** A change is rarely just the line it names. When a requested edit swaps in a new node type, interface, entity, or capability (e.g. a single value becomes a collection, a static field becomes computed, a plain-text field becomes rich text), that new mechanism *brings its own required data* — and the localized edit will home the named thing while silently leaving the new data unhomed. Do not apply such a change as a one-line swap. Re-run the Domain model completeness check on what the new mechanism requires: list the properties/state it needs to work, and for each, either home it in the data model or **explicitly defer it in writing** (an Assumption Log / deferral note), naming which entity will own it once a deferred item lands. This is decisive, not interrogative — make the logical assumption and record it; do not stop to ask the user step-by-step. Surface anything newly required-but-unhomed as an `⚙️` row.
+**Change-ripple — when the requested change introduces a new mechanism.** A change is rarely just the line it names. When a requested edit swaps in a new node type, interface, entity, or capability (e.g. a single value becomes a collection, a static field becomes computed, a plain-text field becomes rich text), that new mechanism *brings its own required data* — and the localized edit will home the named thing while silently leaving the new data unhomed. Do not apply such a change as a one-line swap. Re-run the Domain model completeness check on what the new mechanism requires: list the properties/state it needs to work, and for each, either home it in the data model or **explicitly defer it in writing** (an Assumption Log / deferral note), naming which entity will own it once a deferred item lands. This is decisive, not interrogative — make the logical assumption and record it; do not stop to ask the user step-by-step. Surface anything newly required-but-unhomed as a bullet in the completion log.
 
-Do not conclude "consistent, no updates needed" until all three checks have run clean. Present the diff:
-
-   ```
-   [mano spec]: I've compared the Phase [N] brief against the existing spec. Here's what needs updating:
-
-   - ✅ [existing item] — still correct
-   - 🆕 [new item from phase brief] — not in the spec yet. My recommendation: [library/approach]
-   - ✏️ [changed item] — phase brief says X, spec says Y
-   - ⚙️ [unhomed value] — "[quantity]" drives behaviour but has no field/config/constant that owns it; needs a home in [entity]
-   - 🧾 [toolchain sync item] — detected [package manager] from [manifest/lockfile], so installed versions should replace provisional planning versions where they differ
-   - 🔍 [spec-gap from backlog] — flagged during review: [context from backlog item]
-
-   Want me to apply these updates, or adjust something first?
-   ```
-
-   If nothing has changed and no spec-gaps exist, say so and skip.
+Do not conclude "consistent, no updates needed" until all three checks have run clean. Apply required non-conflicting updates directly in the same run and report them in the completion log; do not present a pre-write diff and ask for routine apply confirmation. If the checks expose a conflicting shared value or another decision the workflow reserves for the human, stop before writing that conflict and surface the exact alternatives. If nothing has changed and no spec-gaps exist, say so and skip the write.
 
 6. If spec doesn't exist yet, generate from scratch.
 
@@ -281,23 +266,24 @@ Use the canonical execution-log format defined in `_mano/workflow.md`:
 ❓ Decide: [open decision the user must confirm or change before the next command, phrased as a question with the provisional value — omit if none]
 
 [Optional hook block if active]
+
+Next:
+- `mano [action]` — [when it is useful from the current artifact state]
 ```
 
 `mano spec` must surface embedded assumptions on the right channel (see the canonical execution-log format in `_mano/workflow.md`): `⚠ Verify:` for assumptions the user can sanity-check at leisure; `❓ Decide:` whenever the confirmation should happen **before the next command** — a provisional default, a value the brief demanded a deliberate call on, a stated-preference override. If you catch yourself writing "confirm before stories" into a verify line, it's a decide. A pending `❓ Decide:` makes the `Next:` recommendation conditional on it — never announce "ready to decompose" above an unanswered decision. Overriding a directive in the brief's `## Stated Technical Preferences` block always trips a `❓ Decide:`, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently. When the user answers a decide, apply the answer to `tech-spec.md` in place — the provisional value becomes a stated decision, the hedge comes off — and reply with a one-line changelog.
 
-Choose the next action based on what's still missing or worth refining:
+Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced project layout.
 - `mano stories` — if the phase is technically clear enough to break into implementable work
 - `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
 - `mano continue` — only if it adds value and there may be a single obvious next step
 
-Type `mano` to see what's available.
-
 ## Forbidden
 
 - Do not use conversational openings or closings ("Hey!", "How does this look?", "Let me know").
-- Do not stop to ask for confirmation.
+- Do not stop for routine apply confirmation. Stop only for a conflicting value or other decision the shared workflow explicitly reserves for the human.
 - Do not include API endpoint designs for apps without APIs.
 - Do not include deployment architecture for small projects.
 - Do not include security architecture beyond what the brief specifies.

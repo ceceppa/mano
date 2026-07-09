@@ -90,7 +90,13 @@ If the document clearly states durable product values (product feel, interaction
 
 Decompose the entire document into backlog items. Every feature, requirement, non-functional criterion, and success criterion. Preserve specific detail from the source — including any stated technical preference, transcribed verbatim into the relevant item's context per B1 (pass-through, not silence).
 
-Write all items to `_mano_output/backlog.md` with `Status: backlog`. **Use exactly this item block format — do not invent fields.** No `ID`, no `Title`, no `Description`, no checkboxes, no numbering. The exact block is:
+Write all items to `_mano_output/backlog.md` with `Status: backlog` through the deterministic writer. Produce a JSON array of `{ "title", "type", "context", "source" }` objects, write it to a temporary file such as `_mano_output/.import.json`, then run:
+
+```text
+node _mano/scripts/backlog.js add --file _mano_output/.import.json
+```
+
+Delete the temporary file after the writer succeeds. The writer owns the item shape, duplicate-title check, and default `Status: backlog`; never hand-write blocks. **Script failing?** Stop and report the error (see "Scripts are mandatory" in `_mano/workflow.md`). For reference, the exact shape the writer produces — no `ID`, no `Title`, no `Description`, no checkboxes, no numbering:
 
 ```markdown
 ### [Short title]
@@ -105,7 +111,7 @@ Write all items to `_mano_output/backlog.md` with `Status: backlog`. **Use exact
 
 `Type` values: `bug` (broken), `refinement` (works but could be better), `feature` (new capability), `tech-debt` (refactoring/infra), `test` (missing coverage), `spec-gap` (unclear tech spec), `rule-gap` (unclear project rule). For a document import, most items are `feature`. `Type`, `Context`, and `Status` are required. `Source` is optional provenance — since every item here comes from the document, set it to the document's name (e.g. `product-brief.md`). Max 5 lines of context per item.
 
-Preserve the required file structure in this order: `# Backlog`, then optional `## Core Product Principles`, then `## Items`, then the item blocks. Check for duplicates before adding. This format is shared with `mano start` (see its Backlog format section) — `mano start` reads these items later, so the field names must match exactly or it will misread them.
+Preserve the required file structure in this order: `# Backlog`, then optional `## Core Product Principles`, then `## Items`, then the item blocks. The writer creates or extends that structure and skips duplicate titles. `mano start` reads these items later; going through the writer is what guarantees the field names it parses.
 
 ### Step 4 — Stop and hand off
 
@@ -117,7 +123,10 @@ The backlog is the deliverable. Do not scope a phase, draft a brief, or suggest 
 - Core Product Principles captured: [yes / none found]
 ⚠ Verify: [any assumption or unresolved ambiguity worth checking — omit if none]
 
-Next: run `mano start` to scope the first phase from this backlog.
+[Optional hook block if active]
+
+Next:
+- `mano start` — scope the first phase from this backlog
 ```
 
 ## Post-import hook suggestion

@@ -1,7 +1,7 @@
 # Mano eval harness
 
 Validate that changing a skill file doesn't break the experience — especially
-when **shrinking a heavy persona**. Snapshot the assertions that pass today,
+when **shrinking a heavy skill file**. Snapshot the assertions that pass today,
 make your change, re-run, and see exactly which capability you dropped.
 
 ## How it works
@@ -29,7 +29,7 @@ python3 eval/run.py --keep                 # keep temp dirs to inspect output
 
 Exit code is 0 only if every assertion passes.
 
-## The shrink-a-persona workflow
+## The shrink-a-skill workflow
 
 1. `python3 eval/run.py` → note the baseline (all green).
 2. Trim the skill file (e.g. cut `src/skills/stories.md`).
@@ -80,6 +80,8 @@ Document-intake skill (fixture is a raw input doc placed at the project root; no
 ```
 
 `fixture_mode` defaults to `"seed"` (project state) when omitted; use `"document"` for a raw input file. Omit `phase` for non-phase-scoped skills.
+
+For a seed fixture that includes an existing story set, name the index `stories-README.md`; the harness places it at `phase-[N]/stories/README.md`. Files named `story-*.md` in the same fixture are placed beside that index. This keeps fixtures flat while still exercising re-run and mid-build paths.
 
 ## Notes / limits
 

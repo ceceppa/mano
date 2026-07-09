@@ -64,7 +64,7 @@ Pin a version with npm's own syntax, e.g.:
   npx mano-plan@1.0.0 install
 
 Always installed:
-  ./_mano/        skills, templates, hooks, workflow
+  ./_mano/        skills, templates, hooks, scripts, workflow
   ./AGENTS.md     universal agent contract
 
 Optional (you'll be asked):

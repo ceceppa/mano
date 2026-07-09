@@ -1,0 +1,14 @@
+{
+  "name": "stories-midbuild",
+  "description": "mano stories inserts a lettered bug story after the last completed row without rewriting shipped or unrelated pending stories.",
+  "fixture": "stories-midbuild",
+  "phase": 2,
+  "prompt": "mano stories. During implementation we found a bug: the archive view still shows completed items. Add a story for that bug; do not implement it.",
+  "assertions": [
+    "midbuild_lettered_story_inserted",
+    "existing_stories_unchanged",
+    "filenames_have_slug",
+    "has_out_of_scope",
+    "has_implementation_reference"
+  ]
+}

@@ -39,8 +39,9 @@ CASES_DIR = EVAL_DIR / "cases"
 FIXTURES_DIR = EVAL_DIR / "fixtures"
 INSTALLER = REPO_ROOT / "bin" / "mano-plan.js"
 
-# Which fixture input files map to which destination under _mano_output/.
-# Phase-scoped files go under phase-{N}/, project-level files at the root.
+# Which flat fixture input files map to phase-scoped destinations. Story files
+# and the specially named stories-README.md seed an existing current story set;
+# all other files remain project-level under _mano_output/.
 PHASE_SCOPED = {"phase-brief.md"}
 
 
@@ -76,7 +77,13 @@ def seed_fixture(project: Path, fixture: str, mode: str, phase: int | None) -> N
     for f in src.iterdir():
         if not f.is_file():
             continue
-        dest = (phase_dir if f.name in PHASE_SCOPED else out) / f.name
+        if phase is not None and f.name == "stories-README.md":
+            dest = phase_dir / "stories" / "README.md"
+        elif phase is not None and f.name.startswith("story-") and f.suffix == ".md":
+            dest = phase_dir / "stories" / f.name
+        else:
+            dest = (phase_dir if f.name in PHASE_SCOPED else out) / f.name
+        dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(f, dest)
 
 

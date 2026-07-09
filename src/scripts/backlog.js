@@ -146,6 +146,10 @@ function validateItem(it, idx) {
     return `${where}: type "${it.type}" is not one of ${VALID_TYPES.join(", ")}`;
   }
   if (it.context == null || !String(it.context).trim()) return `${where}: missing "context"`;
+  const contextLines = String(it.context).replace(/\r/g, "").split("\n");
+  while (contextLines.length && contextLines[0].trim() === "") contextLines.shift();
+  while (contextLines.length && contextLines[contextLines.length - 1].trim() === "") contextLines.pop();
+  if (contextLines.length > 5) return `${where}: context has ${contextLines.length} lines (max 5)`;
   return null;
 }
 

@@ -54,7 +54,7 @@ If `project-rules.md` already exists:
 - Keep existing rules unless they explicitly conflict with the new phase.
 - Preserve any existing `Accessibility level:` line.
 
-Make specific implementation-convention decisions instead of asking the user. Do not pick libraries or frameworks — those belong to `mano spec` in `mano spec`.
+Make specific implementation-convention decisions instead of asking the user. Do not pick libraries or frameworks — those belong to `mano spec`.
 
 ## Rules vs Tech Spec boundary
 
@@ -244,14 +244,7 @@ If implementation reveals a repeated pattern that should become a rule, do not i
 
 When `project-rules.md` already exists, `mano rules` compares it against the current backlog, phase brief, and tech spec. Also check the backlog for items with `Type: rule-gap` — these are missing rules flagged during review.
 
-Update the file directly. Do not present additions and deletions in the chat interface. Append to the execution log:
-
-```text
--> Active Updates:
-   - Added: [rule]
-   - Updated: [rule]
-   - Removed: [duplicative or stale rule]
-```
+Update the file directly. Report additions, updates, and removals as ordinary compact bullets in the canonical completion log; do not add a separate `Active Updates` block.
 
 After addressing `rule-gap` items, update their status in the backlog to `resolved`.
 
@@ -276,16 +269,17 @@ Use the canonical execution-log format defined in `_mano/workflow.md`:
 ⚠ Verify: [material change the user did not explicitly ask for — omit if none]
 
 [Optional hook block if active]
+
+Next:
+- `mano [action]` — [when it is useful from the current artifact state]
 ```
 
-Choose the next action based on what's still missing or worth refining:
+Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano spec` — if technical decisions, API contracts, data models, dependencies, persistence, or platform constraints need defining or updating
 - `mano stories` — if the phase is technically clear enough to break into implementable work
 - `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
 - `mano continue` — only if it adds value and there may be a single obvious next step
-
-Type `mano` to see what's available.
 
 ## Forbidden
 

@@ -22,6 +22,20 @@ On activation:
 1. Read `_mano_output/phase-[N]/stories/README.md` to check story completion status.
 2. Read `_mano_output/reviews.md` if it exists to check whether Phase [N] already has a review entry.
 3. If Phase [N] already has a review entry, treat this as a follow-up review focused on what changed after the fix work.
+4. After the pre-review gate below is clear, if that review entry exists but `_mano_output/backlog.md` still contains any `Status: in-phase-[N]` items, the prior close was interrupted. Repair the already-approved close sweep before follow-up triage:
+   ```
+   node _mano/scripts/backlog.js resolve --phase [N]
+   ```
+   If the script fails, stop and report the error — do not flip statuses by hand. After a successful repair, stop with this repair log; do not combine it with follow-up triage and do not ask the user to re-confirm the review they already logged:
+   ```text
+   [mano review]: mano review — _mano_output/backlog.md
+   - Repaired interrupted Phase [N] close sweep
+
+   [Optional hook block if active]
+
+   Next:
+   - `mano review` — continue the follow-up review if there is new feedback
+   ```
 
 ## Pre-review gate
 
@@ -136,7 +150,7 @@ When the user confirms (e.g., "close it", "yes"):
    ```
    node _mano/scripts/backlog.js add --file [tmp].json
    ```
-   The script owns the `### / **Type:** / **Context:** / **Status:**` shape, starts every item at `Status: backlog`, and skips any title already present — so you can't misname, invent, or duplicate a field. **No Node / script missing?** Hand-write each item in this format instead (and use exactly these fields — no `ID`/`Title`/`Description`):
+   The script owns the `### / **Type:** / **Context:** / **Status:**` shape, starts every item at `Status: backlog`, and skips any title already present — so you can't misname, invent, or duplicate a field. **Script failing?** Stop and report the error — do not hand-write item blocks (see "Scripts are mandatory" in `_mano/workflow.md`). For reference, the exact shape the writer produces:
 
    ```markdown
    ### [Short title]
@@ -150,7 +164,7 @@ When the user confirms (e.g., "close it", "yes"):
    ```
    node _mano/scripts/backlog.js resolve --phase [N]
    ```
-   It flips every item currently `Status: in-phase-[N]` to `resolved` — the whole phase in one call — which is what officially closes the phase and satisfies `mano start`'s completion gate on the next phase. It matches only `in-phase-[N]`, so the items you just triaged (still `Status: backlog`) are structurally safe — never touched. **No Node / script missing?** Read `_mano_output/backlog.md` and flip each `Status: in-phase-[N]` line to `resolved` by hand, leaving the fresh `backlog` items alone.
+   It flips every item currently `Status: in-phase-[N]` to `resolved` — the whole phase in one call — which is what officially closes the phase and satisfies `mano start`'s completion gate on the next phase. It matches only `in-phase-[N]`, so the items you just triaged (still `Status: backlog`) are structurally safe — never touched. **Script failing?** Stop and report the error — do not flip statuses by hand.
 3. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
 4. **Always append** the new review entry at the **bottom** of `_mano_output/reviews.md`. Never insert between existing entries.
 5. Fill the template sections concretely.
@@ -164,6 +178,11 @@ Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonica
 - Phase [N] items marked resolved
 - Phase [N] closed
 ⚠ Verify: [material triage decision worth checking — omit if none]
+
+[Optional hook block if active]
+
+Next:
+- `mano start` — scope the next phase from the updated backlog
 ```
 That is your complete response.
 
@@ -226,14 +245,19 @@ That is your complete response. DO NOT write to files yet.
 When the user confirms (e.g., "close it", "yes"):
 1. Read `_mano_output/backlog.md`.
 2. Match resolved items to existing backlog items and flip each to `Status: resolved` by hand (these are specific `backlog` items now fixed — a title-scoped edit, not the `resolve --phase` sweep).
-3. Append any still open / new ideas to the backlog **via `node _mano/scripts/backlog.js add`** (same flags / `--file` as the standard STEP 3.1) — don't hand-write the blocks.
+3. Append any still open / new ideas to the backlog **via `node _mano/scripts/backlog.js add`** (same flags / `--file` as the standard STEP 3.1) — don't hand-write the blocks. **Script failing?** Stop and report the error.
 4. **Do not create a new `## Phase [N] Follow-up Review` section.** Find the existing `## Phase [N] Review` entry in `_mano_output/reviews.md` and append an `### Addendum — [Date]` subsection directly under it (before the next `---` separator). Use the addendum structure from `_mano/templates/phase-review.md`.
 
 Output execution log (canonical format, see `_mano/workflow.md`):
 ```
-[mano review]: mano review (follow-up) — _mano_output/backlog.md, _mano_output/reviews.md
-- Statuses updated in backlog
+[mano review]: mano review — _mano_output/backlog.md, _mano_output/reviews.md
+- Follow-up statuses updated in backlog
 - Addendum appended to Phase [N] review entry
+
+[Optional hook block if active]
+
+Next:
+- `mano start` — scope the next phase when the backlog is ready
 ```
 That is your complete response.
 
@@ -261,7 +285,7 @@ Do not run the hook automatically.
 
 Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
 
-This step is required even when no spec update was needed.
+This step is required even when no review update was needed.
 
 Mention it in the final chat response before the next-action block.
 
@@ -283,6 +307,6 @@ Do not write hook suggestions into generated artifacts.
 - Do not create stories. `mano review` writes to the backlog and review log only.
 - Do not manage story state. Do not edit story files, mark stories `done`, cut stories, or touch the stories README index — not even in the pre-review gate. If stories aren't `done`, refuse per the pre-review gate and point the user to `mano dev` or their own README edit.
 - Do not check off acceptance criteria in story files.
-- Do not scope the next phase. That's `mano start`'s job via `mano start`.
+- Do not scope the next phase. That's `mano start`'s job.
 - Do not present the backlog or use it for scoping. Reading it in STEP 3 to append, deduplicate, or resolve items is allowed.
 - Do not create files outside the defined output structure. `mano review` writes to `backlog.md` and `reviews.md` only. No extra tracking files.
