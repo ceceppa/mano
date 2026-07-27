@@ -246,6 +246,23 @@ This is not the discretionary `⚠️ Note:` judgement above — a stated-prefer
 
 Tech spec must stay compact. Aim for roughly 400-800 words outside compact tables and keep it readable in under five minutes. Do not generate large architecture documents. If the spec drifts past this, the most likely cause is implementation detail that belongs in `project-rules.md` or in the code — see the Spec vs project-rules boundary above.
 
+<!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
+## Addressing post-spec hook findings
+
+When a just-run post-spec hook prints findings, follow `_mano/workflow.md` →
+**Post-Hook Findings Triage** before editing anything. `mano spec` may apply
+selected findings only to `_mano_output/tech-spec.md`. A finding that requires a
+technical choice or conflicts with another artifact's owned value is `decide`;
+capture the selected answer in the spec and keep `Next:` conditional until it is
+resolved. A direct `tech-spec.md` correction is `apply` — `mano spec` is already
+active, so never route it back to `mano spec` or ask the user to run the same
+command again. Make that edit surgically: adding a cap, default, or missing field
+does not authorize changing an existing count, base delay, strategy, storage
+choice, or neighboring decision. Route conventions, scope changes, design
+decisions, and source-code findings to their owning skill without editing those
+targets.
+<!-- /mano-rule: post-hook-findings-triage -->
+
 ## Post-spec hook suggestion
 
 After the spec decision is complete, always check whether `_mano/hooks/post-spec.md` exists. Ignore `_mano/hooks/post-spec.example.md`.

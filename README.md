@@ -351,6 +351,13 @@ When an active hook exists, Mano mentions it after the related skill finishes an
 
 Hooks are useful for optional external review, validation, or specialist checks that are specific to your project.
 
+When a `post-start`, `post-spec`, or `post-rules` hook reports findings, Mano
+returns a compact numbered triage: apply an in-scope edit, decide between
+options, route it to the owning skill, or skip it. Running a hook never
+pre-approves its findings, and no findings ledger is added to the project.
+`post-stories` keeps a stricter per-finding flow because completed stories are
+immutable.
+
 Default example hooks include:
 
 ```text
@@ -370,6 +377,6 @@ Mano should not:
 - run hooks automatically
 - print the hook's suggested prompt unless asked
 - mention specific external skill names in generic output
-- modify files through a hook unless explicitly asked
+- modify files from hook findings unless the user explicitly selects them
 
 Hooks are best run after the human reviews the generated artifact. This avoids stale validation when the artifact is edited after generation.

@@ -1,8 +1,9 @@
-"""Property assertions over the files a skill wrote.
+"""Property assertions over the artifacts and final response a skill produced.
 
 Each assertion is a pure function: (ctx) -> list[Failure]. An empty list means
-the assertion passed. ctx gives access to the output dir and convenience
-readers. Assertions never call an LLM — they are deterministic text checks.
+the assertion passed. ctx gives access to the output dir, seeded fixture
+snapshot, final runner response, and convenience readers. Assertions never call
+an LLM — they are deterministic text checks after the runner completes.
 
 Assertions are referenced by name from a case file. Add a new check here and it
 becomes available to every case.
@@ -28,9 +29,17 @@ class Ctx:
     skills that produce project-level artifacts (the backlog) pass phase=None.
     """
 
-    def __init__(self, output_dir: Path, phase: int | None = None):
+    def __init__(
+        self,
+        output_dir: Path,
+        phase: int | None = None,
+        fixture_snapshot: dict[str, str] | None = None,
+        transcript: str = "",
+    ):
         self.output_dir = output_dir
         self.phase = phase
+        self.fixture_snapshot = fixture_snapshot or {}
+        self.transcript = transcript
         self.stories_dir = output_dir / f"phase-{phase}" / "stories" if phase is not None else None
 
     def story_files(self) -> list[Path]:
@@ -55,6 +64,25 @@ class Ctx:
         if not self.output_dir.is_dir():
             return []
         return sorted(p for p in self.output_dir.glob("phase-*") if p.is_dir())
+
+    def fixture_text(self, name: str) -> str | None:
+        return self.fixture_snapshot.get(name)
+
+    def artifact_text(self, name: str) -> str | None:
+        if self.phase is not None and name == "phase-brief.md":
+            path = self.output_dir / f"phase-{self.phase}" / name
+        else:
+            path = self.output_dir / name
+        return path.read_text(encoding="utf-8") if path.is_file() else None
+
+    def output_files(self) -> set[str]:
+        if not self.output_dir.is_dir():
+            return set()
+        return {
+            str(path.relative_to(self.output_dir))
+            for path in self.output_dir.rglob("*")
+            if path.is_file()
+        }
 
 
 # --- Structural / existence ---------------------------------------------------
@@ -250,6 +278,173 @@ def stated_tech_preference_preserved(ctx: Ctx) -> list[Failure]:
         return [Failure("stated_tech_preference_preserved",
                         "stated SQLite/offline/account directive was not preserved verbatim")]
     return []
+
+
+# --- post-hook finding triage -------------------------------------------------
+
+HOOK_TRIAGE_FILES = ("phase-brief.md", "tech-spec.md", "project-rules.md")
+
+
+def hook_triage_no_approval_left_artifacts_unchanged(ctx: Ctx) -> list[Failure]:
+    changed = []
+    for name in HOOK_TRIAGE_FILES:
+        if ctx.artifact_text(name) != ctx.fixture_text(name):
+            changed.append(name)
+    expected_files = {
+        f"phase-{ctx.phase}/phase-brief.md",
+        "tech-spec.md",
+        "project-rules.md",
+    }
+    extras = ctx.output_files() - expected_files
+    if extras:
+        changed.extend(sorted(extras))
+    if changed:
+        return [
+            Failure(
+                "hook_triage_no_approval_left_artifacts_unchanged",
+                f"hook findings were not approved, but output changed: {changed}",
+            )
+        ]
+    return []
+
+
+def _hook_triage_offer(
+    ctx: Ctx,
+    assertion: str,
+    first_artifact: str,
+    second_artifact: str,
+    route_owner: str,
+) -> list[Failure]:
+    # This behavior lives in chat, so file assertions alone cannot distinguish a
+    # correct triage offer from a runner that simply did nothing.
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    required = {
+        "first numbered finding": rf"(?is)\b1\.\s*.{{0,120}}{re.escape(first_artifact)}",
+        "second numbered finding": rf"(?is)\b2\.\s*.{{0,120}}{re.escape(second_artifact)}",
+        "selection language": r"\b(?:apply|approve|address|reject|skip)\b",
+        "cross-owner route": rf"(?:route.{{0,80}})?{re.escape(route_owner)}",
+    }
+    missing = [
+        label
+        for label, pattern in required.items()
+        if not re.search(pattern, text, re.IGNORECASE)
+    ]
+    if not missing:
+        return []
+    compact = " ".join(text.strip().split())
+    excerpt = compact[-600:]
+    return [
+        Failure(
+            assertion,
+            f"triage response missing {missing}; runner output began: {excerpt!r}",
+        )
+    ]
+
+
+def hook_triage_offer_present(ctx: Ctx) -> list[Failure]:
+    return _hook_triage_offer(
+        ctx,
+        "hook_triage_offer_present",
+        "tech-spec.md",
+        "project-rules.md",
+        "mano rules",
+    )
+
+
+def start_hook_triage_offer_present(ctx: Ctx) -> list[Failure]:
+    return _hook_triage_offer(
+        ctx,
+        "start_hook_triage_offer_present",
+        "phase-brief.md",
+        "tech-spec.md",
+        "mano spec",
+    )
+
+
+def rules_hook_triage_offer_present(ctx: Ctx) -> list[Failure]:
+    return _hook_triage_offer(
+        ctx,
+        "rules_hook_triage_offer_present",
+        "project-rules.md",
+        "tech-spec.md",
+        "mano spec",
+    )
+
+
+def selected_hook_finding_applied_only_in_spec(ctx: Ctx) -> list[Failure]:
+    spec = ctx.artifact_text("tech-spec.md") or ""
+    original_spec = ctx.fixture_text("tech-spec.md") or ""
+    failures = []
+    if spec == original_spec:
+        failures.append(
+            Failure(
+                "selected_hook_finding_applied_only_in_spec",
+                "approved finding did not change tech-spec.md",
+            )
+        )
+    if not re.search(
+        r"\b(?:(?:8|eight)(?:-|\s+)(?:seconds?|secs?)|8\s*s)\b",
+        spec,
+        re.IGNORECASE,
+    ):
+        response = " ".join(ctx.transcript.strip().split())[-300:]
+        failures.append(
+            Failure(
+                "selected_hook_finding_applied_only_in_spec",
+                "tech-spec.md does not contain the approved 8-second retry cap; "
+                f"final response: {response!r}",
+            )
+        )
+    if not re.search(r"retry once\b.*\b1 second\b", spec, re.IGNORECASE):
+        failures.append(
+            Failure(
+                "selected_hook_finding_applied_only_in_spec",
+                "the narrow cap edit lost the existing retry-once/1-second policy",
+            )
+        )
+    original_unrelated = [
+        line
+        for line in original_spec.splitlines()
+        if not line.startswith("- Retry policy:")
+    ]
+    missing_lines = [line for line in original_unrelated if line not in spec.splitlines()]
+    if missing_lines:
+        failures.append(
+            Failure(
+                "selected_hook_finding_applied_only_in_spec",
+                f"the selected edit removed unrelated spec lines: {missing_lines}",
+            )
+        )
+    for name in ("phase-brief.md", "project-rules.md"):
+        if ctx.artifact_text(name) != ctx.fixture_text(name):
+            failures.append(
+                Failure(
+                    "selected_hook_finding_applied_only_in_spec",
+                    f"unselected/out-of-lane artifact changed: {name}",
+                )
+            )
+    blob = "\n".join(ctx.artifact_text(name) or "" for name in HOOK_TRIAGE_FILES)
+    if re.search(r"all services must use exponential backoff", blob, re.IGNORECASE):
+        failures.append(
+            Failure(
+                "selected_hook_finding_applied_only_in_spec",
+                "the unselected project-rules finding was applied",
+            )
+        )
+    expected_files = {
+        f"phase-{ctx.phase}/phase-brief.md",
+        "tech-spec.md",
+        "project-rules.md",
+    }
+    extras = ctx.output_files() - expected_files
+    if extras:
+        failures.append(
+            Failure(
+                "selected_hook_finding_applied_only_in_spec",
+                f"triage created unexpected tracking/output files: {sorted(extras)}",
+            )
+        )
+    return failures
 
 
 # --- review hard gate ---------------------------------------------------------
@@ -480,6 +675,13 @@ REGISTRY = {
     "import_wrote_only_backlog": import_wrote_only_backlog,
     "backlog_covers_document_features": backlog_covers_document_features,
     "stated_tech_preference_preserved": stated_tech_preference_preserved,
+    # post-hook finding triage
+    "hook_triage_no_approval_left_artifacts_unchanged":
+        hook_triage_no_approval_left_artifacts_unchanged,
+    "hook_triage_offer_present": hook_triage_offer_present,
+    "start_hook_triage_offer_present": start_hook_triage_offer_present,
+    "rules_hook_triage_offer_present": rules_hook_triage_offer_present,
+    "selected_hook_finding_applied_only_in_spec": selected_hook_finding_applied_only_in_spec,
     # review hard gate
     "pending_review_gate_held": pending_review_gate_held,
     # stories mid-build

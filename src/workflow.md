@@ -523,6 +523,53 @@ Default to the smallest relevant context.
 
 Only request or load additional artifacts when they materially change the current output.
 
+<!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
+## Post-Hook Findings Triage
+
+This protocol applies when an active `post-start`, `post-spec`, or `post-rules`
+hook has run and printed findings in chat. Running the hook approves the review,
+not the edits. On the owning skill's next turn, classify the findings and stop
+for an explicit selection before changing any file:
+
+- **`apply`** — one narrow change within the current skill's owning artifact
+- **`decide`** — a scope, product, or technical choice the human must make;
+  show compact `(a)` / `(b)` options and do not choose
+- **`route: mano [skill]`** — the finding belongs to another artifact owner;
+  name the owner and do not edit that artifact
+
+The owning skill is already active during this flow. A finding inside its own
+artifact boundary is `apply`, never `route` back to itself; do not ask the user
+to run the command they are already using.
+
+Use this compact format:
+
+```text
+[mano skill]: Review hook reported [N] findings. Want me to address any?
+
+1. [apply] [artifact] — [issue] → [narrow direction]
+2. [decide] [artifact] — [issue] → (a) [option], (b) [option]
+3. [route: mano rules] [artifact] — [issue]
+
+Reply once: `apply 1`; `decide 2:b`; `skip 3`; or combine explicitly numbered selections.
+Reply `done` when no more findings should be handled.
+```
+
+The user may approve several numbered findings in one reply. A blanket
+"apply everything" is not per-finding approval; ask them to name the numbers.
+Apply only the selected findings and only inside the current skill's ownership
+boundary. `apply` means the smallest edit that satisfies that finding: preserve
+unmentioned content and adjacent values. A reviewer direction does not authorize
+rewriting the surrounding policy. Never silently reconcile a conflict between
+artifacts: classify it as `decide` or `route`. Never edit source code from this
+flow.
+
+Findings live in chat only. Do not create a findings file, decision ledger, or
+other tracking artifact. If compaction or a context reset removed the findings,
+ask the user to re-run the hook. After selected edits, use the skill's normal
+execution log. `mano stories` keeps its stricter local protocol for immutable
+done stories and lettered follow-up work.
+<!-- /mano-rule: post-hook-findings-triage -->
+
 ## Optional Post-Skill Hooks
 
 Mano supports optional post-skill hooks in `_mano/hooks/`.

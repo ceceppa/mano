@@ -1,0 +1,12 @@
+{
+  "name": "hook-triage-start-no-approval",
+  "description": "Post-start hook findings remain diagnostic until selected; the active skill keeps brief/backlog work in-lane and routes a spec-owned finding without changing artifacts.",
+  "fixture": "hook-triage-spec",
+  "phase": 3,
+  "active_hook": "start",
+  "prompt": "mano start. Continue the previous interaction: the active post-start hook has just run and reported two raw findings in chat. (1) phase-brief.md should clarify that the existing sync flow remains local-first. (2) tech-spec.md gives the retry delay no maximum and recommends an 8-second cap. No finding has been approved yet. Handle the hook output according to Mano; do not treat running the hook as approval.",
+  "assertions": [
+    "hook_triage_no_approval_left_artifacts_unchanged",
+    "start_hook_triage_offer_present"
+  ]
+}

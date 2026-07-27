@@ -1,0 +1,11 @@
+{
+  "name": "hook-triage-selected-only",
+  "description": "After post-spec triage, an explicit selection updates only the owning artifact and does not apply an unselected out-of-lane finding or create tracking state.",
+  "fixture": "hook-triage-spec",
+  "phase": 3,
+  "active_hook": "spec",
+  "prompt": "mano spec. This is the user's reply to an already-completed post-hook triage, not a new hook invocation. The prior assistant message listed: (1) [apply] tech-spec.md — retry delay has no maximum cap; direction: cap it at 8 seconds. (2) [route: mano rules] project-rules.md — add the convention 'all services must use exponential backoff'. The user's current selection is exactly: `apply 1; skip 2`. Do not re-run or re-offer the hook. Apply finding 1 now as a surgical edit that preserves the existing retry count, base delay, storage choice, and permanent-failure behavior. Do not edit finding 2.",
+  "assertions": [
+    "selected_hook_finding_applied_only_in_spec"
+  ]
+}

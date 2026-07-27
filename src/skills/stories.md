@@ -437,6 +437,7 @@ Next:
 - `mano dev` — implement the next pending story
 ```
 
+<!-- mano-rule: id=post-stories-hook-findings-triage; incident=post-stories-hook-findings; model=not-recorded; date=2026-05-29; eval=pending -->
 ## Addressing post-stories hook findings
 
 When the post-stories hook runs and the reviewer prints findings in chat, `mano stories` does **not** silently update stories. The reviewer is diagnostic; the user owns every change.
@@ -466,6 +467,7 @@ Mark findings that require a product decision (contradictions between artifacts,
 - **No source code.** The Identity rule still holds. Even if a finding hints at an implementation fix, `mano stories` only edits story files.
 
 After applying each approved finding, output a one-line confirmation. After the user says `done`, output the standard execution log for the modified story set.
+<!-- /mano-rule: post-stories-hook-findings-triage -->
 
 ## Cascading UI/UX changes
 

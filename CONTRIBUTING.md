@@ -66,17 +66,27 @@ everything else under `src/` → the project's `_mano/` directory.
 - A value that's shared across skills lives in **one** owning artifact and is
   referenced — or, where referencing has proven unreliable for small-context agents,
   inlined with a "do not invent fields" guard. Don't create a second source of truth.
+- An incident-born behavior patch must carry a paired `mano-rule` provenance
+  fence with a stable id, the real incident, observed model (or
+  `not-recorded`), date, and its eval case. Use `eval=pending` only while
+  retrofitting provenance to an existing patch whose case has not been captured
+  yet. The fence makes the patch removable in a throwaway install; it is not
+  user-facing artifact metadata. Do not add a marker to make a speculative rule
+  look justified.
 
 ## Testing a change
 
 Mano has an eval harness that installs Mano into a throwaway project, runs a skill
-headless against a real CLI, and asserts on the files it produces. It's
-runner- and model-agnostic (no API key needed).
+headless against a real CLI, and asserts on its artifacts plus any genuinely
+chat-native contract. It does not inspect hidden reasoning or require a specific
+model (no API key needed).
 
 ```bash
+npm test                          # deterministic provenance/harness checks
 npm run eval                      # all cases, claude runner
 python3 eval/run.py --runner codex
 python3 eval/run.py --case import-prd --keep
+npm run eval:rules                # incident-backed patch inventory
 ```
 
 The intended workflow when you trim a skill:
@@ -88,7 +98,11 @@ The intended workflow when you trim a skill:
 
 Adding rules to a skill? Add the matching assertion in `eval/assertions.py` so the
 rule is enforced, not just hoped for. See [eval/README.md](eval/README.md) for how
-to add checks and cases.
+to add checks and cases. For a behavior patch, also run
+`--probe-rule <id>` when assessing a model upgrade. The complete probe runs every
+mapped case and refuses `eval=pending`; `--without-rule` is only a partial/debug
+tool. Removal happens only in temp installs, and a passing probe is evidence for
+human review, not automatic permission to delete the rule.
 
 ## Pull requests
 

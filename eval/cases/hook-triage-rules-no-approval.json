@@ -1,0 +1,12 @@
+{
+  "name": "hook-triage-rules-no-approval",
+  "description": "Post-rules hook findings remain diagnostic until selected; the active skill keeps rule edits in-lane and routes a spec-owned finding without changing artifacts.",
+  "fixture": "hook-triage-spec",
+  "phase": 3,
+  "active_hook": "rules",
+  "prompt": "mano rules. Continue the previous interaction: the active post-rules hook has just run and reported two raw findings in chat. (1) project-rules.md should clarify the logging convention for recoverable sync failures. (2) tech-spec.md gives the retry delay no maximum and recommends an 8-second cap. No finding has been approved yet. Handle the hook output according to Mano; do not treat running the hook as approval.",
+  "assertions": [
+    "hook_triage_no_approval_left_artifacts_unchanged",
+    "rules_hook_triage_offer_present"
+  ]
+}

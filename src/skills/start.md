@@ -425,6 +425,19 @@ Next:
 
 If all four optional artifacts already exist, recommend only the action that is useful from the current state.
 
+<!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
+## Addressing post-start hook findings
+
+When a just-run post-start hook prints findings, follow `_mano/workflow.md` →
+**Post-Hook Findings Triage** before editing anything. `mano start` may apply
+selected findings only to the current phase brief and backlog. Any finding that
+would change the already-approved phase scope is `decide`, not `apply`. Backlog
+changes still go through the mandatory writer commands; never route around them
+with a hand-edit. A direct brief/backlog correction is `apply` — never route it
+back to the already-active `mano start`. Route findings owned by spec, rules,
+UX, UI, stories, or source code without editing those targets.
+<!-- /mano-rule: post-hook-findings-triage -->
+
 ## Post-start hook suggestion
 
 After `mano start`, check whether `_mano/hooks/post-start.md` exists. Ignore `_mano/hooks/post-start.example.md`.

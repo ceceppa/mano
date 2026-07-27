@@ -250,6 +250,18 @@ After addressing `rule-gap` items, update their status in the backlog to `resolv
 
 Prefer narrow edits. Do not rewrite large parts of `project-rules.md` unless the existing rules are stale, duplicative, or misleading.
 
+<!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
+## Addressing post-rules hook findings
+
+When a just-run post-rules hook prints findings, follow `_mano/workflow.md` →
+**Post-Hook Findings Triage** before editing anything. `mano rules` may apply
+selected findings only to `_mano_output/project-rules.md`. A conflict with a
+value owned by the spec, brief, UX, or design brief is `decide` or `route`, never
+an invitation to reconcile the artifacts silently. Do not edit the owning
+artifact on another skill's behalf. A direct `project-rules.md` correction is
+`apply` — never route it back to the already-active `mano rules`.
+<!-- /mano-rule: post-hook-findings-triage -->
+
 ## Post-rules hook suggestion
 
 After `mano rules` completes, check whether `_mano/hooks/post-rules.md` exists. Ignore `_mano/hooks/post-rules.example.md`.
