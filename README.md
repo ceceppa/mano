@@ -156,7 +156,7 @@ The pipeline doesn't require you to finish before course-correcting.
 
 ```
 _mano_output/
-├── backlog.md               ← future work, deferred items, review follow-ups (created by `mano import` or `mano start`, owned by `mano start`, updated by `mano review`, editable by you)
+├── backlog.md               ← future work, deferred items, review follow-ups (created by `mano import` / `mano start`; owned by `mano start` / `mano review`; `mano spec` / `mano rules` resolve only projected gap items; editable by you)
 ├── tech-spec.md             ← project-wide, cumulative (`mano spec` extends per phase)
 ├── ux-flow.md               ← project-wide, cumulative (`mano ux` extends per phase)
 ├── design-brief.md          ← project-wide visual language (if generated)
@@ -290,7 +290,7 @@ Mano artifacts are optimized for humans first. They should be easy to read, edit
 
 The backlog may contain a short, optional `Core Product Principles` section for durable product values that should survive across phases — expectations such as speed, simplicity, interaction feel, accessibility level, or tone that are easy to lose during iterative planning. Keep it small and human-editable; it does not need a separate process or artifact.
 
-`mano start` owns this continuity and copies only the principles relevant to the current phase into the phase brief. Downstream skills operate from the phase brief and explicitly provided context rather than reading the backlog for general project memory.
+`mano start` owns this continuity and copies only the principles relevant to the current phase into the phase brief. Downstream skills do not read the backlog for general project memory. The narrow exceptions are deterministic projections: `mano spec` receives only unresolved `spec-gap` items and `mano rules` receives only unresolved `rule-gap` items; each can resolve only an exact item it fully addressed.
 
 ## How Skills Stay Disciplined
 
@@ -328,6 +328,7 @@ Skills should load or request only the context needed for the current task.
 
 Prefer:
 - phase brief before full backlog
+- filtered `state.js --gaps` output instead of direct gap-related backlog access
 - relevant artifact sections before entire documents
 - explicit provided context before inferred project memory
 - small targeted follow-up questions before broad discovery

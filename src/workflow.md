@@ -181,9 +181,9 @@ Show a brief description of the skill — what it does, when to use it, what it 
 |---------|------|-------|----------|
 | **`mano import`** | Turns an existing PRD or document into a backlog. Decomposes the document into items, then stops. Does not scope phases. | A PRD/document (path or pasted), existing backlog | Backlog (items `Status: backlog`) |
 | **`mano start`** | Scopes projects and phases. Populates the backlog (from conversation), suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews | Phase brief, backlog updates |
-| **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, explicit spec-gap context | Tech spec |
+| **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, filtered unresolved spec-gap projection | Tech spec; targeted spec-gap status updates |
 | **`mano ux`** | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
-| **`mano rules`** | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
+| **`mano rules`** | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, design brief, filtered unresolved rule-gap projection, phase brief, existing project rules | Project rules; targeted rule-gap status updates |
 | **`mano ui`** | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules | Design brief, design preview |
 | **`mano stories`** | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, existing current-phase story set on re-run, tech spec, UX flow, design brief, project rules | Story files, stories index |
 | **`mano review`** | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
@@ -489,10 +489,10 @@ If they differ in number or in unit, **stop and surface the conflict for a human
 `mano start` and `mano review` own backlog content and long-lived project continuity.
 
 Other skills should not edit the backlog except for narrow gap-resolution status updates:
-- `mano spec` may mark an explicitly provided `spec-gap` as resolved after updating the technical specification.
-- `mano rules` may mark an explicitly provided `rule-gap` as resolved after updating project rules.
+- `mano spec` must run `node _mano/scripts/state.js --gaps spec-gap`; that projection is its only backlog read. After updating the technical specification, it may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type spec-gap --title "..."`.
+- `mano rules` must run `node _mano/scripts/state.js --gaps rule-gap`; that projection is its only backlog read. After updating project rules, it may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type rule-gap --title "..."`.
 
-Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
+Neither skill opens `backlog.md`, even when the user asks it to handle backlog gaps; the read-only projection and targeted writer are the complete interface. Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
 
 ## Skill Tightening
 
