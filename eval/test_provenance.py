@@ -17,6 +17,7 @@ class ProvenanceTests(unittest.TestCase):
 
         self.assertIn("post-hook-findings-triage", rules)
         self.assertIn("post-stories-hook-findings-triage", rules)
+        self.assertIn("project-rule-story-coverage", rules)
         self.assertEqual(
             len(rules["post-hook-findings-triage"].occurrences),
             5,
@@ -29,6 +30,14 @@ class ProvenanceTests(unittest.TestCase):
                 "hook-triage-start-no-approval",
                 "hook-triage-rules-no-approval",
             ),
+        )
+        self.assertEqual(
+            len(rules["project-rule-story-coverage"].occurrences),
+            5,
+        )
+        self.assertEqual(
+            rules["project-rule-story-coverage"].evals,
+            ("stories-project-rule-coverage",),
         )
 
     def test_retirement_probe_strips_every_installed_occurrence(self) -> None:

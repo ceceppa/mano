@@ -1,0 +1,13 @@
+{
+  "name": "stories-project-rule-coverage",
+  "description": "mano stories maps a public-class documentation rule into concrete story acceptance criteria and narrow implementation ownership.",
+  "fixture": "stories-project-rule-coverage",
+  "phase": 1,
+  "prompt": "mano stories",
+  "assertions": [
+    "stories_were_written",
+    "readme_index_exists",
+    "has_implementation_reference",
+    "public_class_documentation_rule_covered"
+  ]
+}

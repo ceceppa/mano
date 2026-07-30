@@ -203,6 +203,128 @@ def phase_goal_quality_covered(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+def public_class_documentation_rule_covered(ctx: Ctx) -> list[Failure]:
+    """The fixture introduces ReportFormatter while project rules require both
+    source and Markdown documentation. Verify one owning story carries every
+    normative detail as acceptance criteria plus narrow ownership pointers.
+    """
+    candidates = []
+    for name, text in ctx.story_texts().items():
+        done = _section(text, "Done when") or ""
+        implementation = _section(text, "Implementation Reference") or ""
+        if not re.search(r"\bReportFormatter\b", implementation):
+            continue
+
+        done_items = []
+        for line in done.splitlines():
+            match = re.match(r"^\s*-\s+(?:\[[ xX]\]\s*)?(.*\S)\s*$", line)
+            if match:
+                done_items.append(match.group(1))
+
+        page_items = [
+            item
+            for item in done_items
+            if (
+                "docs/api/report-formatter.md" in item
+                or re.search(
+                    r"(?:ReportFormatter.{0,80}(?:page|API\s+reference)|"
+                    r"(?:page|API\s+reference).{0,80}ReportFormatter)",
+                    item,
+                    re.IGNORECASE,
+                )
+            )
+        ]
+        page_text = "\n".join(page_items)
+
+        source_items = [
+            item
+            for item in done_items
+            if re.search(
+                r"\b(?:source\s+documentation(?:\s+comment)?|"
+                r"source\s+doc\s+comment|documentation\s+comment|"
+                r"doc\s+comment|JSDoc)\b",
+                item,
+                re.IGNORECASE,
+            )
+        ]
+        source_text = "\n".join(source_items)
+
+        checks = {
+            "source file ownership": "src/api/ReportFormatter.ts" in implementation,
+            "Markdown file ownership": "docs/api/report-formatter.md" in implementation,
+            "narrow Documentation rule reference": (
+                "project-rules.md" in implementation
+                and bool(re.search(r"\bDocumentation\b", implementation, re.IGNORECASE))
+            ),
+            "Markdown page Done-when criterion": bool(page_items),
+            "Markdown page overview requirement": bool(re.search(
+                r"\boverview\b", page_text, re.IGNORECASE
+            )),
+            "Markdown page minimal-example requirement": bool(re.search(
+                r"\bminimal\s+(?:usage\s+)?example\b", page_text, re.IGNORECASE
+            )),
+            "Markdown page public-methods requirement": bool(re.search(
+                r"\bpublic\s+methods?\b", page_text, re.IGNORECASE
+            )),
+            "source documentation Done-when criterion": bool(source_items) and bool(
+                re.search(
+                    r"\b(?:ReportFormatter|public\s+class|exported\s+class|class\s+declaration)\b",
+                    source_text,
+                    re.IGNORECASE,
+                )
+            ),
+            "source documentation direct-placement requirement": bool(re.search(
+                r"(?:source\s+documentation(?:\s+comment)?|source\s+doc\s+comment|"
+                r"documentation\s+comment|doc\s+comment|JSDoc).{0,100}"
+                r"\b(?:directly\s+|immediately\s+)?above\b"
+                r"|\b(?:directly\s+|immediately\s+)?above\b.{0,100}"
+                r"(?:source\s+documentation(?:\s+comment)?|source\s+doc\s+comment|"
+                r"documentation\s+comment|doc\s+comment|JSDoc)",
+                implementation,
+                re.IGNORECASE | re.DOTALL,
+            )),
+            "source documentation one-line-purpose requirement": bool(re.search(
+                r"\bone[- ]line\s+(?:purpose|description|summary)\b"
+                r"|\b(?:purpose|description|summary).{0,30}\bone[- ]line\b",
+                source_text,
+                re.IGNORECASE,
+            )),
+        }
+
+        not_this = _section(text, "Not this story") or ""
+        if re.search(
+            r"docs/api/report-formatter\.md"
+            r"|ReportFormatter.{0,80}(?:documentation|API\s+reference)\s+page"
+            r"|\b(?:Markdown\s+|API\s+(?:reference\s+)?)documentation\b"
+            r"|\bdocumentation\s+pages?\b",
+            not_this,
+            re.IGNORECASE | re.DOTALL,
+        ):
+            checks["Markdown documentation is not deferred"] = False
+        if re.search(
+            r"ReportFormatter.{0,80}(?:source\s+documentation|source\s+doc\s+comment|"
+            r"documentation\s+comment|doc\s+comment|JSDoc)"
+            r"|(?:source\s+documentation|source\s+doc\s+comment|"
+            r"documentation\s+comment|doc\s+comment|JSDoc).{0,80}ReportFormatter"
+            r"|\bsource\s+documentation(?:\s+comments?)?\b"
+            r"|\b(?:source\s+)?doc\s+comments?\b|\bJSDoc\b",
+            not_this,
+            re.IGNORECASE | re.DOTALL,
+        ):
+            checks["source documentation is not deferred"] = False
+
+        missing = [label for label, present in checks.items() if not present]
+        if not missing:
+            return []
+        candidates.append((name, missing))
+
+    return [Failure(
+        "public_class_documentation_rule_covered",
+        "no ReportFormatter story fully owns project-rules.md §Documentation; "
+        f"candidates: {candidates or 'none'}",
+    )]
+
+
 # --- mano import: backlog contract --------------------------------------------
 
 def backlog_was_written(ctx: Ctx) -> list[Failure]:
@@ -667,6 +789,7 @@ REGISTRY = {
     "has_implementation_reference": has_implementation_reference,
     "tests_present_when_rules_require": tests_present_when_rules_require,
     "phase_goal_quality_covered": phase_goal_quality_covered,
+    "public_class_documentation_rule_covered": public_class_documentation_rule_covered,
     # mano import
     "backlog_was_written": backlog_was_written,
     "backlog_has_items": backlog_has_items,
