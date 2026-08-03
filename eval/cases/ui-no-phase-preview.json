@@ -1,0 +1,10 @@
+{
+  "name": "ui-no-phase-preview",
+  "description": "mano ui cannot assign a phase-local preview without a phase brief, so it leaves existing design artifacts untouched and routes to mano start.",
+  "fixture": "ui-no-phase-preview",
+  "prompt": "mano ui. The existing visual direction is approved; create the next preview now without another preference checkpoint.",
+  "assertions": [
+    "ui_no_phase_preview_wrote_nothing",
+    "ui_no_phase_preview_routes_to_start"
+  ]
+}

@@ -130,7 +130,11 @@ def _parse_file(path: Path) -> list[tuple[dict[str, str], Occurrence]]:
 
 def _source_files(root: Path) -> list[Path]:
     src = root / "src"
-    return sorted(path for path in src.rglob("*") if path.is_file() and path.suffix == ".md")
+    return sorted(
+        path
+        for path in src.rglob("*")
+        if path.is_file() and (path.suffix == ".md" or path.name == "cursorrules")
+    )
 
 
 def discover_rules(root: Path, *, validate_cases: bool = True) -> dict[str, Rule]:

@@ -18,6 +18,9 @@ class ProvenanceTests(unittest.TestCase):
         self.assertIn("post-hook-findings-triage", rules)
         self.assertIn("post-stories-hook-findings-triage", rules)
         self.assertIn("project-rule-story-coverage", rules)
+        self.assertIn("dev-yolo-batch", rules)
+        self.assertIn("ui-phase-preview-ownership", rules)
+        self.assertIn("public-interface-contract-readiness", rules)
         self.assertEqual(
             len(rules["post-hook-findings-triage"].occurrences),
             5,
@@ -38,6 +41,30 @@ class ProvenanceTests(unittest.TestCase):
         self.assertEqual(
             rules["project-rule-story-coverage"].evals,
             ("stories-project-rule-coverage",),
+        )
+        self.assertEqual(
+            len(rules["dev-yolo-batch"].occurrences),
+            7,
+        )
+        self.assertEqual(
+            rules["dev-yolo-batch"].evals,
+            ("dev-yolo-batch", "dev-yolo-blocker", "dev-default-single"),
+        )
+        self.assertEqual(
+            len(rules["ui-phase-preview-ownership"].occurrences),
+            16,
+        )
+        self.assertEqual(
+            rules["ui-phase-preview-ownership"].evals,
+            ("ui-phase-preview", "ui-no-phase-preview"),
+        )
+        self.assertEqual(
+            len(rules["public-interface-contract-readiness"].occurrences),
+            21,
+        )
+        self.assertEqual(
+            rules["public-interface-contract-readiness"].evals,
+            ("spec-public-interface-completeness", "stories-public-interface-gap"),
         )
 
     def test_retirement_probe_strips_every_installed_occurrence(self) -> None:
@@ -70,6 +97,73 @@ class ProvenanceTests(unittest.TestCase):
                 encoding="utf-8"
             )
             self.assertIn("id=post-stories-hook-findings-triage;", stories)
+
+            removed_yolo = provenance.strip_rules(project, {"dev-yolo-batch"})
+            # --yes installs AGENTS.md, CLAUDE.md, workflow.md, and dev.md; the
+            # optional .cursorrules surface is intentionally not installed.
+            self.assertEqual(removed_yolo, {"dev-yolo-batch": 6})
+            for relative in (
+                "AGENTS.md",
+                "CLAUDE.md",
+                "_mano/workflow.md",
+                "_mano/skills/dev.md",
+            ):
+                text = (project / relative).read_text(encoding="utf-8")
+                self.assertNotIn("id=dev-yolo-batch;", text)
+
+            removed_ui = provenance.strip_rules(
+                project, {"ui-phase-preview-ownership"}
+            )
+            self.assertEqual(
+                removed_ui,
+                {"ui-phase-preview-ownership": 16},
+            )
+            for relative in (
+                "_mano/workflow.md",
+                "_mano/skills/start.md",
+                "_mano/skills/ui.md",
+                "_mano/templates/design-brief.md",
+                "_mano/hooks/post-ui.example.md",
+            ):
+                text = (project / relative).read_text(encoding="utf-8")
+                self.assertNotIn("id=ui-phase-preview-ownership;", text)
+
+            removed_interface = provenance.strip_rules(
+                project, {"public-interface-contract-readiness"}
+            )
+            self.assertEqual(
+                removed_interface,
+                {"public-interface-contract-readiness": 21},
+            )
+            for relative in (
+                "AGENTS.md",
+                "_mano/skills/start.md",
+                "_mano/skills/spec.md",
+                "_mano/skills/stories.md",
+                "_mano/templates/tech-spec.md",
+            ):
+                text = (project / relative).read_text(encoding="utf-8")
+                self.assertNotIn("id=public-interface-contract-readiness;", text)
+
+            stripped_prompt = "\n".join(
+                (project / relative).read_text(encoding="utf-8")
+                for relative in (
+                    "AGENTS.md",
+                    "_mano/workflow.md",
+                    "_mano/skills/start.md",
+                    "_mano/skills/spec.md",
+                    "_mano/skills/stories.md",
+                    "_mano/templates/tech-spec.md",
+                )
+            )
+            for incident_phrase in (
+                "node _mano/scripts/state.js --spec",
+                "Public interface completeness check",
+                "Public-interface readiness",
+                "A section title or broad capability list is not a usable contract",
+                "Exact operation / event",
+            ):
+                self.assertNotIn(incident_phrase, stripped_prompt)
 
 
 if __name__ == "__main__":

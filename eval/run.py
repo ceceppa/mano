@@ -71,19 +71,30 @@ def seed_fixture(project: Path, fixture: str, mode: str, phase: int | None) -> N
                      copied to the project root as-is (e.g. a PRD for mano import).
     """
     src = FIXTURES_DIR / fixture
+    files = sorted(path for path in src.rglob("*") if path.is_file())
     if mode == "document":
-        for f in src.iterdir():
-            if f.is_file():
-                shutil.copyfile(f, project / f.name)
+        for f in files:
+            relative = f.relative_to(src)
+            dest = project / relative
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(f, dest)
         return
 
     out = project / "_mano_output"
     phase_dir = out / f"phase-{phase}" if phase is not None else out
     phase_dir.mkdir(parents=True, exist_ok=True)
-    for f in src.iterdir():
-        if not f.is_file():
-            continue
-        if phase is not None and f.name == "stories-README.md":
+    for f in files:
+        relative = f.relative_to(src)
+        if relative.parts[0] == "project":
+            # `project/` is an explicit fixture escape from planning output for
+            # brownfield checks that need a tiny existing source/declaration
+            # surface. The prefix itself is not copied.
+            dest = project.joinpath(*relative.parts[1:])
+        elif relative.parent != Path("."):
+            # Nested fixture paths model existing multi-phase output verbatim,
+            # e.g. phase-1/design-preview.html while phase-2 is active.
+            dest = out / relative
+        elif phase is not None and f.name == "stories-README.md":
             dest = phase_dir / "stories" / "README.md"
         elif phase is not None and f.name.startswith("story-") and f.suffix == ".md":
             dest = phase_dir / "stories" / f.name
@@ -118,8 +129,8 @@ def run_case(
     mode = case.get("fixture_mode", "seed")
     fixture_dir = FIXTURES_DIR / case["fixture"]
     fixture_snapshot = {
-        path.name: path.read_text(encoding="utf-8")
-        for path in fixture_dir.iterdir()
+        path.relative_to(fixture_dir).as_posix(): path.read_text(encoding="utf-8")
+        for path in fixture_dir.rglob("*")
         if path.is_file()
     }
     removed_note = f", without: {','.join(sorted(without_rules))}" if without_rules else ""

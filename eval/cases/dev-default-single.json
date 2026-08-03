@@ -1,0 +1,11 @@
+{
+  "name": "dev-default-single",
+  "description": "Without the literal yolo modifier, mano dev still implements only the next pending story and stops.",
+  "fixture": "dev-yolo",
+  "phase": 1,
+  "prompt": "mano-dev",
+  "assertions": [
+    "dev_default_completed_only_next",
+    "dev_default_output_discipline"
+  ]
+}

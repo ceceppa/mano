@@ -135,6 +135,16 @@ Document-intake skill (fixture is a raw input doc placed at the project root; no
 
 For a seed fixture that includes an existing story set, name the index `stories-README.md`; the harness places it at `phase-[N]/stories/README.md`. Files named `story-*.md` in the same fixture are placed beside that index. This keeps fixtures flat while still exercising re-run and mid-build paths.
 
+Nested paths inside a seed fixture are copied verbatim under `_mano_output/`.
+Use them when a case needs existing artifacts from another phase, for example
+`phase-1/design-preview.html` while the case's top-level `phase-brief.md` is
+mapped to active Phase 2.
+
+A nested `project/` prefix is copied to the temporary project root with that
+prefix removed. Use it sparingly for brownfield cases that need a small actual
+declaration or manifest surface, for example `project/src/client.ts`; ordinary
+planning fixtures should stay under `_mano_output/`.
+
 ## Notes / limits
 
 - Assertions are deterministic text checks. Subjective qualities

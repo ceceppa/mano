@@ -77,6 +77,53 @@ MIXED_BACKLOG = f"""# Backlog
 {FIELD_SHAPED_FEATURE_BLOCK}
 """
 
+IN_PHASE_FEATURE_BLOCK = """### Current phase callable API
+- **Type:** feature
+- **Context:**
+  Define exact method names and argument shapes.
+- **Status:** in-phase-3"""
+
+IN_PHASE_TEST_BLOCK = """### Current phase contract coverage
+- **Type:** test
+- **Context:**
+  Verify every public method mapping.
+- **Status:** in-phase-3"""
+
+SPEC_INPUT_BACKLOG = f"""# Backlog
+
+## Core Product Principles
+
+- PRINCIPLE_SPEC_SENTINEL must never enter spec input.
+
+## Items
+
+{IN_PHASE_FEATURE_BLOCK}
+
+{IN_PHASE_TEST_BLOCK}
+
+{OPEN_SPEC_BLOCK}
+
+### Other phase work
+- **Type:** feature
+- **Context:**
+  OTHER_PHASE_SENTINEL
+- **Status:** in-phase-2
+
+### Deferred ordinary feature
+- **Type:** feature
+- **Context:**
+  DEFERRED_FEATURE_SENTINEL
+- **Status:** backlog
+
+{OPEN_RULE_BLOCK}
+
+### Resolved phase spec gap
+- **Type:** spec-gap
+- **Context:**
+  RESOLVED_SPEC_INPUT_SENTINEL
+- **Status:** resolved
+"""
+
 
 @unittest.skipUnless(shutil.which("node"), "Node.js is required for Mano script tests")
 class ManoScriptTests(unittest.TestCase):
@@ -175,6 +222,266 @@ class ManoScriptTests(unittest.TestCase):
             with self.subTest(args=args):
                 result = self.run_state(*args)
                 self.assertNotEqual(result.returncode, 0)
+
+    def test_spec_projection_exposes_only_current_phase_and_open_spec_gaps(self):
+        phase = self.output / "phase-3"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 3\n")
+        self.backlog.write_text(SPEC_INPUT_BACKLOG)
+
+        result = self.run_state("--spec")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--- SPEC INPUT", result.stdout)
+        self.assertIn("STATUS: READY", result.stdout)
+        self.assertIn("PHASE: 3", result.stdout)
+        self.assertIn("BRIEF: _mano_output/phase-3/phase-brief.md", result.stdout)
+        self.assertIn("BRIEF_STATUS: present", result.stdout)
+        self.assertIn("IN_PHASE_STATUS: in-phase-3", result.stdout)
+        self.assertIn("IN_PHASE_COUNT: 2", result.stdout)
+        self.assertIn("SPEC_GAP_STATUS: backlog", result.stdout)
+        self.assertIn("SPEC_GAP_COUNT: 1", result.stdout)
+        self.assertIn("--- BEGIN IN-PHASE ITEM 1/2 ---", result.stdout)
+        self.assertIn("--- END IN-PHASE ITEM 2/2 ---", result.stdout)
+        self.assertIn("--- BEGIN SPEC-GAP ITEM 1/1 ---", result.stdout)
+        self.assertIn("--- END SPEC-GAP ITEM 1/1 ---", result.stdout)
+        self.assertIn("END_IN_PHASE_COUNT: 2", result.stdout)
+        self.assertIn("END_SPEC_GAP_COUNT: 1", result.stdout)
+        self.assertTrue(result.stdout.rstrip().endswith("--- END SPEC INPUT ---"))
+        self.assertIn(IN_PHASE_FEATURE_BLOCK, result.stdout)
+        self.assertIn(IN_PHASE_TEST_BLOCK, result.stdout)
+        self.assertIn(OPEN_SPEC_BLOCK, result.stdout)
+        for sentinel in (
+            "PRINCIPLE_SPEC_SENTINEL",
+            "OTHER_PHASE_SENTINEL",
+            "DEFERRED_FEATURE_SENTINEL",
+            "Open rule",
+            "RESOLVED_SPEC_INPUT_SENTINEL",
+        ):
+            self.assertNotIn(sentinel, result.stdout)
+
+    def test_spec_projection_json_and_active_phase_missing_backlog_blocks(self):
+        phase = self.output / "phase-3"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 3\n")
+        self.backlog.write_text(SPEC_INPUT_BACKLOG)
+
+        result = self.run_state("--spec", "--json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["status"], "READY")
+        self.assertEqual(data["phase"], 3)
+        self.assertEqual(data["briefPath"], "_mano_output/phase-3/phase-brief.md")
+        self.assertTrue(data["briefExists"])
+        self.assertEqual(data["briefStatus"], "present")
+        self.assertEqual(data["inPhaseStatus"], "in-phase-3")
+        self.assertEqual(data["inPhaseCount"], 2)
+        self.assertEqual(data["inPhaseItems"], [
+            IN_PHASE_FEATURE_BLOCK,
+            IN_PHASE_TEST_BLOCK,
+        ])
+        self.assertEqual(data["specGapStatus"], "backlog")
+        self.assertEqual(data["specGapCount"], 1)
+        self.assertEqual(data["specGapItems"], [OPEN_SPEC_BLOCK])
+
+        self.backlog.unlink()
+        missing = self.run_state("--spec")
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("active phase 3", missing.stderr)
+        self.assertIn("backlog.md is missing", missing.stderr)
+        self.assertNotIn("STATUS: READY", missing.stdout)
+
+    def test_spec_projection_without_phase_accepts_missing_backlog(self):
+        result = self.run_state("--spec")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("STATUS: READY", result.stdout)
+        self.assertIn("PHASE: none", result.stdout)
+        self.assertIn("IN_PHASE_COUNT: 0", result.stdout)
+        self.assertIn("SPEC_GAP_COUNT: 0", result.stdout)
+        self.assertTrue(result.stdout.rstrip().endswith("--- END SPEC INPUT ---"))
+
+    def test_spec_projection_active_phase_requires_canonical_items_section(self):
+        phase = self.output / "phase-3"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 3\n")
+
+        invalid_backlogs = (
+            "",
+            "# Backlog\n\n## Core Product Principles\n\nNo items section.\n",
+        )
+        for backlog_text in invalid_backlogs:
+            with self.subTest(backlog_text=backlog_text):
+                self.backlog.write_text(backlog_text)
+                result = self.run_state("--spec")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("active phase 3", result.stderr)
+                self.assertIn("no canonical ## Items section", result.stderr)
+                self.assertNotIn("STATUS: READY", result.stdout)
+
+    def test_spec_projection_reports_missing_phase_or_brief_without_blocking(self):
+        self.backlog.write_text(SPEC_INPUT_BACKLOG)
+
+        no_phase = self.run_state("--spec")
+        self.assertEqual(no_phase.returncode, 0, no_phase.stderr)
+        self.assertIn("STATUS: READY", no_phase.stdout)
+        self.assertIn("PHASE: none", no_phase.stdout)
+        self.assertIn("BRIEF: missing", no_phase.stdout)
+        self.assertIn("BRIEF_STATUS: missing", no_phase.stdout)
+        self.assertIn("IN_PHASE_STATUS: unavailable", no_phase.stdout)
+        self.assertIn("IN_PHASE_COUNT: 0", no_phase.stdout)
+        self.assertIn("SPEC_GAP_COUNT: 1", no_phase.stdout)
+
+        phase = self.output / "phase-3"
+        phase.mkdir()
+        missing_brief = self.run_state("--spec")
+        self.assertEqual(missing_brief.returncode, 0, missing_brief.stderr)
+        self.assertIn("STATUS: READY", missing_brief.stdout)
+        self.assertIn("PHASE: 3", missing_brief.stdout)
+        self.assertIn("BRIEF: _mano_output/phase-3/phase-brief.md", missing_brief.stdout)
+        self.assertIn("BRIEF_STATUS: missing", missing_brief.stdout)
+        self.assertIn("IN_PHASE_COUNT: 2", missing_brief.stdout)
+
+    def test_spec_projection_reports_read_errors_instead_of_empty_input(self):
+        phase = self.output / "phase-3"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 3\n")
+        self.backlog.mkdir()
+
+        result = self.run_state("--spec")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot project spec input", result.stderr)
+        self.assertNotIn("IN_PHASE_COUNT: 0", result.stdout)
+        self.assertNotIn("SPEC_GAP_COUNT: 0", result.stdout)
+
+    def test_spec_projection_rejects_malformed_backlog_items(self):
+        phase = self.output / "phase-3"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 3\n")
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Missing status
+- **Type:** feature
+- **Context:**
+  Its status cannot be inferred safely.
+""")
+
+        result = self.run_state("--spec")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("cannot project spec input", result.stderr)
+        self.assertIn("malformed backlog item", result.stderr)
+        self.assertNotIn("STATUS: READY", result.stdout)
+        self.assertNotIn("IN_PHASE_COUNT:", result.stdout)
+        self.assertNotIn("SPEC_GAP_COUNT:", result.stdout)
+
+    def test_spec_projection_help_and_conflicting_modes(self):
+        help_result = self.run_state("--help")
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
+        self.assertIn("--spec", help_result.stdout)
+
+        for args in (
+            ("--spec", "--scope"),
+            ("--spec", "--next"),
+            ("--spec", "--ui"),
+            ("--spec", "--gaps", "spec-gap"),
+            ("--spec", "--verbose"),
+        ):
+            with self.subTest(args=args):
+                conflict = self.run_state(*args)
+                self.assertNotEqual(conflict.returncode, 0)
+
+    def test_ui_projection_reports_exact_phase_local_paths(self):
+        phase = self.output / "phase-2"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 2\n")
+        (phase / "design-preview.html").write_text("phase 2 preview\n")
+        (self.output / "design-brief.md").write_text("# Design brief\n")
+        (self.output / "design-preview.html").write_text("legacy root preview\n")
+
+        result = self.run_state("--ui")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--- UI INPUT", result.stdout)
+        self.assertIn("STATUS: READY", result.stdout)
+        self.assertIn("PHASE: 2", result.stdout)
+        self.assertIn("BRIEF: _mano_output/phase-2/phase-brief.md", result.stdout)
+        self.assertIn("PREVIEW: _mano_output/phase-2/design-preview.html", result.stdout)
+        self.assertIn("PREVIEW_STATUS: present", result.stdout)
+        self.assertIn("DESIGN_BRIEF_STATUS: present", result.stdout)
+        self.assertIn("LEGACY_ROOT_PREVIEW: present", result.stdout)
+        self.assertIn("leave untouched", result.stdout)
+        self.assertNotIn("legacy root preview", result.stdout)
+
+    def test_ui_projection_blocks_without_an_approved_phase_brief(self):
+        no_phase = self.run_state("--ui")
+        self.assertEqual(no_phase.returncode, 0, no_phase.stderr)
+        self.assertIn("STATUS: BLOCKED", no_phase.stdout)
+        self.assertIn("PHASE: none", no_phase.stdout)
+        self.assertIn("ROUTE: mano start", no_phase.stdout)
+
+        phase = self.output / "phase-3"
+        phase.mkdir()
+        unfinished = self.run_state("--ui")
+        self.assertEqual(unfinished.returncode, 0, unfinished.stderr)
+        self.assertIn("STATUS: BLOCKED", unfinished.stdout)
+        self.assertIn("PHASE: 3", unfinished.stdout)
+        self.assertIn("BRIEF: _mano_output/phase-3/phase-brief.md", unfinished.stdout)
+        self.assertIn("finish the draft", unfinished.stdout)
+
+    def test_ui_projection_json_and_conflicting_modes(self):
+        phase = self.output / "phase-1"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 1\n")
+
+        result = self.run_state("--ui", "--json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["status"], "READY")
+        self.assertEqual(data["phase"], 1)
+        self.assertEqual(data["previewPath"], "_mano_output/phase-1/design-preview.html")
+        self.assertFalse(data["previewExists"])
+
+        for args in (
+            ("--ui", "--scope"),
+            ("--ui", "--next"),
+            ("--ui", "--gaps", "spec-gap"),
+            ("--ui", "--verbose"),
+        ):
+            with self.subTest(args=args):
+                conflict = self.run_state(*args)
+                self.assertNotEqual(conflict.returncode, 0)
+
+    def test_ui_projection_blocks_a_closed_phase_but_allows_reopened_work(self):
+        phase = self.output / "phase-4"
+        stories = phase / "stories"
+        stories.mkdir(parents=True)
+        (phase / "phase-brief.md").write_text("# Phase 4\n")
+        (stories / "README.md").write_text(
+            "| # | Story | File | Status |\n"
+            "|---|-------|------|--------|\n"
+            "| 1 | Demo | story-1-demo.md | done |\n"
+        )
+        (self.output / "reviews.md").write_text("## Phase 4 Review\n\nShipped.\n")
+
+        closed = self.run_state("--ui")
+        self.assertEqual(closed.returncode, 0, closed.stderr)
+        self.assertIn("STATUS: BLOCKED", closed.stdout)
+        self.assertIn("already reviewed", closed.stdout)
+        self.assertIn("mano start", closed.stdout)
+
+        (stories / "README.md").write_text(
+            "| # | Story | File | Status |\n"
+            "|---|-------|------|--------|\n"
+            "| 1 | Demo | story-1-demo.md | pending |\n"
+        )
+        reopened = self.run_state("--ui")
+        self.assertEqual(reopened.returncode, 0, reopened.stderr)
+        self.assertIn("STATUS: READY", reopened.stdout)
+        self.assertIn("PHASE: 4", reopened.stdout)
 
     def test_start_scope_excludes_gaps_and_gap_only_state_stops(self):
         self.backlog.write_text(MIXED_BACKLOG)
@@ -338,11 +645,15 @@ class ManoScriptTests(unittest.TestCase):
 
 
 class GapSkillContractTests(unittest.TestCase):
-    def test_spec_and_rules_use_only_the_gap_projection_and_targeted_writer(self):
+    def test_spec_and_rules_use_only_narrow_projections_and_targeted_writer(self):
         spec = (REPO_ROOT / "src" / "skills" / "spec.md").read_text()
         rules = (REPO_ROOT / "src" / "skills" / "rules.md").read_text()
 
-        self.assertIn("node _mano/scripts/state.js --gaps spec-gap", spec)
+        self.assertIn("node _mano/scripts/state.js --spec", spec)
+        self.assertIn("--- END SPEC INPUT ---", spec)
+        self.assertIn("matching BEGIN/END item envelopes", spec)
+        self.assertIn("output was truncated, elided, or omitted", spec)
+        self.assertIn("regardless of which sentinels survived", spec)
         self.assertIn(
             "node _mano/scripts/backlog.js resolve-gap --type spec-gap", spec
         )

@@ -325,6 +325,209 @@ def public_class_documentation_rule_covered(ctx: Ctx) -> list[Failure]:
     )]
 
 
+# --- mano dev: default vs explicit YOLO batch -------------------------------
+
+DEV_YOLO_MODULES = {
+    "src/yolo/base.js": ("stage", "base"),
+    "src/yolo/feature.js": ("stage", "./base", "feature"),
+    "src/yolo/release.js": ("stage", "./feature", "release"),
+}
+
+
+def _dev_story_statuses(readme: str) -> dict[str, str]:
+    rows = {}
+    for match in re.finditer(
+        r"^\|\s*(\d+[a-z]*)\s*\|\s*[^|]+\|\s*[^|]+\|\s*([^|]+?)\s*\|\s*$",
+        readme,
+        re.MULTILINE | re.IGNORECASE,
+    ):
+        rows[match.group(1).lower()] = match.group(2).strip().lower()
+    return rows
+
+
+def _dev_fixture_inputs_unchanged(ctx: Ctx, assertion: str) -> list[Failure]:
+    fails = []
+    if ctx.phase is None or ctx.stories_dir is None:
+        return [Failure(assertion, "dev fixture needs a phase-scoped stories directory")]
+
+    destinations = {
+        "phase-brief.md": ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md",
+        **{
+            name: ctx.stories_dir / name
+            for name in ctx.fixture_snapshot
+            if name.startswith("story-") and name.endswith(".md")
+        },
+    }
+    for fixture_name, path in destinations.items():
+        expected = ctx.fixture_text(fixture_name)
+        if expected is None:
+            continue
+        if not path.is_file():
+            fails.append(Failure(assertion, f"planning input removed: {path.name}"))
+        elif path.read_text(encoding="utf-8") != expected:
+            fails.append(Failure(assertion, f"planning input modified: {path.name}"))
+    return fails
+
+
+def _dev_modules_match(
+    ctx: Ctx,
+    assertion: str,
+    expected_paths: set[str],
+) -> list[Failure]:
+    fails = []
+    root = ctx.output_dir.parent
+    for relative, signals in DEV_YOLO_MODULES.items():
+        path = root / relative
+        should_exist = relative in expected_paths
+        if should_exist and not path.is_file():
+            fails.append(Failure(assertion, f"expected module missing: {relative}"))
+            continue
+        if not should_exist and path.exists():
+            fails.append(Failure(assertion, f"later story output was written: {relative}"))
+            continue
+        if should_exist:
+            text = path.read_text(encoding="utf-8")
+            missing = [signal for signal in signals if signal not in text]
+            if missing:
+                fails.append(Failure(
+                    assertion,
+                    f"{relative} is missing contract signals: {missing}",
+                ))
+    return fails
+
+
+def _dev_status_and_boundary_check(
+    ctx: Ctx,
+    assertion: str,
+    expected_statuses: dict[str, str],
+    expected_modules: set[str],
+) -> list[Failure]:
+    fails = []
+    readme = ctx.readme()
+    if readme is None:
+        return [Failure(assertion, "stories/README.md missing")]
+
+    actual_statuses = _dev_story_statuses(readme)
+    if actual_statuses != expected_statuses:
+        fails.append(Failure(
+            assertion,
+            f"expected statuses {expected_statuses}, got {actual_statuses}",
+        ))
+
+    seeded = ctx.fixture_text("stories-README.md")
+    if seeded is not None:
+        expected_readme = seeded
+        for story, status in expected_statuses.items():
+            expected_readme = re.sub(
+                rf"^(\|\s*{re.escape(story)}\s*\|\s*[^|]+\|\s*[^|]+\|)"
+                r"\s*[^|]+(\|\s*)$",
+                rf"\1 {status} \2",
+                expected_readme,
+                flags=re.MULTILINE | re.IGNORECASE,
+            )
+        if readme != expected_readme:
+            fails.append(Failure(
+                assertion,
+                "stories README changed beyond the expected status cells",
+            ))
+
+    fails.extend(_dev_modules_match(ctx, assertion, expected_modules))
+    fails.extend(_dev_fixture_inputs_unchanged(ctx, assertion))
+
+    if (ctx.output_dir / "reviews.md").exists():
+        fails.append(Failure(assertion, "mano review was run automatically"))
+    unexpected_phases = [
+        path.name
+        for path in ctx.phase_dirs()
+        if path.name != f"phase-{ctx.phase}"
+    ]
+    if unexpected_phases:
+        fails.append(Failure(
+            assertion,
+            f"implementation crossed the active phase boundary: {unexpected_phases}",
+        ))
+    return fails
+
+
+def dev_yolo_completed_all_pending(ctx: Ctx) -> list[Failure]:
+    return _dev_status_and_boundary_check(
+        ctx,
+        "dev_yolo_completed_all_pending",
+        {"1": "done", "2": "done", "3": "done"},
+        set(DEV_YOLO_MODULES),
+    )
+
+
+def dev_default_completed_only_next(ctx: Ctx) -> list[Failure]:
+    return _dev_status_and_boundary_check(
+        ctx,
+        "dev_default_completed_only_next",
+        {"1": "done", "2": "pending", "3": "pending"},
+        {"src/yolo/base.js"},
+    )
+
+
+def dev_yolo_stopped_at_first_blocker(ctx: Ctx) -> list[Failure]:
+    return _dev_status_and_boundary_check(
+        ctx,
+        "dev_yolo_stopped_at_first_blocker",
+        {"1": "done", "2": "pending", "3": "pending"},
+        {"src/yolo/base.js"},
+    )
+
+
+def dev_yolo_output_discipline(ctx: Ctx) -> list[Failure]:
+    expected = "Stories 1, 2, 3 done — statuses updated in stories/README.md"
+    if ctx.transcript.strip() != expected:
+        return [Failure(
+            "dev_yolo_output_discipline",
+            f"expected the one-line aggregate response {expected!r}, got {ctx.transcript.strip()!r}",
+        )]
+    return []
+
+
+def dev_yolo_interrupted_output_discipline(ctx: Ctx) -> list[Failure]:
+    text = ctx.transcript.strip()
+    missing = []
+    if not text or len(text.splitlines()) != 1:
+        missing.append("one-line response")
+    checks = {
+        "completed Story 1": bool(re.search(
+            r"\bStor(?:y|ies)\s+1\b.{0,80}\bdone\b",
+            text,
+            re.IGNORECASE,
+        )),
+        "blocked/pending Story 2": bool(re.search(
+            r"\bStory\s+2\b.{0,100}\b(?:blocked|pending|stopped|missing)\b"
+            r"|\b(?:blocked|pending|stopped)\b.{0,100}\bStory\s+2\b",
+            text,
+            re.IGNORECASE,
+        )),
+        "owning mano spec route": bool(re.search(
+            r"mano\s+spec|Feature\s+prefix|tech-spec",
+            text,
+            re.IGNORECASE,
+        )),
+    }
+    missing.extend(label for label, present in checks.items() if not present)
+    if missing:
+        return [Failure(
+            "dev_yolo_interrupted_output_discipline",
+            f"interrupted YOLO response missing {missing}: {text!r}",
+        )]
+    return []
+
+
+def dev_default_output_discipline(ctx: Ctx) -> list[Failure]:
+    expected = "Story 1 done — status updated in stories/README.md"
+    if ctx.transcript.strip() != expected:
+        return [Failure(
+            "dev_default_output_discipline",
+            f"expected the one-line singular response {expected!r}, got {ctx.transcript.strip()!r}",
+        )]
+    return []
+
+
 # --- mano import: backlog contract --------------------------------------------
 
 def backlog_was_written(ctx: Ctx) -> list[Failure]:
@@ -752,6 +955,566 @@ def existing_stories_unchanged(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+# --- mano ui: project brief + phase-local preview ownership -----------------
+
+def _ui_fixture_destination(ctx: Ctx, fixture_name: str) -> Path:
+    relative = Path(fixture_name)
+    if relative.parent != Path("."):
+        return ctx.output_dir / relative
+    if ctx.phase is not None and fixture_name == "phase-brief.md":
+        return ctx.output_dir / f"phase-{ctx.phase}" / fixture_name
+    return ctx.output_dir / fixture_name
+
+
+def ui_prior_and_legacy_previews_unchanged(ctx: Ctx) -> list[Failure]:
+    assertion = "ui_prior_and_legacy_previews_unchanged"
+    fails = []
+    for fixture_name in ("design-preview.html", "phase-1/design-preview.html"):
+        expected = ctx.fixture_text(fixture_name)
+        path = _ui_fixture_destination(ctx, fixture_name)
+        if expected is None:
+            fails.append(Failure(assertion, f"fixture is missing {fixture_name}"))
+        elif not path.is_file():
+            fails.append(Failure(assertion, f"existing preview was removed: {fixture_name}"))
+        elif path.read_text(encoding="utf-8") != expected:
+            fails.append(Failure(assertion, f"existing preview changed: {fixture_name}"))
+
+    allowed = {"design-preview.html", "phase-1/design-preview.html"}
+    if ctx.phase is not None:
+        allowed.add(f"phase-{ctx.phase}/design-preview.html")
+    actual = {
+        path.relative_to(ctx.output_dir).as_posix()
+        for path in ctx.output_dir.rglob("design-preview.html")
+        if path.is_file()
+    }
+    unexpected = sorted(actual - allowed)
+    if unexpected:
+        fails.append(Failure(
+            assertion,
+            f"preview written outside the current phase: {unexpected}",
+        ))
+    return fails
+
+
+def ui_phase_preview_owned_by_current_phase(ctx: Ctx) -> list[Failure]:
+    assertion = "ui_phase_preview_owned_by_current_phase"
+    if ctx.phase is None:
+        return [Failure(assertion, "case requires an active phase")]
+
+    fails = []
+    preview = ctx.output_dir / f"phase-{ctx.phase}" / "design-preview.html"
+    if not preview.is_file():
+        return [Failure(
+            assertion,
+            f"current preview missing: phase-{ctx.phase}/design-preview.html",
+        )]
+
+    text = preview.read_text(encoding="utf-8")
+    for signal in ("Insight Inbox", "Monday launch signal"):
+        if signal.lower() not in text.lower():
+            fails.append(Failure(
+                assertion,
+                f"current phase preview is missing phase content: {signal!r}",
+            ))
+    if "Source Queue preview approved in Phase 1" in text:
+        fails.append(Failure(assertion, "current preview copied the prior phase demo"))
+
+    for fixture_name in ("phase-brief.md", "ux-flow.md"):
+        expected = ctx.fixture_text(fixture_name)
+        path = _ui_fixture_destination(ctx, fixture_name)
+        if expected is not None and (
+            not path.is_file() or path.read_text(encoding="utf-8") != expected
+        ):
+            fails.append(Failure(assertion, f"read-only UI input changed: {fixture_name}"))
+    return fails
+
+
+def ui_cumulative_brief_extended(ctx: Ctx) -> list[Failure]:
+    assertion = "ui_cumulative_brief_extended"
+    path = ctx.output_dir / "design-brief.md"
+    if not path.is_file():
+        return [Failure(assertion, "project design-brief.md is missing")]
+
+    text = path.read_text(encoding="utf-8")
+    original = ctx.fixture_text("design-brief.md")
+    fails = []
+    if original is not None and text == original:
+        fails.append(Failure(assertion, "project design brief was not extended for Phase 2"))
+
+    preserved = (
+        "sentinel: cumulative-brief-phase-1-must-survive",
+        "Phase 1 — Source Queue",
+        "#2457D6",
+        "### PrimaryButton",
+        "### InsightCard",
+    )
+    for signal in preserved:
+        if signal not in text:
+            fails.append(Failure(assertion, f"existing brief content was lost: {signal!r}"))
+
+    if not re.search(
+        r"^###\s+Phase\s+2\s+—\s+Insight Inbox\s*$",
+        text,
+        re.IGNORECASE | re.MULTILINE,
+    ):
+        fails.append(Failure(
+            assertion,
+            "brief has no `### Phase 2 — Insight Inbox` composition ownership",
+        ))
+
+    for heading in ("### PrimaryButton", "### InsightCard"):
+        if text.count(heading) != 1:
+            fails.append(Failure(
+                assertion,
+                f"reused component definition was duplicated or removed: {heading}",
+            ))
+    return fails
+
+
+def ui_phase_preview_output_paths(ctx: Ctx) -> list[Failure]:
+    assertion = "ui_phase_preview_output_paths"
+    if ctx.phase is None:
+        return [Failure(assertion, "case requires an active phase")]
+    expected = (
+        "_mano_output/design-brief.md",
+        f"_mano_output/phase-{ctx.phase}/design-preview.html",
+    )
+    missing = [path for path in expected if path not in ctx.transcript]
+    if missing:
+        return [Failure(
+            assertion,
+            f"completion response is missing artifact path(s) {missing}: {ctx.transcript!r}",
+        )]
+    return []
+
+
+def ui_no_phase_preview_wrote_nothing(ctx: Ctx) -> list[Failure]:
+    assertion = "ui_no_phase_preview_wrote_nothing"
+    fails = []
+    expected_files = set(ctx.fixture_snapshot)
+    actual_files = ctx.output_files()
+    if actual_files != expected_files:
+        fails.append(Failure(
+            assertion,
+            f"expected only seeded artifacts {sorted(expected_files)}, got {sorted(actual_files)}",
+        ))
+    for fixture_name, expected in ctx.fixture_snapshot.items():
+        path = _ui_fixture_destination(ctx, fixture_name)
+        if not path.is_file():
+            fails.append(Failure(assertion, f"seeded artifact removed: {fixture_name}"))
+        elif path.read_text(encoding="utf-8") != expected:
+            fails.append(Failure(assertion, f"seeded artifact changed: {fixture_name}"))
+    return fails
+
+
+def ui_no_phase_preview_routes_to_start(ctx: Ctx) -> list[Failure]:
+    assertion = "ui_no_phase_preview_routes_to_start"
+    text = ctx.transcript.strip()
+    missing = []
+    if not re.search(
+        r"phase[- ]brief|\bBRIEF:\s*missing\b|\bno active phase\b",
+        text,
+        re.IGNORECASE,
+    ):
+        missing.append("missing phase/brief explanation")
+    if not re.search(r"mano\s+start", text, re.IGNORECASE):
+        missing.append("mano start route")
+    if missing:
+        return [Failure(assertion, f"response missing {missing}: {text!r}")]
+    return []
+
+
+# --- public-interface planning readiness ------------------------------------
+
+def _interface_matrix_rows(text: str) -> list[dict[str, str]]:
+    """Extract interface rows by their Markdown header, not physical proximity.
+
+    This accepts both the shipped five-column matrix (with Surface) and a
+    compact four-column operation/input/result/mapping table. It intentionally
+    does not use neighboring prose or rows to fill a cell.
+    """
+    rows: list[dict[str, str]] = []
+    header: dict[str, int] | None = None
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not (stripped.startswith("|") and stripped.endswith("|")):
+            header = None
+            continue
+        cells = [cell.strip() for cell in stripped[1:-1].split("|")]
+        lowered = [cell.lower() for cell in cells]
+
+        def find_header(*needles: str) -> int | None:
+            return next(
+                (i for i, cell in enumerate(lowered) if any(n in cell for n in needles)),
+                None,
+            )
+
+        operation = find_header("operation", "method", "command / event")
+        inputs = find_header("input", "argument", "request")
+        result = find_header("result", "response")
+        mapping = find_header("mapping", "canonical", "ownership")
+        if None not in (operation, inputs, result, mapping):
+            header = {
+                "operation": int(operation),
+                "inputs": int(inputs),
+                "result": int(result),
+                "mapping": int(mapping),
+            }
+            surface = find_header("surface")
+            if surface is not None:
+                header["surface"] = surface
+            continue
+
+        if header is None or all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells):
+            continue
+        if max(header.values()) >= len(cells):
+            continue
+        rows.append({name: cells[index] for name, index in header.items()})
+    return rows
+
+
+def _ordered_patterns(text: str, patterns: tuple[str, ...]) -> bool:
+    cursor = 0
+    for pattern in patterns:
+        match = re.search(pattern, text[cursor:], re.IGNORECASE)
+        if match is None:
+            return False
+        cursor += match.end()
+    return True
+
+
+def _input_annotations_consistent(
+    cell: str,
+    params: tuple[str, ...],
+    typed_inputs: tuple[str, ...],
+) -> bool:
+    plain = cell.replace("`", "").replace("**", "")
+    for index, param in enumerate(params):
+        annotation = re.compile(
+            rf"\b{re.escape(param)}\s*\??\s*:",
+            re.IGNORECASE,
+        )
+        for occurrence in annotation.finditer(plain):
+            remainder = plain[occurrence.start():]
+            exact = re.match(typed_inputs[index], remainder, re.IGNORECASE)
+            if exact is None:
+                return False
+            tail = remainder[exact.end():].lstrip()
+            if tail.startswith(("&", "|", "<", "[", "]", "?", "/")):
+                return False
+            if re.match(r"(?:or|and)\b", tail, re.IGNORECASE):
+                return False
+    return True
+
+
+def _result_cell_has_exact_type(cell: str, result_type: str) -> bool:
+    plain = cell.replace("`", "").replace("**", "")
+    name = re.escape(result_type)
+    conflicts = (
+        rf"\b[A-Za-z_][A-Za-z0-9_]*\s*<\s*{name}\s*>",
+        rf"(?:\||&)\s*\b{name}\b",
+        rf"\b{name}\b\s*(?:\||&|\[\]|\?)",
+    )
+    if any(re.search(pattern, plain, re.IGNORECASE) for pattern in conflicts):
+        return False
+    return bool(re.search(rf"\b{name}\b", plain, re.IGNORECASE))
+
+
+def _operation_row(
+    rows: list[dict[str, str]],
+    *,
+    name: str,
+    params: tuple[str, ...],
+    typed_inputs: tuple[str, ...],
+    result_type: str,
+) -> dict[str, str] | None:
+    short_name = name.rsplit(".", 1)[-1]
+    callable_pattern = (
+        rf"(?:(?P<qualifier>[A-Za-z_][A-Za-z0-9_]*)\s*\.\s*)?"
+        rf"{re.escape(short_name)}"
+        r"(?:\s*\((?P<params>[^)]*)\))?"
+        r"(?:\s*(?::|->|→)\s*(?P<return_type>[A-Za-z_][A-Za-z0-9_<>, |?]*))?"
+    )
+
+    for row in rows:
+        operation = row["operation"].replace("`", "").replace("**", "").strip()
+        surface = row.get("surface", "").replace("`", "")
+        callable_match = re.fullmatch(callable_pattern, operation, re.IGNORECASE)
+        if callable_match is None:
+            continue
+        qualifier = callable_match.group("qualifier")
+        expected_qualifier = "Motion" if name == "Motion.for" else "BoundMotion"
+        if qualifier is not None and qualifier.lower() != expected_qualifier.lower():
+            continue
+        if name == "Motion.for" and qualifier is None and not re.search(
+            r"\bMotion\b", surface, re.IGNORECASE
+        ):
+            continue
+
+        signature_params = callable_match.group("params")
+        if signature_params is not None:
+            actual_params = []
+            annotated_params_match = True
+            body = signature_params.strip()
+            if body:
+                parts = body.split(",")
+                for index, part in enumerate(parts):
+                    token = part.strip().split(":", 1)[0].strip().rstrip("?")
+                    actual_params.append(token)
+                    if ":" in part and (
+                        index >= len(typed_inputs)
+                        or not re.fullmatch(
+                            typed_inputs[index], part.strip(), re.IGNORECASE
+                        )
+                    ):
+                        annotated_params_match = False
+            if tuple(actual_params) != params:
+                continue
+            if not annotated_params_match:
+                continue
+
+        annotated_return = callable_match.group("return_type")
+        if annotated_return is not None and not re.fullmatch(
+            re.escape(result_type), annotated_return.strip(), re.IGNORECASE
+        ):
+            continue
+
+        if not _input_annotations_consistent(row["inputs"], params, typed_inputs):
+            continue
+
+        typed_source = f"{operation} {row['inputs']}"
+        if not _ordered_patterns(typed_source, typed_inputs):
+            continue
+        if not _result_cell_has_exact_type(row["result"], result_type):
+            continue
+        return row
+    return None
+
+
+def _wrong_moveby_position_timing(text: str) -> bool:
+    subject = (
+        r"(?:the\s+)?(?:(?:current|base)\s+)?"
+        r"(?:target(?:'s)?\s+)?(?:current\s+)?position"
+    )
+    verb = (
+        r"(?<!not )(?<!n't )(?<!never )"
+        r"\b(?:captur\w*|read\w*|resolv\w*)\b"
+    )
+    wrong_time = (
+        r"(?<!not )(?<!n't )(?<!never )"
+        r"\b(?:at|during)\s+(?:the\s+)?(?:authoring|call|build)\s+time\b"
+    )
+    active = re.compile(
+        rf"{verb}(?:(?!{wrong_time}).){{0,100}}{subject}.{{0,80}}{wrong_time}",
+        re.IGNORECASE,
+    )
+    passive = re.compile(
+        rf"{subject}.{{0,60}}{verb}.{{0,80}}{wrong_time}",
+        re.IGNORECASE,
+    )
+    return any(
+        re.search(r"\bmoveBy\b", line, re.IGNORECASE)
+        and (active.search(line) or passive.search(line))
+        for line in text.splitlines()
+    )
+
+
+def spec_public_interface_contract_complete(ctx: Ctx) -> list[Failure]:
+    assertion = "spec_public_interface_contract_complete"
+    spec = ctx.artifact_text("tech-spec.md") or ""
+    rows = _interface_matrix_rows(spec)
+    factory = _operation_row(
+        rows,
+        name="Motion.for",
+        params=("target",),
+        typed_inputs=(r"\btarget\s*:\s*MotionTarget\b",),
+        result_type="BoundMotion",
+    )
+    opacity = _operation_row(
+        rows,
+        name="opacity",
+        params=("destination", "durationSeconds"),
+        typed_inputs=(
+            r"\bdestination\s*:\s*number\b",
+            r"\bdurationSeconds\s*\?\s*:\s*number\b",
+        ),
+        result_type="PropertyMotion",
+    )
+    move_by = _operation_row(
+        rows,
+        name="moveBy",
+        params=("offset", "durationSeconds"),
+        typed_inputs=(
+            r"\boffset\s*:\s*Point\b",
+            r"\bdurationSeconds\s*\?\s*:\s*number\b",
+        ),
+        result_type="PropertyMotion",
+    )
+    property_row = _operation_row(
+        rows,
+        name="property",
+        params=("path", "destination", "durationSeconds"),
+        typed_inputs=(
+            r"\bpath\s*:\s*string\b",
+            r"\bdestination\s*:\s*unknown\b",
+            r"\bdurationSeconds\s*\?\s*:\s*number\b",
+        ),
+        result_type="PropertyMotion",
+    )
+
+    exact_contracts = {
+        "Motion.for(target: MotionTarget) -> BoundMotion": factory is not None,
+        "opacity(destination: number, durationSeconds?: number) -> PropertyMotion": opacity is not None,
+        "moveBy(offset: Point, durationSeconds?: number) -> PropertyMotion": move_by is not None,
+        "property(path: string, destination: unknown, durationSeconds?: number) -> PropertyMotion": property_row is not None,
+    }
+    row_checks = {
+        "Motion.for null-target failure": bool(
+            factory and re.search(
+                r"(?:null.{0,80}(?:reject|fail|error)|target required)",
+                f"{factory['inputs']} {factory['result']}",
+                re.IGNORECASE,
+            )
+        ),
+        "opacity inherited-duration default": bool(
+            opacity
+            and re.search(r"\binherit\w*\b", f"{opacity['inputs']} {opacity['mapping']}", re.IGNORECASE)
+        ),
+        "opacity canonical mapping": bool(
+            opacity and re.search(r"\bstyle\.opacity\b", opacity["mapping"], re.IGNORECASE)
+        ),
+        "moveBy inherited-duration default": bool(
+            move_by
+            and re.search(r"\binherit\w*\b", f"{move_by['inputs']} {move_by['mapping']}", re.IGNORECASE)
+        ),
+        "moveBy relative position mapping": bool(
+            move_by and re.search(r"\bposition\b", move_by["mapping"], re.IGNORECASE)
+        ),
+        "moveBy captures position at motion start": bool(
+            move_by and re.search(
+                r"(?:captur\w*|evaluat\w*|read\w*).{0,160}"
+                r"(?:at|when)\s+(?:the\s+)?motion\s+start|"
+                r"(?:at|when)\s+(?:the\s+)?motion\s+start.{0,160}"
+                r"(?:captur\w*|evaluat\w*|read\w*)",
+                f"{move_by['inputs']} {move_by['mapping']}",
+                re.IGNORECASE,
+            )
+        ),
+        "property inherited-duration default": bool(
+            property_row
+            and re.search(r"\binherit\w*\b", f"{property_row['inputs']} {property_row['mapping']}", re.IGNORECASE)
+        ),
+        "generic path passthrough": bool(
+            property_row and re.search(
+                r"\bpath\b.{0,100}(?:\bunchanged\b|\bpass(?:ed|es)?\s+through\b)|"
+                r"(?:\bunchanged\b|\bpass(?:ed|es)?\s+through\b).{0,100}\bpath\b",
+                f"{property_row['inputs']} {property_row['mapping']}",
+                re.IGNORECASE,
+            )
+        ),
+    }
+    checks = {
+        "CanonicalMotion.to(target, property, destination) delegation": (
+            r"\bCanonicalMotion\s*\.\s*to\s*\(\s*target\s*,\s*"
+            r"(?:property(?:Path)?|path|[\"'][^\"']+[\"'])\s*,\s*destination\s*\)|"
+            r"\bCanonicalMotion\b[^\n]{0,120}\bto\s*\(\s*"
+            r"target\s*:\s*MotionTarget\s*,\s*property\s*:\s*string\s*,\s*"
+            r"destination\s*:\s*unknown\s*\)[^\n]{0,160}\bPropertyMotion\b"
+        ),
+        "pre-playback validation failure": (
+            r"(?:unsupported|invalid).{0,220}\bbefore playback\b|"
+            r"\bbefore playback\b.{0,220}(?:unsupported|invalid)"
+        ),
+    }
+    flags = re.IGNORECASE | re.DOTALL
+    missing = [label for label, present in exact_contracts.items() if not present]
+    missing.extend(label for label, present in row_checks.items() if not present)
+    missing.extend(
+        label for label, pattern in checks.items() if not re.search(pattern, spec, flags)
+    )
+    if missing:
+        return [Failure(assertion, f"tech-spec.md missing interface fields: {missing}")]
+    if _wrong_moveby_position_timing(spec):
+        return [Failure(
+            assertion,
+            "spec also assigns moveBy base-position capture to authoring/call/build time",
+        )]
+    if re.search(r"Deferred spring presets|named spring presets", spec, re.IGNORECASE):
+        return [Failure(assertion, "unrelated deferred backlog item leaked into tech-spec.md")]
+    return []
+
+
+def spec_existing_interface_reconciled(ctx: Ctx) -> list[Failure]:
+    assertion = "spec_existing_interface_reconciled"
+    spec = ctx.artifact_text("tech-spec.md") or ""
+    if not re.search(
+        r"CanonicalMotion\s*\.\s*to\s*\(\s*target\s*,\s*"
+        r"(?:property(?:Path)?|path|[\"'][^\"']+[\"'])\s*,\s*destination\s*\)|"
+        r"\bCanonicalMotion\b[^\n]{0,120}\bto\s*\(\s*"
+        r"target\s*:\s*MotionTarget\s*,\s*property\s*:\s*string\s*,\s*"
+        r"destination\s*:\s*unknown\s*\)[^\n]{0,160}\bPropertyMotion\b",
+        spec,
+        re.IGNORECASE | re.DOTALL,
+    ):
+        return [Failure(
+            assertion,
+            "spec did not reconcile the convenience surface with existing CanonicalMotion.to(target, property, destination)",
+        )]
+    return []
+
+
+def spec_preserved_unrelated_decisions(ctx: Ctx) -> list[Failure]:
+    assertion = "spec_preserved_unrelated_decisions"
+    spec = ctx.artifact_text("tech-spec.md") or ""
+    if not re.search(
+        r"serialized definitions.{0,120}stable string IDs?.{0,120}"
+        r"never retain live target objects?",
+        spec,
+        re.IGNORECASE | re.DOTALL,
+    ):
+        return [Failure(assertion, "spec rerun removed or rewrote an unrelated existing decision")]
+    return []
+
+
+def spec_wrote_no_stories(ctx: Ctx) -> list[Failure]:
+    if ctx.story_files() or ctx.readme() is not None:
+        return [Failure("spec_wrote_no_stories", "mano spec wrote story artifacts")]
+    return []
+
+
+def stories_public_interface_gap_wrote_nothing(ctx: Ctx) -> list[Failure]:
+    assertion = "stories_public_interface_gap_wrote_nothing"
+    failures = []
+    if ctx.story_files() or ctx.readme() is not None:
+        failures.append(Failure(assertion, "story files/index were written despite incomplete public contract"))
+    current_spec = ctx.artifact_text("tech-spec.md")
+    original_spec = ctx.fixture_text("tech-spec.md")
+    if current_spec != original_spec:
+        failures.append(Failure(assertion, "mano stories changed the read-only tech spec"))
+    return failures
+
+
+def stories_public_interface_gap_routes_to_spec(ctx: Ctx) -> list[Failure]:
+    assertion = "stories_public_interface_gap_routes_to_spec"
+    response = ctx.transcript.strip()
+    missing = []
+    if not re.search(r"mano\s+spec", response, re.IGNORECASE):
+        missing.append("mano spec route")
+    categories = (
+        r"method|operation|event name",
+        r"argument|input|parameter|payload|shape",
+        r"return|result|failure|error|validation",
+        r"mapping|canonical|ownership|lifetime",
+    )
+    category_hits = sum(bool(re.search(pattern, response, re.IGNORECASE)) for pattern in categories)
+    if category_hits < 2:
+        missing.append("at least two concrete missing contract categories")
+    if missing:
+        return [Failure(assertion, f"response missing {missing}: {response!r}")]
+    return []
+
+
 # --- helpers ------------------------------------------------------------------
 
 def _section(text: str, heading: str) -> str | None:
@@ -790,6 +1553,13 @@ REGISTRY = {
     "tests_present_when_rules_require": tests_present_when_rules_require,
     "phase_goal_quality_covered": phase_goal_quality_covered,
     "public_class_documentation_rule_covered": public_class_documentation_rule_covered,
+    # mano dev
+    "dev_yolo_completed_all_pending": dev_yolo_completed_all_pending,
+    "dev_yolo_output_discipline": dev_yolo_output_discipline,
+    "dev_yolo_stopped_at_first_blocker": dev_yolo_stopped_at_first_blocker,
+    "dev_yolo_interrupted_output_discipline": dev_yolo_interrupted_output_discipline,
+    "dev_default_completed_only_next": dev_default_completed_only_next,
+    "dev_default_output_discipline": dev_default_output_discipline,
     # mano import
     "backlog_was_written": backlog_was_written,
     "backlog_has_items": backlog_has_items,
@@ -810,4 +1580,18 @@ REGISTRY = {
     # stories mid-build
     "midbuild_lettered_story_inserted": midbuild_lettered_story_inserted,
     "existing_stories_unchanged": existing_stories_unchanged,
+    # mano ui
+    "ui_phase_preview_owned_by_current_phase": ui_phase_preview_owned_by_current_phase,
+    "ui_cumulative_brief_extended": ui_cumulative_brief_extended,
+    "ui_prior_and_legacy_previews_unchanged": ui_prior_and_legacy_previews_unchanged,
+    "ui_phase_preview_output_paths": ui_phase_preview_output_paths,
+    "ui_no_phase_preview_wrote_nothing": ui_no_phase_preview_wrote_nothing,
+    "ui_no_phase_preview_routes_to_start": ui_no_phase_preview_routes_to_start,
+    # public-interface planning readiness
+    "spec_public_interface_contract_complete": spec_public_interface_contract_complete,
+    "spec_existing_interface_reconciled": spec_existing_interface_reconciled,
+    "spec_preserved_unrelated_decisions": spec_preserved_unrelated_decisions,
+    "spec_wrote_no_stories": spec_wrote_no_stories,
+    "stories_public_interface_gap_wrote_nothing": stories_public_interface_gap_wrote_nothing,
+    "stories_public_interface_gap_routes_to_spec": stories_public_interface_gap_routes_to_spec,
 }

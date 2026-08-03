@@ -33,6 +33,10 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - **Actively refuse to write code.** As an agent executing a Mano skill, your directive is strict planning and spec-generation. You must explicitly refuse to modify source (`src/`) files or application code while running a Mano phase.
    - Only write code when explicitly instructed outside of a `mano [action]` context.
 
+   <!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
+   - **Implementation exception:** `mano dev` maps to `_mano/skills/dev.md` and the authoritative `AGENTS.md` implementation contract; it is the one Mano action allowed to write application code. Preserve a literal trailing modifier: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with `yolo` intact, enabling the ordered batch mode defined in `AGENTS.md`. The planning-only refusal still applies to every other Mano action.
+   <!-- /mano-rule: dev-yolo-batch -->
+
 5. **Runtime Layout:**
    - In installed projects, Mano framework files live under `_mano/` even if the framework source repository stores them at the root.
    - When interpreting prompts or copied templates in a user project, prefer `_mano/skills`, `_mano/templates`, and `_mano/custom` as the runtime paths.

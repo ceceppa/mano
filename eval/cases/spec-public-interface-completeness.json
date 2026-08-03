@@ -1,0 +1,14 @@
+{
+  "name": "spec-public-interface-completeness",
+  "description": "A spec rerun receives exact active-phase source items and must turn a public convenience-family summary into a complete callable contract reconciled with the existing declaration surface.",
+  "fixture": "spec-public-interface-completeness",
+  "phase": 3,
+  "prompt": "mano spec",
+  "assertions": [
+    "spec_public_interface_contract_complete",
+    "spec_existing_interface_reconciled",
+    "spec_preserved_unrelated_decisions",
+    "spec_wrote_no_stories"
+  ]
+}
+
