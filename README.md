@@ -386,8 +386,6 @@ Avoid pulling every artifact into every skill. Mano should preserve useful reaso
 
 Mano can support optional post-skill hooks through a local `hooks/` folder.
 
-Hooks are suggest-only. They do not run automatically.
-
 A hook becomes active only when an `.example.md` file is copied or renamed without `.example`:
 
 ```text
@@ -395,9 +393,25 @@ hooks/post-spec.example.md  -> inactive
 hooks/post-spec.md          -> active
 ```
 
-When an active hook exists, Mano mentions it after the related skill finishes and asks whether to run it.
+A hook's `## Mode` section decides how it runs — the two kinds produce different things:
 
-Hooks are useful for optional external review, validation, or specialist checks that are specific to your project.
+**`suggest`** (the default) produces *findings* — a specialist opinion you have to weigh. Mano mentions the hook after the related skill finishes and asks whether to run it. Useful for optional external review, validation, or project-specific checks.
+
+**`command`** produces *an exit code* — a mechanical side effect. It names one command and Mano runs it every time, in both modes, without asking. Useful for deterministic follow-up work your project always wants done:
+
+```markdown
+# post-import hook
+
+## Mode
+command
+
+## Command
+node scripts/sync-backlog.js
+```
+
+Writing the file is the authorization, so you are not asked each time. Mano runs it from the project root, reports it in one line of the execution log, and on failure reports the exact error without retrying or editing anything to compensate. To run the same script after several skills, create one hook file per skill (`post-import.md`, `post-start.md`, `post-review.md`).
+
+The line between the kinds is judgement vs mechanism: an opinion arriving before you have formed your own changes what you think, so you are asked first; syncing a tracker has no opinion in it, and being asked each time is just a chore.
 
 When a `post-start`, `post-spec`, or `post-rules` hook reports findings, Mano
 returns a compact numbered triage: apply an in-scope edit, decide between
