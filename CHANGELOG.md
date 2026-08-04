@@ -2,7 +2,7 @@
 
 A history of Mano's releases — what each version changes and why.
 
-## Unreleased
+## 1.2.0
 
 ### Added
 - **Phase ownership is available as an explicit team opt-in** — existing projects continue to use `phase-N` unchanged. `mano owner <slug>` stores a non-committed local owner and routes phase-scoped state, backlog statuses, stories, previews, development, and reviews through `<owner>-phase-N`; numbering and lifecycle gates are independent per owner. Clearing the owner returns to legacy routing without renaming artifacts, and two developers can select the same slug for hand-off. Shared project artifacts still require ordinary branch/worktree and merge coordination.
