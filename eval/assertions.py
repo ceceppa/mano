@@ -809,6 +809,87 @@ The pending behaviour is implemented and reviewed before another phase starts.
 """
 
 
+# --- review: rejected scope ---------------------------------------------------
+
+# Items whose only reason to exist was the direction the feedback rejects. The
+# unrelated item must NOT be proposed for rejection — over-rejecting is as wrong
+# as under-rejecting.
+REJECTION_CANDIDATES = ("Panel dock drag handles", "Dock layout presets")
+REJECTION_NON_CANDIDATE = "Export rendered output to video"
+
+
+def review_surfaced_rejection_candidates(ctx: Ctx) -> list[Failure]:
+    # Rejection candidates are proposed in chat before any write, so file state
+    # alone cannot tell a correct triage from a runner that ignored the
+    # rejection half of the feedback entirely.
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    failures = []
+
+    missing = [t for t in REJECTION_CANDIDATES if t.lower() not in text.lower()]
+    if missing:
+        failures.append(
+            Failure(
+                "review_surfaced_rejection_candidates",
+                f"open backlog items orphaned by the rejected direction were never surfaced: {missing}",
+            )
+        )
+
+    if REJECTION_NON_CANDIDATE.lower() in text.lower():
+        # Naming it is only a failure if it was swept into the rejection list.
+        for line in text.splitlines():
+            if REJECTION_NON_CANDIDATE.lower() in line.lower() and re.search(
+                r"❌|reject", line, re.IGNORECASE
+            ):
+                failures.append(
+                    Failure(
+                        "review_surfaced_rejection_candidates",
+                        f"unrelated backlog item proposed for rejection: {line.strip()!r}",
+                    )
+                )
+                break
+
+    if not re.search(r"❌|reject", text, re.IGNORECASE):
+        failures.append(
+            Failure(
+                "review_surfaced_rejection_candidates",
+                "no rejection bucket in the triage response",
+            )
+        )
+
+    if failures:
+        compact = " ".join(text.strip().split())
+        failures.append(
+            Failure(
+                "review_surfaced_rejection_candidates",
+                f"runner output ended: {compact[-600:]!r}",
+            )
+        )
+    return failures
+
+
+def review_triage_wrote_nothing_yet(ctx: Ctx) -> list[Failure]:
+    # STEP 2 presents triage and stops. Nothing may be written before the user
+    # confirms — least of all a rejection they have not seen.
+    failures = []
+    backlog = ctx.backlog()
+    original = ctx.fixture_text("backlog.md")
+    if backlog != original:
+        failures.append(
+            Failure(
+                "review_triage_wrote_nothing_yet",
+                "backlog.md changed before the user confirmed the triage",
+            )
+        )
+    if (ctx.output_dir / "reviews.md").is_file():
+        failures.append(
+            Failure(
+                "review_triage_wrote_nothing_yet",
+                "reviews.md was written before the user confirmed the triage",
+            )
+        )
+    return failures
+
+
 def pending_review_gate_held(ctx: Ctx) -> list[Failure]:
     fails = []
     reviews = ctx.output_dir / "reviews.md"
@@ -1577,6 +1658,9 @@ REGISTRY = {
     "selected_hook_finding_applied_only_in_spec": selected_hook_finding_applied_only_in_spec,
     # review hard gate
     "pending_review_gate_held": pending_review_gate_held,
+    # review: rejected scope
+    "review_surfaced_rejection_candidates": review_surfaced_rejection_candidates,
+    "review_triage_wrote_nothing_yet": review_triage_wrote_nothing_yet,
     # stories mid-build
     "midbuild_lettered_story_inserted": midbuild_lettered_story_inserted,
     "existing_stories_unchanged": existing_stories_unchanged,

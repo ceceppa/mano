@@ -655,6 +655,74 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("non-empty value", dangling.stderr)
         self.assertEqual(self.backlog.read_bytes(), before_dangling)
 
+    def test_reject_retires_only_the_named_open_items(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        expected = MIXED_BACKLOG.replace(
+            FEATURE_BLOCK,
+            FEATURE_BLOCK.replace("- **Status:** backlog", "- **Status:** rejected"),
+        )
+
+        result = self.run_backlog("reject", "--title", "Ordinary feature")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("1 item(s) marked rejected", result.stdout)
+        self.assertEqual(self.backlog.read_text(), expected)
+
+        # Rejecting is idempotent and never re-writes an already-rejected item.
+        second = self.run_backlog("reject", "--title", "ordinary FEATURE")
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertIn("already 'rejected'", second.stdout)
+        self.assertEqual(self.backlog.read_text(), expected)
+
+    def test_reject_leaves_non_open_and_unidentifiable_targets_untouched(self):
+        duplicate = MIXED_BACKLOG.replace(
+            FEATURE_BLOCK, f"{FEATURE_BLOCK}\n\n{FEATURE_BLOCK}"
+        )
+        cases = (
+            # (backlog text, title, expected marker in stdout)
+            (MIXED_BACKLOG, "In phase spec", "only open 'backlog' items"),
+            (MIXED_BACKLOG, "Resolved spec", "only open 'backlog' items"),
+            (MIXED_BACKLOG, "Missing title", "no matching item"),
+            # A heading under Core Product Principles is not a backlog item.
+            (MIXED_BACKLOG, "Principle-shaped sentinel", "no matching item"),
+            (duplicate, "Ordinary feature", "ambiguous"),
+        )
+        for text, title, marker in cases:
+            with self.subTest(title=title):
+                self.backlog.write_text(text)
+                before = self.backlog.read_bytes()
+                result = self.run_backlog("reject", "--title", title)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(marker, result.stdout)
+                self.assertEqual(self.backlog.read_bytes(), before)
+
+        self.backlog.write_text(MIXED_BACKLOG)
+        before = self.backlog.read_bytes()
+        for args in (("reject",), ("reject", "--title")):
+            with self.subTest(args=args):
+                result = self.run_backlog_here(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.backlog.read_bytes(), before)
+
+    def test_rejected_items_are_never_scopeable_or_assignable(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        self.run_backlog("reject", "--title", "Ordinary feature")
+        after_reject = self.backlog.read_bytes()
+
+        scope = self.run_state("--scope")
+        self.assertEqual(scope.returncode, 0, scope.stderr)
+        self.assertNotIn("Ordinary feature", scope.stdout)
+
+        # assign must not pull a rejected item back into a phase.
+        assigned = self.run_backlog("assign", "--phase", "4", "--title", "Ordinary feature")
+        self.assertEqual(assigned.returncode, 0, assigned.stderr)
+        self.assertIn("already 'rejected'", assigned.stdout)
+        self.assertEqual(self.backlog.read_bytes(), after_reject)
+
+        # review's phase close sweep must not convert a rejection into "resolved".
+        resolved = self.run_backlog("resolve", "--phase", "4")
+        self.assertEqual(resolved.returncode, 0, resolved.stderr)
+        self.assertIn("- **Status:** rejected", self.backlog.read_text())
+
     def test_human_edited_field_label_case_is_consistent_across_commands(self):
         lowercase = """# Backlog
 
