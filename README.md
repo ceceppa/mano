@@ -67,6 +67,7 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano status` | Scans output folder. Where am I? What's next? |
 | `mano import [doc]` | Turn an existing PRD or document into a backlog, then stop. Run `mano start` afterwards to scope the first phase. |
 | `mano owner [slug]` | Show, set, or clear this repository clone's optional phase owner. |
+| `mano mode [auto\|manual]` | Show or set whether finished actions chain automatically through to implementation. Defaults to `manual`. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
@@ -95,6 +96,26 @@ The owner is stored in repository-local Git config as `mano.owner`, so it is not
 
 Ownership scopes phase discovery and lifecycle gates; it is not a concurrency lock. The backlog, tech spec, UX flow, design brief, project rules, and reviews remain shared project files. Teammates should use branches or worktrees, choose disjoint backlog scope, and coordinate merges normally.
 
+### Auto mode
+
+By default Mano is `manual`: every command finishes, prints what it changed, and hands back to you. That is the point — you steer at each seam.
+
+On a project where you have stopped reading the intermediate artifacts and just run the commands in sequence yourself, you can say so:
+
+```text
+mano mode auto
+```
+
+From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano dev yolo`, without you typing each one. Three things keep it supervised:
+
+- **You still approve the phase.** Auto mode is armed by that approval and never replaces it — the brief is still where you correct course, before any code exists.
+- **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.
+- **It never closes the phase.** The chain stops after implementation. `mano review` is always yours to run.
+
+Post-skill hooks are the one behaviour that inverts: in manual mode they are suggest-only, in auto mode they run automatically — because you are deliberately not reading the artifacts mid-chain, so the hook is the only check left. Their findings still need your approval before anything is edited.
+
+`mano mode` shows the current setting and `mano mode manual` turns it off. Like the owner, it lives in repository-local Git config (`mano.mode`) and is not committed — it records how much *you* review, not a property of the project. `MANO_MODE` overrides it for a shell.
+
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
 When a user types a Mano command in their AI IDE's chat interface, the agent is instructed to carry out that planning command directly. Since this relies entirely on the agent's context window and instruction-following capabilities, you must actively steer the agent if it hallucinates state or breaks character.
@@ -109,6 +130,7 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 |------|------|------|
 | **`mano import`** | Decomposes an existing PRD/document into a backlog, then stops | `skills/import.md` |
 | **`mano owner`** | Configures optional repository-local phase ownership for team work | `skills/owner.md` |
+| **`mano mode`** | Configures whether finished actions chain automatically (`auto`) or hand back (`manual`) | `skills/mode.md` |
 | **`mano start`** | Scopes the idea, populates the backlog (from conversation), proposes phases | `skills/start.md` |
 | **`mano rules`** | Defines and updates project rules — components, patterns, architecture | `skills/rules.md` |
 | **`mano spec`** | Translates the phase brief into tech spec | `skills/spec.md` |
