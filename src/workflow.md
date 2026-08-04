@@ -359,7 +359,8 @@ Available Mano commands for [PHASE_ID]:
   stories  — Break phase into implementable stories (`mano stories`)
   review   — Triage feedback, close the phase (`mano review`)
   dev      — Implement the next pending story
-  owner    - Show, set, or clear this repository clone's optional phase owner
+  owner    — Show, set, or clear this repository clone's optional phase owner
+  mode     — Show or set whether finished actions chain automatically
 
 → marks the suggested next action.
 Type: mano start, mano [action], or mano dev
