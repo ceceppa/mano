@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -9,6 +10,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 STATE_SCRIPT = REPO_ROOT / "src" / "scripts" / "state.js"
 BACKLOG_SCRIPT = REPO_ROOT / "src" / "scripts" / "backlog.js"
+STORIES_SCRIPT = REPO_ROOT / "src" / "scripts" / "stories.js"
+OWNER_SCRIPT = REPO_ROOT / "src" / "scripts" / "owner.js"
 
 OPEN_SPEC_BLOCK = """### Open spec
 - **Type:** spec-gap
@@ -145,9 +148,50 @@ class ManoScriptTests(unittest.TestCase):
             capture_output=True,
         )
 
+    def run_state_as(self, owner, *args):
+        env = os.environ.copy()
+        env["MANO_OWNER"] = owner
+        return subprocess.run(
+            ["node", str(STATE_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
     def run_backlog(self, *args):
         return subprocess.run(
             ["node", str(BACKLOG_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+        )
+
+    def run_backlog_as(self, owner, *args):
+        env = os.environ.copy()
+        env["MANO_OWNER"] = owner
+        return subprocess.run(
+            ["node", str(BACKLOG_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def run_stories_as(self, owner, *args):
+        env = os.environ.copy()
+        env["MANO_OWNER"] = owner
+        return subprocess.run(
+            ["node", str(STORIES_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def run_owner(self, *args):
+        return subprocess.run(
+            ["node", str(OWNER_SCRIPT), *args],
             cwd=self.root,
             text=True,
             capture_output=True,
@@ -642,6 +686,204 @@ class ManoScriptTests(unittest.TestCase):
         self.assertEqual(resolved.returncode, 0, resolved.stderr)
         self.assertIn("1 item marked resolved", resolved.stdout)
         self.assertIn("- **status:** resolved", self.backlog.read_text())
+
+    def test_legacy_routing_remains_default_when_owned_phases_exist(self):
+        (self.output / "alice-phase-9").mkdir()
+        (self.output / "bob-phase-12").mkdir()
+
+        owned_only = self.run_state("--current")
+        self.assertEqual(owned_only.returncode, 0, owned_only.stderr)
+        self.assertIn("OWNER_MODE: legacy", owned_only.stdout)
+        self.assertIn("STATUS: NO_PHASE", owned_only.stdout)
+        self.assertIn("PHASE_ID: none", owned_only.stdout)
+
+        (self.output / "phase-2").mkdir()
+
+        current = self.run_state("--current")
+
+        self.assertEqual(current.returncode, 0, current.stderr)
+        self.assertIn("OWNER: none (legacy phase-N mode)", current.stdout)
+        self.assertIn("OWNER_MODE: legacy", current.stdout)
+        self.assertIn("PHASE: 2", current.stdout)
+        self.assertIn("PHASE_ID: phase-2", current.stdout)
+        self.assertIn("PHASE_DIR: _mano_output/phase-2", current.stdout)
+        self.assertNotIn("alice-phase-9", current.stdout)
+        self.assertNotIn("bob-phase-12", current.stdout)
+
+    def test_owner_routing_selects_only_that_owners_phase_sequence(self):
+        (self.output / "phase-15").mkdir()
+        (self.output / "alice-phase-1").mkdir()
+        (self.output / "alice-phase-3").mkdir()
+        (self.output / "bob-phase-20").mkdir()
+
+        current = self.run_state_as("alice", "--current")
+        self.assertEqual(current.returncode, 0, current.stderr)
+        self.assertIn("OWNER: alice", current.stdout)
+        self.assertIn("OWNER_MODE: owned", current.stdout)
+        self.assertIn("PHASE: 3", current.stdout)
+        self.assertIn("PHASE_ID: alice-phase-3", current.stdout)
+        self.assertIn("PHASE_DIR: _mano_output/alice-phase-3", current.stdout)
+        self.assertNotIn("bob-phase-20", current.stdout)
+
+        self.backlog.write_text(f"# Backlog\n\n## Items\n\n{FEATURE_BLOCK}\n")
+        scoped = self.run_state_as("alice", "--scope")
+        self.assertEqual(scoped.returncode, 0, scoped.stderr)
+        self.assertIn("NEXT: resume-draft", scoped.stdout)
+        self.assertIn("PHASE_ID: alice-phase-3", scoped.stdout)
+        self.assertIn("PHASE_DIR: _mano_output/alice-phase-3", scoped.stdout)
+        self.assertIn("IN_PHASE_STATUS: in-alice-phase-3", scoped.stdout)
+
+        (self.output / "reviews.md").write_text(
+            "## Phase 15 Review — 2026-08-04\n\nLEGACY_REVIEW_SENTINEL\n\n"
+            "## Phase 20 Review — Owner: bob — 2026-08-04\n\n"
+            "BOB_REVIEW_SENTINEL\n"
+        )
+        first_for_new_owner = self.run_state_as("charlie", "--scope")
+        self.assertEqual(
+            first_for_new_owner.returncode, 0, first_for_new_owner.stderr
+        )
+        self.assertIn("NEXT: scope-backlog", first_for_new_owner.stdout)
+        self.assertIn("PHASE: 1", first_for_new_owner.stdout)
+        self.assertIn("PHASE_ID: charlie-phase-1", first_for_new_owner.stdout)
+        self.assertIn(
+            "PHASE_DIR: _mano_output/charlie-phase-1",
+            first_for_new_owner.stdout,
+        )
+        self.assertIn(
+            "IN_PHASE_STATUS: in-charlie-phase-1",
+            first_for_new_owner.stdout,
+        )
+        self.assertNotIn("LEGACY_REVIEW_SENTINEL", first_for_new_owner.stdout)
+        self.assertNotIn("BOB_REVIEW_SENTINEL", first_for_new_owner.stdout)
+
+    def test_owned_spec_projection_reads_only_exact_owner_phase_items(self):
+        phase = self.output / "alice-phase-3"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Alice phase 3\n")
+        alice_item = IN_PHASE_FEATURE_BLOCK.replace(
+            "in-phase-3", "in-alice-phase-3"
+        )
+        bob_item = IN_PHASE_TEST_BLOCK.replace(
+            "in-phase-3", "in-bob-phase-3"
+        )
+        self.backlog.write_text(
+            f"# Backlog\n\n## Items\n\n{alice_item}\n\n{bob_item}\n\n"
+            f"{IN_PHASE_TEST_BLOCK}\n\n{OPEN_SPEC_BLOCK}\n"
+        )
+
+        result = self.run_state_as("alice", "--spec")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("OWNER: alice", result.stdout)
+        self.assertIn("PHASE_ID: alice-phase-3", result.stdout)
+        self.assertIn("BRIEF: _mano_output/alice-phase-3/phase-brief.md", result.stdout)
+        self.assertIn("IN_PHASE_STATUS: in-alice-phase-3", result.stdout)
+        self.assertIn("IN_PHASE_COUNT: 1", result.stdout)
+        self.assertIn(alice_item, result.stdout)
+        self.assertIn(OPEN_SPEC_BLOCK, result.stdout)
+        self.assertNotIn("in-bob-phase-3", result.stdout)
+        self.assertNotIn(IN_PHASE_TEST_BLOCK, result.stdout)
+
+    def test_owned_backlog_assign_and_resolve_are_isolated(self):
+        item_a = FEATURE_BLOCK
+        item_b = FEATURE_BLOCK.replace("Ordinary feature", "Second feature")
+        self.backlog.write_text(
+            f"# Backlog\n\n## Items\n\n{item_a}\n\n{item_b}\n"
+        )
+
+        alice = self.run_backlog_as(
+            "alice", "assign", "--phase", "1", "--title", "Ordinary feature"
+        )
+        self.assertEqual(alice.returncode, 0, alice.stderr)
+        bob = self.run_backlog_as(
+            "bob", "assign", "--phase", "1", "--title", "Second feature"
+        )
+        self.assertEqual(bob.returncode, 0, bob.stderr)
+        assigned = self.backlog.read_text()
+        self.assertIn("- **Status:** in-alice-phase-1", assigned)
+        self.assertIn("- **Status:** in-bob-phase-1", assigned)
+
+        resolved = self.run_backlog_as("alice", "resolve", "--phase", "1")
+        self.assertEqual(resolved.returncode, 0, resolved.stderr)
+        after = self.backlog.read_text()
+        self.assertEqual(after.count("- **Status:** resolved"), 1)
+        self.assertNotIn("- **Status:** in-alice-phase-1", after)
+        self.assertIn("- **Status:** in-bob-phase-1", after)
+
+    def test_owned_stories_writer_uses_exact_owner_directory(self):
+        result = self.run_stories_as(
+            "alice", "add-row", "--phase", "2", "--story", "1",
+            "--title", "Owned story", "--file", "story-1-owned.md",
+            "--project", "Demo",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        index = self.output / "alice-phase-2" / "stories" / "README.md"
+        self.assertTrue(index.exists())
+        self.assertIn("Phase 2 — Owner: alice", index.read_text())
+        self.assertIn("| 1 | Owned story | story-1-owned.md | pending |", index.read_text())
+        self.assertFalse((self.output / "phase-2").exists())
+
+    def test_owned_review_closes_only_with_matching_owner_heading(self):
+        phase = self.output / "alice-phase-1"
+        stories = phase / "stories"
+        stories.mkdir(parents=True)
+        (phase / "phase-brief.md").write_text("# Alice phase 1\n")
+        (stories / "README.md").write_text(
+            "| # | Story | File | Status |\n"
+            "|---|-------|------|--------|\n"
+            "| 1 | Demo | story-1-demo.md | done |\n"
+        )
+        self.backlog.write_text("# Backlog\n\n## Items\n")
+        (self.output / "reviews.md").write_text(
+            "## Phase 1 Review — Owner: bob — 2026-08-04\n\nShipped.\n"
+        )
+
+        wrong_owner = self.run_state_as("alice", "--json")
+        self.assertEqual(wrong_owner.returncode, 0, wrong_owner.stderr)
+        self.assertFalse(json.loads(wrong_owner.stdout)["closed"])
+
+        (self.output / "reviews.md").write_text(
+            "## Phase 1 Review — Owner: alice — 2026-08-04\n\nShipped.\n"
+        )
+        matching = self.run_state_as("alice", "--json")
+        self.assertEqual(matching.returncode, 0, matching.stderr)
+        data = json.loads(matching.stdout)
+        self.assertTrue(data["reviewEntry"])
+        self.assertTrue(data["closed"])
+
+    def test_owner_command_is_explicit_local_opt_in_and_can_be_cleared(self):
+        initialized = subprocess.run(
+            ["git", "init"], cwd=self.root, text=True, capture_output=True
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+        (self.output / "alice-phase-1").mkdir()
+        (self.output / "bob-phase-2").mkdir()
+        (self.output / "phase-4").mkdir()
+
+        set_owner = self.run_owner("set", "alice", str(self.root))
+        self.assertEqual(set_owner.returncode, 0, set_owner.stderr)
+        self.assertIn("owner set to alice", set_owner.stdout)
+        shown = self.run_owner("show", str(self.root))
+        self.assertEqual(shown.returncode, 0, shown.stderr)
+        self.assertIn("alice (git config --local mano.owner)", shown.stdout)
+        current = self.run_state("--current")
+        self.assertIn("PHASE_ID: alice-phase-1", current.stdout)
+        overridden = self.run_state_as("bob", "--current")
+        self.assertEqual(overridden.returncode, 0, overridden.stderr)
+        self.assertIn("OWNER: bob", overridden.stdout)
+        self.assertIn("PHASE_ID: bob-phase-2", overridden.stdout)
+
+        invalid = self.run_owner("set", "alice@example.com", str(self.root))
+        self.assertNotEqual(invalid.returncode, 0)
+        self.assertIn("invalid Mano owner", invalid.stderr)
+
+        cleared = self.run_owner("clear", str(self.root))
+        self.assertEqual(cleared.returncode, 0, cleared.stderr)
+        self.assertIn("legacy phase routing is active", cleared.stdout)
+        legacy = self.run_state("--current")
+        self.assertIn("OWNER_MODE: legacy", legacy.stdout)
+        self.assertIn("PHASE_ID: phase-4", legacy.stdout)
 
 
 class GapSkillContractTests(unittest.TestCase):
