@@ -4,16 +4,17 @@
 
 ```
 mano                    → Show available commands and current status.
-mano status             → Scan _mano_output/ and show where you are + what to do next.
+mano status             → Read deterministic project state and show where you are + what to do next.
 mano import [doc]       → Turn an existing PRD/document into a backlog, then stop.
+mano owner [slug]       → Show, set, or clear this repository clone's optional phase owner.
 mano start              → Scope a new project or phase.
 mano continue           → Auto-run the next logical action if unambiguous.
 mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
 mano dev                → Implement the next pending story for the active phase.
-mano help [skill]     → Show what a skill does and when to use it.
+mano help [skill]       → Show what a skill does and when to use it.
 ```
 
-`mano start` is a dedicated command. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
+`mano owner` and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
 
 **Dispatch only to Mano's own skills — never a similarly-named built-in.** Every `mano <action>` resolves to the matching skill in `_mano/skills/` and to nothing else. The host environment may contain built-in, harness, plugin, or third-party skills whose names overlap a Mano action word — do **not** invoke those for a `mano` command, even if their name looks like an exact match. Resolve the command by its Mano role (the agent and contract below), not by keyword similarity to an ambient skill. Two known, high-impact collisions to call out explicitly:
 - **`mano review` → `mano review`** (`_mano/skills/review.md`): collect feedback, triage into the backlog, write the review log, close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run `mano review` instead.
@@ -23,11 +24,35 @@ Every Mano skill's exact name is `mano-<action>` — **hyphen-separated**: `mano
 
 **The separator is a hyphen, never a colon.** Do not transform `mano <action>` into `mano:<action>` — the colon form is plugin-namespace syntax (`plugin:skill`) and matches no Mano skill; trying it wastes a turn and makes the command look unavailable. If a `mano <action>` command appears not to resolve, **try the hyphenated `mano-<action>` skill before concluding it is unavailable** — that is the canonical name, and the most common cause of a "skill not found" is having looked for the spaced or colon form instead of the hyphen. If a user re-issues a command in hyphenated form after a misfire, that is them forcing the exact match — honour it as the Mano skill.
 
+## Optional Phase Ownership
+
+Phase ownership is opt-in and local to a repository clone:
+
+- No owner configured: preserve the original `_mano_output/phase-N/`, `in-phase-N`, and `## Phase N Review — date` behavior. Never migrate or rename these artifacts automatically, even when owned folders also exist.
+- `mano owner alice`: store the stable lowercase slug in repository-local Git config and route this clone to `_mano_output/alice-phase-N/`, `in-alice-phase-N`, and `## Phase N Review — Owner: alice — date`. Numbering is independent per owner.
+- `mano owner clear`: return this clone to legacy `phase-N` routing without touching owned folders.
+- Linked worktrees share repository-local Git config. `MANO_OWNER` may override it for a shell or worktree when those worktrees need different owners. Never infer an owner from `whoami`, an OS account, or an email address.
+- Two people may configure the same slug to hand over or pair on one phase. Different slugs select separate active phase sequences. Another owner's unfinished phase does not block `mano start` for the configured owner.
+
+Every phase-scoped skill must use `state.js` and its exact `OWNER`, `PHASE_ID`, `PHASE_DIR`, paths, in-phase status, and review-heading prefix. The numeric `PHASE` is only for display and writer arguments; never construct a directory or status from it. In this document, `phase-[N]` examples describe default legacy mode. In owner-scoped mode, exact state projections override those examples.
+
+Ownership is routing, not merge isolation. The backlog and cumulative tech spec, UX flow, design brief, project rules, and reviews remain shared files. Teammates still need branches/worktrees, disjoint phase scope, and normal merge coordination.
+
 `mano dev` is **not** a planning action — it is the implementation entry point. It does not generate planning artifacts; it implements the next pending story by following the contract in `AGENTS.md`. See `skills/dev.md` (a thin pointer to that contract). The "Refuse code generation" rule below applies to the planning actions, not to `mano dev`.
+
+<!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
+`mano dev yolo` and `mano-dev yolo` are the same explicit batch invocation: both resolve to the existing `mano-dev` skill with the trailing `yolo` preserved as an argument — never to a separate `mano-dev-yolo` skill. The default command still implements one story. The literal YOLO modifier tells the `AGENTS.md` implementation contract to process every story that was pending at invocation, sequentially in index order. It is still implementation rather than planning, and it preserves every per-story boundary and hard stop.
+<!-- /mano-rule: dev-yolo-batch -->
 
 `mano [action]` handles everything — first run, extending, and regeneration. When an action executes, it checks what already exists:
 - **Output doesn't exist yet** → generate it directly to the file (first run).
-- **Output already exists** → read it and the current phase brief, then append/extend the file automatically.
+- **Output already exists** → read it and the current phase brief, then update only the parts affected by concrete new context or a requested regeneration. If the command carries no change and the artifact is still current, do not rewrite it merely because the action was re-run.
+
+<!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
+`mano ui` begins with `node _mano/scripts/state.js --ui`; that projection is its only phase-directory discovery and supplies the exact owner-aware current `BRIEF`, `PHASE_DIR`, and `PREVIEW` paths plus legacy-root presence without exposing the backlog. It then applies two output lifecycles. `_mano_output/design-brief.md` is the cumulative, canonical visual contract; preserve its established tokens, components, and phase-identity-namespaced Screen Composition entries while extending it for the current phase. The HTML is a non-canonical phase snapshot at the exact projected `PREVIEW`. A same-phase re-run may read and update that file, but a later or differently owned phase must not read or write another phase's preview. Never read, overwrite, move, or infer ownership for a legacy `_mano_output/design-preview.html`; leave it untouched.
+
+The exact projected current phase brief is a blocking input for `mano ui`: if `BRIEF` is missing, stop and route to `mano start`. When the brief exists, a missing current-phase preview keeps `mano ui` useful even when the phase reuses components already documented in the design brief; a new screen composition still deserves its own phase snapshot.
+<!-- /mano-rule: ui-phase-preview-ownership -->
 
 When a user types a Mano command in chat, the agent should execute that Mano workflow directly. Do not bounce the command back by telling the user to run it manually.
 
@@ -46,9 +71,11 @@ This means:
 - You can run `mano stories` without running `mano rules` first.
 - Each skill adapts to what's available instead of assuming the full pipeline already exists.
 
-**No invented files.** Skills only write files defined by the Mano contract: planning artifacts under `_mano_output/` plus the root-level `AGENTS.md` scaffold copied during `mano start`. Do not create tracking files, progress files, or any other artifact not specified by the framework.
+**No invented files.** Skills only write planning artifacts defined by the Mano contract under `_mano_output/`. The installer owns the root-level `AGENTS.md` scaffold; skills do not create it. Do not create tracking files, progress files, or any other artifact not specified by the framework.
 
-**Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to create output files only when the relevant action is explicitly run. Planning artifacts write to `_mano_output/`; `AGENTS.md` is the only allowed root-level scaffold write.
+**Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to create output files only when the relevant action is explicitly run. Planning artifacts write to `_mano_output/`; the installer-managed `AGENTS.md` is the framework's only root-level scaffold.
+
+**Scripts are mandatory.** Where a skill names a `node _mano/scripts/...` command, that command is the only sanctioned way to make that edit or read that projection. Mano is installed with `npx`, so Node is present by construction — there is no supported no-Node mode. If a script invocation fails (command not found, error, unexpected output), **stop and report the exact failure to the user**; do not hand-write the file, hand-edit a status, or re-derive the projection by scanning. A hand-written approximation of a script-owned format is the drift the scripts exist to make impossible. The only hand-edits allowed are the ones a skill explicitly sanctions (the backlog's `## Core Product Principles` section, an item's title/context during a split, the follow-up review's title-scoped resolves, and the user's own direct edits).
 
 In installed projects, Mano framework files live under `_mano/skills` and `_mano/templates`. This repository may store the source files at the root, but the runtime contract presented to coding agents uses `_mano/...` paths.
 
@@ -77,7 +104,7 @@ Shared by the intake skills — `mano start` and `mano import` — that turn an 
 
 Intake asks *what the product does and for whom*, never *how it's built*. Before asking any question, check it is not a tech question in disguise.
 
-- **Forbidden:** tech stack, frameworks, libraries, styling, state management, persistence mechanism (localStorage vs. file vs. SQLite vs. server DB), API shape, hosting, schema. These are `mano spec`'s during `mano spec`. Never present the user a menu of storage or implementation options.
+- **Forbidden:** tech stack, frameworks, libraries, styling, state management, persistence mechanism (localStorage vs. file vs. SQLite vs. server DB), API shape, hosting, schema. These are for `mano spec` to decide. Never present the user a menu of storage or implementation options.
 - **Allowed (the scope half):** "Does Phase 1 run fully locally with no login?" is a scope boundary — keep it. "How does data persist — localStorage, a file, or SQLite?" is implementation — drop it. When a question has both a scope half and a mechanism half, ask only the scope half.
 - A missing technical detail in a brief or document (auth mechanism, error format, persistence, API shape) is **not a gap intake fills**. "Stores data" without saying how is correct for this stage.
 - **Pass-through, not silence:** B1 forbids intake *eliciting, evaluating, or deciding* tech. It does **not** license *discarding a technical preference the source already states*. When the input explicitly states a stack/framework/storage/auth directive ("Use Next.js", "Use a SQL database", "auth can be deferred if Phase 1 is a local prototype"), intake does not act on it, decide it, or weigh it — but **must transcribe it verbatim** into the phase brief's `## Stated Technical Preferences` block (see `mano start`'s phase brief output) so it survives a context reset and reaches `mano spec`. When the intake skill produces only a backlog (`mano import`), preserve the stated directive verbatim in the relevant backlog item's context so `mano start` can carry it into the brief later. Dropping a stated directive because "tech isn't intake's job" is the failure: ignoring-for-scoping is correct; discarding-from-the-record is not. Intake still asks no tech question and makes no tech choice — this is a courier duty, not a decision.
@@ -137,9 +164,9 @@ Whenever a skill suggests what to do next, base that suggestion on the artifacts
 - Use this decision tree when evaluating next steps for the planning stage:
   ```
   Phase is user-facing or mobile?
-  ├─ design-brief missing? → suggest `mano ui` (do not auto-run stories)
+  ├─ design coverage or the current visual preview missing/stale? → suggest `mano ui` (do not auto-run stories)
   ├─ project-rules still default? → list `mano rules` + `mano stories` as options
-  └─ both present? → suggest `mano stories`
+  └─ design coverage, visual preview, and useful rules present? → suggest `mano stories`
   
   Phase is non-user-facing (backend/infra)?
   └─ go straight to `mano stories` unless tech is genuinely fuzzy (suggest `mano spec`)
@@ -151,22 +178,22 @@ There is no single progress file. You are expected to determine where the user i
 *(Note to the human user: Agents only know what is in their context window. If the agent hallucinates state, explicitly @-mention the relevant files to ground it).*
 
 - No `_mano_output/` folder → no project started → suggest `mano start` (or `mano import <doc>` if the user has a PRD/document to decompose first)
-- Active `phase-[N]/phase-brief.md` exists, no `stories/` folder in that phase → planning stage. Show which optional artifacts already exist, which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough. If `mano rules` or `mano ui` would still add useful clarity, list them as separate valid options instead of hiding them behind a single suggestion.
+- The projected `BRIEF` exists, but the projected phase has no stories index → planning stage. Show which optional artifacts already exist, which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough.
 - `stories/` folder exists, stories are `pending` → build mode. The next step is implementation: suggest `mano dev` to implement the next pending story. No Mano planning command is required until the user wants to adjust scope or add planning context.
-- `stories/` folder exists, all stories are `done`, and the latest phase has no review entry → phase is **built but not closed**. Direct the user to `mano review` — review is mandatory to close a phase, not an optional suggestion. Do not call the phase "complete" and do not offer `mano start` as an equal alternative: `mano start` will refuse to scope the next phase until review moves this phase's backlog items off `in-phase-[N]`.
-- `reviews.md` has an entry for the latest phase → phase is reviewed, suggest `mano start` for next phase
+- The projected stories are all `done`, and the exact projected review entry is absent → phase is **built but not closed**. Direct the user to `mano review`; `mano start` will refuse to scope this owner's next phase until review clears its exact in-phase status.
+- `reviews.md` has the exact projected owner-aware review entry and its backlog close sweep is complete → suggest `mano start` for that owner's next phase.
 
-To detect story status: read `_mano_output/phase-[N]/stories/README.md` and check the Status column. If all stories are `done`, the phase is built and ready for review.
+To detect story status, use the exact `STORIES` path from `state.js --current` or `state.js --next`. If all stories are `done`, the phase is built and ready for review.
 
-`mano stories` creates `_mano_output/phase-[N]/stories/README.md` the first time stories are generated. If the stories folder exists without that index, treat the phase artifacts as incomplete and fix the index before relying on state detection. This missing index is a local artifact-repair issue, not proof that `mano stories` is the only reasonable next planning action.
+`mano stories` creates the projected `PHASE_DIR/stories/README.md` the first time stories are generated. If its stories folder exists without that index, treat that exact phase's artifacts as incomplete.
 
-To detect the active phase: find the highest numbered `phase-[N]/` folder in `_mano_output/`.
+To detect the active phase, run `state.js`; it selects the highest phase number only within the locally configured owner namespace, or legacy `phase-N` when ownership is unset.
 
 ## Help
 
 When the user types `mano`:
 1. Display the command table.
-2. Scan `_mano_output/` and show current status if a project exists.
+2. Run `node _mano/scripts/state.js --verbose` and show its selected owner-aware status if a project exists.
 3. Do not activate any skill.
 
 ## Help [skill]
@@ -178,23 +205,24 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | Command | Role | Reads | Produces |
 |---------|------|-------|----------|
 | **`mano import`** | Turns an existing PRD or document into a backlog. Decomposes the document into items, then stops. Does not scope phases. | A PRD/document (path or pasted), existing backlog | Backlog (items `Status: backlog`) |
+| **`mano owner`** | Opts this repository clone into an owner namespace, shows it, or clears it. | Repository-local Git config / `MANO_OWNER` | Local Git config only; no planning artifacts |
 | **`mano start`** | Scopes projects and phases. Populates the backlog (from conversation), suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews | Phase brief, backlog updates |
-| **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, explicit spec-gap context | Tech spec |
+| **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, filtered unresolved spec-gap projection | Tech spec; targeted spec-gap status updates |
 | **`mano ux`** | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
-| **`mano rules`** | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, backlog, phase brief, existing project rules | Project rules |
-| **`mano ui`** | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, backlog | Design brief, design preview |
-| **`mano stories`** | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, tech spec, UX flow, design brief, project rules | Story files, stories index |
+| **`mano rules`** | Defines and updates project rules — components, patterns, naming, a11y, folder structure. Flags over-engineering. Most useful once the tech stack is known. | Tech spec (recommended), UX flow, design brief, filtered unresolved rule-gap projection, phase brief, existing project rules | Project rules; targeted rule-gap status updates |
+| **`mano ui`** | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, existing design artifacts | Design brief, current visual preview |
+| **`mano stories`** | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, existing current-phase story set on re-run, tech spec, UX flow, design brief, project rules | Story files, stories index |
 | **`mano review`** | Collects feedback after shipping, triages into backlog, writes review log. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
 | **`mano dev`** | Implements the next pending story for the active phase. Not a planning lens — follows the `AGENTS.md` implementation contract. | Stories index, the selected story, `AGENTS.md` contract | Source code, story marked `done` |
 
 ## Status
 
 When the user types `mano status`:
-1. Scan `_mano_output/`. If it doesn't exist, tell the user no project is in progress and suggest `mano start`.
-2. Report: active phase, what files exist, what is missing, and what is present-but-incomplete.
+1. Run `node _mano/scripts/state.js --verbose`; do not scan phase folders by hand. It applies optional owner routing.
+2. Report the selected owner, exact active `PHASE_ID`, what files exist, what is missing, and what is present-but-incomplete.
 3. If multiple planning actions are still reasonable, show them as `Next options` instead of forcing a single `Suggested next action`.
 4. Only show one `Suggested next action` when the next move is genuinely narrower than the other valid options.
-5. For user-facing or mobile phases, missing `design-brief.md` and `design-preview.html` should keep `mano ui` visible as a valid next option unless the current phase is already obviously ready for stories without further design clarification.
+5. For user-facing or mobile phases, missing or stale design coverage or visual preview keeps `mano ui` visible as a valid next option, even when `mano stories` is also ready. Apply the phase-preview ownership contract above when deciding whether an existing preview covers the phase.
 6. Do not activate any skill.
 
 ## Single obvious next action gates
@@ -205,7 +233,7 @@ Auto-run is appropriate when:
 - no `_mano_output/` exists → `mano start`
 - a phase brief exists and supporting artifacts are either already present, irrelevant, or explicitly skipped → `mano stories`
 - all stories are done and no review entry exists → `mano review`
-- the latest phase is reviewed and the user asks to keep going → `mano start`
+- the selected namespace's current phase is reviewed and the user asks to keep going → `mano start`
 
 Do not auto-run when:
 - spec, UX, rules, or UI are all still plausible options for adding useful clarity
@@ -219,7 +247,7 @@ In those cases, show `Next options` instead of choosing for the user.
 ## Continue
 
 When the user types `mano continue`:
-1. Scan `_mano_output/` to determine state.
+1. Run `node _mano/scripts/state.js --verbose` to determine state and apply optional owner routing. Do not scan phase folders by hand.
 2. If there is a single obvious next Mano action, execute it immediately.
 3. If there are multiple reasonable planning actions, stop and explain the options instead of choosing one.
 4. If the project is in build mode, say so plainly instead of forcing a planning command.
@@ -227,9 +255,9 @@ When the user types `mano continue`:
 Build-mode fallback output:
 
 ```
-Build mode: Phase [N]
+Build mode: [PHASE_ID]
 
-- Active phase: phase-[N]
+- Active phase: [exact PHASE_ID]
 - Status: Stories are still pending, so no planning action was auto-run.
 - Use `mano dev` to implement the next pending story.
 - Use `mano stories` only if you need to add or adjust planned work.
@@ -250,11 +278,11 @@ Rules for what counts as a `single obvious next` action:
 ## Do
 
 When the user types `mano` with no argument (or just wants to see available actions):
-1. Scan `_mano_output/` to determine state.
+1. Run `node _mano/scripts/state.js --verbose`; use its exact owner and phase identity rather than scanning phase folders.
 2. Show available actions with the suggested next action marked:
 
 ```
-Available Mano commands for Phase [N]:
+Available Mano commands for [PHASE_ID]:
 
   start    — Scope a new project or phase (`mano start`)
 → spec     — Tech spec (`mano spec`)
@@ -264,6 +292,7 @@ Available Mano commands for Phase [N]:
   stories  — Break phase into implementable stories (`mano stories`)
   review   — Triage feedback, close the phase (`mano review`)
   dev      — Implement the next pending story
+  owner    - Show, set, or clear this repository clone's optional phase owner
 
 → marks the suggested next action.
 Type: mano start, mano [action], or mano dev
@@ -278,20 +307,20 @@ When the user types `mano [action]`:
 - `mano ui` must begin with one brief preference-capture step on first-run design generation when visual preferences are not already defined; after that reply, `mano ui` generates files in one shot.
 - Output a single execution log snippet to the user, not conversational dialogue.
 
-Valid actions: `spec` (`mano spec` — `tech-spec.md`), `ux` (`mano ux` — `ux-flow.md`), `rules` (`mano rules` — `project-rules.md`), `ui` (`mano ui` — `design-brief.md` + `design-preview.html`), `stories` (`mano stories` — `phase-[N]/stories/`), `review` (`mano review` — `reviews.md`).
+Valid actions: `spec` (`mano spec` — `tech-spec.md`), `ux` (`mano ux` — `ux-flow.md`), `rules` (`mano rules` — `project-rules.md`), `ui` (`mano ui` — `design-brief.md` + projected current preview), `stories` (`mano stories` — projected `PHASE_DIR/stories/`), `review` (`mano review` — `reviews.md`).
 
 ## First run — new project
 
-Human approval boundary: `mano start` may create or update the backlog and suggest a phase, but it must not write `phase-[N]/phase-brief.md` or mark items as `in-phase-[N]` until the user explicitly approves the phase scope.
+Human approval boundary: `mano start` may create or update the backlog and suggest a phase, but it must not write the projected phase brief or stamp the projected in-phase status until the user explicitly approves the phase scope.
 
 ```
 User types: mano start
 
 Step 1 — `mano start` activates
-  Creates _mano_output/ if it doesn't exist.
-  Copies AGENTS.md to the project root if it doesn't exist.
+  Does not create _mano_output/ until the first backlog or phase write.
+  Relies on the installer-managed AGENTS.md at the project root.
   Does not create optional artifacts such as project-rules.md.
-  Presents numbered intake prompt or reads the provided PRD/brief.
+  Presents the numbered conversation-intake prompt. If the user provides a PRD or product document to decompose, redirects to mano import first.
 
 Step 2 — Understand the why
   `mano start` asks about the pain point and existing solutions.
@@ -320,9 +349,9 @@ Step 7 — Validate, clarify, draft brief
 
 Step 8 — Finalise
   Runs only after explicit human approval of the phase scope.
-  Creates _mano_output/phase-[N]/.
+  Creates the exact projected PHASE_DIR (phase-N by default; owner-phase-N only after opt-in).
   Writes phase-brief.md.
-  Updates approved backlog items to in-phase-[N].
+  Updates approved backlog items to the exact projected IN_PHASE_STATUS.
   Writes deferred items to backlog.
   Suggests next actions:
     any order: spec, ux, rules, ui, stories
@@ -370,7 +399,7 @@ When the phase is already clear and extra artifacts would add overhead instead o
 - Use `mano start` → `mano stories` → build → `mano review`.
 - Add optional planning artifacts later only if the work becomes ambiguous.
 
-`mano review` is the one non-optional step. It is what closes a phase: only `mano review` moves the phase's backlog items off `in-phase-[N]` to `resolved`, and `mano start`'s `mano start` gate requires that closure before it will scope the next phase. The optional planning actions (`spec`, `ux`, `rules`, `ui`) can be skipped; review cannot.
+`mano review` is the one non-optional step. It closes the selected owner-scoped phase by moving only that phase identity's exact in-phase status to `resolved`; `mano start` requires that closure before it scopes the next phase in the same namespace. Other owners' phases are independent. The optional planning actions can be skipped; review cannot.
 
 ## Rules
 
@@ -437,7 +466,8 @@ Every skill's completion log uses exactly this shape. Do not add `Scope:` or `Ac
 [Name]: mano <command> — <file(s) touched>
 - <substantive decision or change, a few words>
 - <substantive decision or change, a few words>
-⚠ Verify: <assumption or material change the user should sanity-check before relying on it>
+⚠ Verify: <assumption or material change the user should sanity-check — advisory, omit if none>
+❓ Decide: <decision the user must confirm or change before the next command — omit if none>
 
 Next:
 - `mano <x>` — <when it applies>
@@ -445,8 +475,12 @@ Next:
 
 Rules:
 - Header is one line: who, which command, which file(s). Nothing else.
+- **Reference every touched file by its path relative to the project root** — `_mano_output/phase-3/stories/README.md`, `_mano_output/tech-spec.md` — never a bare filename or just a directory. Editors and agent UIs turn a workspace-relative path into a tap-to-open link (the same way `spec-kit` does); a bare name isn't resolvable, so it isn't clickable. Where a host doesn't linkify, it still degrades to a readable path. When a log lists many files (e.g. one per story), give each its own full relative path so each line is independently tappable — do not print the shared directory once and bare names under it.
 - Bullets carry only substantive content (key decisions, screens/categories changed, stories inserted, palette). Never process narration.
-- `⚠ Verify:` appears only when the artifact embeds an assumption, a hardcoded placeholder, or a material change the user did not explicitly ask for (e.g. a backported decision). Omit the line entirely when there is nothing to flag. This applies to every skill, not just spec — if an artifact contains a `Note`/assumption worth checking, surface it here.
+- `⚠ Verify:` appears only when the artifact embeds an assumption, a hardcoded placeholder, or a material change the user did not explicitly ask for (e.g. a backported decision). Omit the line entirely when there is nothing to flag. This applies to every skill, not just spec — if an artifact contains a `Note`/assumption worth checking, surface it here. **Verify is advisory:** the user may run the next command without replying, and nothing downstream waits on it.
+- `❓ Decide:` is the stronger channel: the artifact carries a decision the skill made provisionally (or found open) that the user should confirm or change **before the next command runs**. Phrase it as a direct question with the provisional value stated — "Defaulted `MISSING_X` severity to `warn` (same reasoning as `LONG_Y`) — confirm or change before `mano stories`?" — never as a passive observation. The test for which line to use: if your verify text says "confirm before [next step]", it is misfiled — that's a `❓ Decide:`. While the decision is open, the owning artifact must carry the same hedge at the value itself (e.g. an inline `⚠️ Note: provisional`), so a later skill reading the artifact sees the open decision without needing this chat.
+- **`Next:` must agree with `❓ Decide:`.** When a decide line is present, present the dependent command as conditional on the decision (`mano stories` — once the severity call above is confirmed), never as unconditionally ready. The two lines share one message; a decide line saying "confirm before stories are written" above a `Next:` saying "ready to decompose" is exactly the contradiction this rule forbids.
+- **Capture the answer.** When the user replies to a `❓ Decide:` — confirming or changing the value — apply it: update the owning artifact in place (the provisional value becomes a stated decision; drop the "guess"/provisional hedging) and respond with a one-line changelog. A decision that lives only in chat is not captured; the artifact is the record.
 - `Next:` keeps the existing next-action options; it is not boilerplate and stays.
 
 Reason fully; externalize sparingly. Terse output is a rule about *display*, not *cognition*. Judgment-heavy skills (scoping, story decomposition, spec, rules, review) must still do the deliberation their contract requires — specificity, branching-flow, exhaustiveness, anti-rationalization gates. Do not shortcut that thinking to save chat volume; under-reasoning a planning decision is far more expensive than over-explaining one, because the bad decision propagates into every downstream artifact. The discipline is: do the reasoning internally, let the artifact carry the conclusions (each artifact is self-contained by design), and put only the changelog, flags, and genuine unresolved questions in chat. Do not narrate the deliberation itself. Mechanical steps (status updates, file writes, hook checks) carry no judgment worth narrating — just act and report.
@@ -481,11 +515,15 @@ If they differ in number or in unit, **stop and surface the conflict for a human
 
 `mano start` and `mano review` own backlog content and long-lived project continuity.
 
-Other skills should not edit the backlog except for narrow gap-resolution status updates:
-- `mano spec` may mark an explicitly provided `spec-gap` as resolved after updating the technical specification.
-- `mano rules` may mark an explicitly provided `rule-gap` as resolved after updating project rules.
+An item's `Status` says where it stands: `backlog` (open), `in-phase-N` / `in-owner-phase-N` (scoped into a phase), `resolved` (shipped or fixed), `rejected` (no longer wanted — its premise was invalidated). `resolved` and `rejected` are both closed states and neither is scopeable, but they are not interchangeable: recording a rejection as `resolved` claims work was done that never was. Only `mano review` sets `rejected`, only on items the human confirmed, via `backlog.js reject --title "..."`.
 
-Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
+Other skills should not edit the backlog except for narrow gap-resolution status updates:
+<!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
+- `mano spec` must run `node _mano/scripts/state.js --spec`; its current-phase item plus spec-gap projection is its only backlog read. After updating the technical specification, it may mark only a fully addressed projected spec-gap item resolved via `backlog.js resolve-gap --type spec-gap --title "..."`.
+<!-- /mano-rule: public-interface-contract-readiness -->
+- `mano rules` must run `node _mano/scripts/state.js --gaps rule-gap`; that projection is its only backlog read. After updating project rules, it may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type rule-gap --title "..."`.
+
+Neither skill opens `backlog.md`, even when the user asks it to handle backlog gaps; the read-only projection and targeted writer are the complete interface. Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
 
 ## Skill Tightening
 
@@ -516,6 +554,53 @@ Default to the smallest relevant context.
 
 Only request or load additional artifacts when they materially change the current output.
 
+<!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
+## Post-Hook Findings Triage
+
+This protocol applies when an active `post-start`, `post-spec`, or `post-rules`
+hook has run and printed findings in chat. Running the hook approves the review,
+not the edits. On the owning skill's next turn, classify the findings and stop
+for an explicit selection before changing any file:
+
+- **`apply`** — one narrow change within the current skill's owning artifact
+- **`decide`** — a scope, product, or technical choice the human must make;
+  show compact `(a)` / `(b)` options and do not choose
+- **`route: mano [skill]`** — the finding belongs to another artifact owner;
+  name the owner and do not edit that artifact
+
+The owning skill is already active during this flow. A finding inside its own
+artifact boundary is `apply`, never `route` back to itself; do not ask the user
+to run the command they are already using.
+
+Use this compact format:
+
+```text
+[mano skill]: Review hook reported [N] findings. Want me to address any?
+
+1. [apply] [artifact] — [issue] → [narrow direction]
+2. [decide] [artifact] — [issue] → (a) [option], (b) [option]
+3. [route: mano rules] [artifact] — [issue]
+
+Reply once: `apply 1`; `decide 2:b`; `skip 3`; or combine explicitly numbered selections.
+Reply `done` when no more findings should be handled.
+```
+
+The user may approve several numbered findings in one reply. A blanket
+"apply everything" is not per-finding approval; ask them to name the numbers.
+Apply only the selected findings and only inside the current skill's ownership
+boundary. `apply` means the smallest edit that satisfies that finding: preserve
+unmentioned content and adjacent values. A reviewer direction does not authorize
+rewriting the surrounding policy. Never silently reconcile a conflict between
+artifacts: classify it as `decide` or `route`. Never edit source code from this
+flow.
+
+Findings live in chat only. Do not create a findings file, decision ledger, or
+other tracking artifact. If compaction or a context reset removed the findings,
+ask the user to re-run the hook. After selected edits, use the skill's normal
+execution log. `mano stories` keeps its stricter local protocol for immutable
+done stories and lettered follow-up work.
+<!-- /mano-rule: post-hook-findings-triage -->
+
 ## Optional Post-Skill Hooks
 
 Mano supports optional post-skill hooks in `_mano/hooks/`.
@@ -535,6 +620,7 @@ _mano/hooks/post-[skill].example.md
 ```
 
 Examples:
+- `mano import` checks for `_mano/hooks/post-import.md`
 - `mano start` checks for `_mano/hooks/post-start.md`
 - `mano spec` checks for `_mano/hooks/post-spec.md`
 - `mano rules` checks for `_mano/hooks/post-rules.md`
@@ -551,7 +637,10 @@ Use this format:
 Active post-[skill] hook found: `_mano/hooks/post-[skill].md`.
 -> Purpose: Optional specialist review of the generated or current artifact.
 -> Recommended timing: Run after reviewing the artifact and before the next dependent Mano action if this check matters for the phase.
+-> Run it now? (yes / not yet)
 ```
+
+The `Run it now?` line is part of the template, not optional — omitting it means the user was never asked.
 
 Do not run the hook without explicit user confirmation.
 

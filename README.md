@@ -8,7 +8,7 @@ Plan in small phases and validate each assumption before it becomes code. You st
 
 Mano is built on a simple assumption: software projects rarely move in a straight line. Feedback, testing, and technical discovery invalidate early assumptions. So the goal isn't a perfect upfront plan — it's a tight loop where each small phase is scoped, reviewed, and corrected before the next one starts. You catch the wrong turn early, while it's still cheap to change.
 
-Each phase breaks into self-contained stories an agent implements one at a time. On greenfield work this keeps the build loop focused — but the point throughout is that **you** approve the direction at every seam. Mano never hands the wheel to an agent that generates everything and asks once.
+Each phase breaks into self-contained stories an agent implements one at a time by default. On greenfield work this keeps the build loop focused — but the point throughout is that **you** approve the direction at every seam. When you have reviewed a few small stories and want one continuous implementation turn, `mano dev yolo` is the explicit user-owned exception; Mano never opts into it for you.
 
 > **Important:** Mano is not a compiled CLI tool, a deterministic software framework, or an autonomous planning system. It is a set of skills, templates, and instructions that rely entirely on your AI agent's context window. You, the human, are the ultimate enforcer of scope, context, and quality.
 
@@ -22,7 +22,7 @@ npx mano-plan install
 
 This installs Mano into your project:
 
-- `_mano/` — the skills, templates, hooks, and workflow Mano reads at runtime
+- `_mano/` — the skills, templates, hooks, scripts, and workflow Mano reads at runtime
 - `AGENTS.md` — the agent contract, dropped at your project root (always)
 - `CLAUDE.md` and `.cursorrules` — optional editor entry points; the installer asks which you want
 
@@ -66,15 +66,34 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano` | Show available commands and current status. |
 | `mano status` | Scans output folder. Where am I? What's next? |
 | `mano import [doc]` | Turn an existing PRD or document into a backlog, then stop. Run `mano start` afterwards to scope the first phase. |
+| `mano owner [slug]` | Show, set, or clear this repository clone's optional phase owner. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
-| `mano dev` | Implement the next pending story for the active phase. The bridge from a finished `stories/` folder into code. Follows the implementation contract in `AGENTS.md`. |
+| `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
 | `mano continue` | Auto-run only when there is a single obvious next planning step. If several planning actions are still reasonable, it stops and shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
 
 `mano dev` is the named path into implementation, but you don't have to remember the command — plain phrasing like "implement the next story" routes to the same flow. Either way the agent follows the implementation contract in `AGENTS.md`.
 
+`mano dev yolo` (or the unambiguous `mano-dev yolo`) batches every story that is pending when the command starts. It still implements them as separate stories, in index order, marking each one done before moving on. It stops at the first blocker and never relaxes acceptance criteria, `Not this story`, project rules, verification, or the mandatory `mano review` phase close. Without the literal `yolo`, `mano dev` always stops after one story.
+
 `mano dev` is a *generic* implementer, not a language specialist. If you have a dedicated coding skill (e.g. a C++ specialist), you can have it implement instead — just point it at the contract: something like *"@cpp-pro, implement the next pending story following the 'Implementing a story' contract in `AGENTS.md`."* The specialist then writes the code under the same rules as the default implementer (AC only, one-line done, stop on a gap rather than inventing). The key is the contract reference — invoking a specialist with a bare "implement the next story" skips the discipline that keeps implementation supervised and on-scope.
+
+### Optional phase owners
+
+Solo projects keep the original behavior automatically: with no owner configured, Mano uses `_mano_output/phase-N/`, `in-phase-N`, and the existing phase sequence.
+
+For parallel team work, opt one checkout into a stable owner slug:
+
+```text
+mano owner alice
+```
+
+That clone now uses `_mano_output/alice-phase-N/` and `in-alice-phase-N`. Another teammate can use `mano owner bob` for an independent sequence, or configure `alice` to take over or pair on Alice's current phase. `mano owner` shows the selection; `mano owner clear` returns the clone to legacy `phase-N` routing. Existing folders are never renamed or migrated.
+
+The owner is stored in repository-local Git config as `mano.owner`, so it is not committed. Linked worktrees share that setting; `MANO_OWNER=alice` can override it for a shell or worktree when different worktrees need different owners. Use a stable lowercase handle, not an email address or machine username.
+
+Ownership scopes phase discovery and lifecycle gates; it is not a concurrency lock. The backlog, tech spec, UX flow, design brief, project rules, and reviews remain shared project files. Teammates should use branches or worktrees, choose disjoint backlog scope, and coordinate merges normally.
 
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
@@ -89,6 +108,7 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 | Command | Role | File |
 |------|------|------|
 | **`mano import`** | Decomposes an existing PRD/document into a backlog, then stops | `skills/import.md` |
+| **`mano owner`** | Configures optional repository-local phase ownership for team work | `skills/owner.md` |
 | **`mano start`** | Scopes the idea, populates the backlog (from conversation), proposes phases | `skills/start.md` |
 | **`mano rules`** | Defines and updates project rules — components, patterns, architecture | `skills/rules.md` |
 | **`mano spec`** | Translates the phase brief into tech spec | `skills/spec.md` |
@@ -96,7 +116,7 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 | **`mano ui`** | Establishes visual language and component guide | `skills/ui.md` |
 | **`mano stories`** | Breaks specs into implementable stories | `skills/stories.md` |
 | **`mano review`** | Phase review, triage, closes the phase | `skills/review.md` |
-| **`mano dev`** | Implements the next pending story (thin pointer to the `AGENTS.md` contract) | `skills/dev.md` |
+| **`mano dev [yolo]`** | Implements the next pending story, or the invocation-time pending set with explicit `yolo` | `skills/dev.md` |
 
 The user owns scope, priorities, and product tradeoffs. `mano spec` can recommend concrete technical defaults and `mano ui` can set a concrete visual direction, but both are always overridable.
 
@@ -104,9 +124,9 @@ The user owns scope, priorities, and product tradeoffs. `mano spec` can recommen
 
 Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) planning** system.
 
-You only pay the cognitive tax for what you are building *today*. Two planning actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks — then `mano dev` to implement each story, and `mano review` to close the phase. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
+You only pay the cognitive tax for what you are building *today*. Two planning actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks — then `mano dev` to implement each story (one turn each by default, or one explicit YOLO batch), and `mano review` to close the phase. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
 
-The optional actions can be skipped; `mano review` cannot. Review is what closes a phase — it is the only action that moves the phase's backlog items off `in-phase-[N]` to `resolved`, and `mano start` will not scope the next phase until the current one is closed that way.
+The optional actions can be skipped; `mano review` cannot. Review is what closes a phase — it is the only action that moves that exact phase identity's backlog items from its in-phase status to `resolved`, and `mano start` will not scope the next phase in the selected namespace until the current one is closed that way.
 
 Optional actions can be created now, reused from existing work, copied from a similar project, adapted from external inputs, or skipped entirely when they would add noise. Only run them when the current phase needs more clarity, constraints, or alignment. You never run the whole pipeline "just in case."
 
@@ -114,7 +134,7 @@ Optional actions can be created now, reused from existing work, copied from a si
 
 ### Human approval before phase briefs
 
-On a new project, `mano start` populates the backlog (from conversation), suggests a candidate first phase, and then stops. It must not create `phase-[N]/phase-brief.md`, create stories, or mark backlog items as `in-phase-[N]` until the human explicitly approves the phase scope. If you're starting from an existing PRD or document, run `mano import <doc>` first — it decomposes the document into the backlog — then `mano start` to scope the phase.
+On a new project, `mano start` populates the backlog (from conversation), suggests a candidate first phase, and then stops. It must not create the projected phase brief, create stories, or stamp the projected in-phase status until the human explicitly approves the phase scope. With no owner configured those paths remain `phase-N`; owner-qualified paths appear only after explicit opt-in. If you're starting from an existing PRD or document, run `mano import <doc>` first — it decomposes the document into the backlog — then `mano start` to scope the phase.
 
 ### Example fuller pass
 0. *(Optional)* `mano import <doc>` → decompose an existing PRD/document into the backlog first. Skip if you're starting from a conversation.
@@ -122,7 +142,7 @@ On a new project, `mano start` populates the backlog (from conversation), sugges
 2. `mano spec` → `mano spec` writes tech spec.
 3. `mano ux` → `mano ux` defines UX flow (for user-facing phases).
 4. `mano rules` → `mano rules` defines project rules (recommended for new projects).
-5. `mano ui` → `mano ui` creates or updates design brief + preview.
+5. `mano ui` → `mano ui` extends the project-wide design brief and creates or updates the current phase preview.
 6. `mano stories` → `mano stories` breaks into stories.
 7. `mano dev` → implement the next pending story (repeat until the phase is built). Ship. Gather feedback.
 8. `mano review` → `mano review` triages feedback into the backlog, writes the review log, closes the phase.
@@ -144,11 +164,11 @@ After a review, `mano review` closes the phase. If you don't need Mano for the r
 ### Mid-build feedback
 Requirements change during implementation. You don't have to finish the phase to adjust:
 
-- **Found a bug or missing feature?** Use `mano stories` — `mano stories` will create a new story, numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3), and ask whether to implement it now or queue it for later.
+- **Found a bug or missing feature?** Use `mano stories` — it creates a pending story numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3). Run `mano dev` when you want to implement the next pending row.
 - **Need to change scope?** Use `mano start` to talk to `mano start` — update assumptions, adjust scope, flag stories that turned out wrong.
 - **Need to regenerate specs or stories?** Run `mano [action]` again — the skill will check what exists and offer to update or regenerate.
 
-For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real manifest and lockfile (any language — `package.json`/`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `go.sum`, `requirements.txt`/`uv.lock`, `CMakeLists.txt`, etc.), or anytime you add/remove/replace a library, run `mano spec` again so `mano spec` can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain.
+For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real manifest and lockfile (any language — `package.json`/`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `go.sum`, `requirements.txt`/`uv.lock`, `CMakeLists.txt`, etc.), or anytime you add/remove/replace a library, run `mano spec` again so `mano spec` can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain. It also receives the exact backlog items assigned to the active phase, so source requirements are not lost when the human-facing phase brief summarizes them. For a brownfield public interface, it checks the named existing declaration surface before confirming a replacement or extension. The completeness gate is deliberately limited to consumer-visible/public or independently-owned multi-story boundaries; a local helper or component API owned by one story stays an implementation decision.
 
 The pipeline doesn't require you to finish before course-correcting.
 
@@ -156,32 +176,36 @@ The pipeline doesn't require you to finish before course-correcting.
 
 ```
 _mano_output/
-├── backlog.md               ← future work, deferred items, review follow-ups (created by `mano import` or `mano start`, owned by `mano start`, updated by `mano review`, editable by you)
+├── backlog.md               ← future work, deferred items, review follow-ups (created by `mano import` / `mano start`; owned by `mano start` / `mano review`; `mano spec` / `mano rules` resolve only projected gap items; editable by you)
 ├── tech-spec.md             ← project-wide, cumulative (`mano spec` extends per phase)
 ├── ux-flow.md               ← project-wide, cumulative (`mano ux` extends per phase)
-├── design-brief.md          ← project-wide visual language (if generated)
-├── design-preview.html      ← visual preview (if generated)
+├── design-brief.md          ← canonical, cumulative project-wide visual language (if generated)
 ├── project-rules.md         ← optional; created by `mano rules` or provided manually when project rules are useful
 ├── reviews.md               ← review log; `mano start` reads this when shaping later phases
 ├── phase-1/
 │   ├── phase-brief.md       ← problem, vision, scope for this phase
+│   ├── design-preview.html  ← self-contained visual preview for this phase (if generated)
 │   └── stories/
 │       ├── README.md         ← story index
 │       └── story-*.md        ← one file per story
 ├── phase-2/
 │   └── ...
+├── alice-phase-1/          ← optional; only after `mano owner alice`
+│   └── ...
 └── ...
 ```
 
+`design-brief.md` is the cumulative, canonical visual contract. Each projected `PHASE_DIR/design-preview.html` is a non-canonical snapshot of that exact phase identity's screen composition, not a project-wide file to replace or grow forever. Re-running `mano ui` may update the active phase's preview, but later or differently owned phases do not read or rewrite it. A legacy `_mano_output/design-preview.html` from an older Mano version is left untouched; Mano does not guess which phase it belongs to.
+
 Each phase brief is self-contained — problem, vision, design principle, scope, assumptions, and risks. Technical decisions and UX flow live at project level and grow only when they are useful. Future work lives in `backlog.md`. Artifacts are living working documents, not permanent contracts.
 
-Planning artifacts live under `_mano_output/`. The only framework scaffold written outside that folder is `AGENTS.md` at the project root, copied during `mano start` so coding agents know where Mano artifacts live.
+Planning artifacts live under `_mano_output/`. The installer writes the only framework scaffold outside that folder: `AGENTS.md` at the project root, so coding agents know where Mano artifacts live before any Mano command runs.
 
 Mano's installed runtime layout lives under `_mano/` inside the user's project. This repository contains the framework source files at the root for authoring, but the contract exposed to coding agents in real projects uses `_mano/skills` and `_mano/templates`.
 
-### A Warning on State Detection
+### State detection
 
-Mano tells the AI to treat the filesystem as the source of truth, "scanning" `_mano_output/` to determine the current project state. **However, AI agents do not natively scan files unless those files are injected into their context window.** If the agent confidently hallucinates a wrong state, it is because it lacks context. You must explicitly @-mention the relevant `_mano_output/` files to ground it back in reality.
+Mano treats the filesystem as the source of truth, but phase-scoped skills do not ask the agent to infer state from directory listings. The installed deterministic state script selects legacy or owner-scoped routing and returns exact paths. If that script fails, the skill must stop instead of guessing from chat context or scanning a different phase.
 
 ## Customisation
 
@@ -194,14 +218,15 @@ This optional file manages architectural patterns, routing formats, workflow pre
 
 > **Spec vs Rules:** What's the difference? 
 > Mano enforces a strict separation of concerns to prevent AI context bloat:
-> - **`tech-spec.md` is the WHAT (The Blueprint):** It defines libraries, data schemas, and interface contracts (e.g., "We will use PostgreSQL, and the `/users` endpoint returns JSON").
-> - **`project-rules.md` is the HOW (The Building Codes):** It defines architectural patterns, folder structures, and styling guidelines (e.g., "All API handlers must be wrapped in `catchAsync`, and we separate UI logic from data fetching").
+> - **`tech-spec.md` is the WHAT (The Blueprint):** It defines libraries, data schemas, and exact consumer-visible interface contracts (e.g., "We will use PostgreSQL, and `GET /users` returns this result/error shape").
+> - **`project-rules.md` is the HOW (The Building Codes):** It defines reusable architecture, signature, folder, and styling conventions (e.g., "All API handlers must be wrapped in `catchAsync`, and we separate UI logic from data fetching").
 >
 > **The quick test:** the spec answers a *reviewer's* question — *"is this the right technical approach?"* Rules answer a *contributor's* question — *"where do I put this file and what do I name it?"* A decision the spec already settled (which library, which data format) becomes a rule the moment someone has to act on it consistently (where those files live, what they're named). Folder structure, naming, and file-placement conventions are **always** rules, never spec — even before `project-rules.md` exists.
 
 ### 2. Bring Your Own Artifacts
 Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a skill by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:
 - `design-brief.md`
+- `[PHASE_DIR]/design-preview.html` (optional phase snapshot; `phase-N` by default)
 - `tech-spec.md`
 - `ux-flow.md`
 - `project-rules.md`
@@ -290,7 +315,7 @@ Mano artifacts are optimized for humans first. They should be easy to read, edit
 
 The backlog may contain a short, optional `Core Product Principles` section for durable product values that should survive across phases — expectations such as speed, simplicity, interaction feel, accessibility level, or tone that are easy to lose during iterative planning. Keep it small and human-editable; it does not need a separate process or artifact.
 
-`mano start` owns this continuity and copies only the principles relevant to the current phase into the phase brief. Downstream skills operate from the phase brief and explicitly provided context rather than reading the backlog for general project memory.
+`mano start` owns this continuity and copies only the principles relevant to the current phase into the phase brief. Downstream skills do not read the backlog for general project memory. The narrow exceptions are deterministic projections: `mano spec` receives only unresolved `spec-gap` items and `mano rules` receives only unresolved `rule-gap` items; each can resolve only an exact item it fully addressed.
 
 ## How Skills Stay Disciplined
 
@@ -328,6 +353,7 @@ Skills should load or request only the context needed for the current task.
 
 Prefer:
 - phase brief before full backlog
+- filtered `state.js --gaps` output instead of direct gap-related backlog access
 - relevant artifact sections before entire documents
 - explicit provided context before inferred project memory
 - small targeted follow-up questions before broad discovery
@@ -351,9 +377,17 @@ When an active hook exists, Mano mentions it after the related skill finishes an
 
 Hooks are useful for optional external review, validation, or specialist checks that are specific to your project.
 
+When a `post-start`, `post-spec`, or `post-rules` hook reports findings, Mano
+returns a compact numbered triage: apply an in-scope edit, decide between
+options, route it to the owning skill, or skip it. Running a hook never
+pre-approves its findings, and no findings ledger is added to the project.
+`post-stories` keeps a stricter per-finding flow because completed stories are
+immutable.
+
 Default example hooks include:
 
 ```text
+hooks/post-import.example.md
 hooks/post-start.example.md
 hooks/post-spec.example.md
 hooks/post-rules.example.md
@@ -369,6 +403,6 @@ Mano should not:
 - run hooks automatically
 - print the hook's suggested prompt unless asked
 - mention specific external skill names in generic output
-- modify files through a hook unless explicitly asked
+- modify files from hook findings unless the user explicitly selects them
 
 Hooks are best run after the human reviews the generated artifact. This avoids stale validation when the artifact is edited after generation.

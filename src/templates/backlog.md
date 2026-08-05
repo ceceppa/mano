@@ -1,7 +1,8 @@
-# Backlog — [Project Name]
+# Backlog
 
 <!-- Future work, deferred items, and ideas. -->
-<!-- `mano start` owns backlog curation during scoping. `mano review` appends or resolves items during review. -->
+<!-- `mano start` owns backlog curation during scoping. `mano review` appends, resolves phase items, or rejects items the human confirmed are no longer wanted. `mano spec` / `mano rules` may resolve only exact projected gap items through backlog.js. -->
+<!-- `resolved` means shipped or fixed. `rejected` means the item is no longer wanted — its premise was invalidated. Both are closed; neither is scopeable. -->
 <!-- You can edit this file directly at any time. -->
 
 ## Core Product Principles
@@ -18,17 +19,18 @@
 
 ## Items
 
-Every backlog item must use this exact format.
+`_mano/scripts/backlog.js` owns the canonical item format. The block below shows the shape it writes — a reference for human readers and direct human edits; skills never hand-write it.
 
 Do not create phase sections such as `Phase 1`, `Complete in Phase`, or `Deferred`.
 Do not use checkbox task lists.
-Do not mark items as `in-phase-[N]` until the human has approved that phase scope.
+Do not stamp the current phase status until the human has approved that exact phase scope. Default mode uses `in-phase-N`; owner opt-in uses `in-owner-phase-N`.
 Current-phase implementation work belongs in `phase-brief.md` or the phase's story files, not as checklist tasks in the backlog.
+`Source` is optional provenance; omit it when there is no meaningful source.
 
 ### [Short title]
 - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
-- **Source:** Phase [N] / User idea / Review triage / Product brief
+- **Source:** [PHASE_ID] / User idea / Review triage / Product brief
 - **Context:**
   What it is.
   Why it matters or key detail.
-- **Status:** backlog / in-phase-[N] / resolved
+- **Status:** backlog / in-phase-N / in-owner-phase-N / resolved / rejected

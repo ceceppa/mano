@@ -9,6 +9,7 @@
     "backlog_has_items",
     "all_items_status_backlog",
     "no_phase_brief_written",
+    "import_wrote_only_backlog",
     "backlog_covers_document_features",
     "stated_tech_preference_preserved"
   ]

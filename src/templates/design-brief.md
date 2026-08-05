@@ -2,11 +2,19 @@
 
 <!-- Project-wide. Generated once by `mano ui`, extended on later phases if needed. -->
 
+<!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
+<!-- This markdown is the canonical cumulative visual contract. Preserve established
+tokens, components, and prior phase entries when extending it. HTML previews live
+at the exact projected [PHASE_DIR]/design-preview.html (phase-N by default,
+owner-phase-N after opt-in) and are non-canonical phase snapshots. -->
+<!-- /mano-rule: ui-phase-preview-ownership -->
+
 ## Visual Direction
 
 - **Style:**
 - **Mode:**
 - **Reference apps:**
+- **Accessibility target:**
 
 ## Framework / Component Library
 
@@ -42,9 +50,13 @@
 
 ## Screen Composition
 
-<!-- For any sample screen mockup shown in design-preview.html, describe the screen structure here. -->
+<!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
+<!-- For every sample screen shown in the current [PHASE_DIR]/design-preview.html, preserve the
+exact phase identity in this cumulative brief. Use one `[PHASE_ID] — [Screen Name]`
+heading per composition; do not replace prior phase compositions. -->
 
-### [Screen Name]
+### [PHASE_ID] — [Screen Name]
+<!-- /mano-rule: ui-phase-preview-ownership -->
 
 - **Purpose:**
 - **Sections (top to bottom):**
@@ -58,7 +70,13 @@ If a component later needs a hard implementation contract such as required props
 
 # Component Guide
 
-<!-- Include only the component categories that actually appear in the current phase scope. Delete unused sections instead of filling placeholders. -->
+<!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
+<!-- Include only component categories that appear in documented phase scope. On first generation, delete untouched placeholders instead of filling them. -->
+
+<!-- On later phases, preserve components used by prior phases. Add or update only
+the entries affected by the current phase; "unused in this phase" is not a reason
+to delete an established project-wide component. -->
+<!-- /mano-rule: ui-phase-preview-ownership -->
 
 ## Buttons
 

@@ -1,5 +1,7 @@
 # Phase Brief — [Project Name] — Phase [N]
 
+<!-- Owner-scoped mode only: add `**Owner:** [slug]` below. Omit it entirely for default phase-N mode. -->
+
 <!-- Self-contained. Everything needed to understand this phase is here. -->
 
 ## Why This Phase
@@ -30,6 +32,13 @@
 <!-- What ships. One line per item. Keep the whole brief concise: target roughly 250-500 words total. -->
 
 -
+-
+-
+
+## Not This Phase
+
+<!-- The negative of Phase Scope: capabilities the selected items imply but this phase does NOT ship, slices deferred during scoping, and adjacent work a reader would assume is included. One behaviour-level line each — what is excluded, not how. Keeps the implementer and `mano stories` from widening the phase by inference. Omit only when nothing was deferred or excluded. -->
+
 -
 -
 

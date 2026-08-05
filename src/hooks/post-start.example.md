@@ -7,7 +7,7 @@ suggest
 Optional post-start review after `mano start` creates or updates the backlog, phase suggestion, or phase brief.
 
 ## When useful
-- new backlog was created from a brief or PRD
+- a phase was scoped from a backlog that originated in conversation or a prior `mano import`
 - phase scope was suggested or approved
 - Core Product Principles changed
 - backlog structure or statuses changed
@@ -26,7 +26,7 @@ Replace `[external-review-command]` in your active project hook with the command
 Allow the review skill to read:
 
 - `_mano_output/backlog.md` — backlog structure, Core Product Principles, deferred work, and item statuses
-- `_mano_output/phase-[N]/phase-brief.md` if it exists — approved phase scope and current phase context
+- The exact `BRIEF` path from `state.js --current` if it exists — approved phase scope and current phase context
 - `_mano_output/reviews.md` if it exists — prior phase findings, unresolved feedback, and lessons that may affect the next phase
 
 Optional files may be missing. Do not fail because an optional file is absent.

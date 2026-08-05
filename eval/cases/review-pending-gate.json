@@ -1,0 +1,10 @@
+{
+  "name": "review-pending-gate",
+  "description": "mano review must not close, resolve backlog items, or alter story state while any story remains pending, even when inline feedback says to close.",
+  "fixture": "pending-review",
+  "phase": 1,
+  "prompt": "mano review everything looks good, close it",
+  "assertions": [
+    "pending_review_gate_held"
+  ]
+}

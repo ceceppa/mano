@@ -1,0 +1,12 @@
+{
+  "name": "stories-public-interface-gap",
+  "description": "Stories must not convert a broad public-interface capability list into implementation work when operation names, arguments, payloads, failures, and mappings are undefined.",
+  "fixture": "stories-public-interface-gap",
+  "phase": 4,
+  "prompt": "mano stories",
+  "assertions": [
+    "stories_public_interface_gap_wrote_nothing",
+    "stories_public_interface_gap_routes_to_spec"
+  ]
+}
+

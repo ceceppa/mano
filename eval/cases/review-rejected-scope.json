@@ -1,0 +1,11 @@
+{
+  "name": "review-rejected-scope",
+  "description": "When review feedback rejects a scoped direction, mano review must surface the open backlog items that direction orphans as ❌ rejection candidates — adding the new direction is only half the triage.",
+  "fixture": "review-rejected-scope",
+  "phase": 2,
+  "prompt": "mano review let's reject all the assumptions and reject any additional work towards the panel dock we've scoped. What we want instead is a motion composer built around a single timeline canvas.",
+  "assertions": [
+    "review_surfaced_rejection_candidates",
+    "review_triage_wrote_nothing_yet"
+  ]
+}

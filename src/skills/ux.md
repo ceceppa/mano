@@ -20,11 +20,12 @@ This skill activates when the user types `mano ux`.
 When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
 
 On activation:
-1. Read the phase brief from `_mano_output/phase-[N]/phase-brief.md`.
-2. Read `_mano_output/ux-flow.md` if it exists.
-3. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
-4. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
-5. Check for missing inputs — if no phase brief exists, warn and ask if user wants to run `mano start` first.
+1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Never construct `phase-N` from the number.
+2. Read the exact projected `BRIEF` path.
+3. Read `_mano_output/ux-flow.md` if it exists.
+4. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
+5. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
+6. Check for missing inputs — if the projected phase brief does not exist, warn and ask if user wants to run `mano start` first.
 
 ## Inputs
 
@@ -41,7 +42,7 @@ Define how users move through the application. Generate the UX flow for the curr
 
 ## Flow — One-Shot Generation
 
-Generate the UX flow for the current phase entirely in one go and write it directly to `_mano_output/ux-flow.md`. Do not pause for confirmation. Do not present screens one at a time in the chat. Make structural decisions based on the brief and enforce them.
+Generate the UX flow for the exact projected `PHASE_ID` entirely in one go and write it directly to `_mano_output/ux-flow.md`. Immediately before writing, rerun `node _mano/scripts/state.js --current`; continue only if `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF` are unchanged. Do not pause for confirmation. Do not present screens one at a time in the chat. Make structural decisions based on the brief and enforce them.
 
 ### Step 1 — Define all screens & Navigation
 
@@ -82,7 +83,7 @@ Do not run the hook automatically.
 
 Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
 
-This step is required even when no spec update was needed.
+This step is required even when no UX update was needed.
 
 Mention it in the final chat response before the next-action block.
 
@@ -102,17 +103,17 @@ Output a cold, structured execution log to the user indicating completion, point
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
 
 ```
-[mano ux]: mano ux — ux-flow.md
+[mano ux]: mano ux — _mano_output/ux-flow.md
 - Screens/states updated: [list of screens or UX states added or modified]
 ⚠ Verify: [embedded assumption worth checking — omit if none]
 
-Choose the next action based on what's still missing or worth refining:
+[Optional hook block if active]
+
+Next:
 - `mano ui` — if visual direction or component language still need defining
 - `mano rules` — if project conventions or framework constraints still need codifying
 - `mano stories` — if the phase is already clear enough to break into implementable work
 - `mano continue` — if you want Mano to pick only when there is a single obvious next step
-
-Type `mano` to see what's available.
 ```
 
 Rules for the next-action block:

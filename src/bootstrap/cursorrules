@@ -6,10 +6,11 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
 ## Core Directives for Agent
 
 1. **Activation:**
-   When the user types a Mano command (e.g., `mano start`, `mano spec`, `mano stories`, `mano review`):
+   When the user types a Mano command (e.g., `mano owner`, `mano start`, `mano spec`, `mano stories`, `mano review`):
    - You MUST read `_mano/workflow.md` first.
    - You MUST resolve the command to the correct skill file using the workflow command map.
    - `mano import` maps to `_mano/skills/import.md`.
+   - `mano owner` maps to `_mano/skills/owner.md`.
    - `mano start` maps to `_mano/skills/start.md`.
    - `mano spec` maps to `_mano/skills/spec.md`.
    - `mano ux` maps to `_mano/skills/ux.md`.
@@ -32,6 +33,10 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
 4. **Code Execution Directive:**
    - **Actively refuse to write code.** As an agent executing a Mano skill, your directive is strict planning and spec-generation. You must explicitly refuse to modify source (`src/`) files or application code while running a Mano phase.
    - Only write code when explicitly instructed outside of a `mano [action]` context.
+
+   <!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
+   - **Implementation exception:** `mano dev` maps to `_mano/skills/dev.md` and the authoritative `AGENTS.md` implementation contract; it is the one Mano action allowed to write application code. Preserve a literal trailing modifier: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with `yolo` intact, enabling the ordered batch mode defined in `AGENTS.md`. The planning-only refusal still applies to every other Mano action.
+   <!-- /mano-rule: dev-yolo-batch -->
 
 5. **Runtime Layout:**
    - In installed projects, Mano framework files live under `_mano/` even if the framework source repository stores them at the root.

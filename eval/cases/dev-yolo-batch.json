@@ -1,0 +1,11 @@
+{
+  "name": "dev-yolo-batch",
+  "description": "The literal yolo modifier implements every story pending at invocation, in order, while preserving per-story artifacts and the phase boundary.",
+  "fixture": "dev-yolo",
+  "phase": 1,
+  "prompt": "mano-dev yolo",
+  "assertions": [
+    "dev_yolo_completed_all_pending",
+    "dev_yolo_output_discipline"
+  ]
+}

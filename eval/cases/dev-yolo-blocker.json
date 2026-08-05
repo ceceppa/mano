@@ -1,0 +1,11 @@
+{
+  "name": "dev-yolo-blocker",
+  "description": "YOLO checkpoints completed stories, then stops at the first genuine story gap without implementing or marking later work.",
+  "fixture": "dev-yolo-blocker",
+  "phase": 1,
+  "prompt": "mano-dev yolo",
+  "assertions": [
+    "dev_yolo_stopped_at_first_blocker",
+    "dev_yolo_interrupted_output_discipline"
+  ]
+}

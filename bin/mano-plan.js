@@ -33,7 +33,7 @@ const SRC = path.join(PKG_ROOT, "src");
 const CWD = process.cwd();
 
 // What lands inside ./_mano/ (read from src/)
-const MANO_DIRS = ["skills", "templates", "hooks"];
+const MANO_DIRS = ["skills", "templates", "hooks", "scripts"];
 const MANO_FILES = ["workflow.md"];
 
 function log(msg) {
@@ -64,7 +64,7 @@ Pin a version with npm's own syntax, e.g.:
   npx mano-plan@1.0.0 install
 
 Always installed:
-  ./_mano/        skills, templates, hooks, workflow
+  ./_mano/        skills, templates, hooks, scripts, workflow
   ./AGENTS.md     universal agent contract
 
 Optional (you'll be asked):

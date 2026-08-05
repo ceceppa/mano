@@ -1,0 +1,13 @@
+{
+  "name": "ui-phase-preview",
+  "description": "A later mano ui run preserves prior and legacy previews, extends the project design brief, and creates a phase-local preview even when the phase only reuses existing components.",
+  "fixture": "ui-phase-preview",
+  "phase": 2,
+  "prompt": "mano ui. The existing visual direction is approved. Generate or update the design artifacts now without another preference checkpoint.",
+  "assertions": [
+    "ui_phase_preview_owned_by_current_phase",
+    "ui_cumulative_brief_extended",
+    "ui_prior_and_legacy_previews_unchanged",
+    "ui_phase_preview_output_paths"
+  ]
+}
