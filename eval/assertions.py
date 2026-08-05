@@ -1036,6 +1036,104 @@ def existing_stories_unchanged(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+# --- mano stories: pulling a backlog item into an already-open phase ---------
+
+MIDPHASE_PULLED_ITEM = "Show export progress while a file is written"
+MIDPHASE_OUT_OF_GOAL_ITEM = "Sync notes to a hosted account"
+
+
+def _backlog_status_of(text: str, title: str) -> str | None:
+    """The Status of one exact `### title` block, or None if absent."""
+    blocks = re.split(r"^###\s+", text or "", flags=re.MULTILINE)
+    for block in blocks[1:]:
+        lines = block.split("\n")
+        if lines[0].strip().lower() != title.lower():
+            continue
+        found = re.search(r"^-\s*\*\*Status:\*\*\s*(.+?)\s*$", block, re.MULTILINE)
+        return found.group(1).strip().lower() if found else None
+    return None
+
+
+def midphase_item_assigned_to_open_phase(ctx: Ctx) -> list[Failure]:
+    failures = []
+    backlog = ctx.backlog() or ""
+
+    status = _backlog_status_of(backlog, MIDPHASE_PULLED_ITEM)
+    if status is None:
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f'backlog item "{MIDPHASE_PULLED_ITEM}" is gone from the backlog',
+            )
+        )
+    elif status != "in-phase-2":
+        # Still `backlog` means the story was written over an unassigned item;
+        # anything else means a status was invented.
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f'named item was not assigned to the open phase: Status is "{status}", expected "in-phase-2"',
+            )
+        )
+
+    # Only the item the user named may move. The out-of-goal item is the trap.
+    untouched = _backlog_status_of(backlog, MIDPHASE_OUT_OF_GOAL_ITEM)
+    if untouched != "backlog":
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f'an item the user did not name changed status: "{MIDPHASE_OUT_OF_GOAL_ITEM}" is "{untouched}"',
+            )
+        )
+
+    # A story must exist for the pulled-in work, and the index must know it.
+    readme = ctx.readme() or ""
+    story_rows = [r for r in readme.split("\n") if "|" in r and "progress" in r.lower()]
+    if not story_rows:
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                "no story row was added to the index for the pulled-in item",
+            )
+        )
+    if not any("progress" in name.lower() for name in ctx.story_texts()):
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f"no story file was written for the pulled-in item; files: {sorted(ctx.story_texts())}",
+            )
+        )
+    return failures
+
+
+def midphase_brief_untouched_and_flagged(ctx: Ctx) -> list[Failure]:
+    failures = []
+
+    # The brief belongs to mano start. Growing the phase must be flagged, never
+    # written into an artifact this skill does not own.
+    brief = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if not brief.is_file():
+        failures.append(Failure("midphase_brief_untouched_and_flagged", "phase brief is missing"))
+    elif brief.read_text(encoding="utf-8") != MIDBUILD_PHASE_BRIEF:
+        failures.append(
+            Failure(
+                "midphase_brief_untouched_and_flagged",
+                "mano stories edited the phase brief; it must flag the scope change instead",
+            )
+        )
+
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not re.search(r"⚠\s*Verify", text, re.IGNORECASE):
+        compact = " ".join(text.strip().split())
+        failures.append(
+            Failure(
+                "midphase_brief_untouched_and_flagged",
+                f"phase scope grew with no ⚠ Verify flag; runner output ended: {compact[-400:]!r}",
+            )
+        )
+    return failures
+
+
 # --- mano ui: project brief + phase-local preview ownership -----------------
 
 def _ui_fixture_destination(ctx: Ctx, fixture_name: str) -> Path:
@@ -1664,6 +1762,9 @@ REGISTRY = {
     # stories mid-build
     "midbuild_lettered_story_inserted": midbuild_lettered_story_inserted,
     "existing_stories_unchanged": existing_stories_unchanged,
+    # stories: pulling a backlog item into an already-open phase
+    "midphase_item_assigned_to_open_phase": midphase_item_assigned_to_open_phase,
+    "midphase_brief_untouched_and_flagged": midphase_brief_untouched_and_flagged,
     # mano ui
     "ui_phase_preview_owned_by_current_phase": ui_phase_preview_owned_by_current_phase,
     "ui_cumulative_brief_extended": ui_cumulative_brief_extended,

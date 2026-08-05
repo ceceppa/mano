@@ -1,0 +1,12 @@
+{
+  "name": "stories-midphase-assign",
+  "description": "When the user names an exact backlog item to pull into the phase already being built, mano stories assigns it via the writer and writes its story — without editing the phase brief it does not own.",
+  "fixture": "stories-midphase-assign",
+  "phase": 2,
+  "prompt": "mano stories let's bring in \"Show export progress while a file is written\" or the export will feel broken on large notebooks.",
+  "assertions": [
+    "midphase_item_assigned_to_open_phase",
+    "midphase_brief_untouched_and_flagged",
+    "existing_stories_unchanged"
+  ]
+}
