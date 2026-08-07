@@ -12,6 +12,7 @@ STATE_SCRIPT = REPO_ROOT / "src" / "scripts" / "state.js"
 BACKLOG_SCRIPT = REPO_ROOT / "src" / "scripts" / "backlog.js"
 STORIES_SCRIPT = REPO_ROOT / "src" / "scripts" / "stories.js"
 OWNER_SCRIPT = REPO_ROOT / "src" / "scripts" / "owner.js"
+MODE_SCRIPT = REPO_ROOT / "src" / "scripts" / "mode.js"
 
 OPEN_SPEC_BLOCK = """### Open spec
 - **Type:** spec-gap
@@ -183,6 +184,30 @@ class ManoScriptTests(unittest.TestCase):
         env["MANO_OWNER"] = owner
         return subprocess.run(
             ["node", str(STORIES_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def run_mode(self, *args, env_mode=None):
+        env = os.environ.copy()
+        env.pop("MANO_MODE", None)
+        if env_mode is not None:
+            env["MANO_MODE"] = env_mode
+        return subprocess.run(
+            ["node", str(MODE_SCRIPT), *args],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def run_state_with_mode(self, env_mode, *args):
+        env = os.environ.copy()
+        env["MANO_MODE"] = env_mode
+        return subprocess.run(
+            ["node", str(STATE_SCRIPT), *args, str(self.root)],
             cwd=self.root,
             text=True,
             capture_output=True,
@@ -919,6 +944,50 @@ class ManoScriptTests(unittest.TestCase):
         data = json.loads(matching.stdout)
         self.assertTrue(data["reviewEntry"])
         self.assertTrue(data["closed"])
+
+    def test_run_mode_defaults_to_manual_and_is_an_explicit_local_opt_in(self):
+        initialized = subprocess.run(
+            ["git", "init"], cwd=self.root, text=True, capture_output=True
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+
+        # A project that never opted in is manual, and says so as a default.
+        shown = self.run_mode("show", str(self.root))
+        self.assertEqual(shown.returncode, 0, shown.stderr)
+        self.assertIn("manual (default)", shown.stdout)
+        self.assertIn("MODE: manual", self.run_state().stdout)
+
+        # `mano mode auto` is the natural spelling — no `set` required.
+        enabled = self.run_mode("auto", str(self.root))
+        self.assertEqual(enabled.returncode, 0, enabled.stderr)
+        self.assertIn("auto", enabled.stdout)
+        self.assertIn("Never runs mano review", enabled.stdout)
+        self.assertIn("auto (git config --local mano.mode)", self.run_mode("show", str(self.root)).stdout)
+
+        cleared = self.run_mode("clear", str(self.root))
+        self.assertEqual(cleared.returncode, 0, cleared.stderr)
+        self.assertIn("manual is active", cleared.stdout)
+        self.assertIn("manual (default)", self.run_mode("show", str(self.root)).stdout)
+
+        for bad in ("turbo", "yolo", "AUTO-ish"):
+            with self.subTest(bad=bad):
+                invalid = self.run_mode("set", bad, str(self.root))
+                self.assertNotEqual(invalid.returncode, 0)
+                self.assertIn("invalid Mano mode", invalid.stderr)
+        # Still manual after every rejected value — a failed set never opts in.
+        self.assertIn("manual (default)", self.run_mode("show", str(self.root)).stdout)
+
+    def test_run_mode_reaches_every_projection_a_skill_reads(self):
+        (self.output / "phase-1").mkdir()
+        (self.output / "phase-1" / "phase-brief.md").write_text("# Phase Brief\n")
+        self.backlog.write_text(MIXED_BACKLOG)
+
+        # Skills decide whether to chain from the projection they already run,
+        # so every projection must carry the mode — not just the default one.
+        for args in ([], ["--current"], ["--next"], ["--ui"], ["--spec"]):
+            with self.subTest(args=args or ["(default)"]):
+                self.assertIn("MODE: auto", self.run_state_with_mode("auto", *args).stdout)
+                self.assertIn("MODE: manual", self.run_state_with_mode("manual", *args).stdout)
 
     def test_owner_command_is_explicit_local_opt_in_and_can_be_cleared(self):
         initialized = subprocess.run(

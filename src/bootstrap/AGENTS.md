@@ -26,8 +26,13 @@ Examples:
 - `mano review` → read `_mano/skills/review.md` and follow that flow
 - `mano dev` → implement the next pending story; read `_mano/skills/dev.md` and follow the "Implementing a story" contract below
 - `mano continue` → read `_mano/workflow.md` and determine the next useful Mano action
+- `mano mode [auto|manual]` → read `_mano/skills/mode.md`; show or set whether finished actions chain automatically
 
 Note: `mano dev` is the one Mano command that produces code. Every other command above is planning only. `mano dev` runs the "Implementing a story" contract in this file; `_mano/skills/dev.md` is a thin pointer back here.
+
+**Run mode.** Every `state.js` projection prints `MODE: manual|auto`. In `manual` (the default) each command hands back when it finishes. In `auto`, after the human has approved a phase scope, each finished action runs the next one automatically through to `mano dev yolo` — but it pauses for **any** question (a `❓ Decide:`, a clarifying question, an ambiguous next action, hook findings, a gate or blocker) and **never runs `mano review` or scopes a new phase**. Auto mode changes who types the next command; it never changes what a skill may write or which decisions are the human's. The full contract is `_mano/workflow.md` → **Run Mode: manual and auto**.
+
+**Continuing the chain means invoking the next action in the same turn — never announcing it.** Ending a turn on "Continuing — running `mano ui` next" stops the chain while claiming to continue it. Mid-chain, omit the `Next:` block (nobody is typing a command); it returns only in the closing block, on the action that actually ends the chain. Every hand-back names its pause condition; a chain that stops without naming one is a bug.
 
 If a platform skill named `mano` is not available, that is not an error. Continue by using the local `_mano/` files.
 
@@ -174,7 +179,7 @@ Examples:
 
 Ignore `.example.md` hooks.
 
-Hooks are suggest-only. Do not run them automatically.
+A hook's `## Mode` section decides how it runs. `suggest` (the default, and the kind assumed everywhere below) produces findings and is never run automatically in manual mode — ask first. `command` names one command in a `## Command` section and **always runs, in both modes**, after the artifacts are written: the hook file is the authorization, so do not ask. Report it in one line of the execution log, take the command only from the hook file, and on failure report the exact error without retrying, fixing the user's script, or hand-editing artifacts to compensate. Full contract: `_mano/workflow.md` → **Optional Post-Skill Hooks**.
 
 <!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
 When a just-run `post-start`, `post-spec`, or `post-rules` hook has printed
@@ -186,7 +191,7 @@ and must not be edited here. Apply the smallest selected change and preserve
 unmentioned content and adjacent values.
 <!-- /mano-rule: post-hook-findings-triage -->
 
-If an active hook exists, mention it in the final response before the next-action block:
+If an active `suggest` hook exists, mention it in the final response before the next-action block (a `command` hook has already run — report it in the execution log instead):
 
 ```text
 Active post-[skill] hook found: `_mano/hooks/post-[skill].md`.
@@ -201,6 +206,6 @@ Do not mention specific third-party or external skill names in generic Mano outp
 
 Do not print the hook's suggested prompt unless the user asks to run or view the hook.
 
-Do not execute hooks without explicit user confirmation.
+Do not execute a `suggest` hook without explicit user confirmation.
 
 Do not write hook suggestions into generated artifacts.

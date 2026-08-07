@@ -1,0 +1,10 @@
+{
+  "name": "start-suggests-rules-for-new-category",
+  "description": "A mature project-rules.md must not hide mano rules: when the phase introduces a new category of example whose naming, placement, and shared format will repeat, mano start keeps mano rules among the next actions.",
+  "fixture": "start-new-category",
+  "phase": 1,
+  "prompt": "mano start. Scope the showcase example — approve it as the phase, it's the only thing I want in it.",
+  "assertions": [
+    "start_kept_rules_visible_for_new_category"
+  ]
+}

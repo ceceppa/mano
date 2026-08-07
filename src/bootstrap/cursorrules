@@ -11,6 +11,7 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - You MUST resolve the command to the correct skill file using the workflow command map.
    - `mano import` maps to `_mano/skills/import.md`.
    - `mano owner` maps to `_mano/skills/owner.md`.
+   - `mano mode` maps to `_mano/skills/mode.md`.
    - `mano start` maps to `_mano/skills/start.md`.
    - `mano spec` maps to `_mano/skills/spec.md`.
    - `mano ux` maps to `_mano/skills/ux.md`.

@@ -7,6 +7,7 @@ mano                    → Show available commands and current status.
 mano status             → Read deterministic project state and show where you are + what to do next.
 mano import [doc]       → Turn an existing PRD/document into a backlog, then stop.
 mano owner [slug]       → Show, set, or clear this repository clone's optional phase owner.
+mano mode [auto|manual] → Show or set whether finished actions chain automatically.
 mano start              → Scope a new project or phase.
 mano continue           → Auto-run the next logical action if unambiguous.
 mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
@@ -14,7 +15,7 @@ mano dev                → Implement the next pending story for the active phas
 mano help [skill]       → Show what a skill does and when to use it.
 ```
 
-`mano owner` and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
+`mano owner`, `mano mode`, and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
 
 **Dispatch only to Mano's own skills — never a similarly-named built-in.** Every `mano <action>` resolves to the matching skill in `_mano/skills/` and to nothing else. The host environment may contain built-in, harness, plugin, or third-party skills whose names overlap a Mano action word — do **not** invoke those for a `mano` command, even if their name looks like an exact match. Resolve the command by its Mano role (the agent and contract below), not by keyword similarity to an ambient skill. Two known, high-impact collisions to call out explicitly:
 - **`mano review` → `mano review`** (`_mano/skills/review.md`): collect feedback, triage into the backlog, write the review log, close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run `mano review` instead.
@@ -33,6 +34,87 @@ Phase ownership is opt-in and local to a repository clone:
 - `mano owner clear`: return this clone to legacy `phase-N` routing without touching owned folders.
 - Linked worktrees share repository-local Git config. `MANO_OWNER` may override it for a shell or worktree when those worktrees need different owners. Never infer an owner from `whoami`, an OS account, or an email address.
 - Two people may configure the same slug to hand over or pair on one phase. Different slugs select separate active phase sequences. Another owner's unfinished phase does not block `mano start` for the configured owner.
+
+## Run Mode: manual and auto
+
+Mano runs in one of two modes, stored per repository clone in local Git config (`mano.mode`, not committed) and overridable for a shell with `MANO_MODE`. Every `state.js` projection prints the active mode as `MODE:`; read it there rather than asking or assuming. `mano mode` shows it, `mano mode auto` / `mano mode manual` set it, `mano mode clear` returns to the default.
+
+**`manual` is the default and the behaviour every existing project keeps.** Each command finishes, prints its log, and hands back. The absence of configuration is never an opt-in — an unreadable or missing setting resolves to `manual`.
+
+**`auto` chains the actions the user would otherwise type.** It exists because a user who has stopped reading intermediate artifacts is already chaining by hand; the mode makes that explicit and bounded rather than pretending each hand-off is a review. It changes *who types the next command*. It changes nothing about what any skill produces, what it is allowed to write, or which decisions belong to the human.
+
+### Where auto mode starts and stops
+
+Auto mode is armed only by an **explicit human approval of a phase scope** in `mano start`. Nothing before that approval is ever automated: intake stays a conversation, and the phase brief is still written only after the human approves the scope. The approval gate is what keeps "correct course at the brief, not after dozens of tasks have shipped" true, so it is never absorbed into the chain.
+
+Once armed, the chain runs the planning actions the phase needs and ends with implementation (`mano dev yolo`, which already stops at its first blocker). It then **stops and hands back — always.** In auto mode:
+
+- **never run `mano review`.** Closing a phase is the human's judgement and the one gate the mode exists to preserve.
+- **never scope a new phase.** The chain covers one approved phase and no more.
+
+Arming is per phase, not permanent: a command the user types themselves inside an already-approved phase still chains onward (that is the mode), but the chain never carries into a phase the human has not approved. **The user can stop it at any point** — "stop", "wait", "hold on", or any instruction to pause ends the chain immediately and hands back, without needing `mano mode manual`.
+
+At the approval, state the chain you intend to run before starting it, so the user knows they are about to go hands-off and can edit it in the same reply:
+
+```text
+→ Auto mode: spec → rules → stories → dev yolo
+  Reply `go`, or edit it (`skip rules`, `add ux`). Pauses for any question; stops before review.
+```
+
+### The pause rule
+
+**Auto mode pauses whenever the human's answer is required, and never answers on their behalf.** This is the whole safety model: the mode removes typing, not decisions. Pause and hand back on any of these, then resume the chain from where it stopped once the user replies:
+
+- a `❓ Decide:` line — already defined as "confirm or change before the next command runs" (see the canonical execution-log format), which makes it exactly this signal
+- any clarifying question a skill would ask in manual mode
+- **a genuine fork in the next action** — when the "Single obvious next action gates" below say *do not auto-run*, that ambiguity is a question. Ask which branch; never pick the first option or the shortest path
+- hook findings that need triage (see below)
+- a hard gate or refusal — `DECISION: STOP`, a pre-review gate, a missing required artifact, a surfaced cross-artifact conflict
+- any script failure, per **Scripts are mandatory**
+
+A `⚠ Verify:` is advisory by definition and does **not** pause the chain. Collect them instead (below).
+
+**Every pause is named.** When one of the conditions above fires, say which one, in the closing block. A chain that hands back without naming a pause condition is a bug, not a pause — the two look identical to the user, and only the named version tells them whether to answer something or re-run the command.
+
+Two things that are **not** pause conditions, because they are the most tempting places to stop:
+
+- **A `Next:` block listing more than one action.** Several *listed* options is the ordinary shape of a log, not a fork. It is a fork only when the "Single obvious next action gates" genuinely cannot resolve which comes first. An option that is explicitly conditional on another (`mano stories` — *once visual direction is settled*) is resolved, not ambiguous: run the one it depends on.
+- **Finishing an action successfully.** Completion is the trigger to continue, not to hand back.
+
+### Hooks in auto mode
+
+Post-skill hooks **run automatically in auto mode** — the inverse of the manual-mode default, and deliberate. Hooks are normally suggest-only because they are best run after the human has reviewed the artifact; in auto mode the human is deliberately not reviewing mid-chain, so the hook is the only check that runs at all. Running it adds signal exactly where signal was removed.
+
+Approval is unchanged: **running a hook approves the review, not the edits.** Findings still go through **Post-Hook Findings Triage** with explicitly numbered selections. Because that triage needs an answer, hook findings pause the chain under the normal pause rule. A hook that reports nothing does not pause it.
+
+### Continuing is an action, not an announcement
+
+**To continue the chain, invoke the next action in the same turn. Never end a turn with a statement of intent.** A line like "Continuing the auto-mode chain — running `mano ui` next" followed by the turn ending is the chain silently stopping while claiming the opposite: the user is left holding a promise instead of a result, and no pause condition fired to explain it.
+
+- ❌ finished log → `Next:` options → "Continuing — running `mano ui` next." → *turn ends*
+- ✅ finished log → `mano ui` runs → its log → … → closing block when the chain stops
+
+If you have written words describing what you are about to run, you have not run it. Either invoke it now, or name the pause condition (**The pause rule**) that stopped you. There is no third state where the chain is notionally continuing but nothing is executing.
+
+**Between actions there is no `Next:` block and no transition line.** This is the one place a skill's canonical execution log is trimmed: `Next:` exists to tell a human which command to type, and mid-chain nobody is typing one. Offering options *and* claiming to continue is the contradiction that produces the failure above. `Next:` returns in the closing block, once the chain has actually stopped.
+
+### What the chain prints
+
+Each action still prints its own canonical execution log as it completes — the chain is not a silent batch, and the logs are the audit trail. When the chain stops, add one closing block that turns the run into the user's review agenda:
+
+```text
+[mano auto]: phase-[N] — [first] → … → [last]
+- Ran: [actions, in order]
+- Stopped: [completed implementation | waiting on the question below]
+⚠ Verify: [every advisory flag collected across the run, one per line — omit if none]
+
+[Hook findings triage, or the pending question, if that is why it stopped]
+
+Next:
+- `mano review` — when you have checked the result
+```
+
+Collecting the `⚠ Verify:` lines here matters: in manual mode the user sees each one as it appears, and in auto mode they would otherwise scroll back for them. This block is the thing they read before reviewing.
 
 Every phase-scoped skill must use `state.js` and its exact `OWNER`, `PHASE_ID`, `PHASE_DIR`, paths, in-phase status, and review-heading prefix. The numeric `PHASE` is only for display and writer arguments; never construct a directory or status from it. In this document, `phase-[N]` examples describe default legacy mode. In owner-scoped mode, exact state projections override those examples.
 
@@ -163,14 +245,19 @@ Whenever a skill suggests what to do next, base that suggestion on the artifacts
 - Prefer the shortest path that adds useful clarity for the current phase.
 - Use this decision tree when evaluating next steps for the planning stage:
   ```
+  Phase introduces a new category of file/example/module/component
+  whose naming, placement, or shared format will repeat?
+  └─ yes → keep `mano rules` in the options, however mature project-rules.md is
+
   Phase is user-facing or mobile?
   ├─ design coverage or the current visual preview missing/stale? → suggest `mano ui` (do not auto-run stories)
   ├─ project-rules still default? → list `mano rules` + `mano stories` as options
   └─ design coverage, visual preview, and useful rules present? → suggest `mano stories`
-  
+
   Phase is non-user-facing (backend/infra)?
   └─ go straight to `mano stories` unless tech is genuinely fuzzy (suggest `mano spec`)
   ```
+  The first branch exists because the others are asymmetric: `mano ui` is gated on a **phase-scoped** artifact (`PHASE_DIR/design-preview.html`), which is missing at the start of every phase, while `mano rules` was gated only on `project-rules still default?` — a **project-lifetime** condition that can never fire again once the file is customised. Existence of `project-rules.md` proves earlier categories were homed; it says nothing about a category this phase introduces. Judge rules by what the phase adds, not by whether the file has been written before.
 
 ## State detection — relying on context
 
@@ -206,6 +293,7 @@ Show a brief description of the skill — what it does, when to use it, what it 
 |---------|------|-------|----------|
 | **`mano import`** | Turns an existing PRD or document into a backlog. Decomposes the document into items, then stops. Does not scope phases. | A PRD/document (path or pasted), existing backlog | Backlog (items `Status: backlog`) |
 | **`mano owner`** | Opts this repository clone into an owner namespace, shows it, or clears it. | Repository-local Git config / `MANO_OWNER` | Local Git config only; no planning artifacts |
+| **`mano mode`** | Shows or sets whether finished actions chain automatically (`auto`) or hand back (`manual`, the default). | Repository-local Git config / `MANO_MODE` | Local Git config only; no planning artifacts |
 | **`mano start`** | Scopes projects and phases. Populates the backlog (from conversation), suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews | Phase brief, backlog updates |
 | **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, filtered unresolved spec-gap projection | Tech spec; targeted spec-gap status updates |
 | **`mano ux`** | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |
@@ -229,6 +317,8 @@ When the user types `mano status`:
 
 `mano continue` should auto-run only when the next planning action is genuinely narrower than the alternatives.
 
+These gates are shared: `mano continue` applies them once per invocation, and auto mode applies the same gates on every step of its chain. Two auto-mode overrides, from **Run Mode**: the chain never auto-runs `mano review` or a new `mano start`, and it runs `mano dev yolo` where the build-mode fallback would tell a manual user to run `mano dev`.
+
 Auto-run is appropriate when:
 - no `_mano_output/` exists → `mano start`
 - a phase brief exists and supporting artifacts are either already present, irrelevant, or explicitly skipped → `mano stories`
@@ -242,7 +332,7 @@ Do not auto-run when:
 - an artifact is stale or conflicting and the right repair path is not obvious
 - the project is in build mode with pending stories
 
-In those cases, show `Next options` instead of choosing for the user.
+In those cases, show `Next options` instead of choosing for the user. In auto mode this is a pause, not a silent pick — ask which branch and resume once answered.
 
 ## Continue
 
@@ -292,7 +382,8 @@ Available Mano commands for [PHASE_ID]:
   stories  — Break phase into implementable stories (`mano stories`)
   review   — Triage feedback, close the phase (`mano review`)
   dev      — Implement the next pending story
-  owner    - Show, set, or clear this repository clone's optional phase owner
+  owner    — Show, set, or clear this repository clone's optional phase owner
+  mode     — Show or set whether finished actions chain automatically
 
 → marks the suggested next action.
 Type: mano start, mano [action], or mano dev
@@ -481,7 +572,7 @@ Rules:
 - `❓ Decide:` is the stronger channel: the artifact carries a decision the skill made provisionally (or found open) that the user should confirm or change **before the next command runs**. Phrase it as a direct question with the provisional value stated — "Defaulted `MISSING_X` severity to `warn` (same reasoning as `LONG_Y`) — confirm or change before `mano stories`?" — never as a passive observation. The test for which line to use: if your verify text says "confirm before [next step]", it is misfiled — that's a `❓ Decide:`. While the decision is open, the owning artifact must carry the same hedge at the value itself (e.g. an inline `⚠️ Note: provisional`), so a later skill reading the artifact sees the open decision without needing this chat.
 - **`Next:` must agree with `❓ Decide:`.** When a decide line is present, present the dependent command as conditional on the decision (`mano stories` — once the severity call above is confirmed), never as unconditionally ready. The two lines share one message; a decide line saying "confirm before stories are written" above a `Next:` saying "ready to decompose" is exactly the contradiction this rule forbids.
 - **Capture the answer.** When the user replies to a `❓ Decide:` — confirming or changing the value — apply it: update the owning artifact in place (the provisional value becomes a stated decision; drop the "guess"/provisional hedging) and respond with a one-line changelog. A decision that lives only in chat is not captured; the artifact is the record.
-- `Next:` keeps the existing next-action options; it is not boilerplate and stays.
+- `Next:` keeps the existing next-action options; it is not boilerplate and stays. **One exception:** in auto mode, an action that is handing off to the next action in the chain omits `Next:` entirely — see **Run Mode** → *Continuing is an action, not an announcement*. Nobody is choosing a next command mid-chain, and printing options there produces a log that offers a choice and continues past it in the same breath. `Next:` still appears on the action that ends the chain.
 
 Reason fully; externalize sparingly. Terse output is a rule about *display*, not *cognition*. Judgment-heavy skills (scoping, story decomposition, spec, rules, review) must still do the deliberation their contract requires — specificity, branching-flow, exhaustiveness, anti-rationalization gates. Do not shortcut that thinking to save chat volume; under-reasoning a planning decision is far more expensive than over-explaining one, because the bad decision propagates into every downstream artifact. The discipline is: do the reasoning internally, let the artifact carry the conclusions (each artifact is self-contained by design), and put only the changelog, flags, and genuine unresolved questions in chat. Do not narrate the deliberation itself. Mechanical steps (status updates, file writes, hook checks) carry no judgment worth narrating — just act and report.
 
@@ -524,6 +615,21 @@ Other skills should not edit the backlog except for narrow gap-resolution status
 - `mano rules` must run `node _mano/scripts/state.js --gaps rule-gap`; that projection is its only backlog read. After updating project rules, it may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type rule-gap --title "..."`.
 
 Neither skill opens `backlog.md`, even when the user asks it to handle backlog gaps; the read-only projection and targeted writer are the complete interface. Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
+
+<!-- mano-rule: id=mid-phase-addition-owner; incident=stories-assigned-backlog-item-out-of-lane; model=not-recorded; date=2026-08-05; eval=stories-midphase-assign -->
+### Mid-phase additions
+
+One more narrow exception, for work the human pulls into a phase that is already open and being built:
+
+- `mano stories` may assign an **exact backlog item the user named** to the **already-approved active** phase, via `backlog.js assign --phase [N] --title "..."`, and then write its story. It never chooses items itself, never scopes, and never assigns to a phase that does not already exist and hold approved scope.
+
+This is not a second scoping skill. `mano start` owns assignment because assignment is normally part of *selecting* what a phase contains — a judgement needing approval. When the human names one exact item to add to a phase already in flight, that judgement has been made and stated directly; only the mechanical step remains. `mano start`'s `DECISION: STOP` blocks *advancing to a new phase*, which is a different operation and stays blocked.
+
+Two hard limits:
+
+- **If the addition changes the phase goal, it is not an addition — it is the next phase.** Say so and stop; do not assign, do not write the story. Small phases are what make the review gate meaningful, and quietly growing one to fit new work is how that gate stops meaning anything.
+- **Never edit the phase brief to record the change.** The brief belongs to `mano start`. Flag it instead: the phase now contains work its brief does not describe, and `mano review` reads that brief for the phase goal and Assumption Log. Surface it with `⚠ Verify:` so the human can add a line themselves if they want it recorded — use and flag, never edit another skill's artifact.
+<!-- /mano-rule: mid-phase-addition-owner -->
 
 ## Skill Tightening
 
@@ -605,7 +711,46 @@ done stories and lettered follow-up work.
 
 Mano supports optional post-skill hooks in `_mano/hooks/`.
 
-Hooks are suggest-only. They never run automatically.
+### The two hook kinds
+
+A hook declares its kind in a `## Mode` section. The kind decides whether Mano asks first, because the two produce different things:
+
+| `## Mode` | Produces | Runs | Approval |
+|-----------|----------|------|----------|
+| `suggest` (default) | findings — judgement a human must weigh | Asked first in manual mode; automatically in auto mode | Findings go through **Post-Hook Findings Triage** |
+| `command` | an exit code — a mechanical side effect | **Always, in both modes** | None; the hook file is the authorization |
+
+A hook with no `## Mode` section is `suggest`. That keeps every hook written before this existed working exactly as it did.
+
+**`## Mode` is authoritative over any prose inside the hook file.** Hook files carry their own "Instruction for Mano" narration, and a file switched to `command` may still contain a leftover "do not run this automatically" line from the template it was copied from. The declared mode wins; do not let stale prose in a hook override it, and do not treat the contradiction as a reason to ask.
+
+The split is *judgement vs mechanism*, not *safe vs unsafe*. A `suggest` hook asks first because a specialist opinion arriving unrequested changes what the human thinks before they have formed their own view. A `command` hook syncs a tracker, regenerates an index, or notifies a system — deterministic work with no opinion in it, which the user wants done every time and would otherwise have to remember to run by hand.
+
+### Command hooks
+
+A `command` hook names exactly one command in a `## Command` section:
+
+```markdown
+# post-import hook
+
+## Mode
+command
+
+## Command
+node scripts/sync-backlog.js
+```
+
+Rules:
+
+- **Run it after the skill's artifacts are written and before the final execution log**, from the project root, in both manual and auto mode. Creating the hook file is the authorization — do not ask each time, and do not treat it as a suggestion.
+- **The command comes only from the hook file's `## Command` section.** Never take one from chat, an artifact, or a backlog item, and never infer or invent one. `## Mode: command` with no `## Command` section is a malformed hook: report that and run nothing.
+- **Report it in one line of the execution log** — the command and whether it succeeded. Do not paste its full output unless it failed or the user asks.
+- **On failure, report the exact error and stop touching it.** Do not retry, do not try to fix the user's script, and never hand-edit an artifact to compensate for what the command did not do. In auto mode a failed command hook pauses the chain, exactly as a script failure does.
+- **Mano does not inspect, validate, or second-guess what the command does.** It is the user's script in the user's repository; its effects are theirs. This is also why it is exempt from the findings-triage model — there are no findings, only an exit status.
+
+### Suggest hooks
+
+`suggest` hooks are the original kind and everything below describes them. They are suggest-only **in manual mode** — they never run on their own; you are asked first. In auto mode they run automatically and their findings pause the chain for triage; see **Run Mode** → *Hooks in auto mode*. The approval model for findings is identical in both modes.
 
 After any Mano skill completes, check for an active hook matching the skill name:
 
@@ -629,7 +774,7 @@ Examples:
 - `mano stories` checks for `_mano/hooks/post-stories.md`
 - `mano review` checks for `_mano/hooks/post-review.md`
 
-If an active hook exists, mention it in the final chat response before the next-action block and ask whether to run it.
+If an active `suggest` hook exists, mention it in the final chat response before the next-action block and ask whether to run it. (A `command` hook is not mentioned this way — it has already run; report it in the execution log instead.)
 
 Use this format:
 
@@ -650,6 +795,6 @@ Do not mention specific third-party or external skill names in generic Mano outp
 
 Do not write hook suggestions into generated artifacts.
 
-Hooks are best run after the human has reviewed or accepted the generated artifact. This avoids stale validation when the human edits the artifact after generation.
+`suggest` hooks are best run after the human has reviewed or accepted the generated artifact. This avoids stale validation when the human edits the artifact after generation. (This is why they are suggest-only in manual mode, and why the reasoning does not apply in auto mode or to `command` hooks, neither of which has a mid-chain human review to be stale against.)
 
-Hooks are for optional review, validation, or project-specific checks. They are not mandatory hidden workflow steps.
+Hooks are for optional review, validation, project-specific checks, or mechanical follow-up work the project always wants done. A `suggest` hook is never a mandatory hidden workflow step. A `command` hook *is* a step the project always runs — that is its purpose — but it stays visible: it is declared in a file the user wrote and reported in the execution log every time it runs.
