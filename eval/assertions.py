@@ -1303,6 +1303,50 @@ def ui_no_phase_preview_routes_to_start(ctx: Ctx) -> list[Failure]:
     return []
 
 
+# --- mano start: rules visibility for a new category -------------------------
+
+def start_kept_rules_visible_for_new_category(ctx: Ctx) -> list[Failure]:
+    """`mano rules` must survive the existence filter when the phase adds a category.
+
+    The fixture ships a substantive project-rules.md and a current tech-spec.md
+    on purpose: an existence-only next-action filter skips both, which is the
+    exact shape that hid `mano rules` in the reported incident.
+    """
+    assertion = "start_kept_rules_visible_for_new_category"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    failures = []
+
+    # Only the next-action block counts. Naming the skill while explaining that
+    # rules already exist is the failure, not the pass.
+    tail = text
+    marker = re.search(r"^\s*Next:", text, re.IGNORECASE | re.MULTILINE)
+    if marker:
+        tail = text[marker.start():]
+    if not re.search(r"mano[\s-]+rules", tail, re.IGNORECASE):
+        compact = " ".join(text.strip().split())
+        failures.append(
+            Failure(
+                assertion,
+                "next actions omitted `mano rules` although the phase introduces a new "
+                f"example category; output ended: {compact[-500:]!r}",
+            )
+        )
+
+    # The brief is still mano start's deliverable — a next-action fix must not
+    # come at the cost of skipping the phase itself.
+    brief = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if not brief.is_file():
+        failures.append(Failure(assertion, "no phase brief was written for the approved scope"))
+
+    # project-rules.md belongs to mano rules; mano start may not write it.
+    rules = ctx.output_dir / "project-rules.md"
+    if rules.is_file() and rules.read_text(encoding="utf-8") != (ctx.fixture_text("project-rules.md") or ""):
+        failures.append(
+            Failure(assertion, "mano start edited project-rules.md; it may only suggest `mano rules`")
+        )
+    return failures
+
+
 # --- public-interface planning readiness ------------------------------------
 
 def _interface_matrix_rows(text: str) -> list[dict[str, str]]:
@@ -1756,6 +1800,8 @@ REGISTRY = {
     "selected_hook_finding_applied_only_in_spec": selected_hook_finding_applied_only_in_spec,
     # review hard gate
     "pending_review_gate_held": pending_review_gate_held,
+    # mano start: rules visibility
+    "start_kept_rules_visible_for_new_category": start_kept_rules_visible_for_new_category,
     # review: rejected scope
     "review_surfaced_rejection_candidates": review_surfaced_rejection_candidates,
     "review_triage_wrote_nothing_yet": review_triage_wrote_nothing_yet,
