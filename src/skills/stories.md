@@ -138,7 +138,9 @@ Example:
 - **Do not:** no inline colour values (see `project-rules.md §Colour constants`); no new auth logic in this story
 ```
 
-For `story-0` and setup/dependency stories: point to the exact package-manager, dependency, and install-command section in the tech spec. AGENTS.md step 7 requires the implementer to read it; do not create a second copy in the story.
+For `story-0` and setup/dependency stories: point to the exact package-manager, dependency, scaffold, and install-command sections in the tech spec. AGENTS.md step 7 requires the implementer to read them; do not create a second copy in the story.
+
+**Greenfield scaffold gate.** If the application does not have a real manifest yet and bootstrap requires a generator that expects an empty directory, the tech spec must provide a `## Project Scaffold` command through `node _mano/scripts/scaffold.js run`, with a literal `{target}` destination. Put that requirement in `story-0`'s Implementation Reference. A raw generator aimed at `.`, the project root, or a temporary child followed by manual moving/copying is not developer-ready: stop and route the missing guarded command to `mano spec`. Never instruct development to move, rename, delete, or temporarily hide `_mano`, `_mano_output`, `.git`, `AGENTS.md`, or any existing file.
 
 For stateful frontend stories: name what persists across restart, what stays transient, and which module owns it. Include a persistence criterion in `Done when` too — do not bury it only here.
 

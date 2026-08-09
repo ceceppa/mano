@@ -241,6 +241,18 @@ When a package manager is detectable, name it explicitly and use matching comman
 
 Include developer tooling (linting, formatting, type-checking, testing, codegen) when it's a meaningful project decision. If the stack makes the choice obvious or it's pure boilerplate, keep it compact.
 
+### Greenfield scaffold safety
+
+When the project has no real application manifest yet and the chosen stack normally begins with a project generator, add a `## Project Scaffold` section containing the exact generator command wrapped by Mano's staged runner:
+
+```bash
+node _mano/scripts/scaffold.js run --name [stable-project-slug] -- [generator command with {target} as its destination]
+```
+
+`{target}` is a literal required token, not prose. The runner replaces it with an empty directory outside the project, preflights the generated tree, and merges only non-conflicting files. Never specify `.` or the project root as the generator's destination. Never prescribe moving `_mano`, `_mano_output`, `.git`, `AGENTS.md`, or any existing project file out of the way and restoring it later. Do not use a raw generator command plus `cp`, `mv`, `rsync`, or manual cleanup as an alternative.
+
+Keep the wrapper only for creation of the application scaffold. Ordinary dependency additions still use the package-manager install commands above. If the app already has a real manifest or lockfile, reconcile the spec with it instead of proposing a new scaffold.
+
 ## Domain model completeness check
 
 When the phase includes domain mechanics, game rules, workflows, entities, state machines, or non-trivial business logic, `mano spec` must define the minimum data model needed to implement and test the phase.

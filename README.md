@@ -203,6 +203,18 @@ Requirements change during implementation. You don't have to finish the phase to
 
 For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real manifest and lockfile (any language — `package.json`/`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `go.sum`, `requirements.txt`/`uv.lock`, `CMakeLists.txt`, etc.), or anytime you add/remove/replace a library, run `mano spec` again so `mano spec` can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain. It also receives the exact backlog items assigned to the active phase, so source requirements are not lost when the human-facing phase brief summarizes them. For a brownfield public interface, it checks the named existing declaration surface before confirming a replacement or extension. The completeness gate is deliberately limited to consumer-visible/public or independently-owned multi-story boundaries; a local helper or component API owned by one story stays an implementation decision.
 
+### Safe greenfield scaffolding
+
+Planning before implementation means `_mano/`, `_mano_output/`, and agent instructions already exist when a greenfield frontend app is scaffolded. Many project generators reject that non-empty root. Mano never solves this by moving those files away.
+
+When a generator needs an empty destination, `mano spec` records a guarded command such as:
+
+```bash
+node _mano/scripts/scaffold.js run --name my-app -- npx create-example-app@latest {target}
+```
+
+The helper generates the app in a temporary directory outside the project, checks the entire result, and then adds only non-conflicting files. It never overwrites or deletes an existing file, ignores a staged `.git`, and stops before copying if (for example) the generator's `README.md` differs from one already in the project. Failed or conflicting output remains staged so it can be inspected. `mano stories` makes this a requirement of bootstrap `story-0`, and `mano dev` must stop rather than move `_mano`, `_mano_output`, Git metadata, or agent instructions out of the way. Replace the example generator with the exact command chosen in your tech spec; `{target}` must remain literal so the helper can supply the empty destination.
+
 The pipeline doesn't require you to finish before course-correcting.
 
 ## Output
