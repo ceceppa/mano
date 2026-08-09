@@ -135,6 +135,8 @@ Then proceed to Step 6.
 
 Work from the state script's `SCOPE INPUT` block (the phase-scopeable `Status: backlog` items, `## Core Product Principles`, and latest review) — it's already in context from activation, so don't reopen `backlog.md`, `reviews.md`, or the completed phase's folder. The projection has already removed `spec-gap` and `rule-gap` items. Estimate complexity of each remaining item based on its context.
 
+If the latest review records `Evidence` as `none` and the candidate phase depends on that phase's inconclusive assumptions, surface one non-blocking line with the suggestion: `⚠ Previous [PHASE_ID] closed without evidence; assumptions relevant to this scope remain inconclusive.` Do not block the new phase, manufacture a validation task, or repeat the warning when the candidate scope is unrelated. The human decides whether to validate later or continue knowingly.
+
 **Hard constraint: one independently verifiable outcome per phase.** A phase should deliver one cohesive capability or retire one meaningful risk that can be validated without work planned for a later phase. It may cross backend, frontend, storage, or other layers when that is the smallest complete slice; keep each layer to the minimum required for the outcome. Do not bundle unrelated outcomes simply because they share infrastructure. Treat internal prerequisites as part of the outcome rather than separate phase-scope items, while recording them explicitly in the phase brief and stories.
 
 Ask: "At the end of this phase, can someone demonstrate the capability or verify that the risk has been retired using clear acceptance criteria?" If not, reshape the scope.
@@ -238,6 +240,13 @@ Do not silently mark a broad item with the projected `IN_PHASE_STATUS`.
 
 **Demo-sketch checkpoint.** Before drafting the brief, write out the Exit Criteria as a concrete user-action sequence — open the app, what loads, what the user does, what happens next, what proves it worked. If that sequence requires nouns you cannot ground in either Phase 1 or this brief (e.g. "the workspace," "the default view," "the starting state"), surface them as scope-gap questions here. Do not draft the brief with hand-wavy placeholders for system state the implementer will have to invent.
 
+**Validation-plan checkpoint.** Derive a lightweight plan for how the human can learn from the completed phase:
+
+- **Decision this informs** — the product, scope, or direction decision the result can inform next.
+- **Evidence to gather** — what the human will use, show, play, or measure. This can be direct use, feedback from another person, an observed workflow, or a concrete technical measurement; do not require external users when self-use or objective verification fits the phase.
+
+The plan is not a success prediction and Mano does not make the decision. It makes the intended evidence path visible before implementation. Infer it from the approved goal and Exit Criteria when clear. If either line would be invented, ask one focused 7b question. Do not add market research, business metrics, or a heavyweight experiment to a small phase unless the user requested them.
+
 **Foundation-conflict check.** Scan the remaining `Status: backlog` items. For each Phase Scope concept, ask: does a deferred backlog item later subdivide, replace, or generalise this concept? Common patterns: a single pool that later splits (e.g. "income" → received vs. expected once invoices land), a global setting that later becomes per-record (e.g. flat tax % → per-transaction rate), a singular entity that later becomes plural. Where this is true, the implementer needs to know now so the Phase 1 model extends rather than gets reworked. Record each such case as an Assumption Log row stating the concept is *deliberately a narrowed version* of a deferred backlog item, with the risk being "Phase 1 model collapses the distinction and the deferred item forces a rework." Do not design the solution — just flag the boundary so it isn't baked in by accident.
 
 If clarifications are needed:
@@ -288,6 +297,8 @@ Each phase brief carries everything needed to understand the phase. No external 
      - Close and reopen app: data unchanged
 
   If the sequence cannot be written without ambiguity, the phase scope is unclear or scattered across disconnected pieces. This is the script used to verify the phase at review time.
+
+- **Validation plan** — always include two concise lines: `Decision this informs` and `Evidence to gather`. The decision belongs to the human; phrase it as what the result may help them decide, never as a decision Mano will make. Evidence states what will be used, shown, played, or measured after implementation. Keep this distinct from Exit Criteria: Exit Criteria proves the capability was built; the Validation Plan says how the human will learn whether it is worth keeping, changing, or extending. For a purely technical phase, a concrete measurement or observed integration result is valid evidence.
 
 - **Assumption log** — include only assumptions whose failure would materially change the phase. Zero is acceptable. Always include any concept the Foundation-conflict check (Step 7b) flagged as a deliberately-narrowed version of a deferred backlog item — that boundary failing silently is exactly the kind of assumption this section exists to capture.
 

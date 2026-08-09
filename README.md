@@ -116,6 +116,15 @@ Suggest hooks are the one behaviour that inverts after approval: in manual or un
 
 `mano mode` shows the current setting and `mano mode manual` turns it off. Like the owner, it lives in repository-local Git config (`mano.mode`) and is not committed — it records how much *you* review, not a property of the project. `MANO_MODE` overrides it for a shell.
 
+Persisting `mano mode auto` or `mano mode manual` therefore requires the project to be a Git checkout. In a new project directory, initialise version control first:
+
+```bash
+git init
+mano mode auto
+```
+
+Mano never runs `git init` for you. Importing, scoping, and other manual-mode planning can still happen before a repository exists; the Git requirement begins when you persist a run-mode choice. For a temporary shell or worktree override, use `MANO_MODE=auto` instead.
+
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 
 When a user types a Mano command in their AI IDE's chat interface, the agent is instructed to carry out that planning command directly. Since this relies entirely on the agent's context window and instruction-following capabilities, you must actively steer the agent if it hallucinates state or breaks character.
@@ -137,7 +146,7 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 | **`mano ux`** | Defines UX flows — screens, navigation, user interactions | `skills/ux.md` |
 | **`mano ui`** | Establishes visual language and component guide | `skills/ui.md` |
 | **`mano stories`** | Breaks specs into implementable stories | `skills/stories.md` |
-| **`mano review`** | Phase review, triage, closes the phase | `skills/review.md` |
+| **`mano review`** | Records evidence, triages feedback, closes the phase | `skills/review.md` |
 | **`mano dev [yolo]`** | Implements the next pending story, or the invocation-time pending set with explicit `yolo` | `skills/dev.md` |
 
 The user owns scope, priorities, and product tradeoffs. `mano spec` can recommend concrete technical defaults and `mano ui` can set a concrete visual direction, but both are always overridable.
@@ -167,7 +176,7 @@ On a new project, `mano start` populates the backlog (from conversation), sugges
 5. `mano ui` → `mano ui` extends the project-wide design brief and creates or updates the current phase preview.
 6. `mano stories` → `mano stories` breaks into stories.
 7. `mano dev` → implement the next pending story (repeat until the phase is built). Ship. Gather feedback.
-8. `mano review` → `mano review` triages feedback into the backlog, writes the review log, closes the phase.
+8. `mano review` → `mano review` records evidence, triages feedback into the backlog, writes the review log, and closes the phase.
 
 This is an example path, not a mandatory conveyor belt. After any step, choose the next action from the artifacts that are still missing or need revision.
 
@@ -176,9 +185,11 @@ This is an example path, not a mandatory conveyor belt. After any step, choose t
 2. Approve the phase brief scope.
 3. `mano stories` → `mano stories` writes stories directly.
 4. `mano dev` → implement the next pending story, repeat until the phase is built.
-5. `mano review` → `mano review` triages feedback and closes the phase. Required — this is what lets the next `mano start` proceed.
+5. `mano review` → `mano review` records evidence, triages feedback, and closes the phase. Required — this is what lets the next `mano start` proceed.
 
 Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal. The optional planning actions are what you skip here; review still closes the phase.
+
+Review does not pretend that every completed phase was validated. It records evidence as `gathered`, `partial`, or `none`, independently from whether assumptions were confirmed, invalidated, or left inconclusive. If no meaningful evidence is available, say `close it`: Mano closes the phase immediately, records `Evidence: none`, and leaves unspecified assumptions inconclusive. Feedback is optional; an honest record of its absence is not.
 
 ### Escape hatch
 After a review, `mano review` closes the phase. If you don't need Mano for the rest — that's fine. A tool that never lets go is a dependency, not a tool.
@@ -219,7 +230,7 @@ _mano_output/
 
 `design-brief.md` is the cumulative, canonical visual contract. Each projected `PHASE_DIR/design-preview.html` is a non-canonical snapshot of that exact phase identity's screen composition, not a project-wide file to replace or grow forever. Re-running `mano ui` may update the active phase's preview, but later or differently owned phases do not read or rewrite it. A legacy `_mano_output/design-preview.html` from an older Mano version is left untouched; Mano does not guess which phase it belongs to.
 
-Each phase brief is self-contained — problem, vision, design principle, scope, assumptions, and risks. Technical decisions and UX flow live at project level and grow only when they are useful. Future work lives in `backlog.md`. Artifacts are living working documents, not permanent contracts.
+Each phase brief is self-contained — problem, vision, design principle, scope, validation plan, assumptions, and risks. Technical decisions and UX flow live at project level and grow only when they are useful. Future work lives in `backlog.md`. Artifacts are living working documents, not permanent contracts.
 
 Planning artifacts live under `_mano_output/`. The installer writes the only framework scaffold outside that folder: `AGENTS.md` at the project root, so coding agents know where Mano artifacts live before any Mano command runs.
 

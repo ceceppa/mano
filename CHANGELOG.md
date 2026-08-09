@@ -12,6 +12,7 @@ A history of Mano's releases — what each version changes and why.
 ### Changed
 - **Auto chains are approved run plans, not repeatedly guessed next steps** — `mano start` performs a narrow project-artifact check before proposing the chain, preserves its ordered remaining actions across pauses, refreshes mode at each handoff, and resumes in the same turn after an answer is captured. New evidence can still pause or invalidate the plan; the agent never answers a fork for the human.
 - **New repeatable artifact categories keep `mano rules` visible** — a phase that introduces a recurring file, module, component, document, example, or asset shape is treated as new rule territory even when a substantive rules file already exists.
+- **Phase closure no longer masquerades as validation** — phase briefs now state the human decision a phase can inform and the evidence to gather. `mano review` records evidence as `gathered`, `partial`, or `none`, keeps assumption outcomes separate, and preserves `close it` as an immediate no-evidence close instead of making feedback theatre mandatory.
 
 ### Fixed
 - **Auto hook semantics no longer contradict themselves across skills and templates** — workflow, bootstrap instructions, every Mano skill, hook documentation, and example hooks now agree on manual suggest, auto suggest, and always-on command behavior.

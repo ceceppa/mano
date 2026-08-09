@@ -20,6 +20,12 @@ Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 -
 -
 
+### Evidence
+
+- **Status:** gathered / partial / none
+- **Method:**
+- **Observed:**
+
 ### Assumption results
 
 | Assumption | Predicted | Actual | Action |
@@ -50,6 +56,12 @@ Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 
 -
 -
+
+#### Evidence
+
+- **Status:** gathered / partial / none
+- **Method:**
+- **Observed:**
 
 #### Still open
 
