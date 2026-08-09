@@ -112,7 +112,7 @@ From then on, **once you approve a phase scope**, Mano runs the actions that pha
 - **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.
 - **It never closes the phase.** The chain stops after implementation. `mano review` is always yours to run.
 
-Post-skill hooks are the one behaviour that inverts: in manual mode they are suggest-only, in auto mode they run automatically — because you are deliberately not reading the artifacts mid-chain, so the hook is the only check left. Their findings still need your approval before anything is edited.
+Suggest hooks are the one behaviour that inverts after approval: in manual or unarmed runs Mano asks before running them; during an armed auto chain they run automatically — because you are deliberately not reading the artifacts mid-chain, so the hook is the only check left. Their findings still need your approval before anything is edited. Command hooks run automatically in both modes.
 
 `mano mode` shows the current setting and `mano mode manual` turns it off. Like the owner, it lives in repository-local Git config (`mano.mode`) and is not committed — it records how much *you* review, not a property of the project. `MANO_MODE` overrides it for a shell.
 
@@ -395,7 +395,7 @@ hooks/post-spec.md          -> active
 
 A hook's `## Mode` section decides how it runs — the two kinds produce different things:
 
-**`suggest`** (the default) produces *findings* — a specialist opinion you have to weigh. Mano mentions the hook after the related skill finishes and asks whether to run it. Useful for optional external review, validation, or project-specific checks.
+**`suggest`** (the default) produces *findings* — a specialist opinion you have to weigh. In manual mode or before an auto chain is armed, Mano mentions it after the related skill and asks whether to run it. During the armed chain Mano runs it, continues if there are no findings, and pauses for per-item triage if there are. Useful for optional external review, validation, or project-specific checks.
 
 **`command`** produces *an exit code* — a mechanical side effect. It names one command and Mano runs it every time, in both modes, without asking. Useful for deterministic follow-up work your project always wants done:
 

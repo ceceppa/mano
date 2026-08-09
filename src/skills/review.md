@@ -19,7 +19,7 @@ The agent should execute `mano review`'s review flow directly in chat. Do not te
 If the user's activation message already includes substantive review feedback after `mano review`, treat that text as Step 2 review input once the pre-review gate is clear. Do not ignore inline feedback just because it arrived in the same message as the command.
 
 On activation:
-1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, `STORIES`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values; never construct `phase-N` or a review heading from the number.
+1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, `STORIES`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values; never construct `phase-N` or a review heading from the number.
 2. Read the exact projected `STORIES` path to check story completion status.
 3. Read `_mano_output/reviews.md` if it exists to check for an H2 review heading that begins with the exact projected `REVIEW_HEADING_PREFIX` and then adds ` — [Date]`. An owner-scoped prefix must never match a legacy or different-owner heading.
 4. If that exact review entry already exists, treat this as a follow-up review focused on what changed after the fix work.
@@ -305,15 +305,15 @@ After `mano review` completes, always check whether this exact file exists:
 
 Test for that one path directly (a targeted existence check, e.g. `test -f _mano/hooks/post-review.md`). Do **not** `ls` the hooks directory and reason about its contents: the directory always ships a `post-review.example.md` template, which is **not** an active hook, and listing-then-classifying is where it gets mistaken for one. Only the exact `post-review.md` (no `.example`) counts.
 
-If that active `post-review.md` hook exists, prepare the generic hook block for the final chat response.
+If that active `post-review.md` suggest hook exists, prepare the generic hook block for the final chat response. `mano review` is always human-run and outside the auto chain, so it remains an unarmed run even when `MODE: auto`.
 
-Check the hook's `## Mode` first: a `command` hook runs automatically in both modes and is reported in the execution log, never as a suggestion (`_mano/workflow.md` → **Optional Post-Skill Hooks**). Do not run a `suggest` hook automatically.
+Check the hook's `## Mode` first. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block because review is unarmed (`_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**).
 
 Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
 
 This step is required even when no review update was needed.
 
-Mention it in the final chat response before the next-action block.
+Mention an active suggest hook in the final chat response before the next-action block.
 
 This applies whether the skill:
 - created an artifact
@@ -321,7 +321,7 @@ This applies whether the skill:
 - checked existing artifacts and decided no update was needed
 
 Do not print the hook's suggested prompt unless the user asks to run or view the hook.
-Do not execute the hook without explicit user confirmation.
+Do not execute a `suggest` hook without explicit user confirmation; `mano review` is never part of the armed auto chain.
 Do not write hook suggestions into generated artifacts.
 
 ## Forbidden

@@ -2,6 +2,23 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.3.0 — August 10, 2026
+
+### Added
+- **`mano mode auto|manual` adds an explicit, local hands-off option** — `manual` remains the default. After the human approves a phase scope, auto mode runs the approved, phase-specific planning chain through `mano dev yolo`, pauses for every human decision or blocker, and always stops before `mano review` or another phase. The mode lives in repository-local Git config, can be overridden with `MANO_MODE`, and is projected by every `state.js` view, including gap-only and JSON output.
+- **Hooks now support deterministic `command` mode** — a command hook names one project command that runs after its skill in both manual and auto modes. Existing and mode-less hooks remain `suggest`: Mano asks before running them in manual or unarmed work, while an approved auto chain runs them as the substitute for skipped intermediate human review and pauses if their findings need triage.
+- **Exact backlog items can be pulled into an open phase through `mano stories`** — when the human names an existing item and it fits the already-approved goal, stories may assign that exact title with the backlog writer and add a lettered story. It cannot choose work, hand-edit the backlog, broaden the phase goal, or bypass the normal readiness gates.
+
+### Changed
+- **Auto chains are approved run plans, not repeatedly guessed next steps** — `mano start` performs a narrow project-artifact check before proposing the chain, preserves its ordered remaining actions across pauses, refreshes mode at each handoff, and resumes in the same turn after an answer is captured. New evidence can still pause or invalidate the plan; the agent never answers a fork for the human.
+- **New repeatable artifact categories keep `mano rules` visible** — a phase that introduces a recurring file, module, component, document, example, or asset shape is treated as new rule territory even when a substantive rules file already exists.
+
+### Fixed
+- **Auto hook semantics no longer contradict themselves across skills and templates** — workflow, bootstrap instructions, every Mano skill, hook documentation, and example hooks now agree on manual suggest, auto suggest, and always-on command behavior.
+- **`mano dev yolo` and auto-mode summaries no longer have incompatible output contracts** — standalone YOLO still emits exactly one aggregate line; as the terminal auto action, that line is followed only by the required auto closing block.
+- **Paused chains no longer lose their continuation state** — the closing block records `Remaining:` actions, decision answers become mid-chain logs when appropriate, and switching to manual while paused cleanly hands control back instead of continuing from cached mode.
+- **The mid-phase assignment path no longer conflicts with stories' write boundary** — the hard no-implementation gate and Forbidden section now name the single writer-mediated backlog exception while continuing to reject every direct or unrelated artifact edit.
+
 ## 1.2.0
 
 ### Added

@@ -984,10 +984,25 @@ class ManoScriptTests(unittest.TestCase):
 
         # Skills decide whether to chain from the projection they already run,
         # so every projection must carry the mode — not just the default one.
-        for args in ([], ["--current"], ["--next"], ["--ui"], ["--spec"]):
+        for args in (
+            [], ["--current"], ["--next"], ["--ui"], ["--spec"],
+            ["--gaps", "rule-gap"],
+        ):
             with self.subTest(args=args or ["(default)"]):
                 self.assertIn("MODE: auto", self.run_state_with_mode("auto", *args).stdout)
                 self.assertIn("MODE: manual", self.run_state_with_mode("manual", *args).stdout)
+
+        for args in (
+            ["--json"], ["--current", "--json"], ["--ui", "--json"],
+            ["--spec", "--json"], ["--gaps", "rule-gap", "--json"],
+        ):
+            with self.subTest(json_args=args):
+                auto = self.run_state_with_mode("auto", *args)
+                manual = self.run_state_with_mode("manual", *args)
+                self.assertEqual(auto.returncode, 0, auto.stderr)
+                self.assertEqual(manual.returncode, 0, manual.stderr)
+                self.assertEqual(json.loads(auto.stdout)["runMode"], "auto")
+                self.assertEqual(json.loads(manual.stdout)["runMode"], "manual")
 
     def test_owner_command_is_explicit_local_opt_in_and_can_be_cleared(self):
         initialized = subprocess.run(
@@ -1043,6 +1058,54 @@ class GapSkillContractTests(unittest.TestCase):
             "node _mano/scripts/backlog.js resolve-gap --type rule-gap", rules
         )
         self.assertIn("Do not open `_mano_output/backlog.md`", rules)
+
+
+class AutoModeContractTests(unittest.TestCase):
+    def test_suggest_hook_mode_is_consistent_across_prompt_surfaces(self):
+        prompt_files = [
+            REPO_ROOT / "README.md",
+            REPO_ROOT / "src" / "workflow.md",
+            REPO_ROOT / "src" / "bootstrap" / "AGENTS.md",
+        ]
+        prompt_files.extend((REPO_ROOT / "src" / "skills").glob("*.md"))
+        prompt_files.extend((REPO_ROOT / "src" / "hooks").glob("*.md"))
+
+        for prompt_file in prompt_files:
+            text = prompt_file.read_text()
+            with self.subTest(file=prompt_file.relative_to(REPO_ROOT)):
+                self.assertNotIn(
+                    "Do not run a `suggest` hook automatically.", text
+                )
+                self.assertNotIn(
+                    "When this hook is active, do not run it automatically.", text
+                )
+                self.assertNotIn(
+                    "Do not run the hook without explicit user confirmation.", text
+                )
+
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        agents = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text()
+        hooks_readme = (REPO_ROOT / "src" / "hooks" / "README.md").read_text()
+        for text in (workflow, agents, hooks_readme):
+            self.assertIn("manual mode", text)
+            self.assertIn("armed auto chain", text)
+
+    def test_auto_pause_preserves_chain_and_yolo_can_close_it(self):
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        agents = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text()
+
+        self.assertIn("- Remaining:", workflow)
+        self.assertIn("approved run plan", workflow)
+        self.assertIn("refresh the state projection", workflow)
+        self.assertIn("Auto-chain exception", agents)
+        self.assertIn("required `[mano auto]` closing block", agents)
+
+    def test_mid_phase_backlog_assignment_is_the_only_stories_exception(self):
+        stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()
+
+        self.assertIn("sole exception is the exact `backlog.js assign`", stories)
+        self.assertIn("Do not hand-edit `_mano_output/backlog.md`", stories)
+        self.assertIn("exact user-named item", stories)
 
 
 if __name__ == "__main__":
