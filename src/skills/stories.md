@@ -360,6 +360,8 @@ Use the relevant Mano action for the gap type:
 
 Do not invent final design, UX, rules, or technical contracts inside stories. If the user chooses to continue with a temporary note, mark it clearly in `Notes` as temporary and bounded.
 
+**The options require a human answer.** After presenting a material gap, stop. Never choose option 2 or 3 yourself because the artifact is optional, the approved auto chain omitted it, the control is familiar/canonical, or enough implementation can be guessed. In an armed auto chain this is a named pause with the remaining chain preserved. Continue without the owning artifact only after the human explicitly chooses that path; an explicit `skip ux` / `skip ui` in the approved chain already counts as that choice.
+
 If sufficient guidance exists, do not warn. Include a compact pointer in `Implementation Reference` instead:
 
 ```markdown

@@ -48,10 +48,22 @@ class ReviewEvidenceContractTests(unittest.TestCase):
         template = _read("src/templates/phase-review.md")
 
         self.assertNotIn("What we'd do differently", review)
+        self.assertNotIn("### What worked", template)
+        self.assertNotIn("### What didn't", template)
         self.assertGreaterEqual(template.count("**Status:** gathered / partial / none"), 2)
         self.assertGreaterEqual(template.count("**Method:**"), 2)
         self.assertGreaterEqual(template.count("**Observed:**"), 2)
-        self.assertIn("use `No feedback logged` in narrative sections", review)
+        self.assertIn("### Decision", template)
+        self.assertIn("### Backlog changes", template)
+        self.assertIn("**No release recap.**", review)
+        self.assertIn("record the decision as `Not assessed`", review)
+
+    def test_review_asks_for_the_decision_the_evidence_informs(self) -> None:
+        review = _read("src/skills/review.md")
+
+        self.assertIn("Based on that evidence, what do you decide about:", review)
+        self.assertIn("Decision this informs — verbatim from the brief", review)
+        self.assertIn("never infer one from completion or test success", review)
 
     def test_public_docs_keep_feedback_optional_but_evidence_honest(self) -> None:
         readme = _read("README.md")

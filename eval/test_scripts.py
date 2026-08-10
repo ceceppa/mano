@@ -1061,6 +1061,31 @@ class GapSkillContractTests(unittest.TestCase):
 
 
 class AutoModeContractTests(unittest.TestCase):
+    def test_scope_approval_tokens_are_synonyms_and_arm_the_displayed_chain(self):
+        start = (REPO_ROOT / "src" / "skills" / "start.md").read_text()
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        readme = (REPO_ROOT / "README.md").read_text()
+
+        for text in (start, workflow, readme):
+            self.assertIn("`1` and `go` are exact synonyms", text)
+        self.assertIn(
+            "Approve this scope and run the auto chain shown below.", start
+        )
+        self.assertIn("An edit without `1` or `go`", start)
+
+    def test_auto_planning_keeps_material_ux_and_ui_coverage(self):
+        start = (REPO_ROOT / "src" / "skills" / "start.md").read_text()
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()
+
+        self.assertIn("Planning coverage for user-facing phases", start)
+        self.assertIn("multiple selectors/actions", workflow)
+        self.assertIn("A familiar or “canonical” widget", workflow)
+        self.assertIn("only an explicit approval edit", workflow)
+        self.assertIn("The options require a human answer", stories)
+        self.assertIn("Never choose option 2 or 3 yourself", stories)
+        self.assertIn("explicit `skip ux` / `skip ui`", stories)
+
     def test_suggest_hook_mode_is_consistent_across_prompt_surfaces(self):
         prompt_files = [
             REPO_ROOT / "README.md",

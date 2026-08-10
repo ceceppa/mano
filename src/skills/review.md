@@ -91,6 +91,10 @@ Planned validation:
 
 What did you use, show, play, or measure — and what happened?
 
+Based on that evidence, what do you decide about:
+"[Decision this informs — verbatim from the brief]"
+Say keep, change, or reject; state another decision; or say "not enough evidence".
+
 This phase assumed:
 1. [assumption — verbatim from the brief's Assumption Log]
 2. [assumption]
@@ -102,7 +106,7 @@ Or say "close it" to close without evidence. Mano will record `Evidence: none` a
 ```
 
 If the brief has no Assumption Log entries, omit the assumptions block and the confirm/invalidate line.
-If a legacy brief has no Validation Plan, omit the two plan lines but still ask what the user used, showed, played, or measured. Never invent a missing plan during review.
+If a legacy brief has no Validation Plan, omit the two plan lines and the decision question but still ask what the user used, showed, played, or measured. Never invent a missing plan during review.
 
 That is your complete response. No preamble. No explanation. No extra commentary or planning. End of message.
 
@@ -140,6 +144,10 @@ Evidence:
 - Method: [what the user actually named, or "Not recorded"]
 - Observed: [concrete result, or "Not recorded"]
 
+Decision:
+- Outcome: [the user's evidence-informed decision, "Not enough evidence", or "Not stated"]
+- Reason: [the user's reason, or "Not recorded"]
+
 🐛 Defects:
 1. [one sentence with enough context]
 
@@ -155,11 +163,11 @@ Evidence:
 Does this look right? Tell me what to move or remove, or say "close it" to log this.
 ```
 
-Omit the Evidence block only when no evidence was described. Omit empty triage buckets and omit the ❌ section when the feedback rejects nothing. If the response contains evidence but no triage items, present the Evidence block by itself with the same confirmation question. Rejection candidates follow the same confirmation model as every other bucket: they are visible in the presented list, the user removes any that survive, and "close it" confirms the list as presented. Never reject an item that was not listed as a candidate in this message.
+Omit the Evidence block only when no evidence was described. Include the Decision block when the brief has a Validation Plan or the user states a decision. Omit empty triage buckets and omit the ❌ section when the feedback rejects nothing. If the response contains evidence or a decision but no triage items, present those blocks by themselves with the same confirmation question. Rejection candidates follow the same confirmation model as every other bucket: they are visible in the presented list, the user removes any that survive, and "close it" confirms the list as presented. Never reject an item that was not listed as a candidate in this message.
 
 That is your complete response. DO NOT write files yet.
 
-**Fast close — explicit close without evidence.** If the user's reply explicitly says `close it` and supplies no evidence or feedback to triage (e.g. "nothing to report, close it", "close it", "all good, close it"), skip the triage presentation entirely. Treat the reply as direct confirmation and go straight to STEP 3 with an empty triage: no backlog items are written, the resolve sweep and review entry still happen. Record `Evidence` as `none`, with Method and Observed as `Not recorded`. Fill the Assumption results table from any verdicts the user gave and mark every unspecified assumption `inconclusive`. Do not ask a follow-up question to fish for feedback or re-confirm — `close it` means close it.
+**Fast close — explicit close without evidence.** If the user's reply explicitly says `close it` and supplies no evidence or feedback to triage (e.g. "nothing to report, close it", "close it", "all good, close it"), skip the triage presentation entirely. Treat the reply as direct confirmation and go straight to STEP 3 with an empty triage: no backlog items are written, the resolve sweep and review entry still happen. Record `Evidence` as `none`, with Method and Observed as `Not recorded`; record the decision as `Not assessed`, with Reason `Not recorded`; and record `Backlog changes` as `None`. Fill the Assumption results table from any verdicts the user gave and mark every unspecified assumption `inconclusive`. Omit `Durable learning`. Do not ask a follow-up question to fish for feedback or re-confirm — `close it` means close it.
 
 **The close instruction is terminal — never re-confirm it.** When a single message carries both the assumption verdicts and a close instruction (e.g. "all valid, close it", "1 confirmed 2 invalidated, close it", "all good close it"), that one message clears STEP 1 *and* is the STEP 3 confirmation. Go straight to writing files. Do **not** emit an empty-triage "Does this look right? Say close it to log" message — that is a second confirmation gate the user already satisfied, and it is the exact double-confirm this rule forbids. Re-prompting after the user has already said "close it" is a bug, not caution.
 
@@ -207,7 +215,9 @@ When the user confirms (e.g., "close it", "yes"):
    It flips each named open item to `Status: rejected`, which is not `resolved`: rejected means no longer wanted, resolved means shipped or fixed. Never conflate them — a rejected item recorded as resolved falsely claims the work was done. Skip this step entirely when the triage had no confirmed ❌ items. **Script failing?** Stop and report the error — do not flip statuses by hand.
 4. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
 5. **Always append** the new review entry at the **bottom** of `_mano_output/reviews.md`. Never insert between existing entries.
-6. Fill the template sections concretely. Always write the `Evidence` block using exactly one status: `gathered`, `partial`, or `none`. Preserve only the method and observations the user actually supplied; use `Not recorded` for a missing field. `none` means the phase closed without validation, not that validation succeeded. Mark assumptions without an explicit human verdict `inconclusive`. For a fast close, use `No feedback logged` in narrative sections rather than inventing outcomes or leaving template placeholders. When scope was rejected, the review entry records what was rejected and why in the narrative sections — it is the phase's durable record of a direction change.
+6. Fill the decision-log template concretely. Always write the `Evidence` block using exactly one status: `gathered`, `partial`, or `none`. Preserve only the method and observations the user actually supplied; use `Not recorded` for a missing field. `none` means the phase closed without validation, not that validation succeeded. Record the human's evidence-informed decision; if none was stated, use `Not assessed` and never infer one from completion or test success. Mark assumptions without an explicit human verdict `inconclusive`. List only the backlog changes actually confirmed in triage, or `None`. Omit `Durable learning` when there is no reusable, surprising lesson that changes future work.
+
+   **No release recap.** The review entry is a compact evidence-and-decision record, not a phase summary or mini-postmortem. Do not record story counts, test counts, shipped-feature inventories, implementation summaries, empty "worked/didn't work" sections, or generic lessons unless a fact is direct evidence for the decision. A lesson belongs in `Durable learning` only when it can change a future decision or working rule; name the destination when the user provides one.
 
 Output a cold execution log:
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
@@ -269,6 +279,10 @@ Evidence:
 - Method: [what the user actually named, or "Not recorded"]
 - Observed: [concrete result, or "Not recorded"]
 
+Decision update:
+- Outcome: [the user's changed decision, "Unchanged", "Not enough evidence", or "Not stated"]
+- Reason: [the user's reason, or "Not recorded"]
+
 ✅ Resolved:
 1. [one sentence]
 
@@ -291,9 +305,9 @@ That is your complete response. DO NOT write to files yet.
 
 The ❌ section follows the same **Rejected-scope rule** as the standard STEP 2: propose candidates from the open backlog, never auto-reject, and omit the section when the feedback rejects nothing.
 
-Use the standard review's Evidence rule here too. Omit empty outcome buckets; if the reply contains only evidence, present only its Evidence block for confirmation.
+Use the standard review's Evidence and no-release-recap rules here too. Include `Decision update` only when the user states one. Omit empty outcome buckets; if the reply contains only evidence, present only its Evidence block for confirmation.
 
-**Fast close — explicit close with nothing to triage.** If the user's follow-up reply explicitly says `close it` and contains no evidence or feedback to triage, skip the triage presentation. Treat it as direct confirmation and go straight to STEP 3 (Follow-up) with an empty triage: no new backlog items are written; the addendum is still appended with `Evidence: none`, Method and Observed as `Not recorded`, and `No follow-up feedback logged`. A vague "all good" without `close it` follows the standard Evidence rule instead of closing silently.
+**Fast close — explicit close with nothing to triage.** If the user's follow-up reply explicitly says `close it` and contains no evidence or feedback to triage, skip the triage presentation. Treat it as direct confirmation and go straight to STEP 3 (Follow-up) with an empty triage: no new backlog items are written; the addendum is appended with `Evidence: none`, Method and Observed as `Not recorded`, no Decision update section, and `Outcome changes: None`. A vague "all good" without `close it` follows the standard Evidence rule instead of closing silently.
 
 ---
 
@@ -304,7 +318,7 @@ When the user confirms (e.g., "close it", "yes"):
 2. Match resolved items to existing backlog items and flip each to `Status: resolved` by hand (these are specific `backlog` items now fixed — a title-scoped edit, not the `resolve --phase` sweep).
 3. Append any still open / new ideas to the backlog **via `node _mano/scripts/backlog.js add`** (same flags / `--file` as the standard STEP 3.1) — don't hand-write the blocks. **Script failing?** Stop and report the error.
 4. Retire any confirmed ❌ items **via `node _mano/scripts/backlog.js reject --title "[exact title]"`** (same writer and same rejected-vs-resolved distinction as the standard STEP 3.3). Skip when the triage had no confirmed ❌ items.
-5. **Do not create a new follow-up review section.** Find the existing owner-aware H2 that begins with the exact projected `REVIEW_HEADING_PREFIX` and append an `### Addendum — [Date]` subsection directly under it (before the next `---` separator). Use the addendum structure from `_mano/templates/phase-review.md` and always fill its Evidence block using the same `gathered` / `partial` / `none` rules.
+5. **Do not create a new follow-up review section.** Find the existing owner-aware H2 that begins with the exact projected `REVIEW_HEADING_PREFIX` and append an `### Addendum — [Date]` subsection directly under it (before the next `---` separator). Use the concise addendum structure from `_mano/templates/phase-review.md`, always fill its Evidence block using the same `gathered` / `partial` / `none` rules, record a decision update only when the human made one, and list only actual outcome/backlog changes.
 
 Output execution log (canonical format, see `_mano/workflow.md`):
 ```
@@ -329,7 +343,7 @@ That is your complete response.
 - Follow-up review: do not create a new follow-up heading. Append an `### Addendum — [Date]` subsection to the existing H2 with that exact prefix, using the addendum structure from the template.
 - If `_mano_output/reviews.md` does not exist yet, create it with the template title first, then append real entries.
 - The example sections in `_mano/templates/phase-review.md` are structural references only. Do not copy them verbatim into the live file.
-- Keep each appended entry concise and concrete. Write for someone who was not in the room.
+- Keep each appended entry concise and concrete. Write for someone who was not in the room. Its job is to preserve evidence, the human decision, assumption outcomes, and resulting backlog changes — not to retell the release.
 
 ## Post-Review Hook Suggestion
 

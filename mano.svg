@@ -1,1 +1,753 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350" aria-label="Mano learning loop" viewBox="0 0 1080 1350"><path fill="#faf5ee" d="M0 0h1080v1350H0z"/><rect width="456" height="348" x="72" y="666" fill="#e6f2ea" rx="30"/><text x="72" y="92" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="28" font-weight="800" letter-spacing="4">MANO</text><rect width="56" height="6" x="201" y="80" fill="#5b4fd4" rx="3"/><text x="72" y="124" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="500">Phase-driven development for AI-assisted coding</text><text x="72" y="188" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="50" font-weight="800" letter-spacing="-1.1">Build less. <tspan fill="#1e8a57">Learn sooner.</tspan></text><text x="72" y="248" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="50" font-weight="800" letter-spacing="-1.1">Change course.</text><text x="72" y="306" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="25" font-weight="700">You decide why, what, and how.</text><text x="72" y="340" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="400">Mano helps plan and review one learning loop at a time.</text><rect width="86" height="42" x="72" y="370" fill="#e4e0f9" rx="21"/><text x="115" y="396.8" fill="#5b4fd4" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Import</text><rect width="73" height="42" x="187" y="370" fill="#e4e0f9" rx="21"/><text x="223.5" y="396.8" fill="#5b4fd4" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Start</text><rect width="91" height="42" x="288" y="370" fill="#e4e0f9" rx="21"/><text x="333.5" y="396.8" fill="#5b4fd4" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">Review</text><rect width="64" height="42" x="408" y="370" fill="#e4e0f9" rx="21"/><text x="440" y="396.8" fill="#5b4fd4" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="700" text-anchor="middle">You</text><path stroke="#221f1d" stroke-width="3.2" d="M115 414v11"/><path fill="#221f1d" d="m115 436-7.5-12h15z"/><path stroke="#221f1d" stroke-width="3.2" d="M223.5 414v11"/><path fill="#221f1d" d="m223.5 436-7.5-12h15z"/><path stroke="#221f1d" stroke-width="3.2" d="M333.5 414v11"/><path fill="#221f1d" d="m333.5 436-7.5-12h15z"/><path stroke="#221f1d" stroke-width="3.2" d="M440 414v11"/><path fill="#221f1d" d="m440 436-7.5-12h15z"/><rect width="400" height="200" x="72" y="436" fill="#f4f2fd" stroke="#221f1d" stroke-width="4" rx="26"/><text x="100" y="492" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="800" letter-spacing=".3">LIVING BACKLOG</text><text x="100" y="524" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="500">Ideas • defects • unknowns • feedback</text><rect width="300" height="38" x="100" y="552" fill="#e4e0f9" rx="19"/><text x="250" y="576.4" fill="#5b4fd4" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">Human-readable • Human-editable</text><path stroke="#221f1d" stroke-width="4.5" d="M476 536h27"/><circle cx="545" cy="536" r="41" fill="#faf5ee" stroke="#221f1d" stroke-opacity=".22" stroke-width="2"/><circle cx="545" cy="536" r="29" fill="#fff" stroke="#221f1d" stroke-width="4.5"/><path fill="none" stroke="#221f1d" stroke-linecap="round" stroke-linejoin="round" stroke-width="5.5" d="m533 537 8 9.5 16-21"/><path stroke="#221f1d" stroke-width="4.5" d="M587 536h5"/><path fill="#221f1d" d="m606 536-14-9v18z"/><rect width="400" height="136" x="608" y="468" fill="#fff" stroke="#221f1d" stroke-width="2.5" rx="24"/><text x="636" y="518" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing=".2">APPROVE ONE</text><text x="636" y="549" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing=".2">SMALL PHASE</text><text x="636" y="580" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="500">Only the next useful slice</text><path stroke="#221f1d" stroke-width="4.5" d="M808 604v22"/><path fill="#221f1d" d="m808 640-9-15h18z"/><rect width="400" height="192" x="608" y="644" fill="#fff" stroke="#221f1d" stroke-width="2.5" rx="24"/><text x="636" y="694" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing=".2">ADD ONLY NEEDED</text><text x="636" y="725" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing=".2">CONTEXT</text><rect width="68" height="38" x="636" y="742" fill="#ddeeec" stroke="#0f7f78" stroke-dasharray="6 5" stroke-width="2" rx="19"/><text x="670" y="766.4" fill="#0f7f78" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">spec</text><rect width="50" height="38" x="716" y="742" fill="#ddeeec" stroke="#0f7f78" stroke-dasharray="6 5" stroke-width="2" rx="19"/><text x="741" y="766.4" fill="#0f7f78" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">ux</text><rect width="69" height="38" x="778" y="742" fill="#ddeeec" stroke="#0f7f78" stroke-dasharray="6 5" stroke-width="2" rx="19"/><text x="812.5" y="766.4" fill="#0f7f78" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">rules</text><rect width="46" height="38" x="859" y="742" fill="#ddeeec" stroke="#0f7f78" stroke-dasharray="6 5" stroke-width="2" rx="19"/><text x="882" y="766.4" fill="#0f7f78" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">ui</text><text x="636" y="808" fill="#0f7f78" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">Optional • Just in time</text><path stroke="#221f1d" stroke-width="4.5" d="M808 836v22"/><path fill="#221f1d" d="m808 872-9-15h18z"/><rect width="400" height="104" x="608" y="876" fill="#fffdf8" stroke="#221f1d" stroke-width="2" rx="22"/><text x="636" y="922" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="24" font-weight="800" letter-spacing=".2">STORIES → BUILD</text><text x="636" y="950" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="500">Bounded, testable work</text><path fill="none" stroke="#221f1d" stroke-width="4.5" d="M808 980v16q0 16-16 16H566"/><path fill="#221f1d" d="m552 1012 14-9v18z"/><rect width="456" height="190" x="72" y="917" fill="#fdf1ea" stroke="#221f1d" stroke-width="4" rx="26"/><text x="100" y="975" fill="#221f1d" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="800" letter-spacing=".3"><tspan fill="#d45a2e">USE IT</tspan> → REVIEW</text><text x="100" y="1007" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="17" font-weight="500">Feel it • Show it • Gather feedback</text><rect width="91" height="40" x="100" y="1032" fill="#f9decc" rx="20"/><text x="145.5" y="1057.4" fill="#a8431f" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">Accept</text><rect width="96" height="40" x="203" y="1032" fill="#f9decc" rx="20"/><text x="251" y="1057.4" fill="#a8431f" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">Change</text><rect width="85" height="40" x="311" y="1032" fill="#f9decc" rx="20"/><text x="353.5" y="1057.4" fill="#a8431f" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle">Reject</text><path fill="#1e8a57" d="m180 650 58 80h-31v167q0 12-12 12h-30q-12 0-12-12V730h-31Z"/><text x="234" y="799" fill="#1e8a57" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="26" font-weight="800" letter-spacing=".2">WHAT WE LEARNED</text><rect width="936" height="152" x="72" y="1140" fill="#f1eae0" rx="28"/><text x="104" y="1207" fill="#0f7f78" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1.2">OWNER MODE</text><text x="104" y="1239" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="500">Shared backlog • Independent phase tracks</text><rect width="89" height="40" x="596" y="1188" fill="#fff" stroke="#0f7f78" stroke-width="2" rx="10"/><text x="640.5" y="1214" fill="#0f7f78" font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" text-anchor="middle">phase-N</text><rect width="135" height="40" x="699" y="1188" fill="#fff" stroke="#0f7f78" stroke-width="2" rx="10"/><text x="766.5" y="1214" fill="#0f7f78" font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" text-anchor="middle">alice-phase-N</text><rect width="120" height="40" x="848" y="1188" fill="#fff" stroke="#0f7f78" stroke-width="2" rx="10"/><text x="908" y="1214" fill="#0f7f78" font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace" font-size="15" font-weight="700" text-anchor="middle">bob-phase-N</text><path stroke="#0f7f78" stroke-width="2.5" d="M596 1176h312"/><circle cx="596" cy="1176" r="6" fill="#0f7f78"/><path stroke="#0f7f78" stroke-width="2.5" d="M640.5 1176v12m126-12v12m141.5-12v12"/><text x="596" y="1254" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="500">Routing only • Use branches/worktrees for isolation</text><text xml:space="preserve" x="133.796" y="1337.958" style="text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#fff"><tspan x="133.796" y="1337.958">REVIEW</tspan></text><text x="71.472" y="1329" fill="#6f6660" font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="500">https://github.com/ceceppa/mano</text></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="1080"
+   height="1420"
+   role="img"
+   aria-labelledby="mano-title mano-description"
+   viewBox="0 0 1080 1420"
+   version="1.1"
+   id="svg47"
+   sodipodi:docname="mano5.svg"
+   inkscape:version="1.4.2 (ebf0e940, 2025-05-08)"
+   inkscape:export-filename="mano.jpg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="mano-title">Mano phase-driven learning loop</title>
+  <desc
+     id="mano-description">A living backlog feeds one approved small phase. Auto mode is optional; when enabled, it starts after approval, runs the needed planning skills, pauses for human decisions, and stops after the build. The human uses and reviews the result, and learning updates the backlog. Post-hooks add specialist checks and project automation. Optional owner mode supports parallel phase tracks over a shared backlog.</desc>
+  <defs
+     id="defs47" />
+  <sodipodi:namedview
+     id="namedview47"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.92095181"
+     inkscape:cx="494.597"
+     inkscape:cy="785.05736"
+     inkscape:window-width="3024"
+     inkscape:window-height="1645"
+     inkscape:window-x="169"
+     inkscape:window-y="96"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg47" />
+  <path
+     fill="#faf5ee"
+     d="M 0,0 H 1080 V 1420 H 0 Z"
+     id="path1"
+     style="stroke-width:1.0256" />
+  <rect
+     width="456"
+     height="348"
+     x="72"
+     y="626"
+     fill="#e6f2ea"
+     rx="30"
+     id="rect1" />
+  <text
+     x="72"
+     y="92"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="28px"
+     font-weight="800"
+     letter-spacing="4"
+     id="text1"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">MANO</text>
+  <rect
+     width="56"
+     height="6"
+     x="201"
+     y="80"
+     fill="#5b4fd4"
+     rx="3"
+     id="rect2" />
+  <text
+     x="72"
+     y="124"
+     fill="#6f6660"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="16px"
+     font-weight="500"
+     id="text2"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium';fill:#47423e;fill-opacity:1">Phase-driven development for AI-assisted coding</text>
+  <text
+     x="72"
+     y="188"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="50px"
+     font-weight="800"
+     letter-spacing="-1.1"
+     id="text3"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">Build less. <tspan
+   fill="#156f45"
+   id="tspan2"
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">Learn sooner.</tspan></text>
+  <text
+     x="72"
+     y="248"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="50px"
+     font-weight="800"
+     letter-spacing="-1.1"
+     id="text4"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">Change course.</text>
+  <text
+     x="72"
+     y="306"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="25px"
+     font-weight="700"
+     id="text5"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium'">You decide why, what, and how.</text>
+  <text
+     x="72"
+     y="340"
+     fill="#6f6660"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="20px"
+     font-weight="400"
+     id="text6"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium';fill:#47423e;fill-opacity:1">Mano helps plan and review one learning loop at a time.</text>
+  <rect
+     width="400"
+     height="200"
+     x="72"
+     y="396"
+     fill="#f4f2fd"
+     stroke="#221f1d"
+     stroke-width="4"
+     rx="26"
+     id="rect17" />
+  <text
+     x="100"
+     y="452"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="30px"
+     font-weight="800"
+     letter-spacing="0.3"
+     id="text17"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">LIVING BACKLOG</text>
+  <text
+     x="100"
+     y="484"
+     fill="#6f6660"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="16px"
+     font-weight="500"
+     id="text18"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium';fill:#4c4641;fill-opacity:1"><tspan
+       sodipodi:role="line"
+       id="tspan4"
+       x="100"
+       y="484">Imported docs • human edits •</tspan><tspan
+       sodipodi:role="line"
+       id="tspan5"
+       x="100"
+       y="504">defects • review feedback</tspan></text>
+  <g
+     id="g5"
+     transform="translate(0,20)">
+    <rect
+       width="300"
+       height="38"
+       x="100"
+       y="512"
+       fill="#e4e0f9"
+       rx="19"
+       id="rect18" />
+    <text
+       x="250"
+       y="536.40002"
+       fill="#40359f"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="15px"
+       font-weight="700"
+       text-anchor="middle"
+       id="text19"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">Human-readable • Human-editable</text>
+  </g>
+  <path
+     stroke="#221f1d"
+     stroke-width="9.18172"
+     d="M 476,496 H 588.40541"
+     id="path19"
+     style="stroke-width:4.5;stroke-dasharray:none" />
+  <path
+     stroke="#221f1d"
+     stroke-width="4.5"
+     d="m 587,496 h 5"
+     id="path21" />
+  <path
+     fill="#221f1d"
+     d="m 606,496 -14,-9 v 18 z"
+     id="path22" />
+  <rect
+     width="400"
+     height="136"
+     x="608"
+     y="428"
+     fill="#ffffff"
+     stroke="#221f1d"
+     stroke-width="2.5"
+     rx="24"
+     id="rect22" />
+  <text
+     x="636"
+     y="478"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="26px"
+     font-weight="800"
+     letter-spacing="0.2"
+     id="text22"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">APPROVE ONE</text>
+  <text
+     x="636"
+     y="509"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="26px"
+     font-weight="800"
+     letter-spacing="0.2"
+     id="text23"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">SMALL PHASE</text>
+  <text
+     x="636"
+     y="540"
+     fill="#6f6660"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="16px"
+     font-weight="500"
+     id="text24"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium';fill:#4c4641;fill-opacity:1">Only the next useful slice</text>
+  <path
+     stroke="#221f1d"
+     stroke-width="4.5"
+     d="m 808,564 v 22"
+     id="path24" />
+  <path
+     fill="#221f1d"
+     d="m 808,600 -9,-15 h 18 z"
+     id="path25" />
+  <rect
+     width="400"
+     height="192"
+     x="608"
+     y="604"
+     fill="#ffffff"
+     stroke="#221f1d"
+     stroke-width="2.5"
+     rx="24"
+     id="rect25" />
+  <text
+     x="636"
+     y="654"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="26px"
+     font-weight="800"
+     letter-spacing="0.2"
+     id="text25"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">ADD ONLY NEEDED</text>
+  <text
+     x="636"
+     y="685"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="26px"
+     font-weight="800"
+     letter-spacing="0.2"
+     id="text26"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">CONTEXT</text>
+  <rect
+     width="68"
+     height="38"
+     x="636"
+     y="702"
+     fill="#ddeeec"
+     stroke="#0f7f78"
+     stroke-dasharray="6, 5"
+     stroke-width="2"
+     rx="19"
+     id="rect26" />
+  <text
+     x="670"
+     y="726.40002"
+     fill="#0f7f78"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     text-anchor="middle"
+     id="text27"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold';fill:#0b514d;fill-opacity:1">spec</text>
+  <rect
+     width="50"
+     height="38"
+     x="716"
+     y="702"
+     fill="#ddeeec"
+     stroke="#0f7f78"
+     stroke-dasharray="6, 5"
+     stroke-width="2"
+     rx="19"
+     id="rect27" />
+  <text
+     x="741"
+     y="726.40002"
+     fill="#0f7f78"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     text-anchor="middle"
+     id="text28"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold';fill:#0b514d;fill-opacity:1">ux</text>
+  <rect
+     width="69"
+     height="38"
+     x="778"
+     y="702"
+     fill="#ddeeec"
+     stroke="#0f7f78"
+     stroke-dasharray="6, 5"
+     stroke-width="2"
+     rx="19"
+     id="rect28" />
+  <text
+     x="812.5"
+     y="726.40002"
+     fill="#0f7f78"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     text-anchor="middle"
+     id="text29"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold';fill:#0b514d;fill-opacity:1">rules</text>
+  <rect
+     width="46"
+     height="38"
+     x="859"
+     y="702"
+     fill="#ddeeec"
+     stroke="#0f7f78"
+     stroke-dasharray="6, 5"
+     stroke-width="2"
+     rx="19"
+     id="rect29" />
+  <text
+     x="882"
+     y="726.40002"
+     fill="#0f7f78"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     text-anchor="middle"
+     id="text30"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold';fill:#0b514d;fill-opacity:1">ui</text>
+  <text
+     x="636"
+     y="768"
+     fill="#0f7f78"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     id="text31"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium';fill:#0b605b;fill-opacity:1">Optional • Just in time</text>
+  <path
+     stroke="#221f1d"
+     stroke-width="4.5"
+     d="m 808,796 v 22"
+     id="path31" />
+  <path
+     fill="#221f1d"
+     d="m 808,832 -9,-15 h 18 z"
+     id="path32" />
+  <rect
+     width="400"
+     height="104"
+     x="608"
+     y="836"
+     fill="#fffdf8"
+     stroke="#221f1d"
+     stroke-width="2"
+     rx="22"
+     id="rect32" />
+  <text
+     x="636"
+     y="882"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="24px"
+     font-weight="800"
+     letter-spacing="0.2"
+     id="text32"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">STORIES → BUILD</text>
+  <text
+     x="636"
+     y="910"
+     fill="#6f6660"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="16px"
+     font-weight="500"
+     id="text33"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium';fill:#4c4641;fill-opacity:1">Bounded, testable work</text>
+  <path
+     fill="none"
+     stroke="#221f1d"
+     stroke-width="4.5"
+     d="m 808,940 v 16 q 0,16 -16,16 H 566"
+     id="path33" />
+  <path
+     fill="#221f1d"
+     d="m 552,972 14,-9 v 18 z"
+     id="path34" />
+  <rect
+     x="570"
+     y="941"
+     width="218"
+     height="28"
+     rx="14"
+     fill="#e4e0f9"
+     id="autoStopBadge" />
+  <text
+     x="679"
+     y="961.5"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="12.5px"
+     font-weight="800"
+     letter-spacing="0.4"
+     fill="#40359f"
+     text-anchor="middle"
+     id="autoStopText">AUTO MODE STOPS AFTER BUILD</text>
+  <rect
+     width="456"
+     height="190"
+     x="72"
+     y="877"
+     fill="#fdf1ea"
+     stroke="#221f1d"
+     stroke-width="4"
+     rx="26"
+     id="rect34" />
+  <text
+     x="100"
+     y="935"
+     fill="#221f1d"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="30px"
+     font-weight="800"
+     letter-spacing="0.3"
+     id="text34"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'"><tspan
+   fill="#d45a2e"
+   id="tspan34"
+   style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold';fill:#87381c;fill-opacity:1">USE IT</tspan> → REVIEW</text>
+  <text
+     x="100"
+     y="967"
+     fill="#6f6660"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="17px"
+     font-weight="500"
+     id="text35"
+     style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium'"><tspan
+       style="fill:#4a4440;fill-opacity:1"
+       id="tspan11">Feel it • Show it • Gather feedback</tspan></text>
+  <rect
+     width="91"
+     height="40"
+     x="100"
+     y="992"
+     fill="#f9decc"
+     rx="20"
+     id="rect35" />
+  <text
+     x="145.5"
+     y="1017.4"
+     fill="#a8431f"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     text-anchor="middle"
+     id="text36"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'"><tspan
+       style="font-style:italic;font-variant:normal;font-weight:600;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Semi-Bold Italic';fill:#7b3319;fill-opacity:1"
+       id="tspan8">Accept</tspan></text>
+  <rect
+     width="96"
+     height="40"
+     x="203"
+     y="992"
+     fill="#f9decc"
+     rx="20"
+     id="rect36" />
+  <text
+     x="251"
+     y="1017.4"
+     fill="#a8431f"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     text-anchor="middle"
+     id="text37"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'"><tspan
+       style="font-style:italic;font-variant:normal;font-weight:600;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Semi-Bold Italic';fill:#7b3319;fill-opacity:1"
+       id="tspan9">Change</tspan></text>
+  <rect
+     width="85"
+     height="40"
+     x="311"
+     y="992"
+     fill="#f9decc"
+     rx="20"
+     id="rect37" />
+  <text
+     x="353.5"
+     y="1017.4"
+     fill="#a8431f"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15px"
+     font-weight="700"
+     text-anchor="middle"
+     id="text38"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'"><tspan
+       style="font-style:italic;font-variant:normal;font-weight:600;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Semi-Bold Italic';fill:#7b3319;fill-opacity:1"
+       id="tspan10">Reject</tspan></text>
+  <path
+     fill="#156f45"
+     d="m 180,610 58,80 h -31 v 167 q 0,12 -12,12 h -30 q -12,0 -12,-12 V 690 h -31 z"
+     id="path38" />
+  <text
+     x="234"
+     y="745"
+     fill="#156f45"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="23px"
+     font-weight="800"
+     letter-spacing="0.2"
+     id="text39"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'"><tspan
+       x="234"
+       y="745"
+       id="tspan1">LEARNING UPDATES</tspan><tspan
+       x="234"
+       y="775"
+       id="tspan3">THE BACKLOG</tspan></text>
+  <g
+     id="g3"
+     transform="translate(0,20)">
+    <rect
+       x="72"
+       y="1080"
+       width="456"
+       height="44"
+       rx="15"
+       fill="#f4f2fd"
+       stroke="#40359f"
+       stroke-width="1.5"
+       id="autoModeNote" />
+    <text
+       x="92"
+       y="1098"
+       fill="#40359f"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="13.5px"
+       font-weight="800"
+       letter-spacing="0.25"
+       id="autoModeLabel">AUTO MODE — OPTIONAL</text>
+    <text
+       x="92"
+       y="1116"
+       fill="#4c4641"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="12px"
+       font-weight="600"
+       id="autoModeDescription">After approval → runs needed skills → build • pauses for decisions</text>
+    <rect
+       x="608"
+       y="1080"
+       width="400"
+       height="44"
+       rx="15"
+       fill="#f4f2fd"
+       stroke="#40359f"
+       stroke-width="1.5"
+       id="postHooksCallout" />
+    <text
+       x="628"
+       y="1107"
+       fill="#40359f"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="13px"
+       font-weight="800"
+       letter-spacing="0.25"
+       id="postHooksLabel">POST-HOOKS</text>
+    <text
+       x="724"
+       y="1107"
+       fill="#4c4641"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="13px"
+       font-weight="600"
+       id="postHooksDescription">Specialist checks • project automation</text>
+  </g>
+  <g
+     id="g4"
+     transform="translate(0,40)">
+    <rect
+       x="72"
+       y="1140"
+       width="936"
+       height="166"
+       rx="28"
+       fill="#23201e"
+       id="rect33" />
+    <text
+       x="104"
+       y="1188"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="24px"
+       font-weight="800"
+       fill="#faf5ee"
+       letter-spacing="0.4"
+       id="text34-1"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'"><tspan
+         sodipodi:role="line"
+         id="tspan6"
+         x="104"
+         y="1188">OWNER MODE:</tspan><tspan
+         sodipodi:role="line"
+         id="tspan7"
+         x="104"
+         y="1218">PARALLEL PHASE TRACKS</tspan></text>
+    <text
+       x="104"
+       y="1254"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="15px"
+       font-weight="500"
+       fill="#b5aba1"
+       id="text36-7"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium'">Shared backlog • Independent phase tracks</text>
+    <text
+       x="104"
+       y="1278"
+       font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+       font-size="15px"
+       font-weight="500"
+       fill="#b5aba1"
+       id="text37-1"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Medium'">Routing only • Use branches/worktrees for isolation</text>
+    <line
+       x1="620"
+       y1="1226"
+       x2="778"
+       y2="1226"
+       stroke="#e8dfd4"
+       stroke-width="3"
+       id="line37" />
+    <path
+       d="m 656,1226 c 24,0 26,-34 50,-34 h 72"
+       fill="none"
+       stroke="#b0a8f7"
+       stroke-width="3"
+       id="path37" />
+    <path
+       d="m 696,1226 c 24,0 26,34 50,34 h 32"
+       fill="none"
+       stroke="#5fc7bb"
+       stroke-width="3"
+       id="path38-5" />
+    <circle
+       cx="656"
+       cy="1226"
+       r="6"
+       fill="#e8dfd4"
+       id="circle38" />
+    <circle
+       cx="696"
+       cy="1226"
+       r="6"
+       fill="#e8dfd4"
+       id="circle39" />
+    <circle
+       cx="778"
+       cy="1192"
+       r="6"
+       fill="#b0a8f7"
+       id="circle40" />
+    <text
+       x="792"
+       y="1197"
+       font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace"
+       font-size="14px"
+       font-weight="700"
+       fill="#b0a8f7"
+       id="text40-5"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">alice-phase-N</text>
+    <circle
+       cx="778"
+       cy="1226"
+       r="6"
+       fill="#e8dfd4"
+       id="circle41" />
+    <text
+       x="792"
+       y="1231"
+       font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace"
+       font-size="14px"
+       font-weight="700"
+       fill="#e8dfd4"
+       id="text41-8"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">phase-N</text>
+    <circle
+       cx="778"
+       cy="1260"
+       r="6"
+       fill="#5fc7bb"
+       id="circle42" />
+    <text
+       x="792"
+       y="1265"
+       font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace"
+       font-size="14px"
+       font-weight="700"
+       fill="#5fc7bb"
+       id="text42-5"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">bob-phase-N</text>
+  </g>
+  <text
+     x="71.472"
+     y="1391"
+     fill="#4c4641"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="16px"
+     font-weight="500"
+     id="text47"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Inter;-inkscape-font-specification:'Inter Bold'">https://github.com/ceceppa/mano</text>
+  <metadata
+     id="metadata4">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Mano phase-driven learning loop</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

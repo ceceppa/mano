@@ -162,7 +162,7 @@ Prioritise:
 [X] more items in backlog.
 
 What to do?
-1. ✅ Go with this — Draft brief from these items.
+1. ✅ Go with this — Approve this scope.
 2. ✏️ Adjust — Add/remove items.
 3. 🎯 I know what I want — List items.
 4. 📋 Show full backlog.
@@ -183,12 +183,15 @@ After presenting, stop. Do not continue to Step 7 until the user explicitly appr
 
 ```text
 → Auto mode: [the actions this phase needs, in order] → dev yolo
-  Reply `go`, or edit it (`skip rules`, `add ux`). Pauses for any question; stops before review.
+  Reply `1` or `go` — both approve this scope and run the chain above.
+  Edit and approve together (`go, skip rules`; `1, add ux`). Pauses for questions; stops before review.
 ```
+
+In auto mode, replace option 1's description with `Approve this scope and run the auto chain shown below.` An edit without `1` or `go` changes the proposal but does not approve or arm it. Never make one approval token scope-only and the other auto-arming; `1` and `go` are exact synonyms.
 
 Before proposing that line, inspect only the existing project-level planning artifacts needed to decide whether this candidate scope requires `spec`, `ux`, `rules`, or `ui`: `_mano_output/tech-spec.md`, `_mano_output/ux-flow.md`, `_mano_output/project-rules.md`, and `_mano_output/design-brief.md`. Read only relevant sections when possible. Never open the backlog, reviews, source, a prior phase folder, or another phase's preview for this check. This narrow read is permitted only after the candidate scope exists, so it cannot influence which backlog items are selected.
 
-Propose only the actions the phase genuinely needs, on the same judgement used for the `Next:` block. The approval reply arms this exact ordered chain; an edit in that reply replaces it. Preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** for what the chain may and may not do.
+Propose only the actions the phase genuinely needs, applying `_mano/workflow.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** for the rest of the chain contract.
 
 ### Step 7 — Validate, clarify, and draft brief
 
@@ -431,7 +434,7 @@ Only finalise after explicit human approval of the phase scope.
    One `--title` per human-approved item. The script flips only items currently `Status: backlog` and reports any it can't match (wrong title, or already moved). If an approved item covers only a *slice* of a backlog item, split it (see **Splitting an item**) before assigning. Never mark candidate items in-phase before approval.
    **Script failing?** Stop and report the error — do not hand-edit `Status` lines.
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
-For a user-facing or mobile phase, check both the cumulative `_mano_output/design-brief.md` and the newly approved phase's `PHASE_DIR/design-preview.html`. A preview in another phase or owner namespace, or a legacy root `_mano_output/design-preview.html`, does not cover this phase. Keep `mano ui` visible whenever the current preview is missing or the phase introduces visual or screen-composition work not covered by the design brief, even when every component is reused. Do not read another phase's preview to make this decision.
+For a user-facing or mobile phase, check both the cumulative `_mano_output/design-brief.md` and the newly approved phase's `PHASE_DIR/design-preview.html`. A preview in another phase or owner namespace, or a legacy root `_mano_output/design-preview.html`, does not cover this phase. Keep `mano ui` visible whenever the current preview is missing or the phase introduces visual or screen-composition work not covered by the design brief, even when every component is reused. A familiar or “canonical” widget (keyboard, table, form, toolbar) does not define this phase's composition, responsive layout, hierarchy, states, or accessibility treatment. Do not read another phase's preview to make this decision.
 <!-- /mano-rule: ui-phase-preview-ownership -->
 
 <!-- mano-rule: id=rules-new-category-trigger; incident=start-omitted-rules-for-new-artifact-category; model=not-recorded; date=2026-08-06; eval=start-suggests-rules-for-new-category -->
@@ -440,7 +443,7 @@ Keep `mano rules` visible whenever the phase introduces a **new kind of thing wh
 The test is whether the convention constrains **how future work is written** rather than **what this phase does**. "Showcase examples live in `x/` and are named `y`" is a rule — it binds every future showcase. "This demo runs 8 seconds per layout" is a value, and belongs to its owning artifact, not to rules; the rule version is "every showcase uses the shared per-layout duration defined there." Do not suggest `mano rules` for a domain algorithm or a one-off decision wearing a convention's clothes.
 <!-- /mano-rule: rules-new-category-trigger -->
 
-5. Suggest next actions based on which useful artifacts are still missing or stale. Revalidate which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist in `_mano_output/`, plus whether a current design preview exists when one is useful. In auto mode, compare this with the approved chain snapshot; do not silently replace that chain. If finalisation exposed a material mismatch, pause and name the revised choice instead. Then emit a next-action block that:
+5. Suggest next actions based on which useful artifacts are still missing or stale. Revalidate which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist in `_mano_output/`, plus whether a current design preview exists when one is useful. In auto mode, compare this with the approved chain snapshot; do not silently replace that chain. If finalisation exposes material UX/UI work omitted without an explicit human `skip ux` / `skip ui`, the approved plan is invalid: pause and propose the corrected remaining chain. If the human explicitly skipped it, preserve that decision. Then emit a next-action block that:
    - Lists only artifacts that don't exist yet or need refinement (skipping ones that are already present and current)
    - Ends with a clear **recommended next step** — whichever single action is most likely to unblock implementation. Default recommendation is `mano stories` when the phase is self-contained (pure visual, pure refactor, or the brief already captures the full behaviour contract). Default to `mano spec` first when the phase introduces new data, new APIs, new external dependencies, or new integration points.
    - **"Incremental on existing tech" is not the same as "no new external API."** Recommend `mano spec` first whenever *any* of these hold, even if no new external dependency is added:

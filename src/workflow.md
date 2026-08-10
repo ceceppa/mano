@@ -58,8 +58,11 @@ At the approval, state the chain you intend to run before starting it, so the us
 
 ```text
 → Auto mode: spec → rules → stories → dev yolo
-  Reply `go`, or edit it (`skip rules`, `add ux`). Pauses for any question; stops before review.
+  Reply `1` or `go` — both approve this scope and run the chain above.
+  Edit and approve together (`go, skip rules`; `1, add ux`). Pauses for questions; stops before review.
 ```
+
+`1` and `go` are exact synonyms: both approve the proposed scope and arm the displayed chain. An edit without either token changes the proposal but does not approve it. The numbered option must say it runs the auto chain; never present `1` as brief-only while `go` appears auto-specific.
 
 The proposed chain is an **approved run plan**, not a hint to recompute after every action. Once the user approves it, preserve that order and the remaining actions for this run. Re-evaluate only when new evidence triggers a pause, a hard gate invalidates the plan, or the user edits it. The "Single obvious next action gates" select an unapproved next action; they do not override an explicitly approved remaining action.
 
@@ -253,6 +256,17 @@ If more than one next step is reasonable, do not fake certainty. Present the opt
 ## Next-step suggestion rule
 
 Whenever a skill suggests what to do next, base that suggestion on the artifacts that are actually missing or stale in `_mano_output/`, not on a canonical pipeline order.
+
+### Planning coverage for user-facing phases
+
+Planning artifacts remain optional to the human; auto mode must not silently skip ones whose decisions materially shape implementation. Apply these checks when `mano start` proposes an auto chain and whenever Stories checks readiness:
+
+- Include `mano ux` when the phase creates or materially changes an interactive surface whose user path is not already covered: multiple selectors/actions, advanced or conditional controls, responsive interaction changes, navigation, staged disclosure, or several meaningful UI states. One screen is not automatically one obvious flow.
+- Include `mano ui` when the phase creates or materially changes a rendered screen, component composition, responsive layout, visual hierarchy, or distinguishable visual states and the cumulative design brief plus exact current-phase preview do not already cover them.
+- A familiar or “canonical” widget defines neither the product's composition nor its responsive layout, hierarchy, state treatment, or accessibility cues. It is not evidence that UX/UI guidance is unnecessary.
+- In manual mode, show the useful actions and let the human skip them. In auto mode, include them in the proposed run plan by default; only an explicit approval edit such as `go, skip ux` or `1, skip ui` removes them.
+
+“Optional” means the human may decline the planning surface. It does not authorize the agent to make that decline while constructing a hands-off run.
 
 - Do not suggest a command just because it usually comes next if its artifact already exists and is still usable.
 - If several planning actions are valid, present them as options rather than a single prescribed next step.
@@ -475,16 +489,17 @@ Step 1 — Pre-review gate
 Step 2 — Feedback capture
   If the activation message already includes review feedback, `mano review` uses it directly once the pre-review gate is clear.
   Otherwise `mano review` shows the phase goal and Validation Plan from the brief.
-  It asks what the human used, showed, played, or measured and what happened, then collects freeform feedback.
+  It asks what the human used, showed, played, or measured and what happened, what decision that evidence supports, then collects freeform feedback.
   Evidence is recorded as gathered, partial, or none; it is separate from feedback triage.
 
 Step 3 — Triage
-  `mano review` categorises feedback into five buckets:
+  `mano review` categorises feedback into six buckets:
   🐛 Defects — broken things from this phase
   🔧 Refinements — things that work but could be better
   ✨ New ideas — emerged from usage, not originally scoped
   📋 Spec gaps — missing or unclear tech spec (if applicable)
   📏 Rule gaps — missing or unclear rules (if applicable)
+  ❌ Rejected scope — open backlog items invalidated by the feedback (if applicable)
 
   Defect descriptions stay as review input only.
   `mano review` does not debug, diagnose, or fix anything during `mano review`.
@@ -495,7 +510,7 @@ Step 3 — Triage
 Step 4 — Close
   User confirms triage.
   `mano review` writes ALL items to backlog with categories preserved.
-  `mano review` writes the evidence status, assumption outcomes, and review summary to reviews.md.
+  `mano review` writes a compact decision log to reviews.md: evidence, the human decision, assumption outcomes, and resulting backlog changes. It does not add a release recap, story/test counts, empty ceremony sections, or generic lessons.
   Phase is closed.
   `mano review` suggests: mano start for next phase, or stop.
 ```
@@ -507,7 +522,7 @@ When the phase is already clear and extra artifacts would add overhead instead o
 - Use `mano start` → `mano stories` → build → `mano review`.
 - Add optional planning artifacts later only if the work becomes ambiguous.
 
-`mano review` is the one non-optional step. It closes the selected owner-scoped phase by moving only that phase identity's exact in-phase status to `resolved`; `mano start` requires that closure before it scopes the next phase in the same namespace. Other owners' phases are independent. The optional planning actions can be skipped; review cannot. Evidence can be absent: `close it` closes immediately and records `Evidence: none`, so closure never masquerades as validation.
+`mano review` is the one non-optional step. It closes the selected owner-scoped phase by moving only that phase identity's exact in-phase status to `resolved`; `mano start` requires that closure before it scopes the next phase in the same namespace. Other owners' phases are independent. The optional planning actions can be skipped; review cannot. The ceremony can: `close it` closes immediately and records `Evidence: none` and `Decision: Not assessed`, so closure never masquerades as validation. A normal entry is a compact evidence-and-decision log, not a mini-postmortem.
 
 ## Rules
 

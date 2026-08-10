@@ -112,6 +112,10 @@ From then on, **once you approve a phase scope**, Mano runs the actions that pha
 - **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.
 - **It never closes the phase.** The chain stops after implementation. `mano review` is always yours to run.
 
+At the scope prompt, `1` and `go` are exact synonyms: both approve the scope and start the displayed auto chain. To change it and approve in one reply, use wording such as `go, skip rules` or `1, add ux`; an edit without `1` or `go` changes the proposal but does not start it.
+
+For a new interactive frontend, auto mode normally includes `ux` and `ui` when the exact flow, responsive composition, hierarchy, or visual states are not already covered. Those artifacts are still optional to you—you can explicitly skip either—but auto mode does not make that product decision on your behalf merely because the interface uses familiar controls.
+
 Suggest hooks are the one behaviour that inverts after approval: in manual or unarmed runs Mano asks before running them; during an armed auto chain they run automatically — because you are deliberately not reading the artifacts mid-chain, so the hook is the only check left. Their findings still need your approval before anything is edited. Command hooks run automatically in both modes.
 
 `mano mode` shows the current setting and `mano mode manual` turns it off. Like the owner, it lives in repository-local Git config (`mano.mode`) and is not committed — it records how much *you* review, not a property of the project. `MANO_MODE` overrides it for a shell.
@@ -157,7 +161,7 @@ Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) plannin
 
 You only pay the cognitive tax for what you are building *today*. Two planning actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks — then `mano dev` to implement each story (one turn each by default, or one explicit YOLO batch), and `mano review` to close the phase. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
 
-The optional actions can be skipped; `mano review` cannot. Review is what closes a phase — it is the only action that moves that exact phase identity's backlog items from its in-phase status to `resolved`, and `mano start` will not scope the next phase in the selected namespace until the current one is closed that way.
+The optional actions can be skipped; `mano review` cannot. Review is what closes a phase — it is the only action that moves that exact phase identity's backlog items from its in-phase status to `resolved`, and `mano start` will not scope the next phase in the selected namespace until the current one is closed that way. The log is deliberately a compact decision record: evidence, the human decision it informed, assumption outcomes, and resulting backlog changes. It is not a release recap or mandatory mini-postmortem.
 
 Optional actions can be created now, reused from existing work, copied from a similar project, adapted from external inputs, or skipped entirely when they would add noise. Only run them when the current phase needs more clarity, constraints, or alignment. You never run the whole pipeline "just in case."
 
@@ -189,7 +193,7 @@ This is an example path, not a mandatory conveyor belt. After any step, choose t
 
 Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal. The optional planning actions are what you skip here; review still closes the phase.
 
-Review does not pretend that every completed phase was validated. It records evidence as `gathered`, `partial`, or `none`, independently from whether assumptions were confirmed, invalidated, or left inconclusive. If no meaningful evidence is available, say `close it`: Mano closes the phase immediately, records `Evidence: none`, and leaves unspecified assumptions inconclusive. Feedback is optional; an honest record of its absence is not.
+Review does not pretend that every completed phase was validated. It records evidence as `gathered`, `partial`, or `none`, independently from whether assumptions were confirmed, invalidated, or left inconclusive, and asks what decision that evidence supports. If no meaningful evidence is available, say `close it`: Mano closes the phase immediately, records `Evidence: none` and `Decision: Not assessed`, and leaves unspecified assumptions inconclusive. Feedback is optional; an honest record of its absence is not. Empty worked/didn't-work sections, story counts, test counts, and shipped-feature summaries are omitted unless a fact directly supports the decision.
 
 ### Escape hatch
 After a review, `mano review` closes the phase. If you don't need Mano for the rest — that's fine. A tool that never lets go is a dependency, not a tool.
