@@ -6,7 +6,7 @@
     "mano-plan": "bin/mano-plan.js"
   },
   "scripts": {
-    "test": "python3 -m unittest discover -s eval -p 'test_*.py'",
+    "test": "node --test && python3 -m unittest discover -s eval -p 'test_*.py'",
     "eval": "python3 eval/run.py",
     "eval:rules": "python3 eval/run.py --list-rules"
   },
