@@ -8,6 +8,7 @@ mano status             → Read deterministic project state and show where you 
 mano import [doc]       → Turn an existing PRD/document into a backlog, then stop.
 mano owner [slug]       → Show, set, or clear this repository clone's optional phase owner.
 mano mode [auto|manual] → Show or set whether finished actions chain automatically.
+mano track [name]       → Show, set, or clear an optional local experiment/work track.
 mano start              → Scope a new project or phase.
 mano continue           → Auto-run the next logical action if unambiguous.
 mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
@@ -15,7 +16,7 @@ mano dev                → Implement the next pending story for the active phas
 mano help [skill]       → Show what a skill does and when to use it.
 ```
 
-`mano owner`, `mano mode`, and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
+`mano owner`, `mano mode`, `mano track`, and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
 
 **Dispatch only to Mano's own skills — never a similarly-named built-in.** Every `mano <action>` resolves to the matching skill in `_mano/skills/` and to nothing else. The host environment may contain built-in, harness, plugin, or third-party skills whose names overlap a Mano action word — do **not** invoke those for a `mano` command, even if their name looks like an exact match. Resolve the command by its Mano role (the agent and contract below), not by keyword similarity to an ambient skill. Two known, high-impact collisions to call out explicitly:
 - **`mano review` → `mano review`** (`_mano/skills/review.md`): record evidence and assumption outcomes, triage feedback into the backlog, write the review log, and close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run `mano review` instead.
@@ -34,6 +35,15 @@ Phase ownership is opt-in and local to a repository clone:
 - `mano owner clear`: return this clone to legacy `phase-N` routing without touching owned folders.
 - Linked worktrees share repository-local Git config. `MANO_OWNER` may override it for a shell or worktree when those worktrees need different owners. Never infer an owner from `whoami`, an OS account, or an email address.
 - Two people may configure the same slug to hand over or pair on one phase. Different slugs select separate active phase sequences. Another owner's unfinished phase does not block `mano start` for the configured owner.
+
+## Optional Work Tracks
+
+Tracks group one person's parallel experiments or product directions without replacing phase scope. They are opt-in and local to a repository clone:
+
+- `mano track "Option B"` stores the current track in repository-local Git config (`mano.track`); `mano track clear` removes it. `MANO_TRACK` overrides Git config for one shell/worktree.
+- `Source` remains provenance—where an item came from. `Track` is the experiment/direction it belongs to. One backlog item may carry both.
+- An active track is applied to new imports and conversation-created backlog items. It filters `mano start` to matching-track candidates and is copied into the approved phase brief. Follow-up review items copy the **phase brief** track, not whatever track happens to be active when the review runs.
+- Track never selects scope, bypasses approval, or overrides stories/spec/UX/rules/phase conflict gates. `mano track clear` changes only future commands; it never rewrites existing backlog items or briefs.
 
 ## Run Mode: manual and auto
 
@@ -257,11 +267,17 @@ If more than one next step is reasonable, do not fake certainty. Present the opt
 
 Whenever a skill suggests what to do next, base that suggestion on the artifacts that are actually missing or stale in `_mano_output/`, not on a canonical pipeline order.
 
+### Source- and track-filtered phase candidates
+
+`Source` is optional backlog provenance, not a priority or scope field. To focus a returning `mano start` on one imported document, review, or origin, use `mano start from source "[text]"`. Start passes the text to `state.js --scope --source`; the projection returns only phase-scopeable items whose top-level `Source` contains the text, case-insensitively. This narrows what Start proposes—it never auto-selects matching items, changes their status, or bypasses the normal scope-approval gate. No matches means broaden/remove the filter; do not silently fall back to the entire backlog.
+
+`Track` is a separate exact, case-insensitive candidate filter for a named experiment or direction. An active `mano track "[name]"` applies it automatically to Start; `mano start from track "[name]"` temporarily selects another one. It can be combined with Source when both provenance and direction matter. A track is not an Epic, priority, or approval: Start may still propose only a subset, and its usual contradiction checks remain mandatory.
+
 ### Planning coverage for user-facing phases
 
 Planning artifacts remain optional to the human; auto mode must not silently skip ones whose decisions materially shape implementation. Apply these checks when `mano start` proposes an auto chain and whenever Stories checks readiness:
 
-- Include `mano ux` when the phase creates or materially changes an interactive surface whose user path is not already covered: multiple selectors/actions, advanced or conditional controls, responsive interaction changes, navigation, staged disclosure, or several meaningful UI states. One screen is not automatically one obvious flow.
+- Include `mano ux` when the phase creates or materially changes an interactive surface whose user path is not already covered: multiple selectors/actions, advanced or conditional controls, responsive interaction changes, navigation, staged disclosure, or several meaningful UI states. This includes **player-facing game loops**: direct world interaction, placement/selection, unlock or progression actions, available-versus-locked states, or feedback that explains why an action cannot yet succeed. When two or more tools, buildables, abilities, modes, or rewards can be available together, UX must define the player's choice and active-choice feedback; a hardcoded default cannot stand in. “In-world”, “minimal”, or “not a menu” does not make an interaction flow self-evident. One screen is not automatically one obvious flow.
 - Include `mano ui` when the phase creates or materially changes a rendered screen, component composition, responsive layout, visual hierarchy, or distinguishable visual states and the cumulative design brief plus exact current-phase preview do not already cover them.
 - A familiar or “canonical” widget defines neither the product's composition nor its responsive layout, hierarchy, state treatment, or accessibility cues. It is not evidence that UX/UI guidance is unnecessary.
 - In manual mode, show the useful actions and let the human skip them. In auto mode, include them in the proposed run plan by default; only an explicit approval edit such as `go, skip ux` or `1, skip ui` removes them.
@@ -322,6 +338,7 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | **`mano import`** | Turns an existing PRD or document into a backlog. Decomposes the document into items, then stops. Does not scope phases. | A PRD/document (path or pasted), existing backlog | Backlog (items `Status: backlog`) |
 | **`mano owner`** | Opts this repository clone into an owner namespace, shows it, or clears it. | Repository-local Git config / `MANO_OWNER` | Local Git config only; no planning artifacts |
 | **`mano mode`** | Shows or sets whether finished actions chain automatically (`auto`) or hand back (`manual`, the default). | Repository-local Git config / `MANO_MODE` | Local Git config only; no planning artifacts |
+| **`mano track`** | Shows, sets, or clears the optional local experiment/work track. | Repository-local Git config / `MANO_TRACK` | Local Git config only; no planning artifacts |
 | **`mano start`** | Scopes projects and phases. Populates the backlog (from conversation), suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews | Phase brief, backlog updates |
 | **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, filtered unresolved spec-gap projection | Tech spec; targeted spec-gap status updates |
 | **`mano ux`** | Defines UX flows — screens, navigation, user interactions. One screen at a time, only new or changed. | Phase brief, UX flow, tech spec, project rules | UX flow |

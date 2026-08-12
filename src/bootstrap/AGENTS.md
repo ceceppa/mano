@@ -27,6 +27,7 @@ Examples:
 - `mano dev` → implement the next pending story; read `_mano/skills/dev.md` and follow the "Implementing a story" contract below
 - `mano continue` → read `_mano/workflow.md` and determine the next useful Mano action
 - `mano mode [auto|manual]` → read `_mano/skills/mode.md`; show or set whether finished actions chain automatically
+- `mano track [name]` → read `_mano/skills/track.md`; show, set, or clear the optional local experiment/work track
 
 Note: `mano dev` is the one Mano command that produces code. Every other command above is planning only. `mano dev` runs the "Implementing a story" contract in this file; `_mano/skills/dev.md` is a thin pointer back here.
 
@@ -74,6 +75,9 @@ For each snapshotted story, follow steps 6–11 as its own AC-bounded implementa
 
 If any goal element or Exit Criterion lacks exact AC ownership, stop before implementation, leave this and later rows pending, and name the missing path. Route it to `mano stories "add coverage for [missing phase path]"`; if the missing path also lacks a canonical public/shared contract, route `mano spec` first. Do not reinterpret a broad phase promise to fit the existing stories, and do not use a `Not this story` boundary to waive it. In YOLO mode, earlier checkpointed stories stay `done`; this gate still applies before the final snapshotted story.
 <!-- /mano-rule: public-interface-contract-readiness -->
+6.2 **Spec-owned default gap.** If the story or its cited phase Exit Criterion needs a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, the named canonical spec section must state the owning field/config/constant and exact value or relationship. A vague phrase such as “small area” is not an implementation value. Stop and route to `mano spec` when it is missing; do not choose a “story-owned default,” add a temporary literal, or treat a test fixture as the product default.
+6.3 **Player-choice UX gap.** If the story lets a player choose among two or more simultaneously available tools, buildables, abilities, modes, rewards, or alternatives, the cited UX flow must define how the player invokes the choice, selects/changes the active option, sees that active state, and receives locked/unavailable/cancel feedback. If it does not, stop and route to `mano ux`; do not invent a hotkey, picker, cycling scheme, default active item, or HUD treatment while implementing.
+6.4 **Phase-scope conflict.** Before changing code, compare the story and any user-requested behaviour change with the exact projected phase brief's `Phase goal`, `Phase scope`, and `Not this phase`. Work that directly supports an existing outcome can proceed. A distinct outcome, or anything the brief explicitly excludes, is outside this phase: stop before code. Do not treat “do it anyway” as permission to leave the brief stale. Ask the human to either defer it to the backlog/next phase or amend the phase brief to include it, then rerun `mano stories` to create or update the bounded story. This gate applies in default, YOLO, and auto mode.
 7. If the story is bootstrap, setup, tooling, infrastructure, or dependency-related, also read `_mano_output/tech-spec.md` before implementing. Treat library choices, package-manager choice, and install commands there as normative unless the story file already repeats them exactly.
 8. Execute install commands exactly as written. Do not merge separate command groups, switch tools, or normalize mixed-tool instructions into a single package-manager invocation unless the story or tech spec explicitly tells you to. In particular, keep `npx expo install` commands separate from `npm install` or other package-manager commands so Expo can resolve SDK-compatible versions.
 
@@ -117,8 +121,9 @@ The acceptance criteria are the behavioural contract for the current story. Do n
 
 When implementation reveals a gap:
 
-- **Clear user-directed behaviour change:** implement it. Add a `## Changes` note only if the change affects future stories, tests, specs, rules, UX, or review.
-- **Ambiguous or scope-expanding change:** ask one clarification or suggest a follow-up story.
+- **Clear user-directed behaviour change within the phase:** implement it. Add a `## Changes` note only if the change affects future stories, tests, specs, rules, UX, or review.
+- **Scope-expanding change:** apply step 6.4. The human may choose it, but code and stories must not become the only record of that choice.
+- **Ambiguous change:** ask one clarification or suggest a follow-up story.
 - **Bug fix that satisfies existing AC:** implement it. No `## Changes` entry needed.
 - **Agent-discovered missing decision:** stop and tell the user which Mano flow owns the decision (`mano spec`, `mano rules`, or `mano stories`). Do not invent it.
 - **Change that may invalidate spec, rules, or UX:** mention it for the next `mano review`; do not reconcile artifacts mid-story.

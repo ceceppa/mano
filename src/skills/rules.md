@@ -299,7 +299,7 @@ Next:
 Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano spec` — if technical decisions, API contracts, data models, dependencies, persistence, or platform constraints need defining or updating
 - `mano stories` — if the phase is technically clear enough to break into implementable work
-- `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
+- `mano ux` — if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase. For player-facing games, this includes world interaction, placement/selection, progression or unlock actions, available-versus-locked states, and feedback for unmet conditions; a minimal or in-world presentation is still a flow.
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
 - `mano continue` — only if it adds value and there may be a single obvious next step
 

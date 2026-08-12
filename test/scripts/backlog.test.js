@@ -50,11 +50,13 @@ test("backlog formatting normalizes context while retaining the canonical shape"
     title: "  Add onboarding  ",
     type: "feature",
     source: "Phase 1 review",
+    track: "Option B",
     context: "\nFirst line  \r\nSecond line\n",
   });
   assert.equal(item, `### Add onboarding
 - **Type:** feature
 - **Source:** Phase 1 review
+- **Track:** Option B
 - **Context:**
   First line
   Second line
@@ -68,6 +70,10 @@ test("backlog validates the item envelope and line limit", () => {
   assert.match(
     backlog.validateItem({ title: "One", type: "bug", context: "1\n2\n3\n4\n5\n6" }, 0),
     /max 5/,
+  );
+  assert.match(
+    backlog.validateItem({ title: "One", type: "bug", context: "Fix it", track: "bad\ntrack" }, 0),
+    /invalid Mano track/,
   );
 });
 

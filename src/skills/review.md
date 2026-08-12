@@ -197,7 +197,7 @@ The one thing that survives a close instruction is a ❌ rejection candidate the
 **STEP 3 — Write to Files (One-Shot Execution)**
 
 When the user confirms (e.g., "close it", "yes"):
-1. Write ALL confirmed triaged items to the backlog **via the writer — don't hand-write the item blocks.** **Map each triage category to its exact `Type` first** (this classification is the review's job; the script only takes the result):
+1. Read the exact current phase brief's optional `**Track:**` line. If present, use that exact value on every new review item; if absent, omit `track`. Never substitute the active local track: review preserves the experiment that produced the feedback. Then write ALL confirmed triaged items to the backlog **via the writer — don't hand-write the item blocks.** **Map each triage category to its exact `Type` first** (this classification is the review's job; the script only takes the result):
    - 📋 Spec gaps → `spec-gap`
    - 📏 Rule gaps → `rule-gap`
    - 🐛 Defects → `bug`
@@ -206,9 +206,9 @@ When the user confirms (e.g., "close it", "yes"):
 
    One item — shell-safe flags:
    ```
-   node _mano/scripts/backlog.js add --title "[short title]" --type [type] --context "[what it is; why it matters]" --source "[PHASE_ID] review"
+   node _mano/scripts/backlog.js add --title "[short title]" --type [type] --context "[what it is; why it matters]" --source "[PHASE_ID] review" [--track "[phase brief Track]"]
    ```
-   Several items — write a JSON array to a temp file with your file tool (no shell quoting), each element `{ "title", "type", "context", "source": "[PHASE_ID] review" }`, and pass it:
+   Several items — write a JSON array to a temp file with your file tool (no shell quoting), each element `{ "title", "type", "context", "source": "[PHASE_ID] review", "track"?: "[phase brief Track]" }`, and pass it:
    ```
    node _mano/scripts/backlog.js add --file [tmp].json
    ```
@@ -218,6 +218,7 @@ When the user confirms (e.g., "close it", "yes"):
    ### [Short title]
    - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
    - **Source:** [PHASE_ID] review
+   - **Track:** [copy the phase brief's Track, if present]
    - **Context:**
      [what it is; why it matters]
    - **Status:** backlog

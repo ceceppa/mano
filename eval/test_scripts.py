@@ -13,6 +13,7 @@ BACKLOG_SCRIPT = REPO_ROOT / "src" / "scripts" / "backlog.js"
 STORIES_SCRIPT = REPO_ROOT / "src" / "scripts" / "stories.js"
 OWNER_SCRIPT = REPO_ROOT / "src" / "scripts" / "owner.js"
 MODE_SCRIPT = REPO_ROOT / "src" / "scripts" / "mode.js"
+TRACK_SCRIPT = REPO_ROOT / "src" / "scripts" / "track.js"
 
 OPEN_SPEC_BLOCK = """### Open spec
 - **Type:** spec-gap
@@ -214,12 +215,36 @@ class ManoScriptTests(unittest.TestCase):
             env=env,
         )
 
+    def run_state_with_track(self, track, *args):
+        env = os.environ.copy()
+        env["MANO_TRACK"] = track
+        return subprocess.run(
+            ["node", str(STATE_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
     def run_owner(self, *args):
         return subprocess.run(
             ["node", str(OWNER_SCRIPT), *args],
             cwd=self.root,
             text=True,
             capture_output=True,
+        )
+
+    def run_track(self, *args, env_track=None):
+        env = os.environ.copy()
+        env.pop("MANO_TRACK", None)
+        if env_track is not None:
+            env["MANO_TRACK"] = env_track
+        return subprocess.run(
+            ["node", str(TRACK_SCRIPT), *args],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
         )
 
     def run_backlog_here(self, *args):
@@ -291,6 +316,122 @@ class ManoScriptTests(unittest.TestCase):
             with self.subTest(args=args):
                 result = self.run_state(*args)
                 self.assertNotEqual(result.returncode, 0)
+
+    def test_scope_projection_filters_open_items_by_source(self):
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Piano keyboard interactions
+- **Type:** feature
+- **Source:** Piano brief
+- **Context:**
+  Play a mapped note from the keyboard.
+- **Status:** backlog
+
+### Piano tutorial polish
+- **Type:** refinement
+- **Source:** piano playtest notes
+- **Context:**
+  Make the first interaction easier to discover.
+- **Status:** backlog
+
+### Garden controls
+- **Type:** feature
+- **Source:** Garden brief
+- **Context:**
+  Place a seed in a plot.
+- **Status:** backlog
+""")
+
+        result = self.run_state("--scope", "--source", "PIANO")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Source contains "PIANO" (2)', result.stdout)
+        self.assertIn("Piano keyboard interactions", result.stdout)
+        self.assertIn("Piano tutorial polish", result.stdout)
+        self.assertNotIn("Garden controls", result.stdout)
+
+        no_match = self.run_state("--scope", "--source", "unknown")
+        self.assertEqual(no_match.returncode, 0, no_match.stderr)
+        self.assertIn('Source contains "unknown" (0)', no_match.stdout)
+
+    def test_source_filter_requires_scope_and_text(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        for args in (("--source", "Phase 2"), ("--next", "--source", "Phase 2")):
+            with self.subTest(args=args):
+                result = self.run_state(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("--source", result.stderr)
+
+    def test_scope_projection_filters_by_source_and_track(self):
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Option B keyboard
+- **Type:** feature
+- **Source:** Piano brief
+- **Track:** Option B
+- **Context:**
+  Play notes with mapped keyboard keys.
+- **Status:** backlog
+
+### Option A keyboard
+- **Type:** feature
+- **Source:** Piano brief
+- **Track:** Option A
+- **Context:**
+  Play notes with mapped keyboard keys.
+- **Status:** backlog
+
+### Option B garden
+- **Type:** feature
+- **Source:** Garden brief
+- **Track:** option b
+- **Context:**
+  Place a seed in a plot.
+- **Status:** backlog
+
+### Untracked piano cleanup
+- **Type:** refinement
+- **Source:** Piano review
+- **Context:**
+  Clarify the first interaction.
+- **Status:** backlog
+""")
+
+        # Explicit Source and Track form an intersection. Track is exact but
+        # case-insensitive; Source remains a case-insensitive substring.
+        result = self.run_state("--scope", "--source", "piano", "--track", "OPTION B")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Source contains "piano"; Track is "OPTION B" (1)', result.stdout)
+        self.assertIn("TRACK: OPTION B", result.stdout)
+        self.assertIn("Option B keyboard", result.stdout)
+        self.assertNotIn("Option A keyboard", result.stdout)
+        self.assertNotIn("Option B garden", result.stdout)
+        self.assertNotIn("Untracked piano cleanup", result.stdout)
+
+        # A configured track automatically constrains the normal scope path;
+        # items with no Track field never sneak into an active track.
+        active = self.run_state_with_track("Option B", "--scope")
+        self.assertEqual(active.returncode, 0, active.stderr)
+        self.assertIn('Track is "Option B" (2)', active.stdout)
+        self.assertIn("Option B keyboard", active.stdout)
+        self.assertIn("Option B garden", active.stdout)
+        self.assertNotIn("Option A keyboard", active.stdout)
+        self.assertNotIn("Untracked piano cleanup", active.stdout)
+
+        no_match = self.run_state("--scope", "--track", "Option C")
+        self.assertEqual(no_match.returncode, 0, no_match.stderr)
+        self.assertIn('Track is "Option C" (0)', no_match.stdout)
+
+    def test_track_filter_requires_scope_and_text(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        for args in (("--track", "Option B"), ("--next", "--track", "Option B"), ("--scope", "--track", "")):
+            with self.subTest(args=args):
+                result = self.run_state(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("--track", result.stderr)
 
     def test_spec_projection_exposes_only_current_phase_and_open_spec_gaps(self):
         phase = self.output / "phase-3"
@@ -593,6 +734,17 @@ class ManoScriptTests(unittest.TestCase):
         self.assertEqual(second.returncode, 0, second.stderr)
         self.assertIn("already resolved", second.stdout)
         self.assertEqual(self.backlog.read_text(), expected)
+
+    def test_backlog_writer_persists_source_and_track_as_distinct_metadata(self):
+        result = self.run_backlog(
+            "add", "--title", "Option B review follow-up", "--type", "refinement",
+            "--source", "phase-1 review", "--track", "Option B",
+            "--context", "Clarify the first interaction.",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        written = self.backlog.read_text()
+        self.assertIn("- **Source:** phase-1 review", written)
+        self.assertIn("- **Track:** Option B", written)
 
     def test_resolve_gap_refuses_unsafe_targets_without_writing(self):
         attempts = (
@@ -976,6 +1128,36 @@ class ManoScriptTests(unittest.TestCase):
                 self.assertIn("invalid Mano mode", invalid.stderr)
         # Still manual after every rejected value — a failed set never opts in.
         self.assertIn("manual (default)", self.run_mode("show", str(self.root)).stdout)
+
+    def test_track_command_is_explicit_local_opt_in_and_can_be_cleared(self):
+        initialized = subprocess.run(
+            ["git", "init"], cwd=self.root, text=True, capture_output=True
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+
+        self.assertIn("no track configured", self.run_track("show", str(self.root)).stdout)
+        enabled = self.run_track("Option B", str(self.root))
+        self.assertEqual(enabled.returncode, 0, enabled.stderr)
+        self.assertIn('track set to "Option B"', enabled.stdout)
+        shown = self.run_track("show", str(self.root))
+        self.assertEqual(shown.returncode, 0, shown.stderr)
+        self.assertIn('"Option B" (git config --local mano.track)', shown.stdout)
+        self.assertIn("TRACK: Option B", self.run_state().stdout)
+
+        overridden = self.run_track("show", str(self.root), env_track="Option A")
+        self.assertEqual(overridden.returncode, 0, overridden.stderr)
+        self.assertIn('"Option A" (MANO_TRACK)', overridden.stdout)
+
+        cleared = self.run_track("clear", str(self.root))
+        self.assertEqual(cleared.returncode, 0, cleared.stderr)
+        self.assertIn("local track cleared", cleared.stdout)
+        self.assertIn("no track configured", self.run_track("show", str(self.root)).stdout)
+
+        for bad in ("", "bad\ntrack", "x" * 121):
+            with self.subTest(bad=bad):
+                invalid = self.run_track("set", bad, str(self.root))
+                self.assertNotEqual(invalid.returncode, 0)
+                self.assertIn("invalid Mano track", invalid.stderr)
 
     def test_run_mode_reaches_every_projection_a_skill_reads(self):
         (self.output / "phase-1").mkdir()

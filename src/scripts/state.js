@@ -56,7 +56,7 @@ function parseArgs(argv) {
   const args = {
     root: process.cwd(), json: false, verbose: false,
     scope: false, next: false, ui: false, current: false,
-    spec: false, gaps: null, help: false,
+    spec: false, gaps: null, source: null, track: null, help: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -67,6 +67,16 @@ function parseArgs(argv) {
     else if (a === "--ui") args.ui = true;
     else if (a === "--current") args.current = true;
     else if (a === "--spec") args.spec = true;
+    else if (a === "--source") {
+      const candidate = argv[i + 1];
+      if (candidate == null || candidate.startsWith("-")) args.source = "";
+      else { args.source = candidate; i++; }
+    }
+    else if (a === "--track") {
+      const candidate = argv[i + 1];
+      if (candidate == null || candidate.startsWith("-")) args.track = "";
+      else { args.track = candidate; i++; }
+    }
     else if (a === "--gaps") {
       const candidate = argv[i + 1];
       if (candidate == null || candidate.startsWith("-")) args.gaps = "";
@@ -81,11 +91,15 @@ function parseArgs(argv) {
 const HELP = `mano state — read-only projections of _mano_output/
 
 Usage:
-  node state.js [projectRoot] [--scope | --next | --ui | --current | --spec | --gaps <type>] [--verbose] [--json]
+  node state.js [projectRoot] [--scope [--source <text>] [--track <name>] | --next | --ui | --current | --spec | --gaps <type>] [--verbose] [--json]
 
   projectRoot   directory containing _mano_output/ (default: current dir)
   --scope       on a PROCEED to scope-backlog or resume-draft, also print the
                 relevant backlog items, core principles, and latest review
+  --source      with --scope only: case-insensitive substring filter for an
+                item's optional top-level Source provenance field
+  --track       with --scope only: case-insensitive exact filter for an item's
+                optional top-level Track; otherwise uses the active local track
   --next        for mano dev: the active phase, the next pending story (its #
                 and file path) and the ordered story list, computed fresh from
                 disk so the implementer needn't ls or reopen the index
@@ -195,13 +209,17 @@ function countBacklogStatuses(text) {
 
 // Backlog items are `### title` blocks, each carrying a `- **Status:** <value>`
 // and `- **Type:** <value>` line. Returns the full text block of every item
-// matching the requested exact status/type filters, in file order. Only `###`
+// matching the requested status/type/source/track filters, in file order. `source`
+// is a case-insensitive substring match against the optional top-level Source
+// provenance field. Only `###`
 // blocks under `## Items` count as backlog items; headings in Core Product
 // Principles or other sections are never exposed.
 function extractBacklogItems(text, options = {}) {
   if (text === null) return [];
   const wantStatus = options.status ? options.status.toLowerCase() : null;
   const wantType = options.type ? options.type.toLowerCase() : null;
+  const wantSource = options.source ? options.source.trim().toLowerCase() : null;
+  const wantTrack = options.track ? options.track.trim().toLowerCase() : null;
   const excludeTypes = new Set((options.excludeTypes || []).map((t) => t.toLowerCase()));
   const out = [];
   let cur = null; // { lines: [] }
@@ -213,12 +231,18 @@ function extractBacklogItems(text, options = {}) {
     // indented, and may legitimately contain a metadata-shaped example.
     const statusMatches = [...block.matchAll(/^-\s*\*\*Status:\*\*\s*(.+?)\s*$/gim)];
     const typeMatches = [...block.matchAll(/^-\s*\*\*Type:\*\*\s*(.+?)\s*$/gim)];
+    const sourceMatches = [...block.matchAll(/^-\s*\*\*Source:\*\*\s*(.+?)\s*$/gim)];
+    const trackMatches = [...block.matchAll(/^-\s*\*\*Track:\*\*\s*(.+?)\s*$/gim)];
     const valid = statusMatches.length === 1 && typeMatches.length === 1;
     const status = valid ? statusMatches[0][1].trim().toLowerCase() : null;
     const type = valid ? typeMatches[0][1].trim().toLowerCase() : null;
+    const source = sourceMatches.length === 1 ? sourceMatches[0][1].trim().toLowerCase() : null;
+    const track = trackMatches.length === 1 ? trackMatches[0][1].trim().toLowerCase() : null;
     if (valid &&
         (!wantStatus || status === wantStatus) &&
         (!wantType || type === wantType) &&
+        (!wantSource || (source && source.includes(wantSource))) &&
+        (!wantTrack || track === wantTrack) &&
         !excludeTypes.has(type)) {
       out.push(block);
     }
@@ -342,6 +366,8 @@ function scanSpec(projectRoot) {
     ownerSource: routing.ownerSource,
     runMode: routing.runMode,
     runModeSource: routing.runModeSource,
+    track: routing.track,
+    trackSource: routing.trackSource,
     phase,
     phaseId: ref ? ref.id : null,
     phaseDir: ref ? ref.relativeDir : null,
@@ -371,6 +397,8 @@ function scanUi(projectRoot) {
     owner: projectState.owner,
     runMode: projectState.runMode,
     runModeSource: projectState.runModeSource,
+    track: projectState.track,
+    trackSource: projectState.trackSource,
     phase,
     phaseId: projectState.phaseId,
     phaseDir: projectState.phaseDir,
@@ -465,7 +493,7 @@ function hasReviewEntry(text, ref) {
 
 // ---- state assembly -------------------------------------------------------
 
-function scan(projectRoot) {
+function scan(projectRoot, options = {}) {
   const outputDir = path.join(projectRoot, "_mano_output");
   const s = {
     projectRoot,
@@ -476,6 +504,8 @@ function scan(projectRoot) {
     ownerMode: "legacy",
     runMode: "manual",
     runModeSource: null,
+    track: null,
+    trackSource: null,
     otherOwners: [],
     phase: null,            // latest phase number, or null
     phaseId: null,
@@ -502,9 +532,11 @@ function scan(projectRoot) {
   s.ownerMode = routing.mode;
   s.runMode = routing.runMode;
   s.runModeSource = routing.runModeSource;
+  s.track = routing.track;
+  s.trackSource = routing.trackSource;
   s.otherOwners = routing.otherOwners;
 
-  if (!s.outputExists) return finalize(s);
+  if (!s.outputExists) return finalize(s, options);
 
   s._backlogText = readText(path.join(outputDir, "backlog.md"));
   s._reviewsText = readText(path.join(outputDir, "reviews.md"));
@@ -540,11 +572,11 @@ function scan(projectRoot) {
     s.inPhaseRemaining = s.backlog[ref.inPhaseStatus] || 0;
   }
 
-  return finalize(s);
+  return finalize(s, options);
 }
 
 // Derive the verdict from raw signals, faithful to mano start's gate.
-function finalize(s) {
+function finalize(s, options = {}) {
   const storiesAllDone = !!(s.stories && s.stories.total > 0 && s.stories.done === s.stories.total);
   const storiesMissing = !s.stories || s.stories.total === 0;
   // Gate condition 3: reviewed/closed — review is mandatory, and its close sweep
@@ -645,22 +677,32 @@ function finalize(s) {
   // have stopped before assignment recorded the approved subset; the human must
   // confirm that subset again.
   s.scope = null;
+  const source = options.source || null;
+  const track = options.track !== undefined && options.track !== null ? options.track : s.track;
   if (s.next === "scope-backlog") {
     s.scope = {
       mode: "scope-backlog",
+      source,
+      track,
       coreProductPrinciples: extractCoreProductPrinciples(s._backlogText),
       backlogItems: extractBacklogItems(s._backlogText, {
         status: "backlog",
         excludeTypes: GAP_TYPES,
+        source,
+        track,
       }),
       latestReview: extractLatestReview(s._reviewsText, s.phaseRef, s.owner),
     };
   } else if (s.next === "resume-draft") {
     s.scope = {
       mode: "resume-draft",
+      source,
+      track,
       coreProductPrinciples: extractCoreProductPrinciples(s._backlogText),
       backlogItems: extractBacklogItems(s._backlogText, {
         excludeTypes: GAP_TYPES,
+        source,
+        track,
       }),
       latestReview: extractLatestReview(s._reviewsText, s.phaseRef, s.owner),
     };
@@ -677,6 +719,11 @@ function renderDecision(s) {
   if (s.next) L.push(`NEXT: ${s.next}`);
   L.push(`OWNER: ${s.owner || "none (legacy phase-N mode)"}`);
   L.push(`MODE: ${s.runMode}`);
+  // A one-off `--scope --track` is the selected planning context even when it
+  // differs from this clone's saved default. Start consumes this decision
+  // before the scope payload, so show the effective value here too.
+  const effectiveTrack = s.scope ? s.scope.track : s.track;
+  L.push(`TRACK: ${effectiveTrack || "none"}`);
   if (s.targetPhase != null) {
     L.push(`PHASE: ${s.targetPhase}`);
     L.push(`PHASE_ID: ${s.targetPhaseId}`);
@@ -744,7 +791,9 @@ function renderScope(s) {
   const itemLabel = s.scope.mode === "resume-draft"
     ? "all phase-scopeable statuses"
     : "phase-scopeable Status: backlog";
-  L.push(`## Backlog items — ${itemLabel} (${s.scope.backlogItems.length})`);
+  const sourceLabel = s.scope.source ? `; Source contains ${JSON.stringify(s.scope.source)}` : "";
+  const trackLabel = s.scope.track ? `; Track is ${JSON.stringify(s.scope.track)}` : "";
+  L.push(`## Backlog items — ${itemLabel}${sourceLabel}${trackLabel} (${s.scope.backlogItems.length})`);
   if (s.scope.backlogItems.length === 0) {
     L.push("(none)");
   } else {
@@ -792,6 +841,7 @@ function renderSpec(spec) {
   L.push(`STATUS: ${spec.status}`);
   L.push(`OWNER: ${spec.owner || "none (legacy phase-N mode)"}`);
   L.push(`MODE: ${spec.runMode}`);
+  L.push(`TRACK: ${spec.track || "none"}`);
   L.push(`PHASE: ${spec.phase === null ? "none" : spec.phase}`);
   L.push(`PHASE_ID: ${spec.phaseId || "none"}`);
   L.push(`PHASE_DIR: ${spec.phaseDir || "missing"}`);
@@ -842,6 +892,7 @@ function renderUi(ui) {
   L.push(`STATUS: ${ui.status}`);
   L.push(`OWNER: ${ui.owner || "none (legacy phase-N mode)"}`);
   L.push(`MODE: ${ui.runMode}`);
+  L.push(`TRACK: ${ui.track || "none"}`);
   L.push(`PHASE: ${ui.phase === null ? "none" : ui.phase}`);
   L.push(`PHASE_ID: ${ui.phaseId || "none"}`);
   L.push(`PHASE_DIR: ${ui.phaseDir || "missing"}`);
@@ -866,6 +917,7 @@ function renderCurrent(s) {
   L.push(`OWNER: ${s.owner || "none (legacy phase-N mode)"}`);
   L.push(`OWNER_MODE: ${s.ownerMode}`);
   L.push(`MODE: ${s.runMode}`);
+  L.push(`TRACK: ${s.track || "none"}`);
   L.push(`PHASE: ${s.phase === null ? "none" : s.phase}`);
   L.push(`PHASE_ID: ${s.phaseId || "none"}`);
   L.push(`PHASE_DIR: ${s.phaseDir || "missing"}`);
@@ -888,6 +940,7 @@ function renderNext(s) {
   const L = [];
   L.push(`OWNER: ${s.owner || "none (legacy phase-N mode)"}`);
   L.push(`MODE: ${s.runMode}`);
+  L.push(`TRACK: ${s.track || "none"}`);
 
   // Nothing to implement: no project / no phase folder.
   if (!s.outputExists || s.phase === null) {
@@ -944,6 +997,8 @@ function renderJson(s) {
     ownerMode: s.ownerMode,
     runMode: s.runMode,
     runModeSource: s.runModeSource,
+    track: s.track,
+    trackSource: s.trackSource,
     otherOwners: s.otherOwners,
     phase: s.phase,
     phaseId: s.phaseId,
@@ -981,6 +1036,11 @@ function main() {
   if (args.help) {
     process.stdout.write(HELP + "\n");
     process.exit(0);
+  }
+  if ((args.source !== null && (!args.scope || !String(args.source).trim())) ||
+      (args.track !== null && (!args.scope || !String(args.track).trim()))) {
+    process.stderr.write("[mano state] --source and --track require non-empty text and can only be used with --scope.\n");
+    process.exit(1);
   }
   if (args.spec) {
     if (args.scope || args.next || args.ui || args.current || args.gaps !== null || args.verbose) {
@@ -1048,7 +1108,7 @@ function main() {
   }
   let s;
   try {
-    s = scan(args.root);
+    s = scan(args.root, { source: args.source, track: args.track });
   } catch (error) {
     process.stderr.write(`[mano state] cannot resolve current phase — ${error.message}\n`);
     process.exit(1);

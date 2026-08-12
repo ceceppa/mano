@@ -19,7 +19,8 @@ This skill activates when the user types `mano import` (optionally with a path: 
 - **Without a path** (`mano import`): ask which document to read, or accept the document text if the user pasted it inline with the command. Do not proceed until you have a document.
 
 On activation:
-1. Create `_mano_output/` if it doesn't exist.
+1. Run `node _mano/scripts/state.js` and record `TRACK:`. This is the only active-track source; do not read Git config yourself. A missing track is `TRACK: none`.
+2. Create `_mano_output/` if it doesn't exist.
 2. Read `_mano_output/backlog.md` if it already exists. If it does and already has items, this is not a fresh import — tell the user the backlog already exists and ask whether to merge new items from this document or stop. Do not silently overwrite or duplicate.
 
 ## Boundaries
@@ -88,9 +89,9 @@ If the document clearly states durable product values (product feel, interaction
 
 ### Step 3 — Populate the backlog
 
-Decompose the entire document into backlog items. Every feature, requirement, non-functional criterion, and success criterion. Preserve specific detail from the source — including any stated technical preference, transcribed verbatim into the relevant item's context per B1 (pass-through, not silence).
+Decompose the entire document into backlog items. Every feature, requirement, non-functional criterion, and success criterion. Preserve specific detail from the source — including any stated technical preference, transcribed verbatim into the relevant item's context per B1 (pass-through, not silence). When `TRACK:` is not `none`, include that exact value as `track` on every imported item; Source remains the document name.
 
-Write all items to `_mano_output/backlog.md` with `Status: backlog` through the deterministic writer. Produce a JSON array of `{ "title", "type", "context", "source" }` objects, write it to a temporary file such as `_mano_output/.import.json`, then run:
+Write all items to `_mano_output/backlog.md` with `Status: backlog` through the deterministic writer. Produce a JSON array of `{ "title", "type", "context", "source", "track"? }` objects, write it to a temporary file such as `_mano_output/.import.json`, then run:
 
 ```text
 node _mano/scripts/backlog.js add --file _mano_output/.import.json
@@ -102,6 +103,7 @@ Delete the temporary file after the writer succeeds. The writer owns the item sh
 ### [Short title]
 - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
 - **Source:** [document name]
+- **Track:** [active track, if any]
 - **Context:**
   [Line 1 — what it is]
   [Line 2 — why it matters or key detail]

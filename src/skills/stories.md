@@ -316,8 +316,16 @@ If a story depends on missing domain structure, do not hide the gap in vague AC.
 
 Examples: do not write a checkout story unless the cart model is defined. Do not write a notification story unless a delivery channel is represented. Do not write a dashboard story unless a default or empty data state exists.
 
+**0c.0 Spec-owned defaults and initial state — hard gate.** When an Exit Criterion or prospective story depends on a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, verify the canonical tech spec names its owning field/config/constant and gives its exact value or required relationship. A brief may say “small healed area” or “enough room”; if code must turn that into a number, it is a technical decision, not story setup.
+
+If that owner or value is missing, **write no story files**. Report `⚠️ Story readiness gap: spec-owned default missing`, name the affected exit path and field that needs defining, and route to `mano spec`. Do not offer a story-owned default, an implementation `Notes` placeholder, or options to continue with a temporary value. Stories may decompose an already-decided default into tests; they never choose it.
+
+**0c.1 Player choice interaction — hard gate.** When a player can choose among two or more simultaneously available tools, buildables, abilities, modes, rewards, or other alternatives, verify `_mano_output/ux-flow.md` defines the choice as a player path. It must cover what makes each option available, how the player enters or invokes the choice, how they select or change the active option, how the active choice is communicated, and what happens when an option is locked, unavailable, or the player cancels. The choice may be in-world or minimal; it is still UX.
+
+If that flow is absent or leaves any of those decisions to implementation, **write no story files**. Report `⚠️ Story readiness gap: player choice interaction missing`, name the affected phase path and missing UX behaviour, and route to `mano ux`. Do not propose a hotkey, picker, cycling scheme, default active item, HUD treatment, or other story-owned interaction. The general artifact-gap options do not waive this gate; only a completed UX flow or an explicit human decision to skip `mano ux` can do so.
+
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-**0c.1 Public-interface readiness — hard gate.** For every prospective story that creates, changes, wraps, or depends on a public/package API, command, event protocol, plugin hook, external integration, persisted/wire format, or cross-component contract consumed by independently-owned components or multiple stories, verify its canonical owning artifact defines:
+**0c.2 Public-interface readiness — hard gate.** For every prospective story that creates, changes, wraps, or depends on a public/package API, command, event protocol, plugin hook, external integration, persisted/wire format, or cross-component contract consumed by independently-owned components or multiple stories, verify its canonical owning artifact defines:
 
 - the exact consumer-visible operation, method, command, or event names;
 - input order/shape, required vs optional values, and behavior-driving defaults;
@@ -334,7 +342,9 @@ If any behavior-driving interface field needed by the story is absent or has two
 Before accepting a `Not this story` boundary, compare it with the phase goal, Exit Criteria, and the rest of the story chain. It may defer an adjacent use case; it may not contradict a promised path or prohibit the shared contract surface another story needs to satisfy the phase. Resolve the story split, or route an unresolved contract choice to `mano spec`.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-**0d. Artifact gap check.** For each prospective story, check whether it depends on a visual, interaction, accessibility, technical, data, API, constant, shared measurement, or rule detail that is not defined by the artifacts read this run. This is a warning/decision point, not a default blocker.
+**0d. Artifact gap check.** For each prospective story, check whether it depends on a visual, interaction, accessibility, technical, data, API, constant, shared measurement, or rule detail that is not defined by the artifacts read this run. This is a warning/decision point, not a default blocker; the hard gates in 0c.0–0c.2 remain non-continuable.
+
+**Player-flow check.** A game mechanic is not exempt from UX because it happens in the world rather than a screen. When the phase includes player activation, direct manipulation, placement/selection, progression/unlock actions, available-versus-locked states, or feedback for an unmet condition, check `_mano_output/ux-flow.md` for the concrete path: what the player notices, does, sees after success, and sees when the action is unavailable. Multiple simultaneously available choices are the hard gate in 0c.1, not a continuable artifact gap. “Minimal” presentation does not let stories invent discoverability or feedback behaviour.
 
 Look for partial-but-usable guidance before flagging a gap. A detail is not missing merely because it is brief. If an artifact contains a relevant section, subsection, token, note, rule, constant, or implementation reference, reuse it and cite the artifact location in the story's `Implementation Reference`.
 

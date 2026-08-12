@@ -1,6 +1,6 @@
 ---
 name: mano-ux
-description: Use to define UX flows, navigation, and user interactions for visual screens.
+description: Use to define UX flows, navigation, and user interactions for visual screens and player-facing in-world interactions.
 ---
 
 # `mano ux` — UX Flow Skill
@@ -36,7 +36,7 @@ On activation:
 
 ## Role
 
-Define how users move through the application. Generate the UX flow for the current phase only — new screens, changed screens, new navigation. Do not regenerate existing screens that haven't changed.
+Define how users move through the application or game. Generate the UX flow for the current phase only — new screens, changed screens, in-world interactions, and new navigation. Do not regenerate existing flows that haven't changed.
 
 `mano ux` is responsible for reducing avoidable screen overload before it reaches story generation. If a single screen would otherwise carry too many primary actions or decisions, restructure the flow into smaller steps or companion screens within the same phase instead of documenting the overload as-is.
 
@@ -66,6 +66,8 @@ For each screen, include:
 - **What happens on action:** [result of each action]
 
 Use plain language. "Tapping a todo on the list opens Todo Detail as a full screen. Back button returns to the list." Not "stack screen pushed from tab context."
+
+For a player-facing game, an in-world/HUD interaction is a flow even when it opens no conventional screen. When two or more tools, buildables, abilities, modes, or rewards can be available at once, document: what makes each available; how the player invokes the choice; how they select or change it; how the active choice is communicated; what executing it does; and locked, unavailable, and cancel/back behaviour. Do not leave a hardcoded active item standing in for the player decision.
 
 ## Post-UX Hook Suggestion
 

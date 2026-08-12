@@ -68,6 +68,7 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano import [doc]` | Turn an existing PRD or document into a backlog, then stop. Run `mano start` afterwards to scope the first phase. |
 | `mano owner [slug]` | Show, set, or clear this repository clone's optional phase owner. |
 | `mano mode [auto\|manual]` | Show or set whether finished actions chain automatically through to implementation. Defaults to `manual`. |
+| `mano track [name]` | Show, set, or clear an optional local experiment/work track. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
@@ -95,6 +96,16 @@ That clone now uses `_mano_output/alice-phase-N/` and `in-alice-phase-N`. Anothe
 The owner is stored in repository-local Git config as `mano.owner`, so it is not committed. Linked worktrees share that setting; `MANO_OWNER=alice` can override it for a shell or worktree when different worktrees need different owners. Use a stable lowercase handle, not an email address or machine username.
 
 Ownership scopes phase discovery and lifecycle gates; it is not a concurrency lock. The backlog, tech spec, UX flow, design brief, project rules, and reviews remain shared project files. Teammates should use branches or worktrees, choose disjoint backlog scope, and coordinate merges normally.
+
+### Optional work tracks
+
+When you are exploring parallel directions, set a local track:
+
+```text
+mano track "Option B"
+```
+
+Track is distinct from `Source`: Source records where a backlog item came from; Track records the experiment or direction it belongs to. While active, it tags imported, conversation-created, and newly captured review items, and `mano start` considers only matching-track backlog items. The selected track is written into the phase brief, so review feedback stays with that experiment even if you switch tracks later. `mano track clear` returns to untracked planning without modifying existing items. Track never bypasses phase approval or any conflict check.
 
 ### Auto mode
 
@@ -144,6 +155,7 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 | **`mano import`** | Decomposes an existing PRD/document into a backlog, then stops | `skills/import.md` |
 | **`mano owner`** | Configures optional repository-local phase ownership for team work | `skills/owner.md` |
 | **`mano mode`** | Configures whether finished actions chain automatically (`auto`) or hand back (`manual`) | `skills/mode.md` |
+| **`mano track`** | Configures an optional local experiment/work track for imports, phase candidates, and review follow-ups | `skills/track.md` |
 | **`mano start`** | Scopes the idea, populates the backlog (from conversation), proposes phases | `skills/start.md` |
 | **`mano rules`** | Defines and updates project rules — components, patterns, architecture | `skills/rules.md` |
 | **`mano spec`** | Translates the phase brief into tech spec | `skills/spec.md` |

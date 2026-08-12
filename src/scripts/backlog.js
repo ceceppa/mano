@@ -24,7 +24,7 @@
  *   reject   mark named open items `rejected` (premise invalidated, won't do)
  *
  * Usage:
- *   node backlog.js add --title "X" --type feature --context "..." [--source "..."]
+ *   node backlog.js add --title "X" --type feature --context "..." [--source "..."] [--track "..."]
  *   node backlog.js add --file items.json        (JSON array, for bulk)
  *   node backlog.js assign --phase 9 --title "X" --title "Y"
  *   node backlog.js resolve --phase 9
@@ -43,7 +43,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { phaseRef, phaseRouting } = require("./phase.js");
+const { phaseRef, phaseRouting, validateTrack } = require("./phase.js");
 
 const VALID_TYPES = ["bug", "refinement", "feature", "tech-debt", "test", "spec-gap", "rule-gap"];
 const GAP_TYPES = ["spec-gap", "rule-gap"];
@@ -63,9 +63,10 @@ add — one item from flags (the shell-safe path):
   --type <type>     required: ${VALID_TYPES.join(", ")}
   --context "..."   required; a literal \\n becomes a line break (max 5 lines)
   --source "..."    optional provenance
+  --track "..."     optional work track / experiment
   --status <s>      optional (default: backlog)
 add — many items at once:
-  --file items.json   a JSON array of { title, type, context, source?, status? }
+  --file items.json   a JSON array of { title, type, context, source?, track?, status? }
                       (or pipe that JSON array on stdin)
   Items whose title already exists are skipped (exact, case-insensitive).
 
@@ -111,7 +112,7 @@ function parseArgs(argv) {
   const args = {
     command: null, root: process.cwd(), help: false,
     phase: null, titles: [],
-    title: null, type: null, context: null, source: null, status: null, file: null,
+    title: null, type: null, context: null, source: null, track: null, status: null, file: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -121,6 +122,7 @@ function parseArgs(argv) {
     else if (a === "--type") args.type = argv[++i];
     else if (a === "--context") args.context = argv[++i];
     else if (a === "--source") args.source = argv[++i];
+    else if (a === "--track") args.track = argv[++i];
     else if (a === "--status") args.status = argv[++i];
     else if (a === "--file") args.file = argv[++i];
     else if (a === "--root") args.root = path.resolve(argv[++i]);
@@ -166,6 +168,9 @@ function formatItem(it) {
   if (it.source != null && String(it.source).trim() !== "") {
     L.push(`- **Source:** ${String(it.source).trim()}`);
   }
+  if (it.track != null && String(it.track).trim() !== "") {
+    L.push(`- **Track:** ${String(it.track).trim()}`);
+  }
   L.push(`- **Context:**`);
   const ctx = String(it.context).replace(/\r/g, "").split("\n").map((l) => l.replace(/\s+$/, ""));
   while (ctx.length && ctx[0] === "") ctx.shift();
@@ -184,6 +189,13 @@ function validateItem(it, idx) {
     return `${where}: type "${it.type}" is not one of ${VALID_TYPES.join(", ")}`;
   }
   if (it.context == null || !String(it.context).trim()) return `${where}: missing "context"`;
+  if (it.track != null && String(it.track).trim() !== "") {
+    try {
+      validateTrack(it.track);
+    } catch (error) {
+      return `${where}: ${error.message}`;
+    }
+  }
   const contextLines = String(it.context).replace(/\r/g, "").split("\n");
   while (contextLines.length && contextLines[0].trim() === "") contextLines.shift();
   while (contextLines.length && contextLines[contextLines.length - 1].trim() === "") contextLines.pop();
@@ -224,6 +236,7 @@ function collectAddItems(args) {
       type: args.type,
       context: args.context != null ? args.context.replace(/\\n/g, "\n") : args.context,
       source: args.source,
+      track: args.track,
       status: args.status,
     }];
   }

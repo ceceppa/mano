@@ -32,6 +32,10 @@ test("phase validates explicit owner and run-mode inputs", () => {
     assert.throws(() => phase.validateOwner(owner), /invalid Mano owner/);
   }
   assert.throws(() => phase.validateMode("yolo"), /invalid Mano mode/);
+  assert.equal(phase.validateTrack(" Option B "), "Option B");
+  assert.throws(() => phase.validateTrack(""), /invalid Mano track/);
+  assert.throws(() => phase.validateTrack("two\nlines"), /invalid Mano track/);
+  assert.throws(() => phase.validateTrack("tab\ttrack"), /invalid Mano track/);
 });
 
 test("phase parses legacy and owner-scoped directories", () => {
@@ -70,18 +74,20 @@ test("phase routing filters the filesystem by the explicit owner and mode", () =
   fs.mkdirSync(path.join(output, "gameplay-phase-5"));
   fs.mkdirSync(path.join(output, "art-phase-7"));
   try {
-    withEnvironment({ MANO_OWNER: "gameplay", MANO_MODE: "auto" }, () => {
+    withEnvironment({ MANO_OWNER: "gameplay", MANO_MODE: "auto", MANO_TRACK: "Option B" }, () => {
       const routing = phase.phaseRouting(root, output);
       assert.equal(routing.mode, "owned");
       assert.equal(routing.runMode, "auto");
+      assert.equal(routing.track, "Option B");
       assert.equal(routing.latest.id, "gameplay-phase-5");
       assert.deepEqual(routing.otherOwners, ["art"]);
     });
-    withEnvironment({ MANO_OWNER: undefined, MANO_MODE: undefined }, () => {
+    withEnvironment({ MANO_OWNER: undefined, MANO_MODE: undefined, MANO_TRACK: undefined }, () => {
       const routing = phase.phaseRouting(root, output);
       assert.equal(routing.mode, "legacy");
       assert.equal(routing.latest.id, "phase-9");
       assert.equal(routing.runMode, "manual");
+      assert.equal(routing.track, null);
     });
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

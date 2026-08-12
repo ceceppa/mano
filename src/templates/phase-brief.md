@@ -1,6 +1,7 @@
 # Phase Brief — [Project Name] — Phase [N]
 
 <!-- Owner-scoped mode only: add `**Owner:** [slug]` below. Omit it entirely for default phase-N mode. -->
+<!-- Active work-track only: add `**Track:** [name]` below. Omit it entirely when no track is selected. -->
 
 <!-- Self-contained. Everything needed to understand this phase is here. -->
 
