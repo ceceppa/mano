@@ -37,6 +37,8 @@ Note: `mano dev` is the one Mano command that produces code. Every other command
 
 If a platform skill named `mano` is not available, that is not an error. Continue by using the local `_mano/` files.
 
+**Write for humans.** Every Mano skill follows `_mano/workflow.md` → **Plain-language contract**. Apply it to chat and artifact prose. Assume a teammate has no prior context.
+
 The skill name uses a **hyphen, never a colon**: `mano import` → `mano-import` (read `_mano/skills/import.md`), not `mano:import`. The colon form is plugin-namespace syntax and matches no Mano skill. If a `mano <action>` seems unavailable, try the hyphenated `mano-<action>` before concluding it doesn't exist.
 
 Only use external/platform skills when the user explicitly invokes them or an active Mano hook authorizes the review: explicit confirmation for a suggest hook in manual or unarmed runs, or the automatic suggest-hook rule during an armed auto chain. Running the review never authorizes applying its findings.
@@ -84,6 +86,11 @@ If any goal element or Exit Criterion lacks exact AC ownership, stop before impl
    **Greenfield scaffold safety is a hard stop.** A project generator that creates an application root or requires an empty destination may run only through the exact guarded command in `_mano_output/tech-spec.md §Project Scaffold`: `node _mano/scripts/scaffold.js run ... -- ... {target}`. Never aim a raw generator at `.`, the project root, or a temporary child that you later merge by hand. Never move, rename, delete, or temporarily hide existing files to make the root look empty—especially `_mano`, `_mano_output`, `.git`, `AGENTS.md`, `CLAUDE.md`, or `.cursorrules`. Do not substitute `cp`, `mv`, `rsync`, or a hand-written merge. If the guarded command is absent, malformed, fails, or reports a collision, stop and report it; route an absent/malformed command to `mano spec`, and never improvise around a runner failure. `yolo` and auto mode do not relax this rule.
 9. If the story involves user-entered state, forms, onboarding drafts, settings, or other local data, check whether the story or tech spec says that data should persist across app restarts. If it should, treat restart persistence as part of the required behaviour, not as an optional enhancement.
 10. Read `_mano_output/project-rules.md` only when the story explicitly points to a rule there, something remains ambiguous after reading the story and any mandatory tech-spec pre-read, or you need fuller context behind a rule already summarized in the story.
+<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+10.1 **Acceptance-evidence gate — before status may become `done`.** After implementation and verification, reread the selected story's complete `Done when` section. For every AC, identify concrete evidence from this turn that the stated outcome occurs through the stated route. A passing suite is not enough when no test/manual check exercises that AC. Any assertion, fixture expectation, comment, skipped test, or observed result that states the opposite outcome—success expected as failure, recoverable expected as locked, available expected as unavailable—is proof the story is **not done**, even if the suite is green.
+
+When an AC cannot be satisfied because current code or a cited artifact deliberately preserves the opposite behaviour, stop before step 11, leave the row pending, and report the contradiction. Route a planning-contract contradiction to `mano spec`/`mano stories` as appropriate; do not rewrite the AC's meaning, invert the test, call the opposing behaviour intentional, or mark the story done with a deviation. For an AC that is inherently visual or experiential, perform the narrow available manual/runtime check; if that cannot be run, report the unverified AC and leave the story pending.
+<!-- /mano-rule: phase-acceptance-integrity -->
 11. After implementing, mark the story `done` via the index writer — do **not** hand-edit the README table:
     ```
     node _mano/scripts/stories.js set-status --phase [N] --story [num] --status done

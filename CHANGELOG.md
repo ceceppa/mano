@@ -15,6 +15,8 @@ A history of Mano's releases — what each version changes and why.
 - **Auto planning now keeps material UX and UI work visible** — a new interactive frontend includes `mano ux` and `mano ui` in its proposed auto chain when the exact flow, responsive composition, hierarchy, or visual states are not already covered. Familiar controls are not treated as a substitute for product decisions; only the human may explicitly skip those actions.
 - **New repeatable artifact categories keep `mano rules` visible** — a phase that introduces a recurring file, module, component, document, example, or asset shape is treated as new rule territory even when a substantive rules file already exists.
 - **Phase closure no longer masquerades as validation** — phase briefs now state the human decision a phase can inform and the evidence to gather. `mano review` records a compact evidence-and-decision log instead of a release recap, keeps assumption outcomes separate, and preserves `close it` as an immediate `Evidence: none` / `Decision: Not assessed` close instead of making feedback theatre mandatory.
+- **Every Mano artifact now follows one plain-language contract.** Skills write for a new teammate. They use active voice and concrete words. They keep sentences short and separate ideas. Lists make multi-step content easy to scan. Exact technical content keeps its required precision.
+- **Phase learning plans now use direct Questions and Try lists.** Each question has a matching test. Capability checks remain in Exit Criteria. `mano review` keeps learning and completion separate.
 
 ### Fixed
 - **Auto scope approval and run approval are no longer ambiguous** — at the scope prompt `1` and `go` are exact synonyms that approve the scope and arm the displayed chain; edit-only replies revise the proposal without starting it.
@@ -23,6 +25,10 @@ A history of Mano's releases — what each version changes and why.
 - **`mano dev yolo` and auto-mode summaries no longer have incompatible output contracts** — standalone YOLO still emits exactly one aggregate line; as the terminal auto action, that line is followed only by the required auto closing block.
 - **Paused chains no longer lose their continuation state** — the closing block records `Remaining:` actions, decision answers become mid-chain logs when appropriate, and switching to manual while paused cleanly hands control back instead of continuing from cached mode.
 - **The mid-phase assignment path no longer conflicts with stories' write boundary** — the hard no-implementation gate and Forbidden section now name the single writer-mediated backlog exception while continuing to reject every direct or unrelated artifact edit.
+- **Review can no longer hide an Exit Criterion behind the learning plan.** The opening prompt lists every phase promise. The review log records each promise. Results use passed, failed, or not tested. `close it` records unchecked promises honestly.
+- **Green tests can no longer prove the opposite acceptance outcome.** Spec, stories, development, and review now stop on reversed outcomes. Done stories remain immutable. Corrective work uses the normal spec and lettered-story path.
+- **Backlog adds now report each item's Track.** Missing values print as `undefined`. Bulk adds report every item separately. This makes lost review or import tracks visible immediately.
+- **Track filtering now accepts both common Markdown forms.** It reads `**Track:**` and `**Track**:`. Human edits no longer hide matching backlog items.
 
 ## 1.2.0
 

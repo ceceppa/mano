@@ -77,6 +77,12 @@ test("backlog validates the item envelope and line limit", () => {
   );
 });
 
+test("backlog displays explicit and missing tracks", () => {
+  assert.equal(backlog.displayTrack({ track: " Option B " }), "Option B");
+  assert.equal(backlog.displayTrack({ track: "" }), "undefined");
+  assert.equal(backlog.displayTrack({}), "undefined");
+});
+
 test("backlog title detection and records ignore non-Items sections", () => {
   assert.deepEqual([...backlog.existingTitles(SAMPLE)].sort(), ["first item", "not an item", "not an item either", "second item"]);
   const records = backlog.parseItemRecords(SAMPLE);

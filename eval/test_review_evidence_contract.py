@@ -20,15 +20,15 @@ class ReviewEvidenceContractTests(unittest.TestCase):
 
         self.assertLess(exit_at, validation_at)
         self.assertLess(validation_at, assumptions_at)
-        self.assertIn("**Decision this informs:**", template)
-        self.assertIn("**Evidence to gather:**", template)
+        self.assertIn("### Questions", template)
+        self.assertIn("### Try", template)
 
     def test_start_owns_the_lightweight_validation_plan(self) -> None:
         start = _read("src/skills/start.md")
 
         self.assertIn("**Validation-plan checkpoint.**", start)
-        self.assertIn("The decision belongs to the human", start)
-        self.assertIn("Exit Criteria proves the capability was built", start)
+        self.assertIn("The human owns every decision", start)
+        self.assertIn("Exit Criteria lists what must work", start)
         self.assertIn("closed without evidence", start)
         self.assertIn("Do not block the new phase", start)
 
@@ -50,20 +50,34 @@ class ReviewEvidenceContractTests(unittest.TestCase):
         self.assertNotIn("What we'd do differently", review)
         self.assertNotIn("### What worked", template)
         self.assertNotIn("### What didn't", template)
-        self.assertGreaterEqual(template.count("**Status:** gathered / partial / none"), 2)
-        self.assertGreaterEqual(template.count("**Method:**"), 2)
-        self.assertGreaterEqual(template.count("**Observed:**"), 2)
+        self.assertGreaterEqual(template.count("**Level:** gathered / partial / none"), 2)
+        self.assertGreaterEqual(template.count("**Tried:**"), 2)
+        self.assertGreaterEqual(template.count("**Result:**"), 2)
         self.assertIn("### Decision", template)
+        self.assertIn("### Phase checks", template)
         self.assertIn("### Backlog changes", template)
         self.assertIn("**No release recap.**", review)
-        self.assertIn("record the decision as `Not assessed`", review)
+        self.assertIn("Record the decision as `Not assessed`", review)
 
-    def test_review_asks_for_the_decision_the_evidence_informs(self) -> None:
+    def test_review_keeps_learning_questions_human_owned(self) -> None:
         review = _read("src/skills/review.md")
 
-        self.assertIn("Based on that evidence, what do you decide about:", review)
-        self.assertIn("Decision this informs — verbatim from the brief", review)
-        self.assertIn("never infer one from completion or test success", review)
+        self.assertIn("Questions to consider:", review)
+        self.assertIn("Choose what to keep, change, reject, or test again.", review)
+        self.assertIn("Never infer a choice from completion or test success", review)
+
+    def test_review_never_hides_phase_promises_behind_the_validation_plan(self) -> None:
+        review = _read("src/skills/review.md")
+        template = _read("src/templates/phase-review.md")
+
+        self.assertIn("every Exit Criterion", review)
+        self.assertIn("Never omit an Exit Criterion", review)
+        self.assertIn("passed`, `failed`, or `not tested", review)
+        self.assertIn("Mano will mark every unchecked promise as `not tested`.", review)
+        self.assertIn("Always include every Phase check", review)
+        self.assertIn("If a legacy plan uses `Decision this informs`", review)
+        self.assertIn("Other planned checks", review)
+        self.assertIn("| Phase promise | Result | What happened |", template)
 
     def test_public_docs_keep_feedback_optional_but_evidence_honest(self) -> None:
         readme = _read("README.md")

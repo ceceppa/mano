@@ -12,18 +12,24 @@ Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 
 ### Evidence
 
-- **Status:** gathered / partial / none
-- **Method:** [what was used, shown, played, measured, or objectively checked; otherwise `Not recorded`]
-- **Observed:** [concrete result; otherwise `Not recorded`]
+- **Level:** gathered / partial / none
+- **Tried:** [what the human used, showed, played, measured, or checked]
+- **Result:** [what happened, or `Not recorded`]
+
+### Phase checks
+
+| Phase promise | Result | What happened |
+|---|---|---|
+| [Exit Criterion] | passed / failed / not tested | [concrete result or `Not recorded`] |
 
 ### Decision
 
-- **Outcome:** [human decision informed by this phase, `Not enough evidence`, or `Not assessed`]
-- **Reason:** [evidence-linked reason, or `Not recorded`]
+- **Choice:** [human choice, `Not enough evidence`, or `Not assessed`]
+- **Why:** [evidence-linked reason, or `Not recorded`]
 
-### Assumption results
+### Assumptions
 
-| Assumption | Outcome | Evidence / consequence |
+| Assumption | Result | What showed this |
 |-----------|---------|------------------------|
 | | confirmed / invalidated / inconclusive | |
 
@@ -32,7 +38,7 @@ Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 - [Type] [Exact title] — [why it was added or rejected]
 <!-- Write `None` when the review changed no backlog items. -->
 
-### Durable learning
+### What we learned
 
 <!-- Optional. Omit this entire section unless a reusable, surprising lesson changes future work. Name its destination when known. -->
 - [Lesson] — [future decision, rule, or artifact it changes]
@@ -43,14 +49,14 @@ Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 
 #### Evidence
 
-- **Status:** gathered / partial / none
-- **Method:** [or `Not recorded`]
-- **Observed:** [or `Not recorded`]
+- **Level:** gathered / partial / none
+- **Tried:** [or `Not recorded`]
+- **Result:** [or `Not recorded`]
 
 #### Decision update
 
-- **Outcome:** [changed decision, `Unchanged`, `Not enough evidence`, or omit this section]
-- **Reason:** [or `Not recorded`]
+- **Choice:** [changed choice, `Unchanged`, `Not enough evidence`, or omit this section]
+- **Why:** [or `Not recorded`]
 
 #### Outcome changes
 

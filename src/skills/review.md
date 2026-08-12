@@ -78,6 +78,12 @@ Add the missing contract path with `mano stories "add coverage for [missing phas
 Do not inspect source or tests to decide whether the uncovered behavior happens to work, and do not let `close it` waive this gate. A review cannot honestly close scope that no story accepted.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
+<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+**Artifact-polarity safety net.** Coverage alone is insufficient when an owning AC and its cited canonical artifact promise opposite outcomes. While doing the phase-contract mapping above, compare the meaning of each AC with the exact cited spec section: success versus failure, recoverable versus locked, available versus unavailable, wired versus explicitly unwired/deferred. If a cited section contains both outcomes, that is still a conflict; do not select the sentence that makes the story look complete.
+
+If any opposing statement exists, stop before asking for feedback or closing the phase. Quote the AC and opposing canonical statement, then route to `mano spec`; after it is resolved, route to `mano stories` for pending corrective coverage when the owning story is already `done`. Do not inspect source/tests, accept `close it`, or infer that implementation happened to follow the AC—the artifact contract is internally inconsistent and the review cannot close it.
+<!-- /mano-rule: phase-acceptance-integrity -->
+
 ## Standard review
 
 This is a multi-turn conversation. Each step is ONE message. After sending the message, do NOTHING else until the user replies.
@@ -95,37 +101,48 @@ If the user asks `mano review` to fix something during `mano review`, `mano revi
   - ❌ Don't: hypothesise a root cause in the triage line ("likely the edit handler skips the re-sort"). The user said what they saw; classify what they said.
   - ✅ Do: triage as two 🐛 Defects: (1) "List does not re-sort in real time when a due date is edited; adding a new item re-sorts correctly." (2) "Archive view shows completed items that should be hidden." Then present STEP 2 triage. Total tool calls before triage: zero source-file reads.
 
-If the activation message already contains substantive review feedback, skip the waiting prompt and go straight to the triage response format from STEP 2 after reading the phase goal and Validation Plan. Keep the phase goal visible in that response and apply the Evidence rule to what the user actually described.
+If the activation message already contains substantive review feedback, skip the waiting prompt. Read the Phase goal, every Exit Criterion, Validation Plan, and Assumption Log. Then use STEP 2. Keep the phase goal visible. Apply the Evidence rule to what the user described.
 
 ---
 
-**STEP 1 — Read the phase brief to get the phase goal, Validation Plan, and Assumption Log. If the activation message does not already contain substantive feedback, your entire response must be ONLY this format:**
+**STEP 1 — Read the Phase goal, every Exit Criterion, Validation Plan, and Assumption Log. The Exit Criteria and Validation Plan serve different purposes. Never omit an Exit Criterion because the Validation Plan does not mention it. If the activation message has no substantive feedback, your entire response must use this format:**
 
 ```
-[mano review]: Review initiated. [PHASE_ID] goal: "[phase goal]"
+[mano review]: Review started for [PHASE_ID].
 
-Planned validation:
-- Decision this informs: [verbatim from the brief]
-- Evidence to gather: [verbatim from the brief]
+Goal: "[phase goal]"
 
-What did you use, show, play, or measure — and what happened?
+Check what the phase promised:
+1. [first Exit Criterion, including its action and result bullets]
+2. [next Exit Criterion]
 
-Based on that evidence, what do you decide about:
-"[Decision this informs — verbatim from the brief]"
-Say keep, change, or reject; state another decision; or say "not enough evidence".
+Tell me what you tried and what happened.
+Reply naturally. Mano will record each check as `passed`, `failed`, or `not tested`.
 
-This phase assumed:
-1. [assumption — verbatim from the brief's Assumption Log]
+Questions to consider:
+- [each Validation Plan question, one per bullet]
+
+Try this:
+- [each Validation Plan Try item, one per bullet]
+
+Choose what to keep, change, reject, or test again.
+
+Check these assumptions:
+1. [assumption restated in plain English without changing its meaning]
 2. [assumption]
 
-Confirm, invalidate, or skip each (e.g. "1 confirmed, 2 invalidated: <what actually happened>").
-Then log unstructured feedback: what is broken, what needs refinement, and any new ideas.
+Say which assumptions held or failed.
+Mano will record each as `confirmed`, `invalidated`, or `inconclusive`.
+Add anything broken, rough, or new.
 
-Or say "close it" to close without evidence. Mano will record `Evidence: none` and leave any unspecified assumptions `inconclusive`.
+Or say "close it" to close without evidence.
+Mano will mark every unchecked promise as `not tested`.
+Mano will leave every unchecked assumption `inconclusive`.
 ```
 
-If the brief has no Assumption Log entries, omit the assumptions block and the confirm/invalidate line.
-If a legacy brief has no Validation Plan, omit the two plan lines and the decision question but still ask what the user used, showed, played, or measured. Never invent a missing plan during review.
+If the brief has no Assumption Log entries, omit the assumptions block.
+If a legacy brief has no Validation Plan, omit the questions and test. Still show every Exit Criterion. Never invent a missing plan during review.
+If a legacy plan uses `Decision this informs`, turn it into direct questions. Split each independent question into its own bullet. Turn `Evidence to gather` into `Try this` bullets. Map each test to a question. Put unmatched tests under `Other planned checks`. Preserve the meaning. Do not claim an unmatched test answers a question.
 
 That is your complete response. No preamble. No explanation. No extra commentary or planning. End of message.
 
@@ -149,6 +166,8 @@ When the user replies with their feedback, or when substantive feedback was alre
 
 Do not infer a method the user did not state. A vague phrase such as "all good" is neither a concrete method nor a concrete observation. If it arrives without an explicit `close it`, ask exactly: `What did you use, show, play, or measure — and what happened? Or say "close it" to close without evidence.` Then stop. If it includes `close it`, close immediately with `Evidence: none`; never add a second confirmation.
 
+**Phase-check rule:** Record one result for every Exit Criterion. Use only `passed`, `failed`, or `not tested`. A user-reported failure becomes a 🐛 Defect unless they reject the promised outcome. Do not treat an omitted check as passed. `close it` records every omitted check as `not tested`.
+
 **Splitting rule:** A single sentence can contain both a failure signal and an improvement detail — split them. If the user says "there's an issue with X, and it should also do Y", the failure is a 🐛 Defect and the improvement detail is a 🔧 Refinement. Defect signals: "issue", "broken", "doesn't work", "fails", "wrong", "missing". Do not collapse a defect into a refinement just because the user described a fix in the same breath.
 
 **Rejected-scope rule:** When the feedback rejects a scoped direction, feature, or assumption ("reject", "drop", "abandon", "we're not doing X anymore", "different direction"), the additions are only half the triage — the other half is the open items that direction leaves orphaned. Read `_mano_output/backlog.md` and list every item still `Status: backlog` that is predicated on the rejected direction as a ❌ rejection candidate, one line each, exact title first. Matching is a judgment call the human confirms per item: propose candidates, never auto-reject, and when unsure whether an item depends on the rejected direction, include it as a candidate and say why — the user removes it from the list if it survives. In-phase items are not candidates; they belong to the phase's close sweep.
@@ -156,16 +175,21 @@ Do not infer a method the user did not state. A vague phrase such as "all good" 
 Present the triaged list to the user for confirmation:
 
 ```
-[mano review]: Feedback Triaged. [PHASE_ID] goal: "[phase goal]"
+[mano review]: Review feedback for [PHASE_ID].
+
+Goal: "[phase goal]"
 
 Evidence:
-- Status: gathered / partial
-- Method: [what the user actually named, or "Not recorded"]
-- Observed: [concrete result, or "Not recorded"]
+- Level: gathered / partial
+- Tried: [what the user actually named, or "Not recorded"]
+- Result: [concrete result, or "Not recorded"]
+
+Phase checks:
+1. [Exit Criterion] — passed / failed / not tested
 
 Decision:
-- Outcome: [the user's evidence-informed decision, "Not enough evidence", or "Not stated"]
-- Reason: [the user's reason, or "Not recorded"]
+- Choice: [the user's choice, "Not enough evidence", or "Not stated"]
+- Why: [the user's reason, or "Not recorded"]
 
 🐛 Defects:
 1. [one sentence with enough context]
@@ -182,11 +206,11 @@ Decision:
 Does this look right? Tell me what to move or remove, or say "close it" to log this.
 ```
 
-Omit the Evidence block only when no evidence was described. Include the Decision block when the brief has a Validation Plan or the user states a decision. Omit empty triage buckets and omit the ❌ section when the feedback rejects nothing. If the response contains evidence or a decision but no triage items, present those blocks by themselves with the same confirmation question. Rejection candidates follow the same confirmation model as every other bucket: they are visible in the presented list, the user removes any that survive, and "close it" confirms the list as presented. Never reject an item that was not listed as a candidate in this message.
+Always include every Phase check. Mark unmentioned checks `not tested`. Omit the Evidence block only when no evidence was described. Include the Decision block when the brief has a Validation Plan or the user states a decision. Omit empty triage buckets and omit the ❌ section when the feedback rejects nothing. If the response contains evidence or a decision but no triage items, present those blocks by themselves with the same confirmation question. Rejection candidates follow the same confirmation model as every other bucket: they are visible in the presented list, the user removes any that survive, and "close it" confirms the list as presented. Never reject an item that was not listed as a candidate in this message.
 
 That is your complete response. DO NOT write files yet.
 
-**Fast close — explicit close without evidence.** If the user's reply explicitly says `close it` and supplies no evidence or feedback to triage (e.g. "nothing to report, close it", "close it", "all good, close it"), skip the triage presentation entirely. Treat the reply as direct confirmation and go straight to STEP 3 with an empty triage: no backlog items are written, the resolve sweep and review entry still happen. Record `Evidence` as `none`, with Method and Observed as `Not recorded`; record the decision as `Not assessed`, with Reason `Not recorded`; and record `Backlog changes` as `None`. Fill the Assumption results table from any verdicts the user gave and mark every unspecified assumption `inconclusive`. Omit `Durable learning`. Do not ask a follow-up question to fish for feedback or re-confirm — `close it` means close it.
+**Fast close — explicit close without evidence.** If the user's reply explicitly says `close it` and supplies no evidence or feedback to triage (e.g. "nothing to report, close it", "close it", "all good, close it"), skip the triage presentation entirely. Treat the reply as direct confirmation and go straight to STEP 3 with an empty triage: no backlog items are written, the resolve sweep and review entry still happen. Record `Evidence` as `none`, with Tried and Result as `Not recorded`. Record every Phase check as `not tested`. Record the decision as `Not assessed`, with Why as `Not recorded`. Record `Backlog changes` as `None`. Fill the Assumptions table from any verdicts the user gave and mark every unspecified assumption `inconclusive`. Omit `What we learned`. Do not ask a follow-up question to fish for feedback or re-confirm — `close it` means close it.
 
 **The close instruction is terminal — never re-confirm it.** When a single message carries both the assumption verdicts and a close instruction (e.g. "all valid, close it", "1 confirmed 2 invalidated, close it", "all good close it"), that one message clears STEP 1 *and* is the STEP 3 confirmation. Go straight to writing files. Do **not** emit an empty-triage "Does this look right? Say close it to log" message — that is a second confirmation gate the user already satisfied, and it is the exact double-confirm this rule forbids. Re-prompting after the user has already said "close it" is a bug, not caution.
 
@@ -235,9 +259,9 @@ When the user confirms (e.g., "close it", "yes"):
    It flips each named open item to `Status: rejected`, which is not `resolved`: rejected means no longer wanted, resolved means shipped or fixed. Never conflate them — a rejected item recorded as resolved falsely claims the work was done. Skip this step entirely when the triage had no confirmed ❌ items. **Script failing?** Stop and report the error — do not flip statuses by hand.
 4. If `_mano_output/reviews.md` does not exist, create it with the top-level title.
 5. **Always append** the new review entry at the **bottom** of `_mano_output/reviews.md`. Never insert between existing entries.
-6. Fill the decision-log template concretely. Always write the `Evidence` block using exactly one status: `gathered`, `partial`, or `none`. Preserve only the method and observations the user actually supplied; use `Not recorded` for a missing field. `none` means the phase closed without validation, not that validation succeeded. Record the human's evidence-informed decision; if none was stated, use `Not assessed` and never infer one from completion or test success. Mark assumptions without an explicit human verdict `inconclusive`. List only the backlog changes actually confirmed in triage, or `None`. Omit `Durable learning` when there is no reusable, surprising lesson that changes future work.
+6. Fill the review template concretely. Always write one evidence level: `gathered`, `partial`, or `none`. Preserve only what the user tried and observed. Use `Not recorded` when either field is missing. `none` means the phase closed without validation. It never means validation succeeded. Add every Exit Criterion to `Phase checks`. Record each as `passed`, `failed`, or `not tested`. Record the human's choice. Use `Not assessed` when they made none. Never infer a choice from completion or test success. Mark assumptions without a human verdict `inconclusive`. List only confirmed backlog changes, or `None`. Omit `What we learned` unless a reusable lesson changes future work.
 
-   **No release recap.** The review entry is a compact evidence-and-decision record, not a phase summary or mini-postmortem. Do not record story counts, test counts, shipped-feature inventories, implementation summaries, empty "worked/didn't work" sections, or generic lessons unless a fact is direct evidence for the decision. A lesson belongs in `Durable learning` only when it can change a future decision or working rule; name the destination when the user provides one.
+   **No release recap.** The review entry is a compact evidence-and-decision record, not a phase summary or mini-postmortem. Do not record story counts, test counts, shipped-feature inventories, implementation summaries, empty "worked/didn't work" sections, or generic lessons unless a fact is direct evidence for the decision. A lesson belongs in `What we learned` only when it can change a future decision or working rule; name the destination when the user provides one.
 
 Output a cold execution log:
 Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
@@ -273,10 +297,16 @@ If the activation message already contains substantive follow-up feedback, skip 
 **STEP 1 — If the activation message does not already contain substantive follow-up feedback, your entire response must be ONLY this format:**
 
 ```
-[mano review]: [PHASE_ID] follow-up review. We already logged the main review for this phase.
+[mano review]: Follow-up review for [PHASE_ID].
 
-What did you use, show, play, or measure after the fixes — and what happened?
-Then tell me what's resolved, what's still broken, what's still rough, and anything new that showed up.
+Tell me what you tried after the fixes.
+Tell me what happened.
+
+List anything:
+- resolved
+- still broken
+- still rough
+- new
 
 Or say "close it" to append a follow-up with no new evidence.
 ```
@@ -292,16 +322,16 @@ When the user replies, or when substantive follow-up feedback was already includ
 Present the triaged outcomes for confirmation:
 
 ```
-[mano review]: Follow-up Triaged. [PHASE_ID]
+[mano review]: Follow-up feedback for [PHASE_ID].
 
 Evidence:
-- Status: gathered / partial
-- Method: [what the user actually named, or "Not recorded"]
-- Observed: [concrete result, or "Not recorded"]
+- Level: gathered / partial
+- Tried: [what the user actually named, or "Not recorded"]
+- Result: [concrete result, or "Not recorded"]
 
 Decision update:
-- Outcome: [the user's changed decision, "Unchanged", "Not enough evidence", or "Not stated"]
-- Reason: [the user's reason, or "Not recorded"]
+- Choice: [the user's changed choice, "Unchanged", "Not enough evidence", or "Not stated"]
+- Why: [the user's reason, or "Not recorded"]
 
 ✅ Resolved:
 1. [one sentence]
@@ -327,7 +357,7 @@ The ❌ section follows the same **Rejected-scope rule** as the standard STEP 2:
 
 Use the standard review's Evidence and no-release-recap rules here too. Include `Decision update` only when the user states one. Omit empty outcome buckets; if the reply contains only evidence, present only its Evidence block for confirmation.
 
-**Fast close — explicit close with nothing to triage.** If the user's follow-up reply explicitly says `close it` and contains no evidence or feedback to triage, skip the triage presentation. Treat it as direct confirmation and go straight to STEP 3 (Follow-up) with an empty triage: no new backlog items are written; the addendum is appended with `Evidence: none`, Method and Observed as `Not recorded`, no Decision update section, and `Outcome changes: None`. A vague "all good" without `close it` follows the standard Evidence rule instead of closing silently.
+**Fast close — explicit close with nothing to triage.** If the user's follow-up reply explicitly says `close it` and contains no evidence or feedback to triage, skip the triage presentation. Treat it as direct confirmation and go straight to STEP 3 (Follow-up) with an empty triage: no new backlog items are written; the addendum is appended with `Evidence: none`, Tried and Result as `Not recorded`, no Decision update section, and `Outcome changes: None`. A vague "all good" without `close it` follows the standard Evidence rule instead of closing silently.
 
 ---
 

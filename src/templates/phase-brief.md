@@ -49,10 +49,16 @@
 
 ## Validation Plan
 
-<!-- Keep this lightweight. The human owns the decision; Mano helps make the evidence path explicit before implementation. -->
+<!-- This plan captures learning. Exit Criteria still captures every promised result. -->
 
-- **Decision this informs:** [What the human may decide after experiencing the result]
-- **Evidence to gather:** [What will be used, shown, played, or measured]
+### Questions
+
+- [One concrete question per bullet. Every question needs a matching test below.]
+
+### Try
+
+- [What the human will use, show, play, or measure to answer a question]
+- [What result the human will watch for]
 
 ## Assumption Log
 

@@ -505,8 +505,10 @@ Step 1 — Pre-review gate
 
 Step 2 — Feedback capture
   If the activation message already includes review feedback, `mano review` uses it directly once the pre-review gate is clear.
-  Otherwise `mano review` shows the phase goal and Validation Plan from the brief.
-  It asks what the human used, showed, played, or measured and what happened, what decision that evidence supports, then collects freeform feedback.
+  Otherwise `mano review` shows the goal and every Exit Criterion.
+  It asks the human to mark each promise passed, failed, or not tested.
+  It shows the separate Validation Plan as questions and suggested tests.
+  It then collects decisions, assumptions, and freeform feedback.
   Evidence is recorded as gathered, partial, or none; it is separate from feedback triage.
 
 Step 3 — Triage
@@ -629,9 +631,29 @@ Reason fully; externalize sparingly. Terse output is a rule about *display*, not
 
 Planning artifacts are written for human readers — people who will read, discuss, edit, and act on them. They are not structured inputs for AI models.
 
-Write naturally. Use short paragraphs where prose works better than bullet lists. Concrete and specific beats abstract and hedged. A phase brief should read like a note to a colleague. A backlog item should read like something you'd write yourself. A project rule should read like a convention a team member can apply without a meeting.
+### Plain-language contract
 
-**The one exception:** the `Implementation Reference` section in story files is deliberately written for coding agents. Everything else in every artifact is for humans.
+Every Mano skill applies this contract to artifact prose and user-facing messages.
+
+This contract overrides stylistic wording in examples. It does not override behavior, labels, or exact contracts.
+
+- Write for a teammate with no prior context.
+- Use active voice in every original sentence. Name who or what acts.
+- Keep each sentence to 15 words or fewer.
+- Give each sentence one idea.
+- Choose common, concrete words.
+- Replace vague nouns with actions. Write “the animal reacts,” not “animal-driven feedback.”
+- Use bullets for two or more actions, choices, checks, or results.
+- Define a necessary specialist term when it first appears.
+- Target a Grade 8 reading level or lower.
+
+Exact quotes, code, commands, paths, and API signatures may exceed the sentence limit. Preserve their exact wording. Tables and labels may use short fragments.
+
+Before finalising, read the text as a new teammate. Add missing context. Remove repeated context. Split any sentence that asks two questions.
+
+A phase brief should read like a note to a colleague. A backlog item should state the problem and its importance. A project rule should guide a teammate without requiring a meeting.
+
+The `Implementation Reference` section serves coding agents. Keep its technical precision. Apply the same clarity rules wherever exact contracts allow.
 
 If a section reads like structured machine-parseable metadata rather than human communication, it is too heavy. Trim it, merge it with adjacent content, or leave it out.
 

@@ -88,6 +88,45 @@ test("state restricts backlog projections to canonical Items blocks", () => {
   assert.equal(state.extractCoreProductPrinciples(BACKLOG), "## Core Product Principles\n\nKeep the game readable.");
 });
 
+test("state filters Track across canonical and human-edited Markdown forms", () => {
+  const tracked = `# Backlog
+
+## Items
+
+### Canonical track
+- **Type:** feature
+- **Track:** Option B
+- **Context:**
+  Canonical writer output.
+- **Status:** backlog
+
+### Human-edited track
+- **Type:** feature
+- **Track**: option b
+- **Context:**
+  Colon outside the bold label.
+- **Status:** backlog
+
+### Different track
+- **Type:** feature
+- **Track:** Option A
+- **Context:**
+  Another experiment.
+- **Status:** backlog
+
+### No track
+- **Type:** feature
+- **Context:**
+  General work.
+- **Status:** backlog
+`;
+
+  const names = state.extractBacklogItems(tracked, { status: "backlog", track: "OPTION B" })
+    .map((item) => item.match(/^### (.+)$/m)[1]);
+
+  assert.deepEqual(names, ["Canonical track", "Human-edited track"]);
+});
+
 test("state rejects malformed canonical item envelopes", () => {
   assert.throws(
     () => state.assertBacklogItemsWellFormed("## Items\n\n### Missing status\n- **Type:** feature\n"),

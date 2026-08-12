@@ -392,6 +392,14 @@ class ManoScriptTests(unittest.TestCase):
   Place a seed in a plot.
 - **Status:** backlog
 
+### Option B human-edited track
+- **Type:** feature
+- **Source:** Legacy notes
+- **Track**: Option B
+- **Context:**
+  Preserve compatible Markdown written by a human.
+- **Status:** backlog
+
 ### Untracked piano cleanup
 - **Type:** refinement
 - **Source:** Piano review
@@ -415,9 +423,10 @@ class ManoScriptTests(unittest.TestCase):
         # items with no Track field never sneak into an active track.
         active = self.run_state_with_track("Option B", "--scope")
         self.assertEqual(active.returncode, 0, active.stderr)
-        self.assertIn('Track is "Option B" (2)', active.stdout)
+        self.assertIn('Track is "Option B" (3)', active.stdout)
         self.assertIn("Option B keyboard", active.stdout)
         self.assertIn("Option B garden", active.stdout)
+        self.assertIn("Option B human-edited track", active.stdout)
         self.assertNotIn("Option A keyboard", active.stdout)
         self.assertNotIn("Untracked piano cleanup", active.stdout)
 
@@ -742,9 +751,34 @@ class ManoScriptTests(unittest.TestCase):
             "--context", "Clarify the first interaction.",
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Track: Option B", result.stdout)
         written = self.backlog.read_text()
         self.assertIn("- **Source:** phase-1 review", written)
         self.assertIn("- **Track:** Option B", written)
+
+    def test_bulk_add_prints_each_track_including_undefined(self):
+        items = self.root / "items.json"
+        items.write_text(json.dumps([
+            {
+                "title": "Tracked review item",
+                "type": "refinement",
+                "context": "Keep this experiment grouped.",
+                "source": "phase-1 review",
+                "track": "Option B",
+            },
+            {
+                "title": "Untracked review item",
+                "type": "refinement",
+                "context": "Expose the missing track.",
+                "source": "phase-1 review",
+            },
+        ]))
+
+        result = self.run_backlog("add", "--file", str(items))
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("  + Tracked review item\n    Track: Option B\n", result.stdout)
+        self.assertIn("  + Untracked review item\n    Track: undefined\n", result.stdout)
 
     def test_resolve_gap_refuses_unsafe_targets_without_writing(self):
         attempts = (

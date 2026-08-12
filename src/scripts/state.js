@@ -232,7 +232,10 @@ function extractBacklogItems(text, options = {}) {
     const statusMatches = [...block.matchAll(/^-\s*\*\*Status:\*\*\s*(.+?)\s*$/gim)];
     const typeMatches = [...block.matchAll(/^-\s*\*\*Type:\*\*\s*(.+?)\s*$/gim)];
     const sourceMatches = [...block.matchAll(/^-\s*\*\*Source:\*\*\s*(.+?)\s*$/gim)];
-    const trackMatches = [...block.matchAll(/^-\s*\*\*Track:\*\*\s*(.+?)\s*$/gim)];
+    // Accept the canonical `**Track:**` form and the common Markdown
+    // `**Track**:` form. backlog.js always writes the canonical form, but
+    // human-edited and older backlogs may place the colon outside the bold.
+    const trackMatches = [...block.matchAll(/^-\s*\*\*Track(?::\*\*|\*\*\s*:)\s*(.+?)\s*$/gim)];
     const valid = statusMatches.length === 1 && typeMatches.length === 1;
     const status = valid ? statusMatches[0][1].trim().toLowerCase() : null;
     const type = valid ? typeMatches[0][1].trim().toLowerCase() : null;

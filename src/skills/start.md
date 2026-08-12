@@ -259,8 +259,12 @@ When the approved scope uses breadth words such as “any”, “all”, “ever
 
 **Validation-plan checkpoint.** Derive a lightweight plan for how the human can learn from the completed phase:
 
-- **Decision this informs** — the product, scope, or direction decision the result can inform next.
-- **Evidence to gather** — what the human will use, show, play, or measure. This can be direct use, feedback from another person, an observed workflow, or a concrete technical measurement; do not require external users when self-use or objective verification fits the phase.
+- **Question** — one concrete choice the completed phase can help the human make.
+- **Try** — what the human will use, show, play, or measure.
+
+Use one question per bullet. Never join independent questions with “and whether”. The human may use the phase directly, show it to someone, observe a workflow, or measure a result. Do not require external users when self-use or an objective check fits.
+
+Every Question needs at least one Try bullet that can answer it. Every Try bullet must support a Question. Move a capability check into Exit Criteria instead. Remove any unrelated activity. If a useful test is unclear, ask one focused question.
 
 The plan is not a success prediction and Mano does not make the decision. It makes the intended evidence path visible before implementation. Infer it from the approved goal and Exit Criteria when clear. If either line would be invented, ask one focused 7b question. Do not add market research, business metrics, or a heavyweight experiment to a small phase unless the user requested them.
 
@@ -316,7 +320,7 @@ Each phase brief carries everything needed to understand the phase. No external 
 
   If the sequence cannot be written without ambiguity, the phase scope is unclear or scattered across disconnected pieces. This is the script used to verify the phase at review time.
 
-- **Validation plan** — always include two concise lines: `Decision this informs` and `Evidence to gather`. The decision belongs to the human; phrase it as what the result may help them decide, never as a decision Mano will make. Evidence states what will be used, shown, played, or measured after implementation. Keep this distinct from Exit Criteria: Exit Criteria proves the capability was built; the Validation Plan says how the human will learn whether it is worth keeping, changing, or extending. For a purely technical phase, a concrete measurement or observed integration result is valid evidence.
+- **Validation plan** — use `Questions` and `Try` lists. Put one idea in each bullet. The human owns every decision. Exit Criteria lists what must work. The Validation Plan says what the human wants to learn. Each Question must have a useful Try bullet. Each Try bullet must support a Question. Never use the plan as a substitute for any Exit Criterion. For a technical phase, the human may measure a result or observe an integration.
 
 - **Assumption log** — include only assumptions whose failure would materially change the phase. Zero is acceptable. Always include any concept the Foundation-conflict check (Step 7b) flagged as a deliberately-narrowed version of a deferred backlog item — that boundary failing silently is exactly the kind of assumption this section exists to capture.
 

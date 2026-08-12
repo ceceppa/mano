@@ -69,6 +69,7 @@ add — many items at once:
   --file items.json   a JSON array of { title, type, context, source?, track?, status? }
                       (or pipe that JSON array on stdin)
   Items whose title already exists are skipped (exact, case-insensitive).
+  Output prints each item's Track. Missing or empty tracks print as 'undefined'.
 
 assign:
   --phase N         the configured owner's phase number (required)
@@ -203,6 +204,16 @@ function validateItem(it, idx) {
   return null;
 }
 
+function displayTrack(it) {
+  if (it.track == null || String(it.track).trim() === "") return "undefined";
+  return String(it.track).trim();
+}
+
+function printAddItem(marker, it, note = "") {
+  process.stdout.write(`  ${marker} ${String(it.title).trim()}${note}\n`);
+  process.stdout.write(`    Track: ${displayTrack(it)}\n`);
+}
+
 // Titles already present in the file (lowercased), from `### ` headings.
 function existingTitles(text) {
   const set = new Set();
@@ -297,14 +308,14 @@ function cmdAdd(args) {
   const seen = new Set();
   for (const it of items) {
     const key = String(it.title).trim().toLowerCase();
-    if (present.has(key) || seen.has(key)) { skipped.push(String(it.title).trim()); continue; }
+    if (present.has(key) || seen.has(key)) { skipped.push(it); continue; }
     seen.add(key);
     kept.push(it);
   }
 
   if (kept.length === 0) {
     process.stdout.write(`[mano backlog] add → 0 written, ${skipped.length} skipped (duplicate title)\n`);
-    skipped.forEach((t) => process.stdout.write(`  ~ ${t} (duplicate, skipped)\n`));
+    skipped.forEach((it) => printAddItem("~", it, " (duplicate, skipped)"));
     return;
   }
 
@@ -314,8 +325,8 @@ function cmdAdd(args) {
   fs.writeFileSync(file, next);
 
   process.stdout.write(`[mano backlog] add → ${kept.length} written` + (skipped.length ? `, ${skipped.length} skipped (duplicate title)` : "") + "\n");
-  kept.forEach((it) => process.stdout.write(`  + ${String(it.title).trim()}\n`));
-  skipped.forEach((t) => process.stdout.write(`  ~ ${t} (duplicate, skipped)\n`));
+  kept.forEach((it) => printAddItem("+", it));
+  skipped.forEach((it) => printAddItem("~", it, " (duplicate, skipped)"));
 }
 
 // ---- assign ---------------------------------------------------------------
@@ -656,6 +667,7 @@ module.exports = {
   backlogPath,
   formatItem,
   validateItem,
+  displayTrack,
   existingTitles,
   parseItemRecords,
   itemField,
