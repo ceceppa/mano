@@ -38,7 +38,7 @@
   <title
      id="title1">Mano phase-driven learning loop</title>
   <desc
-     id="desc1">A living backlog is updated through import, start, review, and direct human edits before feeding one approved small phase. Needed planning artifacts can be created, reused, or brought in from elsewhere. Auto mode is optional; when enabled, it starts after approval, runs the needed planning skills, pauses for human decisions, and stops after the build. The human uses and reviews the result, and learning updates the backlog. Post-hooks add specialist checks and project automation. Optional owner mode supports parallel phase tracks over a shared backlog.</desc>
+     id="desc1">A living backlog is updated through import, start, review, and direct human edits before feeding one approved small phase. Needed planning artifacts can be created, reused, or brought in from elsewhere. Auto mode is optional; when enabled, it starts after approval, runs the needed planning skills, pauses for human decisions, and stops after the build. The human uses and reviews the result, and learning updates the backlog. Post-hooks add specialist checks and project automation. Optional owner mode supports parallel phase work over a shared backlog. Optional Tracks keep parallel experiments grouped across imports, phases, and review.</desc>
   <path
      fill="#faf5ee"
      d="M0 0h1080v1420H0Z"
@@ -175,7 +175,7 @@
        font-weight="700"
        style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-family:Inter;-inkscape-font-specification:&quot;Inter Bold&quot;"
        text-anchor="middle"
-       id="text9">Human-readable • Human-editable</text>
+       id="text9">Human-readable • Optional tracks</text>
   </g>
   <path
      stroke="#221f1d"
