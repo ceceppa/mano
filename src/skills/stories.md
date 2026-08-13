@@ -184,7 +184,13 @@ For stateful frontend stories: name what persists across restart, what stays tra
   Bad — adjectival: *After releasing the card, correct snap behaviour.*
   Bad — noun-phrase placeholder: *Smooth drag interaction.*
 
-  The adjectival and noun-phrase forms have an extra failure mode: they often *replace* the AC's verb instead of qualifying it. "After releasing the card, correct snap behaviour" has no verb describing what the user observes — it labels a moment and gestures at it. Rewrite to name the observable: *"After releasing the card, it snaps into the target column within one frame and both columns' item counts update to match."*
+  The adjectival and noun-phrase forms have an extra failure mode: they often *replace* the AC's verb instead of qualifying it. "After releasing the card, correct snap behaviour" has no verb describing what the user observes. Rewrite it with one trigger and separate results:
+
+  ```markdown
+  - [ ] After releasing the card:
+    - It snaps into the target column within one frame.
+    - Both columns show the new item counts.
+  ```
 
 - **Move implementation mechanics to Implementation Reference.** If a detail is necessary but not directly observable — for example "compute once at drag start", "use a shared seam-width constant", or "fold committed offset into visual offset" — put it in `Implementation Reference`, not `Done when`. Pair it with an observable AC that describes the visible effect.
 
@@ -201,6 +207,8 @@ For stateful frontend stories: name what persists across restart, what stays tra
   - [ ] Each row displays: checkbox, todo text, delete button
   - [ ] Test: checkbox toggles completed state
   ```
+
+- **Unpack compound acceptance criteria.** Put the trigger on the checkbox line. Put each condition, observable result, and exception in a nested bullet. Do not join several results with commas or `and`. Treat every nested result as required acceptance evidence. Keep a simple single-result AC on one line.
 
 - **Stories must be small.** One focused session. Aim for five acceptance criteria or fewer; six is acceptable when the story is genuinely small and cohesive (the extra AC observes a distinct behaviour, not a rephrased one). Seven or more is a sizing signal — split the story, or merge AC that describe the same observable behaviour. Treat five as the soft target, not a hard ceiling: don't pad to reach it, don't artificially split a cohesive story to stay under it.
 
@@ -219,7 +227,7 @@ For stateful frontend stories: name what persists across restart, what stays tra
 
 Before drafting the story set, run these against the inputs. Each is a real check that produces concrete AC adjustments.
 
-- **Phase goal (mandatory).** The phase brief's `Phase goal` is the single most important outcome of the phase. At least one story must carry an AC that, taken with the chain's end-to-end AC, verifies that exact goal. Decomposing the goal into separate feature stories is not sufficient on its own: qualities embedded in the goal's wording — "in real time", "instantly", "correctly", "smoothly", latency/feel words — must each surface as an explicit testable AC, not be left implicit. If a quality cannot be written as an observable AC, say so and flag it; do not silently drop it.
+- **Phase goal (mandatory).** The phase brief's `Phase goal` is the single most important outcome of the phase. At least one story must carry an AC that, taken with the chain's end-to-end AC, verifies that exact goal. Decomposing the goal into separate feature stories is not sufficient on its own. Objective qualities such as latency, persistence, and visible state changes need observable AC. Subjective product feelings such as “calm,” “fun,” or “rewarding” belong in the Validation Plan unless the brief already defines observable behavior for them. Never invent a proxy AC for a feeling. Preserve the learning question and flag any missing validation path instead.
 
 - **Tech spec.** If a tech spec exists, ensure its decisions are reflected in AC. If the spec says offline-first, at least one story must include "data persists after closing and reopening the app." If the spec says biometric auth, a story must test it. Tech decisions that never appear in AC are invisible to QA and will be skipped.
 
@@ -458,7 +466,7 @@ When all stories are written, output the execution log:
 - 1. [title] — [exact PHASE_DIR]/stories/story-1-[slug].md
 - 2. ...
 ⚠ Verify: [embedded assumption worth checking — advisory, omit if none]
-❓ Decide: [decision to confirm or change before the affected story is implemented, phrased as a question with the inferred value — omit if none]
+❓ Decide: [decision explicitly permitted by this skill — never an inferred upstream value; omit if none]
 
 [Optional hook block if active]
 
@@ -468,10 +476,10 @@ Next:
 
 Give each story its **full project-root-relative path** (as above), not a bare `story-N-[slug].md` — that is what makes each line tap-to-open in the editor. The path replaces the old parenthesised filename.
 
-Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact should have stated a behaviour-driving value and didn't (a default, a threshold, a severity), infer the most consistent value, build the story with it, and raise the inference as a `❓ Decide:` — never leave the implementer to invent it, and never edit the upstream artifact yourself (flag the gap for its owning skill). **(2)** A pending `❓ Decide:` makes the affected next action conditional: name which story is blocked and write `mano dev` as available only after that decision. Do not add a separate `Status:` line.
+Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact omits a behaviour-driving value, apply the readiness hard gates. Write no story files. Route the missing decision to its owning skill. Do not infer a value, embed a provisional default, or turn the gap into a story-level `❓ Decide:`. **(2)** If another decision explicitly permitted by this skill remains open, a pending `❓ Decide:` makes the affected next action conditional. Name which story is blocked. Show `mano dev` only after that decision. Do not add a separate `Status:` line.
 
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-The inference path above does not apply to the Public-interface readiness hard gate: route that missing contract to `mano spec` and write no stories.
+The no-inference rule applies to public interfaces, spec-owned defaults, and every other behaviour-driving value.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor.

@@ -637,21 +637,104 @@ Every Mano skill applies this contract to artifact prose and user-facing message
 
 This contract overrides stylistic wording in examples. It does not override behavior, labels, or exact contracts.
 
-- Write for a teammate with no prior context.
-- Use active voice in every original sentence. Name who or what acts.
-- Keep each sentence to 15 words or fewer.
-- Give each sentence one idea.
-- Choose common, concrete words.
-- Replace vague nouns with actions. Write “the animal reacts,” not “animal-driven feedback.”
-- Use bullets for two or more actions, choices, checks, or results.
-- Define a necessary specialist term when it first appears.
-- Target a Grade 8 reading level or lower.
+**Goal:** a teammate with no prior context should understand the text on the first read. Length is not the target. Understanding is. Prefer a complete plain sentence over clipped fragments.
 
-Exact quotes, code, commands, paths, and API signatures may exceed the sentence limit. Preserve their exact wording. Tables and labels may use short fragments.
+#### Say what happens
 
-Before finalising, read the text as a new teammate. Add missing context. Remove repeated context. Split any sentence that asks two questions.
+- Use active voice. Name the person, system, or component that acts.
+- Use familiar, literal words. Define unavoidable jargon when it first appears.
+- Replace abstract nouns with actions. Write “the animal reacts,” not “animal-driven feedback.”
+- Do not use marketing words as requirements. Examples include “seamless,” “intuitive,” “elegant,” “smart,” “robust,” and “user-friendly.”
+- Do not use a metaphor as a requirement. Keep metaphors inside vision or quoted product language.
 
-A phase brief should read like a note to a colleague. A backlog item should state the problem and its importance. A project rule should guide a teammate without requiring a meeting.
+Product-feel words still belong in product work. “Fun,” “calm,” and “rewarding” can state a vision or learning question. Name who will judge that feeling and how they will experience it. Never treat the adjective alone as acceptance evidence.
+
+#### Ask clear questions
+
+- Ask only when the answer changes the current work. Never ask someone to repeat a recorded decision.
+- Name the phase, artifact, or behavior that the answer affects. Avoid an unclear “this” or “it.”
+- Put one decision in each numbered item. Group related decisions when the person can answer them together; do not force one question per message.
+- Explain why the answer matters only when the consequence is not obvious.
+- Offer options only when the real choices are known. State what each choice changes. Ask an open question when a shortlist would hide or bias valid answers.
+- Accept a natural-language reply unless an exact command or value is required.
+
+Do not turn every question into a requirements form. The reader needs a clear decision and consequence, not mandatory Trigger, Outcome, and Edge Case fields.
+
+#### Put concrete detail in its canonical home
+
+Describe each idea at the level the current artifact owns. Do not invent technical detail merely to sound precise.
+
+- A phase brief states user-visible behavior and scope boundaries.
+- A UX flow states user actions, system responses, branches, and recovery paths.
+- A design brief states visual decisions, states, and owned design values.
+- A technical specification states contracts, states, parameters, defaults, bounds, and failures.
+- A project rule states when it applies and what it requires or prohibits.
+- A story states its trigger, observable result, relevant failure cases, and implementation references.
+
+When a technical system hides important parts, its owning artifact must name them. List concrete states, transitions, inputs, outputs, defaults, or endpoints there. Other artifacts reference that definition instead of copying it. If the required definition does not exist, ask or route to its owning Mano skill. Never fill the gap with confident-sounding prose.
+
+#### Unpack dense logic
+
+Use bullets when one requirement contains multiple:
+
+- triggers
+- conditions
+- actions
+- results
+- exceptions
+
+Keep one decision or behavior in each bullet. Preserve the order in which events occur. Do not force a simple sentence into fragments merely to reduce its word count.
+
+For Exit Criteria and `Done when`, put the trigger on the parent line. Put each condition, result, and exception in a nested bullet. Never compress several observable results into one checkbox sentence. Every nested result remains required.
+
+Bad:
+
+> When the user submits, save the record, notify them, and disable the form unless validation fails.
+
+Clear:
+
+> When the user selects Submit:
+> - Validate every required field.
+> - If validation fails, show inline errors and stop.
+> - Save the record.
+> - Send the confirmation.
+> - Disable Submit until a field changes.
+
+#### Make parameters honest
+
+Words such as “configurable,” “tunable,” “fast,” and “scalable” are incomplete requirements. Do not use them instead of a decision.
+
+When the current artifact owns the value, state the relevant details:
+
+- default value and unit
+- allowed bounds or options
+- where someone changes it
+- behavior outside the allowed range
+
+If the value remains undecided, ask for it or mark it provisional through the normal decision protocol. Never invent a default to remove an open question. When another artifact owns the value, reference that artifact instead of repeating the number.
+
+#### Make requirements testable without adding ceremony
+
+A requirement gives the reader enough information to answer:
+
+- What starts this behavior?
+- What should the user or caller observe?
+- Which failure or edge case matters here?
+- Which adjacent behavior remains outside scope when confusion is likely?
+
+Do not add empty Trigger or Out of Scope fields to every item. Use the structure that fits the artifact. A backlog idea can state a problem and an honest unknown. Exit Criteria and story acceptance criteria require observable proof. Technical contracts require exact success and failure behavior.
+
+#### Clarity check
+
+Before finalising, read the text as a new teammate:
+
+- Can they identify every actor and important noun?
+- Can they explain what happens without guessing?
+- Could two readers implement conflicting behavior from this wording?
+- Does a vague adjective carry a requirement by itself?
+- Does this artifact invent detail owned elsewhere?
+
+Add missing context. Split dense logic. Route missing decisions. Remove repeated detail.
 
 The `Implementation Reference` section serves coding agents. Keep its technical precision. Apply the same clarity rules wherever exact contracts allow.
 

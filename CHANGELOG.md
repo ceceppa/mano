@@ -15,7 +15,7 @@ A history of Mano's releases — what each version changes and why.
 - **Auto planning now keeps material UX and UI work visible** — a new interactive frontend includes `mano ux` and `mano ui` in its proposed auto chain when the exact flow, responsive composition, hierarchy, or visual states are not already covered. Familiar controls are not treated as a substitute for product decisions; only the human may explicitly skip those actions.
 - **New repeatable artifact categories keep `mano rules` visible** — a phase that introduces a recurring file, module, component, document, example, or asset shape is treated as new rule territory even when a substantive rules file already exists.
 - **Phase closure no longer masquerades as validation** — phase briefs now state the human decision a phase can inform and the evidence to gather. `mano review` records a compact evidence-and-decision log instead of a release recap, keeps assumption outcomes separate, and preserves `close it` as an immediate `Evidence: none` / `Decision: Not assessed` close instead of making feedback theatre mandatory.
-- **Every Mano artifact now follows one plain-language contract.** Skills write for a new teammate. They use active voice and concrete words. They keep sentences short and separate ideas. Lists make multi-step content easy to scan. Exact technical content keeps its required precision.
+- **Every Mano artifact and user prompt now follows one clarity contract.** Skills name actors, triggers, outcomes, and boundaries. Questions name the decision and its consequence without forcing one question per turn. Skills avoid jargon and unsupported marketing language. They unpack dense conditions into ordered steps. Technical details stay in their canonical artifact. Product feelings remain valid human learning questions.
 - **Phase learning plans now use direct Questions and Try lists.** Each question has a matching test. Capability checks remain in Exit Criteria. `mano review` keeps learning and completion separate.
 
 ### Fixed
@@ -29,6 +29,7 @@ A history of Mano's releases — what each version changes and why.
 - **Green tests can no longer prove the opposite acceptance outcome.** Spec, stories, development, and review now stop on reversed outcomes. Done stories remain immutable. Corrective work uses the normal spec and lettered-story path.
 - **Backlog adds now report each item's Track.** Missing values print as `undefined`. Bulk adds report every item separately. This makes lost review or import tracks visible immediately.
 - **Track filtering now accepts both common Markdown forms.** It reads `**Track:**` and `**Track**:`. Human edits no longer hide matching backlog items.
+- **Stories no longer infer missing behavior-driving values.** Missing defaults, thresholds, and contracts return to their owning artifact. Stories never disguise those gaps as provisional story decisions.
 
 ## 1.2.0
 

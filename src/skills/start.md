@@ -273,12 +273,13 @@ The plan is not a success prediction and Mano does not make the decision. It mak
 If clarifications are needed:
 
 ```
-[mano start]: A few things I want to clarify before drafting:
+[mano start]: I need these decisions before I draft Phase [N]:
 
-1. [question about ambiguity or interaction]
-2. [question]
+1. [direct question]
+   Affects: [phase outcome or scope boundary; omit when obvious]
+2. [direct question]
 
-Answer what's relevant, skip what isn't.
+Reply naturally. Say "unsure" when you do not know an answer.
 ```
 
 If everything is clear, say so and move to 7c. Do not ask "still accurate?" — they've just seen the context.

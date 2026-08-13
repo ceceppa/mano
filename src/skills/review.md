@@ -203,7 +203,7 @@ Decision:
 ❌ Rejected scope (open backlog items this feedback invalidates — confirm each):
 4. "[exact backlog item title]" — [why it depends on the rejected direction]
 
-Does this look right? Tell me what to move or remove, or say "close it" to log this.
+Did I put each outcome in the right section? Tell me what to move or remove. Say "close it" to record the review.
 ```
 
 Always include every Phase check. Mark unmentioned checks `not tested`. Omit the Evidence block only when no evidence was described. Include the Decision block when the brief has a Validation Plan or the user states a decision. Omit empty triage buckets and omit the ❌ section when the feedback rejects nothing. If the response contains evidence or a decision but no triage items, present those blocks by themselves with the same confirmation question. Rejection candidates follow the same confirmation model as every other bucket: they are visible in the presented list, the user removes any that survive, and "close it" confirms the list as presented. Never reject an item that was not listed as a candidate in this message.
@@ -212,7 +212,7 @@ That is your complete response. DO NOT write files yet.
 
 **Fast close — explicit close without evidence.** If the user's reply explicitly says `close it` and supplies no evidence or feedback to triage (e.g. "nothing to report, close it", "close it", "all good, close it"), skip the triage presentation entirely. Treat the reply as direct confirmation and go straight to STEP 3 with an empty triage: no backlog items are written, the resolve sweep and review entry still happen. Record `Evidence` as `none`, with Tried and Result as `Not recorded`. Record every Phase check as `not tested`. Record the decision as `Not assessed`, with Why as `Not recorded`. Record `Backlog changes` as `None`. Fill the Assumptions table from any verdicts the user gave and mark every unspecified assumption `inconclusive`. Omit `What we learned`. Do not ask a follow-up question to fish for feedback or re-confirm — `close it` means close it.
 
-**The close instruction is terminal — never re-confirm it.** When a single message carries both the assumption verdicts and a close instruction (e.g. "all valid, close it", "1 confirmed 2 invalidated, close it", "all good close it"), that one message clears STEP 1 *and* is the STEP 3 confirmation. Go straight to writing files. Do **not** emit an empty-triage "Does this look right? Say close it to log" message — that is a second confirmation gate the user already satisfied, and it is the exact double-confirm this rule forbids. Re-prompting after the user has already said "close it" is a bug, not caution.
+**The close instruction is terminal — never re-confirm it.** When a single message carries both the assumption verdicts and a close instruction (e.g. "all valid, close it", "1 confirmed 2 invalidated, close it", "all good close it"), that one message clears STEP 1 *and* is the STEP 3 confirmation. Go straight to writing files. Do **not** emit another triage-confirmation prompt — the user already confirmed the review. Re-prompting after the user has already said "close it" is a bug, not caution.
 
 The one thing that survives a close instruction is a ❌ rejection candidate the user has not seen. "Drop the dock work, close it" closes the phase, but the open backlog items that rejection orphans are information the user has not been shown, not a re-confirmation of something they already approved. Present the ❌ list alone — no other buckets, no re-litigating the rest of the triage — and write the rest of the close in the same turn.
 
@@ -348,7 +348,7 @@ Decision update:
 ❌ Rejected scope (open backlog items this feedback invalidates — confirm each):
 5. "[exact backlog item title]" — [why it depends on the rejected direction]
 
-Does this look right? Tell me what to move or remove, or say "close it".
+Did I put each outcome in the right section? Tell me what to move or remove. Say "close it" to record the review.
 ```
 
 That is your complete response. DO NOT write to files yet.

@@ -61,13 +61,14 @@ A single document point can yield an import question *and* a note for later — 
 Present findings:
 
 ```
-[mano import]: I've read the document. Before I break it down, a few things to clarify:
+[mano import]: Before I split this document into backlog items, I need these product decisions:
 
-1. [Ambiguity or gap] — [what's unclear and why it matters for scoping]
-2. [Ambiguity or gap] — [what's unclear]
-3. [Contradiction or assumption] — [what I noticed]
+1. [direct question]
+   Why it matters: [effect on the backlog; omit when obvious]
+2. [direct question]
+3. [direct question]
 
-Answer what's relevant, skip what isn't.
+Reply naturally. Say "unsure" when you do not know an answer.
 ```
 
 **Pre-send filter — run mechanically on the drafted question list, do not rely on judgment alone.** Before sending, take each numbered question and apply these checks literally. Any question that hits a check is deleted from the list (and, if it flagged a real foundation conflict, recorded as a note in the relevant backlog item's context instead — not asked):
