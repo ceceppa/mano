@@ -15,8 +15,9 @@ Usage:
   node track.js clear [projectRoot]
 
 The active track is stored in local Git config as mano.track and is not
-committed. It tags new imports and new review backlog items, and narrows
-mano start candidates. MANO_TRACK overrides Git config for a shell/session.`;
+committed. It tags new imports and conversational Start items, and narrows
+mano start candidates. Review items copy the Track recorded in their phase
+brief. MANO_TRACK overrides Git config for a shell/session.`;
 
 function fail(message) {
   process.stderr.write(`[mano track] ${message}\n`);

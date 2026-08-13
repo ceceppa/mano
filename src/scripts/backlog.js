@@ -214,13 +214,13 @@ function printAddItem(marker, it, note = "") {
   process.stdout.write(`    Track: ${displayTrack(it)}\n`);
 }
 
-// Titles already present in the file (lowercased), from `### ` headings.
+// Item titles already present under the canonical `## Items` section.
 function existingTitles(text) {
   const set = new Set();
   if (text == null) return set;
-  const re = /^###\s+(.+?)\s*$/gm;
-  let m;
-  while ((m = re.exec(text)) !== null) set.add(m[1].trim().toLowerCase());
+  for (const record of parseItemRecords(text).records) {
+    set.add(record.title.toLowerCase());
+  }
   return set;
 }
 

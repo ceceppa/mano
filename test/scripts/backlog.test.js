@@ -84,7 +84,7 @@ test("backlog displays explicit and missing tracks", () => {
 });
 
 test("backlog title detection and records ignore non-Items sections", () => {
-  assert.deepEqual([...backlog.existingTitles(SAMPLE)].sort(), ["first item", "not an item", "not an item either", "second item"]);
+  assert.deepEqual([...backlog.existingTitles(SAMPLE)].sort(), ["first item", "second item"]);
   const records = backlog.parseItemRecords(SAMPLE);
   assert.equal(records.records.length, 2);
   assert.deepEqual(records.records.map((record) => record.title), ["First item", "Second item"]);

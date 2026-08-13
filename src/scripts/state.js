@@ -280,9 +280,12 @@ function assertBacklogItemsWellFormed(text) {
     const block = current.lines.join("\n");
     const types = [...block.matchAll(/^-\s*\*\*Type:\*\*\s*(.+?)\s*$/gim)];
     const statuses = [...block.matchAll(/^-\s*\*\*Status:\*\*\s*(.+?)\s*$/gim)];
-    if (types.length !== 1 || statuses.length !== 1) {
+    const sources = [...block.matchAll(/^-\s*\*\*Source:\*\*\s*(.+?)\s*$/gim)];
+    const tracks = [...block.matchAll(/^-\s*\*\*Track(?::\*\*|\*\*\s*:)\s*(.+?)\s*$/gim)];
+    if (types.length !== 1 || statuses.length !== 1 || sources.length > 1 || tracks.length > 1) {
       throw new Error(
-        `malformed backlog item "${current.title}": expected exactly one top-level Type and Status field`,
+        `malformed backlog item "${current.title}": expected exactly one top-level Type and Status field, ` +
+        "with at most one Source and Track field",
       );
     }
     current = null;
@@ -308,10 +311,36 @@ function assertBacklogItemsWellFormed(text) {
   validate();
 }
 
+function backlogItemTrack(block) {
+  const match = /^-\s*\*\*Track(?::\*\*|\*\*\s*:)\s*(.+?)\s*$/im.exec(block);
+  return match ? match[1].trim() : null;
+}
+
+// An interrupted phase owns its planning context. A newly selected local Track
+// must not silently relabel items already assigned to that phase. Older drafts
+// may have no Track metadata; in that case the current selection remains usable.
+function resumeDraftTrack(assignedItems, selectedTrack, phaseId) {
+  const values = assignedItems.map(backlogItemTrack);
+  const named = new Map();
+  let untracked = false;
+  for (const value of values) {
+    if (value === null) untracked = true;
+    else if (!named.has(value.toLowerCase())) named.set(value.toLowerCase(), value);
+  }
+  if (named.size > 1 || (named.size === 1 && untracked)) {
+    throw new Error(
+      `${phaseId} has assigned backlog items with conflicting Track values; ` +
+      "repair their top-level Track fields before resuming the draft",
+    );
+  }
+  return named.size === 1 ? [...named.values()][0] : selectedTrack;
+}
+
 // A narrow gap-only projection. It intentionally bypasses scan(): only
 // backlog.md is read, and only matching open gap blocks are returned.
 function scanGaps(projectRoot, type) {
   const backlog = readGapText(path.join(projectRoot, "_mano_output", "backlog.md"));
+  assertBacklogItemsWellFormed(backlog);
   const items = extractBacklogItems(backlog, { status: "backlog", type });
   const run = resolveConfiguredMode(projectRoot);
   return {
@@ -543,6 +572,7 @@ function scan(projectRoot, options = {}) {
 
   s._backlogText = readText(path.join(outputDir, "backlog.md"));
   s._reviewsText = readText(path.join(outputDir, "reviews.md"));
+  assertBacklogItemsWellFormed(s._backlogText);
   s.backlog = countBacklogStatuses(s._backlogText);
   const openItems = extractBacklogItems(s._backlogText, { status: "backlog" });
   const scopeableItems = extractBacklogItems(s._backlogText, {
@@ -675,10 +705,9 @@ function finalize(s, options = {}) {
   s.targetReviewHeading = targetRef ? targetRef.reviewHeading : null;
 
   // Attach the exact material mano start needs so the skill never has to reopen
-  // backlog.md / reviews.md itself. A resume-draft includes every phase-scopeable
-  // item status (gap types remain excluded) because interrupted finalisation may
-  // have stopped before assignment recorded the approved subset; the human must
-  // confirm that subset again.
+  // backlog.md / reviews.md itself. A resume-draft includes open candidates plus
+  // every item already assigned to that exact interrupted phase. It excludes
+  // resolved, rejected, and other phases so recovery cannot reopen old work.
   s.scope = null;
   const source = options.source || null;
   const track = options.track !== undefined && options.track !== null ? options.track : s.track;
@@ -697,16 +726,23 @@ function finalize(s, options = {}) {
       latestReview: extractLatestReview(s._reviewsText, s.phaseRef, s.owner),
     };
   } else if (s.next === "resume-draft") {
+    const assignedItems = extractBacklogItems(s._backlogText, {
+      status: s.targetInPhaseStatus,
+      excludeTypes: GAP_TYPES,
+    });
+    const phaseTrack = resumeDraftTrack(assignedItems, track, s.targetPhaseId);
+    const openCandidates = extractBacklogItems(s._backlogText, {
+      status: "backlog",
+      excludeTypes: GAP_TYPES,
+      source,
+      track: phaseTrack,
+    });
     s.scope = {
       mode: "resume-draft",
       source,
-      track,
+      track: phaseTrack,
       coreProductPrinciples: extractCoreProductPrinciples(s._backlogText),
-      backlogItems: extractBacklogItems(s._backlogText, {
-        excludeTypes: GAP_TYPES,
-        source,
-        track,
-      }),
+      backlogItems: [...assignedItems, ...openCandidates],
       latestReview: extractLatestReview(s._reviewsText, s.phaseRef, s.owner),
     };
   }
@@ -781,8 +817,8 @@ function renderEvidence(s) {
 }
 
 // The scope input mano start consumes on a PROCEED: phase-scopeable Status:
-// backlog items for a new scope, or all phase-scopeable statuses for a resumed
-// draft, plus core principles and latest review. Empty when no payload exists.
+// backlog items for a new scope, or exact-phase assignments plus open candidates
+// for a resumed draft, plus core principles and latest review.
 function renderScope(s) {
   if (!s.scope) return "";
   const L = ["--- SCOPE INPUT (from the state script — do NOT reopen these files) ---"];
@@ -791,12 +827,17 @@ function renderScope(s) {
     L.push(s.scope.coreProductPrinciples);
   }
   L.push("");
-  const itemLabel = s.scope.mode === "resume-draft"
-    ? "all phase-scopeable statuses"
+  const resuming = s.scope.mode === "resume-draft";
+  const itemLabel = resuming
+    ? `Status: ${s.targetInPhaseStatus} (always included) plus phase-scopeable Status: backlog`
     : "phase-scopeable Status: backlog";
-  const sourceLabel = s.scope.source ? `; Source contains ${JSON.stringify(s.scope.source)}` : "";
-  const trackLabel = s.scope.track ? `; Track is ${JSON.stringify(s.scope.track)}` : "";
-  L.push(`## Backlog items — ${itemLabel}${sourceLabel}${trackLabel} (${s.scope.backlogItems.length})`);
+  const filters = [];
+  if (s.scope.source) filters.push(`Source contains ${JSON.stringify(s.scope.source)}`);
+  if (s.scope.track) filters.push(`Track is ${JSON.stringify(s.scope.track)}`);
+  const filterLabel = filters.length
+    ? `${resuming ? "; open candidates: " : "; "}${filters.join("; ")}`
+    : "";
+  L.push(`## Backlog items — ${itemLabel}${filterLabel} (${s.scope.backlogItems.length})`);
   if (s.scope.backlogItems.length === 0) {
     L.push("(none)");
   } else {
@@ -1140,6 +1181,8 @@ module.exports = {
   countBacklogStatuses,
   extractBacklogItems,
   assertBacklogItemsWellFormed,
+  backlogItemTrack,
+  resumeDraftTrack,
   extractCoreProductPrinciples,
   extractLatestReview,
   hasReviewEntry,

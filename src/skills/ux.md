@@ -25,7 +25,7 @@ On activation:
 3. Read `_mano_output/ux-flow.md` if it exists.
 4. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
 5. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
-6. Check for missing inputs — if the projected phase brief does not exist, warn and ask if user wants to run `mano start` first.
+6. If the projected phase brief does not exist, stop and route to `mano start`. Do not write or offer to continue without it.
 
 ## Inputs
 

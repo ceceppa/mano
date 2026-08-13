@@ -305,6 +305,24 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("cannot read _mano_output/backlog.md", result.stderr)
         self.assertNotIn("COUNT: 0", result.stdout)
 
+    def test_scope_and_gap_projections_reject_malformed_items(self):
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Missing status
+- **Type:** rule-gap
+- **Context:**
+  The filter cannot classify this item safely.
+""")
+
+        for args in (("--scope",), ("--gaps", "rule-gap")):
+            with self.subTest(args=args):
+                result = self.run_state(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("malformed backlog item", result.stderr)
+                self.assertNotIn("(none)", result.stdout)
+
     def test_gap_projection_rejects_invalid_or_conflicting_modes(self):
         self.backlog.write_text(MIXED_BACKLOG)
         for args in (
@@ -433,6 +451,59 @@ class ManoScriptTests(unittest.TestCase):
         no_match = self.run_state("--scope", "--track", "Option C")
         self.assertEqual(no_match.returncode, 0, no_match.stderr)
         self.assertIn('Track is "Option C" (0)', no_match.stdout)
+
+    def test_resume_draft_keeps_exact_phase_assignments_and_excludes_closed_work(self):
+        (self.output / "phase-2").mkdir()
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Assigned option A
+- **Type:** feature
+- **Track:** Option A
+- **Context:**
+  Already assigned before the interrupted brief write.
+- **Status:** in-phase-2
+
+### Open option B
+- **Type:** feature
+- **Track:** Option B
+- **Context:**
+  Must stay outside the interrupted Option A phase.
+- **Status:** backlog
+
+### Open option A
+- **Type:** feature
+- **Track:** Option A
+- **Context:**
+  Still available for confirmation in the interrupted phase.
+- **Status:** backlog
+
+### Resolved option B
+- **Type:** feature
+- **Track:** Option B
+- **Context:**
+  Historical work must stay closed.
+- **Status:** resolved
+
+### Other phase option B
+- **Type:** feature
+- **Track:** Option B
+- **Context:**
+  Work assigned elsewhere must not enter recovery.
+- **Status:** in-phase-1
+""")
+
+        result = self.run_state_with_track("Option B", "--scope")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("NEXT: resume-draft", result.stdout)
+        self.assertIn("TRACK: Option A", result.stdout)
+        self.assertIn("Assigned option A", result.stdout)
+        self.assertIn("Open option A", result.stdout)
+        self.assertNotIn("Open option B", result.stdout)
+        self.assertNotIn("Resolved option B", result.stdout)
+        self.assertNotIn("Other phase option B", result.stdout)
 
     def test_track_filter_requires_scope_and_text(self):
         self.backlog.write_text(MIXED_BACKLOG)
@@ -1102,6 +1173,31 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("Phase 2 — Owner: alice", index.read_text())
         self.assertIn("| 1 | Owned story | story-1-owned.md | pending |", index.read_text())
         self.assertFalse((self.output / "phase-2").exists())
+
+    def test_stories_status_update_fails_atomically_for_a_missing_row(self):
+        created = self.run_stories_as(
+            "alice", "add-row", "--phase", "2", "--story", "1",
+            "--title", "Owned story", "--file", "story-1-owned.md",
+            "--project", "Demo",
+        )
+        self.assertEqual(created.returncode, 0, created.stderr)
+        index = self.output / "alice-phase-2" / "stories" / "README.md"
+
+        missing = self.run_stories_as(
+            "alice", "set-status", "--phase", "2", "--story", "1",
+            "--story", "99", "--status", "done",
+        )
+
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("no matching row for 99", missing.stderr)
+        self.assertIn("| 1 | Owned story | story-1-owned.md | pending |", index.read_text())
+
+        updated = self.run_stories_as(
+            "alice", "set-status", "--phase", "2", "--story", "1",
+            "--status", "done",
+        )
+        self.assertEqual(updated.returncode, 0, updated.stderr)
+        self.assertIn("| 1 | Owned story | story-1-owned.md | done |", index.read_text())
 
     def test_owned_review_closes_only_with_matching_owner_heading(self):
         phase = self.output / "alice-phase-1"

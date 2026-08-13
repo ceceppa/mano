@@ -132,7 +132,46 @@ test("state rejects malformed canonical item envelopes", () => {
     () => state.assertBacklogItemsWellFormed("## Items\n\n### Missing status\n- **Type:** feature\n"),
     /expected exactly one top-level Type and Status field/,
   );
+  assert.throws(
+    () => state.assertBacklogItemsWellFormed(
+      "## Items\n\n### Conflicting track\n- **Type:** feature\n- **Track:** A\n- **Track**: B\n- **Status:** backlog\n",
+    ),
+    /at most one Source and Track field/,
+  );
   assert.doesNotThrow(() => state.assertBacklogItemsWellFormed(BACKLOG));
+});
+
+test("resume draft keeps the Track already assigned to its items", () => {
+  const assigned = [
+    "### One\n- **Type:** feature\n- **Track:** Option A\n- **Status:** in-phase-2",
+    "### Two\n- **Type:** feature\n- **Track**: option a\n- **Status:** in-phase-2",
+  ];
+  assert.equal(state.resumeDraftTrack(assigned, "Option B", "phase-2"), "Option A");
+  assert.equal(state.resumeDraftTrack([], "Option B", "phase-2"), "Option B");
+  assert.throws(
+    () => state.resumeDraftTrack(
+      [...assigned, "### Three\n- **Type:** feature\n- **Status:** in-phase-2"],
+      "Option B",
+      "phase-2",
+    ),
+    /conflicting Track values/,
+  );
+});
+
+test("state scope and gap scans fail closed on malformed backlog items", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-malformed-"));
+  const output = path.join(root, "_mano_output");
+  fs.mkdirSync(output);
+  fs.writeFileSync(
+    path.join(output, "backlog.md"),
+    "# Backlog\n\n## Items\n\n### Missing status\n- **Type:** rule-gap\n",
+  );
+  try {
+    assert.throws(() => state.scan(root), /malformed backlog item/);
+    assert.throws(() => state.scanGaps(root, "rule-gap"), /malformed backlog item/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("state selects reviews only from the requested phase namespace", () => {

@@ -6,6 +6,7 @@ A history of Mano's releases — what each version changes and why.
 
 ### Added
 - **`mano mode auto|manual` adds an explicit, local hands-off option** — `manual` remains the default. After the human approves a phase scope, auto mode runs the approved, phase-specific planning chain through `mano dev yolo`, pauses for every human decision or blocker, and always stops before `mano review` or another phase. The mode lives in repository-local Git config, can be overridden with `MANO_MODE`, and is projected by every `state.js` view, including gap-only and JSON output.
+- **`mano track` adds an optional local experiment filter** — imports and conversational Start items receive the active Track, approved briefs preserve it, and review-created items copy the phase Track. Start can also filter one run by Source, Track, or their intersection without changing priority, scope, or approval.
 - **Hooks now support deterministic `command` mode** — a command hook names one project command that runs after its skill in both manual and auto modes. Existing and mode-less hooks remain `suggest`: Mano asks before running them in manual or unarmed work, while an approved auto chain runs them as the substitute for skipped intermediate human review and pauses if their findings need triage.
 - **Exact backlog items can be pulled into an open phase through `mano stories`** — when the human names an existing item and it fits the already-approved goal, stories may assign that exact title with the backlog writer and add a lettered story. It cannot choose work, hand-edit the backlog, broaden the phase goal, or bypass the normal readiness gates.
 - **Greenfield scaffolding now has a non-destructive runner** — `scaffold.js` runs empty-directory project generators outside the project, preflights every destination, preserves identical files, rejects differing collisions before copying, and never overwrites or deletes existing Mano artifacts. Spec, stories, and development contracts require this guarded path instead of moving `_mano` / `_mano_output` away or hand-merging generated files.
@@ -30,6 +31,11 @@ A history of Mano's releases — what each version changes and why.
 - **Backlog adds now report each item's Track.** Missing values print as `undefined`. Bulk adds report every item separately. This makes lost review or import tracks visible immediately.
 - **Track filtering now accepts both common Markdown forms.** It reads `**Track:**` and `**Track**:`. Human edits no longer hide matching backlog items.
 - **Stories no longer infer missing behavior-driving values.** Missing defaults, thresholds, and contracts return to their owning artifact. Stories never disguise those gaps as provisional story decisions.
+- **State projections now fail closed on malformed backlog items.** Scope, status, spec, and gap views no longer hide a human-edited item whose Type or Status envelope is unreadable.
+- **Deferred Start items retain the active Track.** Split remainders and finalisation-time deferrals no longer disappear from later Track-filtered planning.
+- **Interrupted drafts keep their assigned Track.** A newer local Track no longer relabels an unfinished phase or mixes in candidates from another experiment. Conflicting assigned Track fields now stop for repair.
+- **Story status updates now have an atomic postcondition.** A missing requested row fails before any status changes, and Dev verifies the updated state before claiming completion.
+- **Stale cross-contract wording is aligned.** State detection uses deterministic projections, phases require one independently verifiable outcome, every suggest hook has a triage boundary, and exact component interfaces have one owner.
 
 ## 1.2.0
 

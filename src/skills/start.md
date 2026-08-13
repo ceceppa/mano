@@ -36,7 +36,7 @@ On activation:
    - `DECISION: PROCEED` → act on `NEXT:`:
      - `scope-backlog` → **Path A.** The script prints a `SCOPE INPUT` block — the phase-scopeable `Status: backlog` items (with `spec-gap` / `rule-gap` already excluded), core product principles, and latest review. A source or track query restricts only these candidate items and is labelled in the projection; a combined query is their intersection. That is everything you need for scope; go straight to Step 6 using it. If a filtered projection has no items, say that no open backlog item matches the requested Source/Track and ask for a broader query or an unfiltered `mano start`; do not treat the full backlog as empty. **Do not open any file under `_mano_output/` to choose scope** (no `backlog.md`, no `reviews.md`, and especially not the finished phase's folder — it's shipped). The only exception is the narrow auto-chain planning read in Step 6 after a candidate scope exists. Don't greet conversationally.
      - `conversation` → **Path B** (new project).
-     - `resume-draft` → a previous run left the projected `PHASE_DIR` without a brief. The script prints all phase-scopeable item statuses (`spec-gap` / `rule-gap` excluded) and recent continuity in `SCOPE INPUT`. Do not infer which items were approved: show the likely items carrying the projected `IN_PHASE_STATUS`, then ask the user to confirm or restate the exact approved scope for this phase. Once confirmed, resume at Step 7; do not start a new phase.
+     - `resume-draft` → a previous run left the projected `PHASE_DIR` without a brief. The script prints items already carrying the projected `IN_PHASE_STATUS` plus matching open candidates; it excludes gaps, resolved work, rejected work, and other phases. Do not infer which items were approved: show the likely assigned items, then ask the user to confirm or restate the exact approved scope for this phase. Once confirmed, resume at Step 7; do not start a new phase.
 
    An explicit abandonment does not silently bypass closure. Tell the user to remove or cut unfinished story rows as appropriate, run `mano review` to record and close the phase, then re-run `mano start`. **Script failing?** Stop and report the error — do not derive the go/no-go by scanning `_mano_output/` yourself (see "Scripts are mandatory" in `_mano/workflow.md`).
 
@@ -53,7 +53,7 @@ Provide detail to minimize clarifying queries.
 
 ## Inputs
 
-- The state script's `SCOPE INPUT` block — on Path A it carries phase-scopeable `Status: backlog` items; on `resume-draft` it carries all phase-scopeable statuses so the human can restore the lost approved subset. Gap types are excluded in both modes. Both include `## Core Product Principles` and the latest review, so you never reopen `backlog.md` / `reviews.md` to scope.
+- The state script's `SCOPE INPUT` block — on Path A it carries phase-scopeable `Status: backlog` items; on `resume-draft` it carries exact-phase assignments plus matching open candidates so the human can restore the lost approved subset. Gap types, closed items, and other phases are excluded. Both include `## Core Product Principles` and the latest review, so you never reopen `backlog.md` / `reviews.md` to scope.
 - `_mano_output/backlog.md` — owned here: created on Path B and stamped at Step 7; on Path A you write to it but don't read it to scope
 - `_mano_output/project-rules.md` only if it already exists and is explicitly relevant to scoping, or as one of the narrow project-level artifact reads used to plan an auto chain after candidate scope exists
 - PRD or reference document if provided by the user
@@ -334,7 +334,7 @@ Each phase brief carries everything needed to understand the phase. No external 
 
 ### Hard constraint
 
-Must fit one testable layer. Target roughly 250-500 words. If the brief needs long prose or a large scope list to make sense, the phase is too broad.
+The brief must describe one independently verifiable outcome. That outcome may cross technical layers when the smallest complete slice needs them. Target roughly 250-500 words. If the brief needs long prose or a large scope list to make sense, the phase is too broad.
 
 ## Backlog format
 
@@ -411,8 +411,10 @@ To split:
 1. Rewrite the original item in `backlog.md` so its title and context describe **only** the slice entering this phase — a direct hand-edit (the one place you edit `backlog.md` by hand instead of through the script). Leave its `Status: backlog`; Finalisation step 4's `assign` stamps it. The title must not name capabilities that are not in this phase.
 2. Add a new item for the deferred remainder via the script — title and context describing only the not-yet-built part — cross-referencing it in one line (e.g. "Extends [PHASE_ID] X once shipped"):
    ```
-   node _mano/scripts/backlog.js add --title "..." --type [type] --context "..."
+   node _mano/scripts/backlog.js add --title "..." --type [type] --context "..." [--track "[TRACK]"]
    ```
+
+   Include `--track` with the exact projected `TRACK` whenever it is not `none`.
 
    **Script failing?** Stop and report the error — do not append the item by hand.
 
@@ -443,9 +445,9 @@ Only finalise after explicit human approval of the phase scope.
 2. **Fill the blank scaffold — do not open a sibling brief.** Copy `_mano/templates/phase-brief.md` into `PHASE_DIR/phase-brief.md` and fill each section per the **Phase brief output** structure above, drawing content only from the `SCOPE INPUT` block and the 7b answers (include only the core product principles that affect this phase). Record the projected owner in the template when `OWNER` is not legacy; omit the owner line in legacy mode. An earlier or another owner's phase brief may exist, and opening it is a trap: it carries that phase's scope. The blank template is the only shape you need.
 3. **Write ALL deferred items to the backlog via the script** — don't hand-write `### ` blocks into `backlog.md`. Everything mentioned as "later", "Phase 2", "deferred", or "not in this phase" during scoping MUST be added. One shell-safe call per item:
    ```
-   node _mano/scripts/backlog.js add --title "..." --type feature --context "what it is\nwhy it matters"
+   node _mano/scripts/backlog.js add --title "..." --type feature --context "what it is\nwhy it matters" [--track "[TRACK]"]
    ```
-   Use `\n` in `--context` for line breaks (max 5), and `--source` when there's an obvious one. The script owns the item format and skips a title that already exists. (Many at once: write them as a JSON array to a temp file and run `backlog.js add --file <path>`.)
+   Use `\n` in `--context` for line breaks (max 5), and `--source` when there's an obvious one. When the projection reports a `TRACK`, include that exact value on every deferred item. The script owns the item format and skips a title that already exists. (Many at once: write them as a JSON array to a temp file and run `backlog.js add --file <path>`.)
    **Script failing?** Stop and report the error — do not append items by hand.
 4. **Stamp approved items to this phase via the script** — don't edit `backlog.md` by hand:
    ```
@@ -524,7 +526,7 @@ This list is the negative restatement of rules defined in full elsewhere. Where 
 - Do not create optional project-rule, technical, UX, or UI design artifacts during `mano start`.
 - Do not write a phase brief, create the projected phase folder, create stories, or stamp the projected in-phase status before explicit human approval of the phase scope.
 - Do not put implementation tokens in the phase brief — specific hex values, pixel sizes, animation durations, function signatures, API contracts, file paths, or data-model decisions (schema fields, column names, storage shape). Applies everywhere in the brief, including the Assumption Log and Acknowledged Risks. Express the *constraint or intent*, not the *mechanism*. (This is the brief-output face of B1.) **Sole exemption:** the `## Stated Technical Preferences` pass-through block, which is a verbatim quoted record of a directive the user themselves stated — not `mano start` introducing or deciding tech. The exemption covers only verbatim transcription there; everywhere else, including paraphrasing those preferences into other sections, remains forbidden.
-- Do not skip scope sizing. Enforce the one-testable-layer rule even if the user asks for a larger dump.
+- Do not skip scope sizing. Enforce one independently verifiable outcome even if the user asks for a larger dump.
 - Do not accept one-liners without pushing back.
 - Do not produce more than one phase of scope.
 - Do not ask about market positioning or business metrics for small projects.

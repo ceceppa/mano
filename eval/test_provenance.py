@@ -82,7 +82,7 @@ class ProvenanceTests(unittest.TestCase):
             self.assertEqual(removed, {"post-hook-findings-triage": 5})
 
             stripped_sections = {
-                "AGENTS.md": "When a just-run `post-start`, `post-spec`, or `post-rules`",
+                "AGENTS.md": "When any just-run `suggest` hook has printed findings",
                 "_mano/workflow.md": "## Post-Hook Findings Triage",
                 "_mano/skills/start.md": "## Addressing post-start hook findings",
                 "_mano/skills/spec.md": "## Addressing post-spec hook findings",

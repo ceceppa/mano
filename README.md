@@ -64,7 +64,7 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | Command | What it does |
 |---------|-------------|
 | `mano` | Show available commands and current status. |
-| `mano status` | Scans output folder. Where am I? What's next? |
+| `mano status` | Runs the deterministic state projection. Shows the selected owner, active phase, artifact state, and valid next actions. |
 | `mano import [doc]` | Turn an existing PRD or document into a backlog, then stop. Run `mano start` afterwards to scope the first phase. |
 | `mano owner [slug]` | Show, set, or clear this repository clone's optional phase owner. |
 | `mano mode [auto\|manual]` | Show or set whether finished actions chain automatically through to implementation. Defaults to `manual`. |
@@ -93,7 +93,7 @@ mano owner alice
 
 That clone now uses `_mano_output/alice-phase-N/` and `in-alice-phase-N`. Another teammate can use `mano owner bob` for an independent sequence, or configure `alice` to take over or pair on Alice's current phase. `mano owner` shows the selection; `mano owner clear` returns the clone to legacy `phase-N` routing. Existing folders are never renamed or migrated.
 
-The owner is stored in repository-local Git config as `mano.owner`, so it is not committed. Linked worktrees share that setting; `MANO_OWNER=alice` can override it for a shell or worktree when different worktrees need different owners. Use a stable lowercase handle, not an email address or machine username.
+The owner is stored in repository-local Git config as `mano.owner`, so it is not committed. Setting or clearing it requires a Git checkout; run `git init` first in a new directory, or use `MANO_OWNER=alice` for a shell. Linked worktrees share the configured value. Use a stable lowercase handle, not an email address or machine username.
 
 Ownership scopes phase discovery and lifecycle gates; it is not a concurrency lock. The backlog, tech spec, UX flow, design brief, project rules, and reviews remain shared project files. Teammates should use branches or worktrees, choose disjoint backlog scope, and coordinate merges normally.
 
@@ -105,7 +105,19 @@ When you are exploring parallel directions, set a local track:
 mano track "Option B"
 ```
 
-Track is distinct from `Source`: Source records where a backlog item came from; Track records the experiment or direction it belongs to. While active, it tags imported, conversation-created, and newly captured review items, and `mano start` considers only matching-track backlog items. The selected track is written into the phase brief, so review feedback stays with that experiment even if you switch tracks later. `mano track clear` returns to untracked planning without modifying existing items. Track never bypasses phase approval or any conflict check.
+Track is distinct from `Source`: Source records where a backlog item came from; Track records the experiment or direction it belongs to. While active, it tags imported and conversation-created items. Start copies it into the phase brief. Review items then copy that phase Track, even if your local Track changed. `mano start` considers only matching-track backlog items. `mano track clear` returns to untracked planning without modifying existing items. Track never bypasses phase approval or any conflict check.
+
+Setting or clearing Track requires a Git checkout because Mano stores it in repository-local Git config. Run `git init` first in a new directory, or use `MANO_TRACK="Option B"` for a shell.
+
+You can also narrow one Start run without changing provenance or scope authority:
+
+```text
+mano start from source "Piano brief"
+mano start from track "Option B"
+mano start from source "Piano brief" and track "Option B"
+```
+
+Source uses a case-insensitive substring match. Track uses a case-insensitive exact match. Both only filter candidates; you still approve the phase scope.
 
 ### Auto mode
 
@@ -146,7 +158,7 @@ When a user types a Mano command in their AI IDE's chat interface, the agent is 
 
 > **If any command launches the wrong skill, use the hyphenated form.** Every Mano action also exists as an exact skill name `mano-<action>` (`mano-start`, `mano-review`, `mano-dev`, …). If the spaced form ever invokes a built-in or third-party skill that shares the action word (a code-review tool grabbing `mano review`, a dev server grabbing `mano dev`), re-run it hyphenated — the hyphenated name matches a Mano skill and nothing else. Full dispatch rule: `workflow.md`.
 
-`mano [action]` handles everything — first run, discussion, and regeneration. Run it again on the same action to discuss changes or regenerate output.
+Run a Mano action again when concrete new information affects its artifact. The skill preserves unaffected content and updates only the relevant sections. `mano stories` never regenerates a completed story; changed shipped behavior becomes a new lettered corrective story.
 
 ## Skills
 
@@ -177,7 +189,7 @@ The optional actions can be skipped; `mano review` cannot. Review is what closes
 
 Optional actions can be created now, reused from existing work, copied from a similar project, adapted from external inputs, or skipped entirely when they would add noise. Only run them when the current phase needs more clarity, constraints, or alignment. You never run the whole pipeline "just in case."
 
-**Skipping is not free, though.** "Optional" means *you* decide where the decision gets made — not that the decision goes away. If a phase genuinely needs a constraint that a skipped artifact would have captured (a folder convention, an API contract, a visual rule), the coding agent doesn't stop and ask — it invents one on the spot, per-story, with no record. That's fine when the choice is inconsequential and bad when it isn't: skip an artifact when its decisions are obvious or don't matter yet; run it when leaving those decisions to an implementer would let them drift. Where it's relevant, a skill's next-action recommendation will note what an absent artifact leaves unpinned, so you can choose deliberately rather than by omission.
+**Skipping is not free, though.** "Optional" means *you* decide where a decision gets made. It does not make the decision disappear. Stories and Dev stop when a missing UX, UI, rule, default, or public contract would force invention. Small local choices may remain implementation decisions. Run an optional artifact when its missing decisions would block work or create project-wide drift.
 
 ### Human approval before phase briefs
 
@@ -214,8 +226,8 @@ After a review, `mano review` closes the phase. If you don't need Mano for the r
 Requirements change during implementation. You don't have to finish the phase to adjust:
 
 - **Found a bug or missing feature?** Use `mano stories` — it creates a pending story numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3). Run `mano dev` when you want to implement the next pending row.
-- **Need to change scope?** Use `mano start` to talk to `mano start` — update assumptions, adjust scope, flag stories that turned out wrong.
-- **Need to regenerate specs or stories?** Run `mano [action]` again — the skill will check what exists and offer to update or regenerate.
+- **Need to change the active phase scope?** Amend the current phase brief explicitly. Then rerun `mano stories` so affected pending work changes and shipped behavior receives a lettered corrective story. `mano start` will not advance while the phase remains open.
+- **Need to update specs or stories?** Run the owning action with the concrete change. It updates affected content only. Done stories remain immutable.
 
 For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real manifest and lockfile (any language — `package.json`/`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `go.sum`, `requirements.txt`/`uv.lock`, `CMakeLists.txt`, etc.), or anytime you add/remove/replace a library, run `mano spec` again so `mano spec` can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain. It also receives the exact backlog items assigned to the active phase, so source requirements are not lost when the human-facing phase brief summarizes them. For a brownfield public interface, it checks the named existing declaration surface before confirming a replacement or extension. The completeness gate is deliberately limited to consumer-visible/public or independently-owned multi-story boundaries; a local helper or component API owned by one story stays an implementation decision.
 
@@ -260,7 +272,7 @@ _mano_output/
 
 Each phase brief is self-contained — problem, vision, design principle, scope, validation plan, assumptions, and risks. Technical decisions and UX flow live at project level and grow only when they are useful. Future work lives in `backlog.md`. Artifacts are living working documents, not permanent contracts.
 
-Planning artifacts live under `_mano_output/`. The installer writes the only framework scaffold outside that folder: `AGENTS.md` at the project root, so coding agents know where Mano artifacts live before any Mano command runs.
+Planning artifacts live under `_mano_output/`. The installer writes Mano's runtime under `_mano/` and installs a fenced `AGENTS.md` contract at the project root. It may also install fenced `CLAUDE.md` or `.cursorrules` guidance when requested.
 
 Mano's installed runtime layout lives under `_mano/` inside the user's project. This repository contains the framework source files at the root for authoring, but the contract exposed to coding agents in real projects uses `_mano/skills` and `_mano/templates`.
 
@@ -282,7 +294,7 @@ This optional file manages architectural patterns, routing formats, workflow pre
 > - **`tech-spec.md` is the WHAT (The Blueprint):** It defines libraries, data schemas, and exact consumer-visible interface contracts (e.g., "We will use PostgreSQL, and `GET /users` returns this result/error shape").
 > - **`project-rules.md` is the HOW (The Building Codes):** It defines reusable architecture, signature, folder, and styling conventions (e.g., "All API handlers must be wrapped in `catchAsync`, and we separate UI logic from data fetching").
 >
-> **The quick test:** the spec answers a *reviewer's* question — *"is this the right technical approach?"* Rules answer a *contributor's* question — *"where do I put this file and what do I name it?"* A decision the spec already settled (which library, which data format) becomes a rule the moment someone has to act on it consistently (where those files live, what they're named). Folder structure, naming, and file-placement conventions are **always** rules, never spec — even before `project-rules.md` exists.
+> **The quick test:** the spec answers a *reviewer's* question — *"is this the right technical approach?"* Rules answer a *contributor's* question — *"where do I put this file and what do I name it?"* A spec decision never changes owner. A project rule may define how contributors apply it consistently, but it references the spec instead of copying the library, format, value, or exact interface. Folder structure, naming, and file-placement conventions are **always** rules, never spec — even before `project-rules.md` exists.
 
 ### 2. Bring Your Own Artifacts
 Because Mano operates on a strictly "à la carte" file-based system, you can completely skip a skill by providing your own documentation. If you already have a spec or design, simply create the corresponding file in `_mano_output/` and Mano will read and respect it automatically:
@@ -295,7 +307,7 @@ Because Mano operates on a strictly "à la carte" file-based system, you can com
 
 ## Reality of Context
 
-Mano does not create true agent isolation, persistent memory, or deterministic workflows.
+Mano does not create true agent isolation, persistent model memory, or an autonomous orchestration engine. Its scripts do provide deterministic state projections and format-safe writes for fragile operations.
 
 LLMs only reason over the context currently provided to them. Artifact boundaries, role specialization, and phase separation are maintained through user discipline and selective context exposure — not hard enforcement.
 
@@ -307,18 +319,18 @@ Mano reduces planning entropy by encouraging bounded reasoning scopes and struct
 
 This is not a fully autonomous system. It is a collaboration framework for guiding LLM-assisted planning work.
 
-## Artifact Trust Hierarchy
+## Artifact Ownership and Conflicts
 
-When artifacts conflict, prefer sources in this order:
+Explicit human decisions control the project. After that, use the artifact that owns the decision instead of ranking whole document types:
 
-1. Explicit human decisions
-2. Current phase brief
-3. Project rules
-4. Technical specifications
-5. UX/UI documentation
-6. Generated stories or tasks
+- The phase brief owns the current goal, scope, exclusions, and learning plan.
+- The tech spec owns technical choices, exact public contracts, defaults, and domain mechanics.
+- The UX flow owns user actions, branches, navigation, and recovery paths.
+- The design brief owns visual direction, composition, and visual values.
+- Project rules own reusable conventions, required patterns, and prohibitions.
+- Stories decompose those decisions into bounded implementation and observable acceptance criteria.
 
-Lower-level artifacts should be regenerated or updated when they drift from higher-priority decisions.
+When two artifacts disagree, do not silently prefer either one. Show the conflict and ask the human to resolve it. Then update each affected artifact through its owner.
 
 ## Artifact Drift
 
@@ -330,7 +342,7 @@ Artifacts can exist in four states:
 - Conflicting — contradicts newer decisions
 - Deprecated — retained only for historical reference
 
-When major decisions change, regenerate downstream artifacts rather than patching inconsistencies incrementally.
+When a decision changes, rerun its owning skill with the concrete change. Update only affected sections and references. Preserve done stories; add corrective work when shipped behavior changes. Restructure or replace a whole artifact only when the human explicitly chooses that broader change.
 
 ### Aligning drift
 
@@ -338,7 +350,7 @@ Drift is the normal cost of staying in control: as you change direction, edit co
 
 Re-running the relevant skill (for example `mano rules`) can **align** artifacts that have drifted — updating a stale reference to match what its source-of-truth artifact now says, rather than restating the same fact in several places. Each shared value or decision has one owning artifact; the others reference it, so alignment means re-pointing the references, not copying the value around.
 
-Alignment is a supervised step, not an automatic sync. When a value or decision conflicts across artifacts — the same fact stated differently in two places — Mano surfaces the conflict for you to resolve instead of silently picking one. A reconciliation you did not approve is not a success. For small drift, alignment is the low-cost fix; for major decision changes, prefer full regeneration (above).
+Alignment is a supervised step, not an automatic sync. When a value or decision conflicts across artifacts, Mano surfaces the conflict for you to resolve. It never silently picks one. After the decision, each owning skill applies the smallest relevant update. A broader rewrite requires explicit approval.
 
 ## Common Failure Modes
 
@@ -352,7 +364,7 @@ Watch for:
 - context leakage between planning phases
 - unnecessary process expansion
 
-When outputs become unfocused or contradictory, reduce context scope and regenerate artifacts from the latest trusted decisions.
+When outputs become unfocused or contradictory, reduce context scope, identify the owning artifact, and rerun that skill with the resolved decision. Do not rewrite unaffected artifacts.
 
 ## Project-Level Customization
 
@@ -423,13 +435,13 @@ Avoid pulling every artifact into every skill. Mano should preserve useful reaso
 
 ## Optional Post-Skill Hooks
 
-Mano can support optional post-skill hooks through a local `hooks/` folder.
+Mano can support optional post-skill hooks through the installed `_mano/hooks/` folder.
 
 A hook becomes active only when an `.example.md` file is copied or renamed without `.example`:
 
 ```text
-hooks/post-spec.example.md  -> inactive
-hooks/post-spec.md          -> active
+_mano/hooks/post-spec.example.md  -> inactive
+_mano/hooks/post-spec.md          -> active
 ```
 
 A hook's `## Mode` section decides how it runs — the two kinds produce different things:
@@ -452,32 +464,25 @@ Writing the file is the authorization, so you are not asked each time. Mano runs
 
 The line between the kinds is judgement vs mechanism: an opinion arriving before you have formed your own changes what you think, so you are asked first; syncing a tracker has no opinion in it, and being asked each time is just a chore.
 
-When a `post-start`, `post-spec`, or `post-rules` hook reports findings, Mano
-returns a compact numbered triage: apply an in-scope edit, decide between
-options, route it to the owning skill, or skip it. Running a hook never
-pre-approves its findings, and no findings ledger is added to the project.
-`post-stories` keeps a stricter per-finding flow because completed stories are
-immutable.
+When any suggest hook reports findings, Mano returns a compact numbered triage.
+You can apply an in-scope edit, decide between options, route the finding, or
+skip it. Each hook can change only the artifact owned by its related skill.
+Running a hook never pre-approves its findings. Mano adds no findings ledger.
+`post-stories` keeps a stricter flow because completed stories are immutable.
 
 Default example hooks include:
 
 ```text
-hooks/post-import.example.md
-hooks/post-start.example.md
-hooks/post-spec.example.md
-hooks/post-rules.example.md
-hooks/post-ux.example.md
-hooks/post-ui.example.md
-hooks/post-stories.example.md
-hooks/post-review.example.md
+_mano/hooks/post-import.example.md
+_mano/hooks/post-start.example.md
+_mano/hooks/post-spec.example.md
+_mano/hooks/post-rules.example.md
+_mano/hooks/post-ux.example.md
+_mano/hooks/post-ui.example.md
+_mano/hooks/post-stories.example.md
+_mano/hooks/post-review.example.md
 ```
 
 To use a project-specific external check, copy an example hook and replace `[external-review-command]` in the suggested prompt with the command or skill you want to run.
 
-Mano should not:
-- run hooks automatically
-- print the hook's suggested prompt unless asked
-- mention specific external skill names in generic output
-- modify files from hook findings unless the user explicitly selects them
-
-Hooks are best run after the human reviews the generated artifact. This avoids stale validation when the artifact is edited after generation.
+Mano never prints a suggest hook's full prompt unless asked. It never names a specific external skill in generic output. Hook findings never authorize edits: Mano presents each finding for selection and applies only the chosen, in-scope changes. In manual or unarmed work, the human decides when to run a suggest hook. During an armed auto chain, Mano runs it after the related artifact and pauses only when findings need triage.
