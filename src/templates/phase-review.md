@@ -10,22 +10,23 @@
 Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 ## Phase [N] Review — [Date]
 
-### Evidence
+### Validation
 
-- **Level:** gathered / partial / none
-- **Tried:** [what the human used, showed, played, measured, or checked]
-- **Result:** [what happened, or `Not recorded`]
+- **Result:** [what happened, or `Not tested`]
+- **Checked with:** [where or how the human checked it]
+<!-- Omit `Checked with` when the human did not supply it. -->
 
 ### Phase checks
 
 | Phase promise | Result | What happened |
 |---|---|---|
-| [Exit Criterion] | passed / failed / not tested | [concrete result or `Not recorded`] |
+| [Exit Criterion] | passed / failed / not tested | [concrete result, or `Not tested`] |
 
 ### Decision
 
 - **Choice:** [human choice, `Not enough evidence`, or `Not assessed`]
-- **Why:** [evidence-linked reason, or `Not recorded`]
+- **Why:** [stated reason, or a stated result that directly supports the choice]
+<!-- Omit `Why` when the human supplied no reason. -->
 
 ### Assumptions
 
@@ -47,16 +48,17 @@ Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 
 <!-- Only present if follow-up fix work was reviewed after the main review. Append here; do not create a new ## Phase heading. -->
 
-#### Evidence
+#### Validation
 
-- **Level:** gathered / partial / none
-- **Tried:** [or `Not recorded`]
-- **Result:** [or `Not recorded`]
+- **Result:** [what happened, or `Not tested`]
+- **Checked with:** [where or how the human checked it]
+<!-- Omit `Checked with` when the human did not supply it. -->
 
 #### Decision update
 
 - **Choice:** [changed choice, `Unchanged`, `Not enough evidence`, or omit this section]
-- **Why:** [or `Not recorded`]
+- **Why:** [stated reason, or a stated result that directly supports the choice]
+<!-- Omit `Why` when the human supplied no reason. -->
 
 #### Outcome changes
 

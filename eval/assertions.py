@@ -890,6 +890,64 @@ def review_triage_wrote_nothing_yet(ctx: Ctx) -> list[Failure]:
     return failures
 
 
+def review_preserved_positive_summary(ctx: Ctx) -> list[Failure]:
+    failures = []
+    reviews_path = ctx.output_dir / "reviews.md"
+    if not reviews_path.is_file():
+        return [Failure(
+            "review_preserved_positive_summary",
+            "reviews.md was not written after the explicit close",
+        )]
+
+    review = reviews_path.read_text(encoding="utf-8")
+    checks = {
+        "summary result": bool(re.search(
+            r"\*\*(?:Result|Observed):\*\*[^\n]*(?:all went as planned|everything went as planned)",
+            review,
+            re.IGNORECASE,
+        )),
+        "passed phase promise": bool(re.search(
+            r"\|[^\n]*save[^\n]*\|\s*passed\s*\|",
+            review,
+            re.IGNORECASE,
+        )),
+        "confirmed assumption": bool(re.search(
+            r"\|[^\n]*Save button[^\n]*\|\s*confirmed\s*\|",
+            review,
+            re.IGNORECASE,
+        )),
+    }
+    failures.extend(
+        Failure("review_preserved_positive_summary", f"missing {label}")
+        for label, present in checks.items()
+        if not present
+    )
+
+    if re.search(r"\*\*(?:Level|Status|Tried):\*\*", review, re.IGNORECASE):
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "review retained the removed evidence grading fields",
+        ))
+    if "Not recorded" in review:
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "review printed a missing-field placeholder",
+        ))
+    if re.search(r"\*\*Checked with:\*\*", review, re.IGNORECASE):
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "review invented optional validation context",
+        ))
+
+    backlog = ctx.backlog() or ""
+    if "**Status:** resolved" not in backlog or "**Status:** in-phase-1" in backlog:
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "the explicit close did not resolve the phase backlog item",
+        ))
+    return failures
+
+
 def pending_review_gate_held(ctx: Ctx) -> list[Failure]:
     fails = []
     reviews = ctx.output_dir / "reviews.md"
@@ -1805,6 +1863,7 @@ REGISTRY = {
     # review: rejected scope
     "review_surfaced_rejection_candidates": review_surfaced_rejection_candidates,
     "review_triage_wrote_nothing_yet": review_triage_wrote_nothing_yet,
+    "review_preserved_positive_summary": review_preserved_positive_summary,
     # stories mid-build
     "midbuild_lettered_story_inserted": midbuild_lettered_story_inserted,
     "existing_stories_unchanged": existing_stories_unchanged,

@@ -513,7 +513,8 @@ Step 2 — Feedback capture
   It asks the human to mark each promise passed, failed, or not tested.
   It shows the separate Validation Plan as questions and suggested tests.
   It then collects decisions, assumptions, and freeform feedback.
-  Evidence is recorded as gathered, partial, or none; it is separate from feedback triage.
+  Validation records what happened; optional context records where or how it was checked.
+  Mano does not grade validation or print missing optional fields.
 
 Step 3 — Triage
   `mano review` categorises feedback into six buckets:
@@ -533,7 +534,7 @@ Step 3 — Triage
 Step 4 — Close
   User confirms triage.
   `mano review` writes ALL items to backlog with categories preserved.
-  `mano review` writes a compact decision log to reviews.md: evidence, the human decision, assumption outcomes, and resulting backlog changes. It does not add a release recap, story/test counts, empty ceremony sections, or generic lessons.
+  `mano review` writes a compact decision log to reviews.md: validation results, the human decision, assumption outcomes, and resulting backlog changes. It does not add a release recap, story/test counts, empty ceremony sections, or generic lessons.
   Phase is closed.
   `mano review` suggests: mano start for next phase, or stop.
 ```
@@ -545,7 +546,7 @@ When the phase is already clear and extra artifacts would add overhead instead o
 - Use `mano start` → `mano stories` → build → `mano review`.
 - Add optional planning artifacts later only if the work becomes ambiguous.
 
-`mano review` is the one non-optional step. It closes the selected owner-scoped phase by moving only that phase identity's exact in-phase status to `resolved`; `mano start` requires that closure before it scopes the next phase in the same namespace. Other owners' phases are independent. The optional planning actions can be skipped; review cannot. The ceremony can: `close it` closes immediately and records `Evidence: none` and `Decision: Not assessed`, so closure never masquerades as validation. A normal entry is a compact evidence-and-decision log, not a mini-postmortem.
+`mano review` is the one non-optional step. It closes the selected owner-scoped phase by moving only that phase identity's exact in-phase status to `resolved`; `mano start` requires that closure before it scopes the next phase in the same namespace. Other owners' phases are independent. The optional planning actions can be skipped; review cannot. The ceremony can: `close it` closes immediately and records `Validation: Not tested` and `Decision: Not assessed`, so closure never masquerades as validation. A normal entry is a compact validation-and-decision log, not a mini-postmortem.
 
 ## Rules
 

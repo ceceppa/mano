@@ -11,8 +11,8 @@ def _read(relative: str) -> str:
     return (REPO_ROOT / relative).read_text(encoding="utf-8")
 
 
-class ReviewEvidenceContractTests(unittest.TestCase):
-    def test_phase_brief_plans_evidence_before_assumptions(self) -> None:
+class ReviewValidationContractTests(unittest.TestCase):
+    def test_phase_brief_plans_validation_before_assumptions(self) -> None:
         template = _read("src/templates/phase-brief.md")
         exit_at = template.index("## Exit Criteria")
         validation_at = template.index("## Validation Plan")
@@ -29,19 +29,31 @@ class ReviewEvidenceContractTests(unittest.TestCase):
         self.assertIn("**Validation-plan checkpoint.**", start)
         self.assertIn("The human owns every decision", start)
         self.assertIn("Exit Criteria lists what must work", start)
-        self.assertIn("closed without evidence", start)
+        self.assertIn("closed without validation", start)
         self.assertIn("Do not block the new phase", start)
 
-    def test_review_distinguishes_evidence_from_closure(self) -> None:
+    def test_review_records_results_without_grading_optional_context(self) -> None:
         review = _read("src/skills/review.md")
 
-        for status in ("`gathered`", "`partial`", "`none`"):
-            self.assertIn(status, review)
-        self.assertIn("Evidence says how strongly this review is grounded", review)
-        self.assertIn("`none` means the phase closed without validation", review)
-        self.assertIn("mark every unspecified assumption `inconclusive`", review)
-        self.assertIn('A vague phrase such as "all good"', review)
-        self.assertIn('Or say "close it" to close without evidence.', review)
+        self.assertIn("**Validation rule:**", review)
+        self.assertIn("A clear summary result is enough", review)
+        self.assertIn("Omit this field when the human does not supply it", review)
+        self.assertIn("Never grade validation", review)
+        self.assertIn("`Validation` as `Result: Not tested`", review)
+        self.assertIn("Mark assumptions without a human verdict `inconclusive`", review)
+        self.assertIn("**Whole-review verdict rule.**", review)
+        self.assertIn("`all went as planned`", review)
+        self.assertIn('Or say "close it" to close without validation.', review)
+
+    def test_positive_summary_close_preserves_the_human_verdict(self) -> None:
+        review = _read("src/skills/review.md")
+
+        self.assertIn("Record the user's verdict in `Result`.", review)
+        self.assertIn("Mark every Phase check `passed`.", review)
+        self.assertIn("Mark every presented assumption `confirmed`.", review)
+        self.assertIn("A positive summary verdict never uses this path.", review)
+        self.assertIn("`all went as planned, close it`", review)
+        self.assertIn("reuse that result as the Decision's `Why`", review)
 
     def test_fast_close_matches_the_review_template(self) -> None:
         review = _read("src/skills/review.md")
@@ -50,14 +62,23 @@ class ReviewEvidenceContractTests(unittest.TestCase):
         self.assertNotIn("What we'd do differently", review)
         self.assertNotIn("### What worked", template)
         self.assertNotIn("### What didn't", template)
-        self.assertGreaterEqual(template.count("**Level:** gathered / partial / none"), 2)
-        self.assertGreaterEqual(template.count("**Tried:**"), 2)
         self.assertGreaterEqual(template.count("**Result:**"), 2)
+        self.assertGreaterEqual(template.count("**Checked with:**"), 2)
+        self.assertNotIn("**Level:**", template)
+        self.assertNotIn("**Tried:**", template)
+        self.assertNotIn("`Not recorded`", template)
         self.assertIn("### Decision", template)
         self.assertIn("### Phase checks", template)
         self.assertIn("### Backlog changes", template)
         self.assertIn("**No release recap.**", review)
         self.assertIn("Record the decision as `Not assessed`", review)
+
+    def test_review_confirmation_exposes_assumptions_and_optional_context(self) -> None:
+        review = _read("src/skills/review.md")
+
+        self.assertIn("Include every brief assumption", review)
+        self.assertIn("You may add where or how you checked it.", review)
+        self.assertIn('Say "close it" to record the review as shown.', review)
 
     def test_review_keeps_learning_questions_human_owned(self) -> None:
         review = _read("src/skills/review.md")
@@ -79,7 +100,7 @@ class ReviewEvidenceContractTests(unittest.TestCase):
         self.assertIn("Other planned checks", review)
         self.assertIn("| Phase promise | Result | What happened |", template)
 
-    def test_public_docs_keep_feedback_optional_but_evidence_honest(self) -> None:
+    def test_public_docs_keep_feedback_optional_but_validation_honest(self) -> None:
         readme = _read("README.md")
         workflow = _read("src/workflow.md")
 

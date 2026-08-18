@@ -204,7 +204,7 @@ On a new project, `mano start` populates the backlog (from conversation), sugges
 5. `mano ui` → `mano ui` extends the project-wide design brief and creates or updates the current phase preview.
 6. `mano stories` → `mano stories` breaks into stories.
 7. `mano dev` → implement the next pending story (repeat until the phase is built). Ship. Gather feedback.
-8. `mano review` → `mano review` records evidence, triages feedback into the backlog, writes the review log, and closes the phase.
+8. `mano review` → `mano review` records validation results, triages feedback into the backlog, writes the review log, and closes the phase.
 
 This is an example path, not a mandatory conveyor belt. After any step, choose the next action from the artifacts that are still missing or need revision.
 
@@ -213,11 +213,11 @@ This is an example path, not a mandatory conveyor belt. After any step, choose t
 2. Approve the phase brief scope.
 3. `mano stories` → `mano stories` writes stories directly.
 4. `mano dev` → implement the next pending story, repeat until the phase is built.
-5. `mano review` → `mano review` records evidence, triages feedback, and closes the phase. Required — this is what lets the next `mano start` proceed.
+5. `mano review` → `mano review` records validation results, triages feedback, and closes the phase. Required — this is what lets the next `mano start` proceed.
 
 Use the minimal path when the phase is already clear and extra artifacts would add noise instead of signal. The optional planning actions are what you skip here; review still closes the phase.
 
-Review does not pretend that every completed phase was validated. It records evidence as `gathered`, `partial`, or `none`, independently from whether assumptions were confirmed, invalidated, or left inconclusive, and asks what decision that evidence supports. If no meaningful evidence is available, say `close it`: Mano closes the phase immediately, records `Evidence: none` and `Decision: Not assessed`, and leaves unspecified assumptions inconclusive. Feedback is optional; an honest record of its absence is not. Empty worked/didn't-work sections, story counts, test counts, and shipped-feature summaries are omitted unless a fact directly supports the decision.
+Review does not pretend that every completed phase was validated. It records what happened and keeps the exact phase checks visible. Where or how you checked the result is useful but optional. Mano omits that field when you do not supply it; it does not grade the review. If no result is available, say `close it`: Mano closes the phase immediately, records `Validation: Not tested` and `Decision: Not assessed`, and leaves unspecified assumptions inconclusive. Feedback is optional; an honest record of its absence is not. Empty worked/didn't-work sections, story counts, test counts, and shipped-feature summaries are omitted unless a fact directly supports the decision.
 
 ### Escape hatch
 After a review, `mano review` closes the phase. If you don't need Mano for the rest — that's fine. A tool that never lets go is a dependency, not a tool.
