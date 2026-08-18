@@ -2,6 +2,36 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.5.0 — August 19, 2026
+
+`mano build` — a second way into code, for phases that do not need story files. The unit of work becomes the numbered `## Phase Scope` item the human already approved, so nothing invents a decomposition and nothing can drift from the brief. The saving is not in skipping files; it is in not needing the guard rails that discipline an invented unit.
+
+### Added
+- **`mano build` (`_mano/skills/build.md`)** builds the active phase straight from its brief. It runs the artifact gap gates once against the whole brief, creates the ledger, checks that Exit Criteria and Phase Scope actually cover each other, then implements row by row. It runs straight through and stops only when it *deviated*: a gap, a scope conflict, a split, a reopened row, or a mid-phase correction.
+- **`PHASE_DIR/progress.md` — the build ledger.** One `S` row per Phase Scope item, one `E` row per Exit Criteria leaf, addressed by the brief's own numbers (`S2`, `E2b`). Two status vocabularies, enforced by the writer: scope is `pending | doing | done`, criteria are `pending | met`. **Built is not proven.**
+- **`progress.js` — the ledger writer, and `init` takes no content.** It parses `## Phase Scope` and `## Exit Criteria` out of the brief and emits both tables itself, so verbatim copying stops being a rule a model can follow or violate and becomes a property of a parser. It also owns the refusals: `met` on a scope row, `done` on a criterion, a backwards move without `--reopen`, splitting a row that is not being built, a parent closed before its sub-rows, a correction row under an item the brief never had.
+- **`_mano/rules/implement.md` — one implementation contract, two units of work.** The half that is identical for `mano dev` and `mano build` (gap gates 6.2–6.4, pre-reads 7–10, the acceptance-evidence gate 10.1, Repair Mode, the read budget, Implementation Output Discipline) now has one home; both skills declare it in `requires:`.
+- **Addressable Exit Criteria.** Briefs now carry a numbered `## Phase Scope` and two-level `## Exit Criteria` (numbered category, lettered leaves). Every leaf has a stable address and is proven separately, so a category marked satisfied can no longer hide an unverified bullet inside it — an improvement to `mano dev`'s gates 6.1 and 10.1 on the existing path too.
+- **Ten `mano build` eval cases** plus deterministic `progress.js` parser tests, and a `run_mode` field so a case can pin auto mode (`build-scope-refusal-auto` proves auto does not soften gate 6.4).
+
+### Changed
+- **Auto mode's terminal action is `mano build`** where it was `mano stories` → `mano dev yolo`. Nothing else in the chain changes, and the terminal action is not configurable — a knob there would be one more decision for no gain. A phase that already has a stories index keeps the stories path.
+- **`mano review` gates on whichever ledger the phase used** — it refuses to close a build-path phase while any scope row is not `done` **or** any Exit Criterion is not `met`.
+- **`state.js --next` serves both implementation paths** and projects the ledger's two tables plus the next non-done row; `--current` adds `PROGRESS` and per-table counts. A phase holding both a stories index and a ledger is **refused**, not silently resolved.
+- **Mid-phase corrections stay inside `mano build`** instead of bouncing out to `mano stories`. Most of them are a defect in work already marked `done` — a status correction that reopens the row and invents nothing at all.
+
+### Hooks
+- **`## Inputs` now has a contract.** Every shipped hook declared one; nothing said what Mano did with it. A `check` hook reads exactly those paths itself (projection fields like `BRIEF` / `PREVIEW` resolve from the state projection, never by hand); a `suggest` hook hands the resolved list to the external skill — *"Allow the review skill to read: …"* — so the reviewer's scope is the hook author's choice rather than whatever it decides to open; a `command` hook's is inert.
+- **A `check` hook may not out-read its own skill.** It is Mano applying the checklist, so it inherits that skill's read boundary. `mano review` never reads source, so a check hook on review may not ask it to — that comparison is exactly what `post-review` ships as a `suggest` hook for.
+- **The shipped example checklists are commented out.** A check hook is the user's own review, so an activated example now applies nothing until its items are uncommented or replaced. Mano never invents checklist items and never falls back to the example text. `.example.md` files are never loaded at runtime, so the examples cost no context.
+- **`post-rules` and `post-ui` gained the phase brief** as an input; `post-start`'s was de-hedged. A hook checking a phase-scoped artifact could not previously see what the phase asked for.
+- **`## Run` appears only in `post-review`**, the one `suggest` example. It is the suggest-mode section; in a check hook it would never run.
+
+### Notes
+- `mano stories` + `mano dev` are unchanged and stay first-class: they keep the big-model-plans / small-model-implements split and suit a large phase. A phase uses one path or the other.
+- `mano build` takes no free-text argument. Work the brief does not contain goes through `mano start`.
+- `mano owner` / `mano mode` / `mano track` are documented as what they are: thin, validating wrappers over `git config --local mano.<key>`, with the exact equivalent for each command in the README.
+
 ## 1.4.0 — August 19, 2026
 
 Token-efficiency release: the measured cost of a Mano session is dominated by what sits resident in context on every message. This release cuts the always-on instruction load without deleting behaviour — rules moved to homes that load only when needed.

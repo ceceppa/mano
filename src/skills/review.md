@@ -22,8 +22,8 @@ Read this file plus `_mano/rules/core.md`, `_mano/rules/artifact.md`, and `_mano
 If the user's activation message already includes substantive review feedback after `mano review`, treat that text as Step 2 review input once the pre-review gate is clear. Do not ignore inline feedback just because it arrived in the same message as the command.
 
 On activation:
-1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, `STORIES`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values; never construct `phase-N` or a review heading from the number.
-2. Read the exact projected `STORIES` path to check story completion status.
+1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, `STORIES`, `PROGRESS`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values; never construct `phase-N` or a review heading from the number.
+2. **Which ledger this phase used decides what you read.** `STORIES_STATUS: present` → read the exact projected `STORIES` path for story completion. `PROGRESS_STATUS: present` → this phase was built with `mano build`: read the exact projected `PROGRESS` path instead, and read no story files (there are none). The projection refuses a phase holding both, so exactly one applies.
 3. Read `_mano_output/reviews.md` if it exists to check for an H2 review heading that begins with the exact projected `REVIEW_HEADING_PREFIX` and then adds ` — [Date]`. An owner-scoped prefix must never match a legacy or different-owner heading.
 4. If that exact review entry already exists, treat this as a follow-up review focused on what changed after the fix work.
 5. After the pre-review gate below is clear, if that review entry exists but `_mano_output/backlog.md` still contains any items with the exact projected `IN_PHASE_STATUS`, the prior close was interrupted. Repair the already-approved close sweep before follow-up triage:
@@ -41,11 +41,24 @@ On activation:
    - `mano review` — continue the follow-up review if there is new feedback
    ```
 
-At the beginning of every later turn in this multi-turn review, rerun `node _mano/scripts/state.js --current`. Continue only when `OWNER`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, `STORIES`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX` exactly match the activation projection. If ownership or phase state changed, write nothing and ask the user to invoke `mano review` again. Running this deterministic projection is part of review routing, not implementation investigation.
+At the beginning of every later turn in this multi-turn review, rerun `node _mano/scripts/state.js --current`. Continue only when `OWNER`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, `STORIES`, `PROGRESS`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX` exactly match the activation projection. If ownership or phase state changed, write nothing and ask the user to invoke `mano review` again. Running this deterministic projection is part of review routing, not implementation investigation.
 
 ## Pre-review gate
 
-If any stories are not marked `done`, **refuse and stop**. Review does not manage story state — that is not its job. Report what's pending and point to the right path:
+**On the build path (`PROGRESS_STATUS: present`)**, the gate reads the ledger's two tables and refuses when **any Scope row is not `done` or any Exit Criterion is not `met`**. Built is not proven: a phase whose scope is complete but whose criteria are still `pending` has not shown that it works, and closing it would make the review a formality. Report what is open and stop:
+
+```text
+[mano review]: [PHASE_ID] isn't finished yet, per [PHASE_DIR]/progress.md:
+
+- S3 [row] — [status]
+- E2c [criterion] — pending
+
+I can't review a phase that isn't complete, and managing that ledger isn't my job. Run `mano build` to finish the open rows and prove the open criteria. If a criterion can't be proven as written, `mano start` owns the brief that states it.
+```
+
+That is your complete response. Do not edit `progress.md`, do not flip a row or a criterion, do not proceed to triage. When both tables are closed, the ledger plus the brief is the whole review input — that Exit Criteria table is review's coverage map, and it is why the table exists. The phase-contract and artifact-polarity safety nets below apply per Exit Criterion leaf; on this path there are no story ACs to map, so the leaves themselves are the contract and the ledger has already recorded which were proven.
+
+**On the stories path**, if any stories are not marked `done`, **refuse and stop**. Review does not manage story state — that is not its job. Report what's pending and point to the right path:
 
 ```
 [mano review]: These stories aren't marked `done` yet:
@@ -63,7 +76,7 @@ I can't review a phase that isn't complete, and managing story status isn't my j
 That is your complete response. Do not edit the README index, do not mark or cut stories, do not proceed to triage. Re-running `mano review` after the index shows every story `done` (or no longer lists the cut ones) clears this gate.
 
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-**Phase-contract safety net.** Once every row is `done`, read the exact projected phase brief and each story file named by the exact projected index before beginning Standard review. This remains artifact inspection, not implementation investigation. Map every distinct Phase goal outcome and every Exit Criterion—including each nested action/result bullet—to a concrete `Done when` AC. Require the same observable user/caller route and breadth: an alternative API, command, screen route, or non-terminal fluent path that reaches a similar result does not count.
+**Phase-contract safety net.** Once every row is `done`, read the exact projected phase brief and each story file named by the exact projected index before beginning Standard review. On the build path, read the brief and the ledger — the `Done when` AC this gate maps to is the `## Exit Criteria` leaf itself, already addressed and already marked. This remains artifact inspection, not implementation investigation. Map every distinct Phase goal outcome and every Exit Criterion—including each nested action/result bullet—to a concrete `Done when` AC. Require the same observable user/caller route and breadth: an alternative API, command, screen route, or non-terminal fluent path that reaches a similar result does not count.
 
 For each mapped public/shared interface path, follow only the story's `Implementation Reference` to the exact cited canonical spec section. Confirm that section actually defines the operation and, for fluent/composed paths, closes the chain through each named returned type while retaining required context. Do not browse other spec sections or source code. A correctly worded AC backed by a missing or incompatible canonical contract still fails this gate and routes to `mano spec` first.
 
@@ -411,7 +424,7 @@ If the state projection's `HOOK:` line names `post-review`, follow `_mano/rules/
 - Do not write any files until the user confirms the triage in STEP 3.
 - Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. `mano review` only classifies feedback and updates backlog/review files after confirmation.
 - Do not create stories. `mano review` writes to the backlog and review log only.
-- Do not manage story state. Do not edit story files, mark stories `done`, cut stories, or touch the stories README index — not even in the pre-review gate. If stories aren't `done`, refuse per the pre-review gate and point the user to `mano dev` or their own README edit.
+- Do not manage story or ledger state. Do not edit story files, mark stories `done`, cut stories, touch the stories README index, or run `progress.js` — not even in the pre-review gate. If stories aren't `done`, refuse per the pre-review gate and point the user to `mano dev` or their own README edit.
 - Do not check off acceptance criteria in story files.
 - Do not scope the next phase. That's `mano start`'s job.
 - Do not present the backlog or use it for scoping. Reading it is allowed for two purposes only: in STEP 2, to find rejection candidates when the feedback rejects a scoped direction (list only those candidates, never the backlog at large); and in STEP 3, to append, deduplicate, resolve, or reject items.

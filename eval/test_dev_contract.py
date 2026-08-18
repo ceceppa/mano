@@ -1,4 +1,8 @@
-"""Deterministic pins for the dev contract after its move into dev.md (P0.2).
+"""Deterministic pins for the dev implementation contract.
+
+The contract lives in two files: src/skills/dev.md owns the story path, and
+src/rules/implement.md owns the half mano build shares. DEV is their
+concatenation — a pin cares that the contract says it, not which half.
 
 These are text pins, not behaviour evals: the load-bearing sentences that must
 survive verbatim wherever the contract lives. If one fails, the contract was
@@ -12,7 +16,10 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEV = (REPO_ROOT / "src" / "skills" / "dev.md").read_text(encoding="utf-8")
+DEV = (
+    (REPO_ROOT / "src" / "skills" / "dev.md").read_text(encoding="utf-8")
+    + (REPO_ROOT / "src" / "rules" / "implement.md").read_text(encoding="utf-8")
+)
 AGENTS = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text(encoding="utf-8")
 
 
@@ -51,7 +58,8 @@ class DevContractPins(unittest.TestCase):
     def test_agents_stub_keeps_the_two_ambient_rules(self) -> None:
         # AGENTS.md keeps only the stub; its two inline rules are deliberate
         # redundancy from a recorded incident and must not shrink to a pointer.
-        self.assertIn("Its full contract is `_mano/skills/dev.md`.", AGENTS)
+        self.assertIn("Its full contract is `_mano/skills/dev.md`, plus the shared", AGENTS)
+        self.assertIn("`_mano/skills/build.md`, plus the", AGENTS)
         self.assertIn(
             "The index `Status` column is the only done-signal", AGENTS
         )

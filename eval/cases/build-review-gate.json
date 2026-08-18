@@ -1,0 +1,10 @@
+{
+  "name": "build-review-gate",
+  "description": "Built is not proven: mano review refuses to close a phase whose scope rows are all done but whose exit criteria are not all met.",
+  "fixture": "build-review-gate",
+  "phase": 1,
+  "prompt": "mano-review",
+  "assertions": [
+    "build_review_gate_held"
+  ]
+}

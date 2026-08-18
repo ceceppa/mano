@@ -47,8 +47,9 @@ INSTALLER = REPO_ROOT / "bin" / "mano-plan.js"
 
 # Which flat fixture input files map to phase-scoped destinations. Story files
 # and the specially named stories-README.md seed an existing current story set;
-# all other files remain project-level under _mano_output/.
-PHASE_SCOPED = {"phase-brief.md"}
+# progress.md seeds the build path's ledger; all other files remain
+# project-level under _mano_output/.
+PHASE_SCOPED = {"phase-brief.md", "progress.md"}
 
 
 def install_mano(project: Path, keep_markers: bool = False) -> None:
@@ -169,7 +170,10 @@ def run_case(
         seed_fixture(tmp, case["fixture"], mode, phase)
 
         runner = RUNNERS[runner_name]
-        result = runner(str(tmp), case["prompt"], timeout)
+        # A case may pin the run mode; the temp project has no git config to
+        # read it from, so it travels as the documented MANO_MODE override.
+        env = {"MANO_MODE": case["run_mode"]} if case.get("run_mode") else None
+        result = runner(str(tmp), case["prompt"], timeout, env)
         runner_failed = result.returncode != 0
         if runner_failed:
             print(f"  runner exited {result.returncode}")

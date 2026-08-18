@@ -142,6 +142,20 @@ Document-intake skill (fixture is a raw input doc placed at the project root; no
 
 For a seed fixture that includes an existing story set, name the index `stories-README.md`; the harness places it at `phase-[N]/stories/README.md`. Files named `story-*.md` in the same fixture are placed beside that index. This keeps fixtures flat while still exercising re-run and mid-build paths.
 
+A `progress.md` in a seed fixture is the `mano build` path's ledger and is
+placed at `phase-[N]/progress.md`, the same way `phase-brief.md` is. Seeding one
+models a phase already part-way through a build, which is how the build cases
+exercise resume, corrections, and the review gate without paying for a full
+phase. A phase seeded with both a `stories-README.md` and a `progress.md` is a
+deliberately invalid state — `build-two-ledgers` asserts it is reported, not
+resolved by guessing.
+
+Add `"run_mode": "auto"` to pin a case's run mode. The temp project has no Git
+config for the harness to write, so the value travels as the documented
+`MANO_MODE` override. Use it where the contract must hold *because* the chain is
+armed — `build-scope-refusal-auto` exists to prove auto mode does not soften
+gate 6.4.
+
 Nested paths inside a seed fixture are copied verbatim under `_mano_output/`.
 Use them when a case needs existing artifacts from another phase, for example
 `phase-1/design-preview.html` while the case's top-level `phase-brief.md` is
@@ -166,6 +180,13 @@ use `active_hook` instead when the shipped example is the fixture.
 - `eval=pending` is allowed for a retrofitted existing rule, but it is visible
   debt: the rule cannot be meaningfully probed for retirement until its case
   exists.
+- Not every rule can be provoked on demand. `mano build`'s lazy sub-row split
+  fires only when a row overflows a turn's output budget, which no fixture can
+  force; it is pinned by `progress.js`'s deterministic refusals instead (a
+  `pending` row cannot be split, the first part is recorded `done`, a parent
+  cannot close before its sub-rows). Prefer a deterministic test over an eval
+  case whenever the property can be decided by a script — that is the same trade
+  `verify.js` and `state.js` already made.
 - A failing assertion after a CLI run can mean the skill regressed **or** the
   model drifted. Re-run before concluding; if it's flaky, the assertion is too
   tight or the skill rule is too weak to enforce on that model.

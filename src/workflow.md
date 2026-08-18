@@ -22,11 +22,12 @@ mano track [name]       → Show, set, or clear an optional local experiment/wor
 mano start              → Scope a new project or phase.
 mano continue           → Auto-run the next logical action if unambiguous.
 mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
+mano build              → Build the active phase straight from its brief, tracked in progress.md.
 mano dev                → Implement the next pending story for the active phase.
 mano help [skill]       → Show what a skill does and when to use it.
 ```
 
-`mano owner`, `mano mode`, `mano track`, and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`.
+`mano owner`, `mano mode`, `mano track`, and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`. `mano build` and `mano dev` are the two implementation entry points — a phase uses one or the other, never both.
 
 **Dispatch only to Mano's own skills — never a similarly-named built-in.** Every `mano <action>` resolves to the matching skill in `_mano/skills/` and to nothing else. The host environment may contain built-in, harness, plugin, or third-party skills whose names overlap a Mano action word — do **not** invoke those for a `mano` command, even if their name looks like an exact match. Resolve the command by its Mano role (the agent and contract below), not by keyword similarity to an ambient skill. Two known, high-impact collisions to call out explicitly:
 - **`mano review` → `mano review`** (`_mano/skills/review.md`): record evidence and assumption outcomes, triage feedback into the backlog, write the review log, and close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run `mano review` instead.
@@ -36,7 +37,9 @@ Every Mano skill's exact name is `mano-<action>` — **hyphen-separated**: `mano
 
 **The separator is a hyphen, never a colon.** Do not transform `mano <action>` into `mano:<action>` — the colon form is plugin-namespace syntax (`plugin:skill`) and matches no Mano skill; trying it wastes a turn and makes the command look unavailable. If a `mano <action>` command appears not to resolve, **try the hyphenated `mano-<action>` skill before concluding it is unavailable** — that is the canonical name, and the most common cause of a "skill not found" is having looked for the spaced or colon form instead of the hyphen. If a user re-issues a command in hyphenated form after a misfire, that is them forcing the exact match — honour it as the Mano skill.
 
-`mano dev` is **not** a planning action — it is the implementation entry point. It does not generate planning artifacts; it implements the next pending story by following the complete contract in `_mano/skills/dev.md`. The "Refuse code generation" rule (`_mano/rules/core.md`) applies to the planning actions, not to `mano dev`.
+`mano dev` and `mano build` are **not** planning actions — they are the two implementation entry points. `mano dev` implements the next pending story from a `stories/` folder, following `_mano/skills/dev.md`. `mano build` builds the phase straight from its brief with no story files, tracked in `PHASE_DIR/progress.md`, following `_mano/skills/build.md`; both share `_mano/rules/implement.md`. The "Refuse code generation" rule (`_mano/rules/core.md`) applies to the planning actions, not to these two.
+
+**One ledger per phase.** `mano stories` + `mano dev` suit a large phase and keep the big-model-plans / small-model-implements split; `mano build` runs one phase in one contract on one model, with the human-authored Phase Scope items as the units. A phase that somehow holds both `stories/README.md` and `progress.md` is refused by `state.js` — decide which ledger is authoritative and remove the other.
 
 <!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
 `mano dev yolo` and `mano-dev yolo` are the same explicit batch invocation: both resolve to the existing `mano-dev` skill with the trailing `yolo` preserved as an argument — never to a separate `mano-dev-yolo` skill. The default command still implements one story. The literal YOLO modifier tells the `_mano/skills/dev.md` implementation contract to process every story that was pending at invocation, sequentially in index order. It is still implementation rather than planning, and it preserves every per-story boundary and hard stop.
@@ -64,7 +67,7 @@ The rules a skill applies while a chain is running — the pause rule, continuin
 
 Auto mode is armed only by an **explicit human approval of a phase scope** in `mano start`. Nothing before that approval is ever automated: intake stays a conversation, and the phase brief is still written only after the human approves the scope. The approval gate is what keeps "correct course at the brief, not after dozens of tasks have shipped" true, so it is never absorbed into the chain.
 
-Once armed, the chain runs the planning actions the phase needs and ends with implementation (`mano dev yolo`, which already stops at its first blocker). It then **stops and hands back — always.** In auto mode:
+Once armed, the chain runs the planning actions the phase needs and ends with implementation — `mano build`, which builds the brief's Phase Scope items in order and stops at its first blocker or when the turn's budget is spent. It then **stops and hands back — always.** The terminal action is not configurable: a knob there would be one more decision for no gain. In auto mode:
 
 - **never run `mano review`.** Closing a phase is the human's judgement and the one gate the mode exists to preserve.
 - **never scope a new phase.** The chain covers one approved phase and no more.
@@ -74,7 +77,7 @@ Arming is per phase, not permanent: a command the user types themselves inside a
 At the approval, state the chain you intend to run before starting it, so the user knows they are about to go hands-off and can edit it in the same reply:
 
 ```text
-→ Auto mode: spec → rules → stories → dev yolo
+→ Auto mode: spec → rules → build
   Reply `1` or `go` — both approve this scope and run the chain above.
   Edit and approve together (`go, skip rules`; `1, add ux`). Pauses for questions; stops before review.
 ```
@@ -112,7 +115,7 @@ The exact projected current phase brief is a blocking input for `mano ui`: if `B
 - Keep phase briefs concise enough to read in under two minutes. Target roughly 250-500 words plus short lists.
 - Actions are a la carte, but some require upstream context or will redirect instead of guessing.
 - Each phase brief is self-contained. No external files needed to understand it.
-- The filesystem is the state. No progress file. Mano scans `_mano_output/` to know where you are.
+- The filesystem is the state. Mano scans `_mano_output/` through `state.js` to know where you are; there is no global progress file. A phase built with `mano build` keeps a per-phase `progress.md` ledger — that is the phase's own decomposition and status, not a project-level state file, and no skill infers routing from it directly.
 - Skills read only what they need (see skill files for specific inputs).
 
 ## Human Oversight
@@ -140,7 +143,8 @@ State is read through `_mano/scripts/state.js` only — the full contract is `_m
 - No `_mano_output/` folder → no project started → suggest `mano start` (or `mano import <doc>` if the user has a PRD/document to decompose first)
 - The projected `BRIEF` exists, but the projected phase has no stories index → planning stage. Show which optional artifacts already exist (the projection's `ARTIFACTS:` line), which are still missing or incomplete, and suggest `mano stories` as the shortest path only when the phase is already clear enough.
 - `stories/` folder exists and at least one row is not `done` → build mode. The next step is implementation: suggest `mano dev` for the next row reported by state. No Mano planning command is required until the user wants to adjust scope or add planning context.
-- The projected stories are all `done`, and the exact projected review entry is absent → phase is **built but not closed**. Direct the user to `mano review`; `mano start` will refuse to scope this owner's next phase until review clears its exact in-phase status.
+- `progress.md` exists and any Scope row is not `done` or any Exit Criterion is not `met` → build mode on the build path. Suggest `mano build`; it resumes at the next non-`done` row reported by state. Never suggest `mano stories` or `mano dev` for a phase with a ledger.
+- The projected stories are all `done` (or the ledger's Scope rows are all `done` and its Exit Criteria all `met`), and the exact projected review entry is absent → phase is **built but not closed**. Direct the user to `mano review`; `mano start` will refuse to scope this owner's next phase until review clears its exact in-phase status.
 - `reviews.md` has the exact projected owner-aware review entry and its backlog close sweep is complete → suggest `mano start` for that owner's next phase.
 
 `mano stories` creates the projected `PHASE_DIR/stories/README.md` the first time stories are generated. If its stories folder exists without that index, treat that exact phase's artifacts as incomplete.
@@ -173,7 +177,8 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | **`mano ui`** | Establishes the visual language — palette, typography, spacing, component guide. Generates a preview HTML. | Phase brief, UX flow, tech spec, project rules, existing design artifacts | Design brief, current visual preview |
 | **`mano stories`** | Breaks the phase into implementable stories. Writes directly to files. Flags overloaded screens. | Phase brief, existing current-phase story set on re-run, tech spec, UX flow, design brief, project rules | Story files, stories index |
 | **`mano review`** | Records evidence and assumption outcomes after shipping, triages feedback, writes the review log, and closes the phase. | Stories index, phase brief, reviews, backlog | Review log, backlog updates |
-| **`mano dev`** | Implements the next pending story for the active phase. Not a planning lens — follows the complete contract in `_mano/skills/dev.md`. | Stories index, the selected story, the dev contract | Source code, story marked `done` |
+| **`mano build`** | Builds the active phase straight from its brief — the human-authored Phase Scope items are the units, tracked in `progress.md`. No story files. Follows `_mano/skills/build.md` plus `_mano/rules/implement.md`. | Phase brief, `progress.md`, the artifacts a row needs | Source code, ledger rows `done` / criteria `met` |
+| **`mano dev`** | Implements the next pending story for the active phase. Not a planning lens — follows the complete contract in `_mano/skills/dev.md` plus `_mano/rules/implement.md`. | Stories index, the selected story, the dev contract | Source code, story marked `done` |
 
 ## Status
 
@@ -189,7 +194,7 @@ When the user types `mano status`:
 
 `mano continue` should auto-run only when the next planning action is genuinely narrower than the alternatives.
 
-These gates are shared: `mano continue` applies them once per invocation, and auto mode applies them when choosing an action that is not already in the approved remaining chain. An approved chain action wins over a newly recomputed optional branch unless new evidence pauses or invalidates the run. Two auto-mode overrides, from **Run Mode**: the chain never auto-runs `mano review` or a new `mano start`, and it runs `mano dev yolo` where the build-mode fallback would tell a manual user to run `mano dev`.
+These gates are shared: `mano continue` applies them once per invocation, and auto mode applies them when choosing an action that is not already in the approved remaining chain. An approved chain action wins over a newly recomputed optional branch unless new evidence pauses or invalidates the run. Two auto-mode overrides, from **Run Mode**: the chain never auto-runs `mano review` or a new `mano start`, and its terminal action is `mano build` where a manual user would type `mano stories` and then `mano dev`. A phase that already has a stories index keeps the stories path — the chain runs `mano dev yolo` for it instead.
 
 Auto-run is appropriate when:
 - no `_mano_output/` exists → `mano start`
@@ -221,8 +226,8 @@ Build mode: [PHASE_ID]
 
 - Active phase: [exact PHASE_ID]
 - Status: At least one story is not done, so no planning action was auto-run.
-- Use `mano dev` to implement the next pending story.
-- Use `mano stories` only if you need to add or adjust planned work.
+- Use `mano dev` to implement the next pending story (or `mano build` when this phase has a `progress.md` ledger instead of stories).
+- Use `mano stories` only if you need to add or adjust planned work; on the build path a mid-phase correction stays inside `mano build`.
 - If the phase scope changed, amend the current phase brief first. Then rerun `mano stories` for the affected pending or corrective work.
 - Use `mano review` after all stories in the phase are done.
 ```
@@ -256,6 +261,7 @@ Available Mano commands for [PHASE_ID]:
   ui       — Design brief and component guide (`mano ui`)
   stories  — Break phase into implementable stories (`mano stories`)
   review   — Triage feedback, close the phase (`mano review`)
+  build    — Build the phase straight from its brief (`mano build`)
   dev      — Implement the next pending story
   owner    — Show, set, or clear this repository clone's optional phase owner
   mode     — Show or set whether finished actions chain automatically
@@ -266,7 +272,7 @@ Available Mano commands for [PHASE_ID]:
 Type any command shown above.
 ```
 
-When the phase is in build mode (stories exist and at least one row is not `done`), mark `dev` as the suggested next action.
+When the phase is in build mode, mark the implementation entry point its ledger implies as the suggested next action: `dev` when a stories index has an open row, `build` when `progress.md` has one.
 
 When the user types `mano [action]`:
 - Execute the specific action logic defined in the `skills/` file, loading the rule files its front-matter requires and nothing else.
@@ -285,7 +291,7 @@ Valid actions: `spec` (`mano spec` — `tech-spec.md`), `ux` (`mano ux` — `ux-
 
 When the phase is already clear and extra artifacts would add overhead instead of clarity:
 - Skip `spec`, `ux`, `rules`, and `ui`.
-- Use `mano start` → `mano stories` → build → `mano review`.
+- Use `mano start` → `mano stories` → build → `mano review`, or `mano start` → `mano build` → `mano review` to skip story files entirely.
 - Add optional planning artifacts later only if the work becomes ambiguous.
 
 `mano review` is the one non-optional step. It closes the selected owner-scoped phase by moving only that phase identity's exact in-phase status to `resolved`; `mano start` requires that closure before it scopes the next phase in the same namespace. Other owners' phases are independent. The optional planning actions can be skipped; review cannot. The ceremony can: `close it` closes immediately and records `Validation: Not tested` and `Decision: Not assessed`, so closure never masquerades as validation. A normal entry is a compact validation-and-decision log, not a mini-postmortem.

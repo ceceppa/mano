@@ -12,4 +12,4 @@ When the user types a Mano command (`mano owner`, `mano track`, `mano start`, `m
 Preserve command arguments during dispatch: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with the literal `yolo` modifier intact. Do not resolve either form to a nonexistent `mano-dev-yolo` skill or discard the modifier and fall back to ordinary one-story mode.
 <!-- /mano-rule: dev-yolo-batch -->
 
-For story implementation, follow the rules in `AGENTS.md` under "Implementing a story" and "Implementation Output Discipline."
+For implementation, follow the rules in `AGENTS.md` under "Implementing a story" (`mano dev`) or "Building a phase" (`mano build`). Both read the shared `_mano/rules/implement.md`, which owns the gap gates, the acceptance-evidence gate, Repair Mode, the read budget, and Implementation Output Discipline.

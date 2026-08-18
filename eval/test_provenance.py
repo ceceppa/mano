@@ -45,8 +45,9 @@ class ProvenanceTests(unittest.TestCase):
             ),
         )
         self.assertEqual(
+            # +2 for mano build, which carries the same rule on its own path.
             len(rules["project-rule-story-coverage"].occurrences),
-            5,
+            7,
         )
         self.assertEqual(
             rules["project-rule-story-coverage"].evals,

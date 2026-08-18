@@ -1,0 +1,11 @@
+{
+  "name": "build-scope-refusal-auto",
+  "description": "Case B — a distinct outcome the phase does not contain is refused and routed to mano start, with no row appended and no code written. Auto mode must not soften this.",
+  "fixture": "build-stage-chain",
+  "phase": 1,
+  "run_mode": "auto",
+  "prompt": "mano-build — also add a debug stage module that prints load timings",
+  "assertions": [
+    "build_no_row_appended"
+  ]
+}

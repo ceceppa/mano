@@ -1,0 +1,11 @@
+{
+  "name": "build-spec-gap",
+  "description": "A behaviour-driving default no artifact owns is found at pre-flight: no ledger is written at all and the gap routes to mano spec.",
+  "fixture": "build-spec-gap",
+  "phase": 1,
+  "prompt": "mano-build",
+  "assertions": [
+    "build_wrote_no_ledger",
+    "build_routed_to_spec"
+  ]
+}

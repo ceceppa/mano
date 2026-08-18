@@ -1,13 +1,16 @@
 ---
 name: mano-dev
-description: Use to implement the next pending story for the active phase. This file is the complete implementation contract — read it fully before writing any code for a Mano story.
+description: Use to implement the next pending story for the active phase. Read this file and _mano/rules/implement.md fully before writing any code for a Mano story.
+requires: [implement]
 ---
 
 # `mano dev` — implement the next pending story
 
-This file is the **complete contract** for `mano dev` — the sanctioned path from a finished `stories/` folder into code. Read it completely before writing any code for a Mano story, including when the user asks in plain words ("now build story 3"). Do not implement from a story file alone. It runs on the implementing agent (the small-context coding model) and is self-contained: it does not require `_mano/workflow.md` or any `_mano/rules/` file.
+This file plus `_mano/rules/implement.md` are the **complete contract** for `mano dev` — the sanctioned path from a finished `stories/` folder into code. Read both completely before writing any code for a Mano story, including when the user asks in plain words ("now build story 3"). Do not implement from a story file alone. They run on the implementing agent (the small-context coding model) and are self-contained together: no other `_mano/` file is required, and `_mano/workflow.md` is never opened mid-skill.
 
-**Read order — keep the prefix stable.** Read this contract first (it is identical on every run, so it caches as a stable prompt prefix), then the state projection, then the story file and the artifact sections it names, then source. Reading a story before the contract breaks the prefix and re-bills the bundle.
+This file owns the story path — which story, in what order, and how it is marked done. `_mano/rules/implement.md` owns the half that is identical on the `mano build` path: the gap gates 6.2–6.4, the pre-reads 7–10, the acceptance-evidence gate 10.1, Repair Mode, the read budget, and output discipline. One implementation contract, one home; the numbering is continuous across the two files.
+
+**Read order — keep the prefix stable.** Read this contract and `_mano/rules/implement.md` first (they are identical on every run, so they cache as a stable prompt prefix), then the state projection, then the story file and the artifact sections it names, then source. Reading a story before the contract breaks the prefix and re-bills the bundle.
 
 <!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
 ## Execution modes
@@ -41,23 +44,8 @@ For each snapshotted story, follow steps 6–11 as its own AC-bounded implementa
 
 If any goal element or Exit Criterion lacks exact AC ownership, stop before implementation, leave this and later rows pending, and name the missing path. Route it to `mano stories "add coverage for [missing phase path]"`; if the missing path also lacks a canonical public/shared contract, route `mano spec` first. Do not reinterpret a broad phase promise to fit the existing stories, and do not use a `Not this story` boundary to waive it. In YOLO mode, earlier checkpointed stories stay `done`; this gate still applies before the final snapshotted story.
 <!-- /mano-rule: public-interface-contract-readiness -->
-6.2 **Spec-owned default gap.** If the story or its cited phase Exit Criterion needs a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, the named canonical spec section must state the owning field/config/constant and exact value or relationship. A vague phrase such as “small area” is not an implementation value. Stop and route to `mano spec` when it is missing; do not choose a “story-owned default,” add a temporary literal, or treat a test fixture as the product default.
-6.3 **Player-choice UX gap.** If the story lets a player choose among two or more simultaneously available tools, buildables, abilities, modes, rewards, or alternatives, the cited UX flow must define how the player invokes the choice, selects/changes the active option, sees that active state, and receives locked/unavailable/cancel feedback. If it does not, stop and route to `mano ux`; do not invent a hotkey, picker, cycling scheme, default active item, or HUD treatment while implementing.
-6.4 **Phase-scope conflict.** Before changing code, compare the story and any user-requested behaviour change with the exact projected phase brief's `Phase goal`, `Phase scope`, and `Not this phase`. Work that directly supports an existing outcome can proceed. A distinct outcome, or anything the brief explicitly excludes, is outside this phase: stop before code. Do not treat “do it anyway” as permission to leave the brief stale. Ask the human to either defer it to the backlog/next phase or amend the phase brief to include it, then rerun `mano stories` to create or update the bounded story. This gate applies in default, YOLO, and auto mode.
-7. If the story is bootstrap, setup, tooling, infrastructure, or dependency-related, also read `_mano_output/tech-spec.md` before implementing. Treat library choices, package-manager choice, and install commands there as normative unless the story file already repeats them exactly.
-8. Execute install commands exactly as written. Do not merge separate command groups, switch tools, or normalize mixed-tool instructions into a single package-manager invocation unless the story or tech spec explicitly tells you to. In particular, keep `npx expo install` commands separate from `npm install` or other package-manager commands so Expo can resolve SDK-compatible versions.
-
-   **Greenfield scaffold safety is a hard stop.** A project generator that creates an application root or requires an empty destination may run only through the exact guarded command in `_mano_output/tech-spec.md §Project Scaffold`: `node _mano/scripts/scaffold.js run ... -- ... {target}`. Never aim a raw generator at `.`, the project root, or a temporary child that you later merge by hand. Never move, rename, delete, or temporarily hide existing files to make the root look empty—especially `_mano`, `_mano_output`, `.git`, `AGENTS.md`, `CLAUDE.md`, or `.cursorrules`. Do not substitute `cp`, `mv`, `rsync`, or a hand-written merge. If the guarded command is absent, malformed, fails, or reports a collision, stop and report it; route an absent/malformed command to `mano spec`, and never improvise around a runner failure. `yolo` and auto mode do not relax this rule.
-9. If the story involves user-entered state, forms, onboarding drafts, settings, or other local data, check whether the story or tech spec says that data should persist across app restarts. If it should, treat restart persistence as part of the required behaviour, not as an optional enhancement.
-10. Read `_mano_output/project-rules.md` only when the story explicitly points to a rule there, something remains ambiguous after reading the story and any mandatory tech-spec pre-read, or you need fuller context behind a rule already summarized in the story.
-
-    **Verification runs filtered.** Run every build, lint, type-check, and test command for verification through `node _mano/scripts/verify.js -- <command>`. On success it prints one `PASS:` line; on failure it prints the trimmed error excerpt. Do not run verification commands raw and paste their full output into the conversation. A failing verification enters **Repair Mode** (below).
-<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
-10.1 **Acceptance-evidence gate — before status may become `done`.** After implementation and verification, reread the selected story's complete `Done when` section. For every AC, identify concrete evidence from this turn that the stated outcome occurs through the stated route. A passing suite is not enough when no test/manual check exercises that AC. Any assertion, fixture expectation, comment, skipped test, or observed result that states the opposite outcome—success expected as failure, recoverable expected as locked, available expected as unavailable—is proof the story is **not done**, even if the suite is green.
-
-When an AC cannot be satisfied because current code or a cited artifact deliberately preserves the opposite behaviour, stop before step 11, leave the row pending, and report the contradiction. Route a planning-contract contradiction to `mano spec`/`mano stories` as appropriate; do not rewrite the AC's meaning, invert the test, call the opposing behaviour intentional, or mark the story done with a deviation. For an AC that is inherently visual or experiential, perform the narrow available manual/runtime check; if that cannot be run, report the unverified AC and leave the story pending.
-<!-- /mano-rule: phase-acceptance-integrity -->
-11. After implementing, mark the story `done` via the index writer — do **not** hand-edit the README table:
+6.2–10. **The gap gates, pre-reads, and verification are in `_mano/rules/implement.md`** — the spec-owned default gap (6.2), the player-choice UX gap (6.3), the phase-scope conflict gate (6.4), the tech-spec and install-command pre-reads (7–9), project rules and filtered verification (10), and the acceptance-evidence gate (10.1) that runs before any status may become `done`. On this path "the unit" is the story file and "its acceptance criteria" are its `Done when` list. Apply them in full; they are not summarised here.
+11. After implementing, and only once the acceptance-evidence gate (10.1) has passed, mark the story `done` via the index writer — do **not** hand-edit the README table:
     ```
     node _mano/scripts/stories.js set-status --phase [N] --story [num] --status done
     ```
@@ -68,42 +56,13 @@ When an AC cannot be satisfied because current code or a cited artifact delibera
 **YOLO-only override to step 12:** do not output or stop after each successfully checkpointed story. When every story in the initial snapshot is done and a final state read shows no pending rows in that phase, output exactly one aggregate line — `Stories [comma-and-space-separated story numbers] done — statuses updated in stories/README.md` — then stop; for stories 1 through 3, the literal line is `Stories 1, 2, 3 done — statuses updated in stories/README.md`. That final no-pending state is the YOLO batch's success check; do not also emit step 3's ordinary phase-built / `mano review` response or append any suffix. If the initial snapshot contained one story, use the ordinary singular line without the fresh-session suffix. If the batch stops early or new pending work appears, output one concise deviation line naming the completed story numbers, the current pending story, and the blocker; never claim the phase is built. **Auto-chain exception:** when `mano dev yolo` is the terminal action of an armed `mano mode auto` chain, this aggregate/deviation line is the dev action log, then emit the required `[mano auto]` closing block from `_mano/workflow.md`. That closing block is not an implementation summary and is the only permitted content after the line.
 <!-- /mano-rule: dev-yolo-batch -->
 
-## Repair Mode
+## Implementation Output Discipline — YOLO
 
-A failing build, lint, type-check, or test during verification enters Repair Mode. Fixed budget; never widen it.
-Use, and nothing else: (1) the FIRST error only — discard passing lines, banners, later errors; (2) for each
-file:line in that error not already read this turn, a ±12-line window (`sed -n`), not the file; (3) the story's
-`Done when` + `Implementation Reference`, already in context.
-Never: re-read the story/brief/spec/rules (they didn't change); re-read any file already read this turn; paste
-full command output (report the error's first line); rewrite a class or file to fix one assertion — repairs are
-surgical edits at the failure site; run the full suite to check a fix — re-run the narrowest reproducing command,
-full suite exactly once after it passes.
-Repair-mode commands still run through `node _mano/scripts/verify.js -- <command>` — it already reports the
-trimmed failure excerpt.
-Attempt limit: 3 on the same error → stop, leave the story pending, report ≤3 lines (error, file:line, tried).
-Exception — never optimised away: step 11's state.js re-check before the status write, and the
-acceptance-evidence gate (10.1), run in full regardless.
-
-## Read budget
-
-Read source in the smallest useful unit: signatures and declarations first (search/grep), then narrow line ranges around the edit site. Open a full file only when you are editing it and it is small. Do not preload artifacts or source "for context" beyond what the story's Implementation Reference names.
-
-## Implementation Output Discipline
-
-When implementing a Mano story, the implementing agent writes code and updates the story's status. It does not append completion reports, verification logs, behavioural confirmations, or implementation narratives to the story file.
-
-It also does not print these to chat. After implementing, the only required chat output is the single step 12 line confirming the story is done, its status was moved to `done` in the stories README, and that the next story starts in a fresh session. Do not restate acceptance criteria, list "AC Met", enumerate created files, or write an implementation summary. The acceptance criteria already live in the story; echoing them back adds no information and only grows the conversation. Report only non-acceptance deviations or follow-up that did not weaken any AC. An unmet or unverified AC leaves the story pending under step 10.1. If there are no such notes, the one-line confirmation is the complete response.
+`_mano/rules/implement.md` → **Implementation Output Discipline** applies in full. One addition on this path:
 
 <!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
 In YOLO mode, "after implementing" means after the whole initial snapshot, not after each story. Produce no interim chat messages; the aggregate or interrupted-batch line defined above is the single implementation response, except for the required auto-chain closing block when this batch is the last action of an armed auto run.
 <!-- /mano-rule: dev-yolo-batch -->
-
-If implementation produces project-relevant decisions worth preserving — colour values, dimensions, performance budgets, accessibility measurements, architectural patterns, technique choices, library quirks discovered in practice — the agent surfaces them in chat and offers to capture them in the appropriate artifact:
-
-- Architectural or repeatable conventions → `_mano_output/project-rules.md`
-- Visual or design decisions → `_mano_output/design-brief.md`
-
-The story file remains a planning artifact, not an implementation log. This applies to all implementing agents, including third-party language specialists and external coding skills.
 
 ## Scope boundaries and gap routing
 

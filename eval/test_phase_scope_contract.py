@@ -13,7 +13,7 @@ def _read(relative: str) -> str:
 
 class PhaseScopeContractTests(unittest.TestCase):
     def test_dev_stops_instead_of_hiding_a_scope_expansion(self) -> None:
-        dev = _read("src/skills/dev.md")
+        dev = _read("src/skills/dev.md") + _read("src/rules/implement.md")
 
         self.assertIn("6.4 **Phase-scope conflict.**", dev)
         self.assertIn("Do not treat “do it anyway” as permission to leave the brief stale", dev)

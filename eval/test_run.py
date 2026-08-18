@@ -16,7 +16,7 @@ class RunnerFailureTests(unittest.TestCase):
 
         with mock.patch.dict(
             run.RUNNERS,
-            {"failing": lambda _project, _prompt, _timeout: RunnerResult(1, "", "offline")},
+            {"failing": lambda _project, _prompt, _timeout, _env=None: RunnerResult(1, "", "offline")},
         ):
             with contextlib.redirect_stdout(io.StringIO()):
                 passed = run.run_case(
@@ -44,7 +44,7 @@ class RunnerFailureTests(unittest.TestCase):
         ) as invoke:
             result = runners.run_opencode("/tmp/mano-eval-project", "mano spec", 30)
 
-        command, cwd, timeout = invoke.call_args.args
+        command, cwd, timeout, _env = invoke.call_args.args
         self.assertEqual(cwd, "/tmp/mano-eval-project")
         self.assertEqual(timeout, 30)
         self.assertEqual(

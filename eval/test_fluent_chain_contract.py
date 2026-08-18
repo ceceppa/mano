@@ -43,9 +43,11 @@ class FluentChainContractTests(unittest.TestCase):
     def test_dev_checks_phase_contract_before_final_story(self) -> None:
         dev = _read("src/skills/dev.md")
         self.assertIn("**Final-story phase-contract gate.**", dev)
+        # The gate runs before the shared pre-reads, which now start at the
+        # pointer into _mano/rules/implement.md.
         self.assertLess(
             dev.index("**Final-story phase-contract gate.**"),
-            dev.index("7. If the story is bootstrap"),
+            dev.index("6.2–10. **The gap gates, pre-reads, and verification are in"),
         )
         self.assertIn("same user/caller route and breadth", dev)
         self.assertIn("In YOLO mode", dev)

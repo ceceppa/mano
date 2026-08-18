@@ -31,11 +31,14 @@ class PhaseAcceptanceIntegrityTests(unittest.TestCase):
         self.assertIn("An AC appearing in a story is coverage, not readiness", stories)
 
     def test_dev_cannot_mark_done_when_evidence_asserts_the_inverse(self) -> None:
+        implement = _read("src/rules/implement.md")
         dev = _read("src/skills/dev.md")
 
-        gate = dev.index("10.1 **Acceptance-evidence gate")
-        status_write = dev.index("11. After implementing, mark the story `done`")
-        self.assertLess(gate, status_write)
+        # The gate is in the shared contract; dev's status write cites it as
+        # the thing that must have passed first.
+        self.assertIn("10.1 **Acceptance-evidence gate", implement)
+        self.assertIn("the acceptance-evidence gate (10.1) has passed", dev)
+        dev = dev + implement
         self.assertIn("A passing suite is not enough", dev)
         self.assertIn("states the opposite outcome", dev)
         self.assertIn("leave the row pending", dev)
@@ -54,7 +57,7 @@ class PhaseAcceptanceIntegrityTests(unittest.TestCase):
         surfaces = (
             "src/skills/spec.md",
             "src/skills/stories.md",
-            "src/skills/dev.md",
+            "src/rules/implement.md",
             "src/skills/review.md",
         )
         for relative in surfaces:

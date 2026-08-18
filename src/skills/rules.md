@@ -26,7 +26,7 @@ On activation:
 3. Read `_mano_output/tech-spec.md` if it exists. If it doesn't, warn the user that the rules will be higher-level and offer to proceed from the phase brief or run `mano spec` first.
 4. Read `_mano_output/ux-flow.md` and `_mano_output/design-brief.md` if they exist.
 5. Read `_mano_output/project-rules.md` if it exists.
-6. Read the exact projected `BRIEF` path if `state.js --current` reports it present.
+6. **Read the exact projected `BRIEF` path** whenever `state.js --current` reports a phase. The brief is what the rules are being written *for*: it carries the phase's scope, its product principles, and the work about to be implemented, and a session that starts at `mano rules` has no other way to know any of it. Only a gap-only run (`STATUS: NO_PHASE`) proceeds without it.
 
 Do not read the project `README.md` or source files to discover additional context. The listed planning artifacts, projected gaps, and literal context supplied by the user are the activation boundary.
 
