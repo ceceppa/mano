@@ -193,3 +193,52 @@ Latest art review.
   assert.equal(state.hasReviewEntry(reviews, phaseRef("art", 2)), true);
   assert.equal(state.hasReviewEntry(reviews, phaseRef("gameplay", 2)), false);
 });
+
+test("state projects active hooks with their declared mode and never the examples", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-hooks-"));
+  try {
+    const hooks = path.join(root, "_mano", "hooks");
+    fs.mkdirSync(hooks, { recursive: true });
+    fs.writeFileSync(path.join(hooks, "post-start.md"), "# post-start hook\n\n## Mode\ncheck\n\n## Checklist\n- something\n");
+    fs.writeFileSync(path.join(hooks, "post-import.md"), "# post-import hook\n\n## Mode\ncommand\n\n## Command\nnode x.js\n");
+    fs.writeFileSync(path.join(hooks, "post-spec.md"), "# post-spec hook\n\n## Purpose\nlegacy, no mode section\n");
+    fs.writeFileSync(path.join(hooks, "post-ux.example.md"), "# example\n\n## Mode\ncheck\n");
+    assert.deepEqual(state.scanHooks(root), [
+      "command:post-import",
+      "check:post-start",
+      "suggest:post-spec",
+    ]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("state projects HOOK and ARTIFACTS lines in the decision projection", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-artifacts-"));
+  try {
+    const out = path.join(root, "_mano_output");
+    fs.mkdirSync(out, { recursive: true });
+    fs.writeFileSync(path.join(out, "backlog.md"), BACKLOG);
+    fs.writeFileSync(path.join(out, "tech-spec.md"), "# Tech Spec\n");
+    const rendered = state.renderDecision(state.scan(root));
+    assert.match(rendered, /^HOOK: none$/m);
+    assert.match(
+      rendered,
+      /^ARTIFACTS: tech-spec=present ux-flow=absent design-brief=absent project-rules=absent$/m,
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("unrecognised hook modes fall back to suggest", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-hookmode-"));
+  try {
+    const hooks = path.join(root, "_mano", "hooks");
+    fs.mkdirSync(hooks, { recursive: true });
+    fs.writeFileSync(path.join(hooks, "post-review.md"), "# hook\n\n## Mode\nsomething-else\n");
+    assert.deepEqual(state.scanHooks(root), ["suggest:post-review"]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

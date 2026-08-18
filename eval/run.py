@@ -51,10 +51,18 @@ INSTALLER = REPO_ROOT / "bin" / "mano-plan.js"
 PHASE_SCOPED = {"phase-brief.md"}
 
 
-def install_mano(project: Path) -> None:
-    """Run the real installer non-interactively into `project`."""
+def install_mano(project: Path, keep_markers: bool = False) -> None:
+    """Run the real installer non-interactively into `project`.
+
+    keep_markers installs with provenance markers intact so rule-retirement
+    probes can strip whole rules from the installed files; production installs
+    (and ordinary eval runs) are marker-free.
+    """
+    cmd = ["node", str(INSTALLER), "install", "--yes"]
+    if keep_markers:
+        cmd.append("--keep-rule-markers")
     subprocess.run(
-        ["node", str(INSTALLER), "install", "--yes"],
+        cmd,
         cwd=project,
         check=True,
         capture_output=True,
@@ -90,6 +98,11 @@ def seed_fixture(project: Path, fixture: str, mode: str, phase: int | None) -> N
             # brownfield checks that need a tiny existing source/declaration
             # surface. The prefix itself is not copied.
             dest = project.joinpath(*relative.parts[1:])
+        elif relative.parts[0] == "hooks":
+            # `hooks/` seeds custom active hook files (e.g. a legacy-shaped
+            # hook) into the installed _mano/hooks/ directory. Use
+            # `active_hook` instead when the shipped example is the fixture.
+            dest = project.joinpath("_mano", "hooks", *relative.parts[1:])
         elif relative.parent != Path("."):
             # Nested fixture paths model existing multi-phase output verbatim,
             # e.g. phase-1/design-preview.html while phase-2 is active.
@@ -138,7 +151,10 @@ def run_case(
 
     tmp = Path(tempfile.mkdtemp(prefix=f"mano-eval-{name}-"))
     try:
-        install_mano(tmp)
+        # A probe needs markers present to strip whole rules; afterwards the
+        # remaining markers are removed so the runner sees a production-shaped
+        # install either way.
+        install_mano(tmp, keep_markers=bool(without_rules))
         if without_rules:
             removed = P.strip_rules(tmp, without_rules)
             missing = [rule_id for rule_id, count in removed.items() if count == 0]
@@ -147,6 +163,7 @@ def run_case(
                 return False
             for rule_id, count in sorted(removed.items()):
                 print(f"  -  stripped {rule_id} ({count} occurrence{'s' if count != 1 else ''})")
+            P.strip_markers(tmp)
         if case.get("active_hook"):
             activate_hook(tmp, case["active_hook"])
         seed_fixture(tmp, case["fixture"], mode, phase)

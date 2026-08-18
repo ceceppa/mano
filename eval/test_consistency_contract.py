@@ -15,6 +15,7 @@ class ConsistencyContractTests(unittest.TestCase):
     def test_superseded_phase_and_state_wording_does_not_return(self) -> None:
         start = read("src/skills/start.md")
         workflow = read("src/workflow.md")
+        core = read("src/rules/core.md")
 
         for stale in (
             "one testable layer",
@@ -23,10 +24,10 @@ class ConsistencyContractTests(unittest.TestCase):
             "determine where the user is by reading the contents of `_mano_output/`",
             "One screen at a time",
         ):
-            self.assertNotIn(stale, start + workflow)
+            self.assertNotIn(stale, start + workflow + core)
 
         self.assertIn("one independently verifiable outcome", start)
-        self.assertIn("State detection — deterministic projections", workflow)
+        self.assertIn("State detection — deterministic projections", core)
 
     def test_start_propagates_track_to_every_deferred_add_path(self) -> None:
         start = read("src/skills/start.md")
@@ -52,15 +53,15 @@ class ConsistencyContractTests(unittest.TestCase):
         self.assertNotIn("exact API props/states", rules)
 
     def test_every_suggest_hook_has_an_application_boundary(self) -> None:
-        workflow = read("src/workflow.md")
+        hooks_rules = read("src/rules/hooks.md")
         agents = read("src/bootstrap/AGENTS.md")
         post_stories = read("src/hooks/post-stories.example.md")
 
-        self.assertIn("when any active `suggest` hook has run", workflow)
+        self.assertIn("when any active `suggest` or `check` hook has run", hooks_rules)
         for name in ("post-import", "post-start", "post-spec", "post-rules", "post-ux", "post-ui", "post-review", "post-stories"):
-            self.assertIn(f"**{name}:**", workflow)
-        self.assertIn("When any just-run `suggest` hook has printed findings", agents)
-        self.assertIn("Mano keeps `mano stories` active", post_stories)
+            self.assertIn(f"**{name}:**", hooks_rules)
+        self.assertIn("When any just-run `suggest` or `check` hook has printed findings", agents)
+        self.assertIn("Done stories still require lettered corrective work", post_stories)
         self.assertNotIn("they will run `mano stories`", post_stories)
 
     def test_bootstrap_status_routing_uses_the_state_projection(self) -> None:
@@ -70,13 +71,12 @@ class ConsistencyContractTests(unittest.TestCase):
         self.assertIn("Never infer the active phase from chat context or directory listings", cursor)
 
     def test_done_message_cannot_hide_an_unmet_acceptance_criterion(self) -> None:
-        agents = read("src/bootstrap/AGENTS.md")
         dev = read("src/skills/dev.md")
         stories_script = read("src/scripts/stories.js")
 
-        self.assertNotIn("an AC you could not meet", agents)
-        self.assertIn("An unmet or unverified AC is never an allowed suffix", agents)
-        self.assertIn("An unmet AC always leaves the story pending", dev)
+        self.assertNotIn("an AC you could not meet", dev)
+        self.assertIn("An unmet or unverified AC is never an allowed suffix", dev)
+        self.assertIn("An unmet or unverified AC leaves the story pending under step 10.1", dev)
         self.assertIn("no statuses changed", stories_script)
 
     def test_readme_uses_artifact_ownership_not_a_global_rank(self) -> None:

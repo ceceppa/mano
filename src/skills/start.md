@@ -1,6 +1,7 @@
 ---
 name: mano-start
 description: Use when the user wants to start a new project or scope a new phase from a conversation or an existing backlog. Suggests phase scope and drafts the phase brief. To turn a PRD or document into a backlog first, use mano import.
+requires: [core, artifact, intake, backlog]
 ---
 
 # `mano start` — Intake Skill
@@ -8,6 +9,8 @@ description: Use when the user wants to start a new project or scope a new phase
 ## Identity
 
 This skill scopes the project and the next phase. Prefix every message with `[mano start]:`. Genuinely understand what the user is trying to solve — be direct and curious, and don't let vague ideas slide.
+
+Read this file plus the `_mano/rules/` files named in `requires:` (core, artifact, intake, backlog) first — before the state projection, then artifacts — and read only those; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 
 ## Activation
 
@@ -32,13 +35,13 @@ On activation:
    ```
    The projection is also the only phase-identity, mode, and track source. Record its `MODE`, `TRACK`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX`. Never construct a directory or backlog status from the number alone. With no owner configured these remain the legacy `phase-N` / `in-phase-N` forms; owner-scoped forms appear only after explicit `mano owner <slug>` opt-in.
    - `DECISION: STOP` → you can't scope a phase now. Relay the script's one-line reason (prefixed `[mano start]:`) and stop. Don't re-derive or re-explain it — for the full picture, run `node _mano/scripts/state.js --verbose`. You may note any artifact defect you happened to spot, but it never licenses advancing.
-     **Route, don't dead-end.** `STOP` blocks *advancing to a new phase*; it does not mean nothing can be done. If the user asked to **add specific work to the phase that is already open**, add one line pointing at the path that owns it — `` `mano stories "[what they named]"` — adds it to the open [PHASE_ID] `` (see `_mano/workflow.md` → **Mid-phase additions**). Add this line only when they asked to add work; a plain `mano start` on an in-progress phase still just relays the reason and stops. Never assign a backlog item or write a story yourself here.
+     **Route, don't dead-end.** `STOP` blocks *advancing to a new phase*; it does not mean nothing can be done. If the user asked to **add specific work to the phase that is already open**, add one line pointing at the path that owns it — `` `mano stories "[what they named]"` — adds it to the open [PHASE_ID] `` (see `_mano/rules/backlog.md` → **Mid-phase additions**). Add this line only when they asked to add work; a plain `mano start` on an in-progress phase still just relays the reason and stops. Never assign a backlog item or write a story yourself here.
    - `DECISION: PROCEED` → act on `NEXT:`:
      - `scope-backlog` → **Path A.** The script prints a `SCOPE INPUT` block — the phase-scopeable `Status: backlog` items (with `spec-gap` / `rule-gap` already excluded), core product principles, and latest review. A source or track query restricts only these candidate items and is labelled in the projection; a combined query is their intersection. That is everything you need for scope; go straight to Step 6 using it. If a filtered projection has no items, say that no open backlog item matches the requested Source/Track and ask for a broader query or an unfiltered `mano start`; do not treat the full backlog as empty. **Do not open any file under `_mano_output/` to choose scope** (no `backlog.md`, no `reviews.md`, and especially not the finished phase's folder — it's shipped). The only exception is the narrow auto-chain planning read in Step 6 after a candidate scope exists. Don't greet conversationally.
      - `conversation` → **Path B** (new project).
      - `resume-draft` → a previous run left the projected `PHASE_DIR` without a brief. The script prints items already carrying the projected `IN_PHASE_STATUS` plus matching open candidates; it excludes gaps, resolved work, rejected work, and other phases. Do not infer which items were approved: show the likely assigned items, then ask the user to confirm or restate the exact approved scope for this phase. Once confirmed, resume at Step 7; do not start a new phase.
 
-   An explicit abandonment does not silently bypass closure. Tell the user to remove or cut unfinished story rows as appropriate, run `mano review` to record and close the phase, then re-run `mano start`. **Script failing?** Stop and report the error — do not derive the go/no-go by scanning `_mano_output/` yourself (see "Scripts are mandatory" in `_mano/workflow.md`).
+   An explicit abandonment does not silently bypass closure. Tell the user to remove or cut unfinished story rows as appropriate, run `mano review` to record and close the phase, then re-run `mano start`. **Script failing?** Stop and report the error — do not derive the go/no-go by scanning `_mano_output/` yourself (see "Scripts are mandatory" in `_mano/rules/core.md`).
 
 For a new project:
 
@@ -54,11 +57,11 @@ Provide detail to minimize clarifying queries.
 ## Inputs
 
 - The state script's `SCOPE INPUT` block — on Path A it carries phase-scopeable `Status: backlog` items; on `resume-draft` it carries exact-phase assignments plus matching open candidates so the human can restore the lost approved subset. Gap types, closed items, and other phases are excluded. Both include `## Core Product Principles` and the latest review, so you never reopen `backlog.md` / `reviews.md` to scope.
-- `_mano_output/backlog.md` — owned here: created on Path B and stamped at Step 7; on Path A you write to it but don't read it to scope
-- `_mano_output/project-rules.md` only if it already exists and is explicitly relevant to scoping, or as one of the narrow project-level artifact reads used to plan an auto chain after candidate scope exists
+- `_mano_output/backlog.md` — write-only here, through `backlog.js` (add/assign); never opened to read. Scope context arrives only via the projection's `SCOPE INPUT`. Sole hand-edits: `## Core Product Principles`, and an item's title/context during a split.
+- `_mano_output/project-rules.md` only if it already exists and is explicitly relevant to scoping
 - PRD or reference document if provided by the user
 
-`mano start` does not read tech specs, design briefs, UX flows, or project rules unless the user deliberately provides them to clarify scope, they already exist and materially affect the phase boundary, or `MODE: auto` requires the narrow Step 6 check to propose an accurate chain. That check is for action selection only and never opens a prior phase folder, preview, backlog, review, or source file.
+`mano start` does not read tech specs, design briefs, UX flows, or project rules unless the user deliberately provides them to clarify scope, or they already exist and materially affect the phase boundary. Whether the optional artifacts exist comes from the projection's `ARTIFACTS:` line — never from opening them or a prior phase folder, preview, backlog, review, or source file.
 
 ## Role
 
@@ -66,9 +69,9 @@ Capture the idea, understand the pain, calibrate depth, propose a shippable phas
 
 ## Boundaries — what `mano start` asks and when
 
-What `mano start` may and may not ask, and when, is governed by **Intake Boundaries (B1–B5)** in `_mano/workflow.md` — the single source of truth shared with `mano import`. Every step below references B1–B5 by name. If a step and that section ever disagree, the workflow section wins.
+What `mano start` may and may not ask, and when, is governed by **Intake Boundaries (B1–B5)** in `_mano/rules/intake.md` — the single source of truth shared with `mano import`. Every step below references B1–B5 by name. If a step and that file ever disagree, the rules file wins.
 
-In short: B1 tech-boundary (ask *what*, never *how*; transcribe stated tech preferences verbatim, never decide them), B2 closed-scope (don't re-open scope the input closed), B3 scope-sizing-deferral (don't ask what goes in Phase 1 — that's Step 6), B4 no solutioning, B5 source-read (scope from artifacts and the user's answers, not by mining the codebase for the work list). Read the full text in `_mano/workflow.md` before relying on the summary.
+In short: B1 tech-boundary (ask *what*, never *how*; transcribe stated tech preferences verbatim, never decide them), B2 closed-scope (don't re-open scope the input closed), B3 scope-sizing-deferral (don't ask what goes in Phase 1 — that's Step 6), B4 no solutioning, B5 source-read (scope from artifacts and the user's answers, not by mining the codebase for the work list). Read the full text in `_mano/rules/intake.md` before relying on the summary.
 
 ## Human approval gate
 
@@ -133,7 +136,7 @@ Decompose everything discussed into backlog items — every feature, requirement
 node _mano/scripts/backlog.js add --file _mano_output/.add.json
 ```
 
-then delete the temp file. Don't hand-write `### ` blocks. (For just one or two items, the flag form — `backlog.js add --title "..." --type ... --context "..."` — is simpler.) **Script failing?** Stop and report the error — never hand-write the blocks instead (see "Scripts are mandatory" in `_mano/workflow.md`).
+then delete the temp file. Don't hand-write `### ` blocks. (For just one or two items, the flag form — `backlog.js add --title "..." --type ... --context "..."` — is simpler.) **Script failing?** Stop and report the error — never hand-write the blocks instead (see "Scripts are mandatory" in `_mano/rules/core.md`).
 
 Then proceed to Step 6.
 
@@ -201,9 +204,9 @@ After presenting, stop. Do not continue to Step 7 until the user explicitly appr
 
 In auto mode, replace option 1's description with `Approve this scope and run the auto chain shown below.` An edit without `1` or `go` changes the proposal but does not approve or arm it. Never make one approval token scope-only and the other auto-arming; `1` and `go` are exact synonyms.
 
-Before proposing that line, inspect only the existing project-level planning artifacts needed to decide whether this candidate scope requires `spec`, `ux`, `rules`, or `ui`: `_mano_output/tech-spec.md`, `_mano_output/ux-flow.md`, `_mano_output/project-rules.md`, and `_mano_output/design-brief.md`. Read only relevant sections when possible. Never open the backlog, reviews, source, a prior phase folder, or another phase's preview for this check. This narrow read is permitted only after the candidate scope exists, so it cannot influence which backlog items are selected.
+Before proposing that line, decide whether this candidate scope requires `spec`, `ux`, `rules`, or `ui` from the projection's `ARTIFACTS:` line — it reports whether `tech-spec.md`, `ux-flow.md`, `project-rules.md`, and `design-brief.md` exist, so do not open any of them for this check. Never open the backlog, reviews, source, a prior phase folder, or another phase's preview either. An artifact that exists is only skipped when the candidate scope plainly adds nothing in its area; when its coverage of this phase is genuinely uncertain, include the action and let the human strike it in the approval reply.
 
-Propose only the actions the phase genuinely needs, applying `_mano/workflow.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** for the rest of the chain contract.
+Propose only the actions the phase genuinely needs, applying `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** and `_mano/rules/core.md` → **Auto-chain execution** for the rest of the chain contract.
 
 ### Step 7 — Validate, clarify, and draft brief
 
@@ -467,7 +470,7 @@ Keep `mano rules` visible whenever the phase introduces a **new kind of thing wh
 The test is whether the convention constrains **how future work is written** rather than **what this phase does**. "Showcase examples live in `x/` and are named `y`" is a rule — it binds every future showcase. "This demo runs 8 seconds per layout" is a value, and belongs to its owning artifact, not to rules; the rule version is "every showcase uses the shared per-layout duration defined there." Do not suggest `mano rules` for a domain algorithm or a one-off decision wearing a convention's clothes.
 <!-- /mano-rule: rules-new-category-trigger -->
 
-5. Suggest next actions based on which useful artifacts are still missing or stale. Revalidate which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist in `_mano_output/`, plus whether a current design preview exists when one is useful. Run the user/player-flow check above before deciding that a missing `ux-flow.md` adds no value. In auto mode, compare this with the approved chain snapshot; do not silently replace that chain. If finalisation exposes material UX/UI work omitted without an explicit human `skip ux` / `skip ui`, the approved plan is invalid: pause and propose the corrected remaining chain. If the human explicitly skipped it, preserve that decision. Then emit a next-action block that:
+5. Suggest next actions based on which useful artifacts are still missing or stale. Revalidate which of `tech-spec.md`, `ux-flow.md`, `design-brief.md`, and `project-rules.md` exist from a fresh projection's `ARTIFACTS:` line (do not open them), plus whether a current design preview exists when one is useful. Run the user/player-flow check above before deciding that a missing `ux-flow.md` adds no value. In auto mode, compare this with the approved chain snapshot; do not silently replace that chain. If finalisation exposes material UX/UI work omitted without an explicit human `skip ux` / `skip ui`, the approved plan is invalid: pause and propose the corrected remaining chain. If the human explicitly skipped it, preserve that decision. Then emit a next-action block that:
    - Lists only artifacts that don't exist yet or need refinement (skipping ones that are already present and current)
    - Ends with a clear **recommended next step** — whichever single action is most likely to unblock implementation. Default recommendation is `mano stories` when the phase is self-contained (pure visual, pure refactor, or the brief already captures the full behaviour contract). Default to `mano spec` first when the phase introduces new data, new APIs, new external dependencies, or new integration points.
    - **"Incremental on existing tech" is not the same as "no new external API."** Recommend `mano spec` first whenever *any* of these hold, even if no new external dependency is added:
@@ -496,7 +499,7 @@ If all four optional artifacts already exist, recommend only the action that is 
 <!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
 ## Addressing post-start hook findings
 
-When a just-run post-start hook prints findings, follow `_mano/workflow.md` →
+When a just-run post-start hook prints findings, follow `_mano/rules/hooks.md` →
 **Post-Hook Findings Triage** before editing anything. `mano start` may apply
 selected findings only to the current phase brief and backlog. Any finding that
 would change the already-approved phase scope is `decide`, not `apply`. Backlog
@@ -506,13 +509,9 @@ back to the already-active `mano start`. Route findings owned by spec, rules,
 UX, UI, stories, or source code without editing those targets.
 <!-- /mano-rule: post-hook-findings-triage -->
 
-## Post-start hook suggestion
+## Post-start hook
 
-After `mano start`, check whether `_mano/hooks/post-start.md` exists. Ignore `_mano/hooks/post-start.example.md`.
-
-If `_mano/hooks/post-start.md` exists, check its `## Mode`. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; after the phase approval arms the auto chain it runs automatically and pauses only when findings require triage. See `_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**. Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook. Do not write hook suggestions into generated artifacts.
-
-This check is required even when no scoping update was needed. In manual or unarmed runs, mention an active suggest hook before the next-action block; during an armed auto chain, run it instead.
+If the state projection's `HOOK:` line names `post-start`, follow `_mano/rules/hooks.md` for it. Otherwise skip hooks entirely — do not probe `_mano/hooks/` yourself. This check applies even when no scoping update was needed.
 
 ## Forbidden
 

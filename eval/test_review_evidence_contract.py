@@ -43,7 +43,7 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertIn("Mark assumptions without a human verdict `inconclusive`", review)
         self.assertIn("**Whole-review verdict rule.**", review)
         self.assertIn("`all went as planned`", review)
-        self.assertIn('Or say "close it" to close without validation.', review)
+        self.assertIn('or say "close it" to close without validation.', review)
 
     def test_positive_summary_close_preserves_the_human_verdict(self) -> None:
         review = _read("src/skills/review.md")
@@ -83,8 +83,8 @@ class ReviewValidationContractTests(unittest.TestCase):
     def test_review_keeps_learning_questions_human_owned(self) -> None:
         review = _read("src/skills/review.md")
 
-        self.assertIn("Questions to consider:", review)
-        self.assertIn("Choose what to keep, change, reject, or test again.", review)
+        self.assertIn("each Validation-Plan question is an item tagged `*(decide)*`", review)
+        self.assertIn("Do not infer a Decision choice", review)
         self.assertIn("Never infer a choice from completion or test success", review)
 
     def test_review_never_hides_phase_promises_behind_the_validation_plan(self) -> None:
@@ -94,10 +94,9 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertIn("every Exit Criterion", review)
         self.assertIn("Never omit an Exit Criterion", review)
         self.assertIn("passed`, `failed`, or `not tested", review)
-        self.assertIn("Mano will mark every unchecked promise as `not tested`.", review)
+        self.assertIn('"close it" records every unchecked promise as `not tested`', review)
         self.assertIn("Always include every Phase check", review)
         self.assertIn("If a legacy plan uses `Decision this informs`", review)
-        self.assertIn("Other planned checks", review)
         self.assertIn("| Phase promise | Result | What happened |", template)
 
     def test_public_docs_keep_feedback_optional_but_validation_honest(self) -> None:

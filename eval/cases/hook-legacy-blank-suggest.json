@@ -1,0 +1,10 @@
+{
+  "name": "hook-legacy-blank-suggest",
+  "description": "A legacy suggest hook whose command is still the blank [external-review-command] placeholder is active, not unconfigured: it must be surfaced with the ask, never silently skipped.",
+  "fixture": "hook-legacy-blank",
+  "phase": 3,
+  "prompt": "mano spec",
+  "assertions": [
+    "legacy_blank_suggest_hook_surfaced"
+  ]
+}

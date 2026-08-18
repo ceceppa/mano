@@ -1,6 +1,7 @@
 ---
 name: mano-stories
 description: Use to break down a phase brief and any available supporting context into implementable, developer-ready user stories with acceptance criteria.
+requires: [core, artifact, backlog]
 ---
 
 # `mano stories` — Stories Skill
@@ -15,7 +16,9 @@ This skill writes stories a developer can pick up without a meeting and a non-te
 
 ## Activation
 
-This skill activates when the user types `mano stories`. When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
+This skill activates when the user types `mano stories`. When inputs are missing, follow the missing-input protocol in `_mano/rules/core.md`.
+
+Read this file plus `_mano/rules/core.md`, `_mano/rules/artifact.md`, and `_mano/rules/backlog.md` first — before the state projection, then artifacts — and read only those rule files; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 
 Read every input fresh from disk — even if it already appears in the conversation context. Artifacts may have been edited earlier this same session (e.g. a spec extended then a decision backported); the filesystem is the source of truth, a context snapshot is not.
 
@@ -76,7 +79,7 @@ Default format:
 [See guidance below.]
 
 ---
-<!-- ⚠️ When this story is implemented, mark it done via `stories.js set-status` (AGENTS.md step 11) — don't hand-edit the index. -->
+<!-- ⚠️ When this story is implemented, mark it done via `stories.js set-status` (_mano/skills/dev.md step 11) — don't hand-edit the index. -->
 ```
 
 ### Implementation Reference
@@ -116,7 +119,7 @@ Examples: a colour-constant rule becomes an explicit no-inline-values constraint
 If an applicable project rule conflicts with something the phase brief excludes, defers, or contradicts, stop before writing the affected stories. Quote the rule and the conflicting phase scope, then ask whether the user wants `mano start` to change the phase or `mano rules` to change the rule. If the user already resolved which artifact governs in this request, apply that correction to the stories and flag the stale owning artifact instead of asking again. Do not silently defer, weaken, or override either artifact.
 <!-- /mano-rule: project-rule-story-coverage -->
 
-If a required constant, token, rule, or shared measurement is needed and no artifact defines its value, do not write "if not yet defined." Make the requirement explicit and point to the owning artifact. If choosing the value would be guesswork, flag it during artifact gap check. If the value already exists in another artifact but with a different number or unit, do not silently pick one — surface the conflict, per "Conflicting Values: Surface, Do Not Reconcile" in workflow.md.
+If a required constant, token, rule, or shared measurement is needed and no artifact defines its value, do not write "if not yet defined." Make the requirement explicit and point to the owning artifact. If choosing the value would be guesswork, flag it during artifact gap check. If the value already exists in another artifact but with a different number or unit, do not silently pick one — surface the conflict, per "Conflicting Values: Surface, Do Not Reconcile" in `_mano/rules/artifact.md`.
 
 **An ambiguous behaviour-driving quantity is a gap to surface, not an ambiguity to resolve silently.** The "surface, don't pick" rule above covers *missing* values and *conflicting* values — but a *single stated value whose phrasing supports two materially different behaviours* slips through both, because it is neither missing nor conflicting. It is the most dangerous case, because nothing looks wrong: the brief states a quantity, you pick a reading, and the wrong behaviour ships looking fully specified. Watch especially for **rate/scope quantifiers** like "one per tick at each position", "remove a tile each interval", "N per step", "expands by one" — where it is unclear whether the unit applies *once globally* or *once per location/side/item*. Worked example: *"one tile removed per decay tick at each boundary position"* can mean **(a)** one tile total per tick, or **(b)** one tile at every boundary position per tick (a full ring) — a slow ragged nibble versus an even closing front, completely different feel. Do **not** collapse it to one reading and harden it into an AC or a `Do not` (e.g. "remove no more than one tile per tick"); that locks the guess in. Flag it at the artifact gap check (0d) and route it to the upstream Mano skill that owns the ambiguous artifact before the story ships.
 
@@ -138,7 +141,7 @@ Example:
 - **Do not:** no inline colour values (see `project-rules.md §Colour constants`); no new auth logic in this story
 ```
 
-For `story-0` and setup/dependency stories: point to the exact package-manager, dependency, scaffold, and install-command sections in the tech spec. AGENTS.md step 7 requires the implementer to read them; do not create a second copy in the story.
+For `story-0` and setup/dependency stories: point to the exact package-manager, dependency, scaffold, and install-command sections in the tech spec. `_mano/skills/dev.md` step 7 requires the implementer to read them; do not create a second copy in the story.
 
 **Greenfield scaffold gate.** If the application does not have a real manifest yet and bootstrap requires a generator that expects an empty directory, the tech spec must provide a `## Project Scaffold` command through `node _mano/scripts/scaffold.js run`, with a literal `{target}` destination. Put that requirement in `story-0`'s Implementation Reference. A raw generator aimed at `.`, the project root, or a temporary child followed by manual moving/copying is not developer-ready: stop and route the missing guarded command to `mano spec`. Never instruct development to move, rename, delete, or temporarily hide `_mano`, `_mano_output`, `.git`, `AGENTS.md`, or any existing file.
 
@@ -456,7 +459,7 @@ For each story:
    ```
    node _mano/scripts/stories.js add-row --phase [N] --story [num] --title "[title]" --file "story-[num]-[slug].md" --project "[project]"
    ```
-   It creates `README.md` (Index format below) on the first call and inserts each row in number order; `--project` (from the brief title) is used only when the file is created. Rows start `pending`. **Script failing?** Stop and report the error — never hand-write the index (see "Scripts are mandatory" in `_mano/workflow.md`).
+   It creates `README.md` (Index format below) on the first call and inserts each row in number order; `--project` (from the brief title) is used only when the file is created. Rows start `pending`. **Script failing?** Stop and report the error — never hand-write the index (see "Scripts are mandatory" in `_mano/rules/core.md`).
 
 When all stories are written, output the execution log:
 
@@ -476,7 +479,7 @@ Next:
 
 Give each story its **full project-root-relative path** (as above), not a bare `story-N-[slug].md` — that is what makes each line tap-to-open in the editor. The path replaces the old parenthesised filename.
 
-Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact omits a behaviour-driving value, apply the readiness hard gates. Write no story files. Route the missing decision to its owning skill. Do not infer a value, embed a provisional default, or turn the gap into a story-level `❓ Decide:`. **(2)** If another decision explicitly permitted by this skill remains open, a pending `❓ Decide:` makes the affected next action conditional. Name which story is blocked. Show `mano dev` only after that decision. Do not add a separate `Status:` line.
+Two rules for the flag lines (see the canonical execution-log format in `_mano/rules/core.md`): **(1)** When an input artifact omits a behaviour-driving value, apply the readiness hard gates. Write no story files. Route the missing decision to its owning skill. Do not infer a value, embed a provisional default, or turn the gap into a story-level `❓ Decide:`. **(2)** If another decision explicitly permitted by this skill remains open, a pending `❓ Decide:` makes the affected next action conditional. Name which story is blocked. Show `mano dev` only after that decision. Do not add a separate `Status:` line.
 
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
 The no-inference rule applies to public interfaces, spec-owned defaults, and every other behaviour-driving value.
@@ -535,7 +538,7 @@ Next:
 <!-- mano-rule: id=mid-phase-addition-owner; incident=stories-assigned-backlog-item-out-of-lane; model=not-recorded; date=2026-08-05; eval=stories-midphase-assign -->
 ### Pulling a backlog item into the open phase
 
-When the user names an **exact existing backlog item** to bring into the phase already being built ("bring in *Mirror easing on reversal*"), `mano stories` may assign it and write its story. The full rule is `_mano/workflow.md` → **Mid-phase additions**; this is the procedure.
+When the user names an **exact existing backlog item** to bring into the phase already being built ("bring in *Mirror easing on reversal*"), `mano stories` may assign it and write its story. The full rule is `_mano/rules/backlog.md` → **Mid-phase additions**; this is the procedure.
 
 **Check the goal first.** Read the phase brief's goal. If the named item would change that goal rather than fit inside it, this is the next phase, not an addition — say so and stop:
 
@@ -611,13 +614,9 @@ If the user edits UI/UX in a story during review:
 
 Never silently edit approved work.
 
-## Post-stories hook suggestion
+## Post-stories hook
 
-After `mano stories` completes, check whether `_mano/hooks/post-stories.md` exists. Ignore `_mano/hooks/post-stories.example.md`.
-
-If `_mano/hooks/post-stories.md` exists, check its `## Mode`. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; during an armed auto chain it runs automatically and pauses only when findings require triage. See `_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**. Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook. Do not write hook suggestions into generated artifacts.
-
-This check is required even when no stories update was needed. In manual or unarmed runs, mention an active suggest hook before the next-action block; during an armed auto chain, run it instead.
+If the state projection's `HOOK:` line names `post-stories`, follow `_mano/rules/hooks.md` for it — with this skill's stricter findings protocol above replacing the generic triage. Otherwise skip hooks entirely — do not probe `_mano/hooks/` yourself. This check applies even when no stories update was needed.
 
 ## Forbidden
 

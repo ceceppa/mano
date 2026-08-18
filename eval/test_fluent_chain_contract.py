@@ -41,16 +41,15 @@ class FluentChainContractTests(unittest.TestCase):
         self.assertIn("Do not let one representative happy path silently narrow", text)
 
     def test_dev_checks_phase_contract_before_final_story(self) -> None:
-        agents = _read("src/bootstrap/AGENTS.md")
         dev = _read("src/skills/dev.md")
-        self.assertIn("**Final-story phase-contract gate.**", agents)
+        self.assertIn("**Final-story phase-contract gate.**", dev)
         self.assertLess(
-            agents.index("**Final-story phase-contract gate.**"),
-            agents.index("7. If the story is bootstrap"),
+            dev.index("**Final-story phase-contract gate.**"),
+            dev.index("7. If the story is bootstrap"),
         )
-        self.assertIn("same user/caller route and breadth", agents)
-        self.assertIn("In YOLO mode", agents)
-        self.assertIn("This gate remains active in YOLO and auto mode", dev)
+        self.assertIn("same user/caller route and breadth", dev)
+        self.assertIn("In YOLO mode", dev)
+        self.assertIn("this gate still applies before the final snapshotted story", dev)
 
     def test_review_cannot_close_unowned_phase_contract(self) -> None:
         text = _read("src/skills/review.md")

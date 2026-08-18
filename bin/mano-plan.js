@@ -33,18 +33,31 @@ const SRC = path.join(PKG_ROOT, "src");
 const CWD = process.cwd();
 
 // What lands inside ./_mano/ (read from src/)
-const MANO_DIRS = ["skills", "templates", "hooks", "scripts"];
+const MANO_DIRS = ["skills", "rules", "templates", "hooks", "scripts"];
 const MANO_FILES = ["workflow.md"];
+
+// Repo-side incident/eval metadata. `<!-- mano-rule: … -->` / `<!-- /mano-rule: … -->`
+// marker lines exist for the eval harness's provenance and retirement probes;
+// they are useless to the runtime agent and cost context on every message, so
+// installs strip them (the fenced rule bodies are kept — only the marker lines
+// go). `--keep-rule-markers` disables the strip so the eval harness can still
+// remove whole rules from a temp install when probing rule retirement.
+const RULE_MARKER = /^[ \t]*<!--\s*\/?mano-rule:[^>]*-->[ \t]*\r?\n?/gm;
+
+function stripRuleMarkers(text) {
+  return text.replace(RULE_MARKER, "");
+}
 
 function log(msg) {
   process.stdout.write(msg + "\n");
 }
 
 function parseArgs(argv) {
-  const args = { command: null, force: false, yes: false, help: false };
+  const args = { command: null, force: false, yes: false, help: false, keepRuleMarkers: false };
   for (const a of argv) {
     if (a === "--force") args.force = true;
     else if (a === "--yes" || a === "-y") args.yes = true;
+    else if (a === "--keep-rule-markers") args.keepRuleMarkers = true;
     else if (a === "--help" || a === "-h") args.help = true;
     else if (!args.command) args.command = a;
   }
@@ -64,8 +77,11 @@ Pin a version with npm's own syntax, e.g.:
   npx mano-plan@1.0.0 install
 
 Always installed:
-  ./_mano/        skills, templates, hooks, scripts, workflow
+  ./_mano/        skills, rules, templates, hooks, scripts, workflow
   ./AGENTS.md     universal agent contract
+
+Installed markdown is stripped of repo-side <!-- mano-rule: --> eval markers.
+Pass --keep-rule-markers to keep them (used by the eval harness).
 
 Optional (you'll be asked):
   ./CLAUDE.md     Claude Code dispatch guard
@@ -83,11 +99,16 @@ function ask(rl, question, defaultYes) {
   });
 }
 
-// Copy a file; returns "written" | "skipped" (skipped = target exists and not forcing)
-function copyFile(src, dest, force) {
+// Copy a file; returns "written" | "skipped" (skipped = target exists and not forcing).
+// Markdown files are copied through the rule-marker strip unless keepMarkers.
+function copyFile(src, dest, force, keepMarkers) {
   if (fs.existsSync(dest) && !force) return "skipped";
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.copyFileSync(src, dest);
+  if (!keepMarkers && dest.endsWith(".md")) {
+    fs.writeFileSync(dest, stripRuleMarkers(fs.readFileSync(src, "utf8")));
+  } else {
+    fs.copyFileSync(src, dest);
+  }
   return "written";
 }
 
@@ -103,8 +124,9 @@ const MANO_END = "<!-- MANO:END -->";
 //   "appended"  target existed without a Mano section — appended one
 //   "replaced"  target had a Mano section and --force — replaced just that section
 //   "present"   target already has a Mano section, no --force — left untouched
-function installBootstrapFile(src, dest, force) {
-  const manoBody = fs.readFileSync(src, "utf8").replace(/\s+$/, "");
+function installBootstrapFile(src, dest, force, keepMarkers) {
+  let manoBody = fs.readFileSync(src, "utf8").replace(/\s+$/, "");
+  if (!keepMarkers) manoBody = stripRuleMarkers(manoBody);
   const block = `${MANO_BEGIN}\n${manoBody}\n${MANO_END}\n`;
 
   if (!fs.existsSync(dest)) {
@@ -145,18 +167,18 @@ function bootstrapStatusLabel(result) {
 }
 
 // Recursively copy a directory. Returns { written, skipped } counts.
-function copyDir(srcDir, destDir, force) {
+function copyDir(srcDir, destDir, force, keepMarkers) {
   let written = 0;
   let skipped = 0;
   for (const entry of fs.readdirSync(srcDir, { withFileTypes: true })) {
     const src = path.join(srcDir, entry.name);
     const dest = path.join(destDir, entry.name);
     if (entry.isDirectory()) {
-      const r = copyDir(src, dest, force);
+      const r = copyDir(src, dest, force, keepMarkers);
       written += r.written;
       skipped += r.skipped;
     } else if (entry.isFile()) {
-      const r = copyFile(src, dest, force);
+      const r = copyFile(src, dest, force, keepMarkers);
       if (r === "written") written++;
       else skipped++;
     }
@@ -183,12 +205,12 @@ async function install(args) {
   let totalWritten = 0;
   let totalSkipped = 0;
   for (const dir of MANO_DIRS) {
-    const r = copyDir(path.join(SRC, dir), path.join(manoDir, dir), args.force);
+    const r = copyDir(path.join(SRC, dir), path.join(manoDir, dir), args.force, args.keepRuleMarkers);
     totalWritten += r.written;
     totalSkipped += r.skipped;
   }
   for (const file of MANO_FILES) {
-    const r = copyFile(path.join(SRC, file), path.join(manoDir, file), args.force);
+    const r = copyFile(path.join(SRC, file), path.join(manoDir, file), args.force, args.keepRuleMarkers);
     if (r === "written") totalWritten++;
     else totalSkipped++;
   }
@@ -198,7 +220,7 @@ async function install(args) {
   // already has an AGENTS.md, append Mano's section rather than overwriting; if
   // a Mano section is already there, leave it untouched (idempotent re-install).
   const agentsSrc = path.join(SRC, "bootstrap", "AGENTS.md");
-  const agentsResult = installBootstrapFile(agentsSrc, path.join(CWD, "AGENTS.md"), args.force);
+  const agentsResult = installBootstrapFile(agentsSrc, path.join(CWD, "AGENTS.md"), args.force, args.keepRuleMarkers);
   log(`  AGENTS.md     ${bootstrapStatusLabel(agentsResult)}`);
 
   // 3. Optional root files. Source name (in bootstrap/) -> destination name (in project root).
@@ -227,7 +249,7 @@ async function install(args) {
       log(`  ${opt.dest}  skipped`);
       continue;
     }
-    const r = installBootstrapFile(src, path.join(CWD, opt.dest), args.force);
+    const r = installBootstrapFile(src, path.join(CWD, opt.dest), args.force, args.keepRuleMarkers);
     log(`  ${opt.dest}  ${bootstrapStatusLabel(r)}`);
   }
   if (rl) rl.close();

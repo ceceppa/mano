@@ -1,6 +1,7 @@
 ---
 name: mano-spec
 description: Use to translate a phase brief into a technical specification. Makes concrete decisions on libraries, data models, and API contracts.
+requires: [core, artifact]
 ---
 
 # `mano spec` — Spec Skill
@@ -17,7 +18,9 @@ This skill produces the tech spec: what someone needs to open their editor and s
 
 ## Activation
 
-This skill activates when the user types `mano spec`. When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
+This skill activates when the user types `mano spec`. When inputs are missing, follow the missing-input protocol in `_mano/rules/core.md`.
+
+Read this file plus `_mano/rules/core.md` and `_mano/rules/artifact.md` first — before the state projection, then artifacts — and read only those rule files; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 
 On activation:
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
@@ -145,7 +148,7 @@ Two leak shapes recur and must be drained before the spec is written, whether or
 - **Concrete file paths.** `prisma/dev.db`, `db/schema.ts`, `src/lib/x.ts`, migration directories — any on-disk location is file-placement, which is project-rules territory. The spec states the *decision* ("Prisma + SQLite"); the *paths* never belong in it. Naming a path in the spec is a leak even if no rules file exists yet — it just means the path is currently unhomed, not that the spec is its home.
 - **Patterns phrased as obligations.** "Use native `<button>` not custom widgets", "wrap inputs in a label", "return `{success, error}`" — any "contributors must write it this way" sentence is a pattern. The spec records the *constraint or decision that motivates it* ("target WCAG 2.1 AA", "Server Actions are the mutation contract"); the *how-to* is `mano rules`'s.
 
-Run this pass on the drafted spec before writing: for each line, ask "is this a path or a how-to-write-it instruction?" If yes, cut it from the spec. If `project-rules.md` exists and already states it, cutting it also removes a cross-artifact duplication — the framework's most common drift (see "Shared Values: One Canonical Home" in workflow.md). If rules does not exist yet, still cut it: an unhomed pattern is a `rule-gap` for `mano rules`, not spec content. Reference the rules artifact ("see project-rules") rather than restating, when a spec decision needs to point at its applied form. When the spec *is* the owning artifact for a shared value (a measurement, threshold, or constraint other artifacts must apply), state the value once here with its unit and rationale, so other artifacts can reference it instead of restating the number.
+Run this pass on the drafted spec before writing: for each line, ask "is this a path or a how-to-write-it instruction?" If yes, cut it from the spec. If `project-rules.md` exists and already states it, cutting it also removes a cross-artifact duplication — the framework's most common drift (see "Shared Values: One Canonical Home" in `_mano/rules/artifact.md`). If rules does not exist yet, still cut it: an unhomed pattern is a `rule-gap` for `mano rules`, not spec content. Reference the rules artifact ("see project-rules") rather than restating, when a spec decision needs to point at its applied form. When the spec *is* the owning artifact for a shared value (a measurement, threshold, or constraint other artifacts must apply), state the value once here with its unit and rationale, so other artifacts can reference it instead of restating the number.
 
 ### Unhomed-value check before writing (mandatory)
 
@@ -225,6 +228,7 @@ The spec is not a project diary. History lives in `reviews.md`, `backlog.md`, an
 - **Out of Scope** — architectural commitments the system holds across phases (e.g. "no ECS architecture," "no shaders," "no client-side routing"). Not what ships this phase — phase-level scope belongs in the phase brief. Out of Scope in the spec is for architectural commitments only.
 - **Platform constraints** — anything platform-specific that affects implementation.
 - **Product principle constraints** — only when phase brief principles create technical requirements (perceived performance, accessibility, offline confidence, keyboard-first interaction, latency budgets).
+- **Verification** (optional) — the project's canonical verification command(s) once they exist, as `command:` lines, plus an optional `failure-pattern:` regex that `_mano/scripts/verify.js` uses to pick the meaningful error lines out of a failing run. Project-owned sharpening; omit the section until the project has a real verification command.
 - **Cross-environment boundaries** — if any feature spans two different rendering environments (app vs widget, app vs watch, web vs native webview, app vs notification), list what each environment supports:
 
   ```
@@ -327,17 +331,17 @@ If the named existing interface cannot be located, state that as `⚠ Verify:`; 
 
 ## Spec generation — one-shot
 
-Generate the complete tech spec in one go and write it directly to `_mano_output/tech-spec.md`. Do not pause for confirmation. Do not ask step-by-step questions. Make the most logical, concrete assumptions based on the phase brief and any constraints, and enforce them.
+Generate the complete tech spec in one go and write it to `_mano_output/tech-spec.md` — a full-file write only when the file does not exist yet; when it exists, targeted replacements only, per `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**. Do not pause for confirmation. Do not ask step-by-step questions. Make the most logical, concrete assumptions based on the phase brief and any constraints, and enforce them.
 
 If a decision requires highlighting (a volatile library choice, a complex boundary), add a brief `⚠️ Note:` inline within the file itself.
 
 **Mandatory override flag (non-discretionary).** If the spec contradicts a directive in the brief's `## Stated Technical Preferences` block — different framework, different storage class, different auth model than the user explicitly stated — you must do **both**, every time, no exceptions:
 1. An inline `⚠️ Note:` in `tech-spec.md` at the relevant decision: what was stated, what you chose instead, the one-line reason.
-2. A `❓ Decide:` line in the chat output naming the override explicitly (e.g. `❓ Decide: brief stated Next.js + SQL; spec uses Vite + Firestore because [reason] — confirm before stories depend on it?`). It asks for ratification before the next command, so it is a decide, not an advisory verify — see the canonical execution-log format in `_mano/workflow.md`.
+2. A `❓ Decide:` line in the chat output naming the override explicitly (e.g. `❓ Decide: brief stated Next.js + SQL; spec uses Vite + Firestore because [reason] — confirm before stories depend on it?`). It asks for ratification before the next command, so it is a decide, not an advisory verify — see the canonical execution-log format in `_mano/rules/core.md`.
 
 This is not the discretionary `⚠️ Note:` judgement above — a stated-preference override *always* trips it. The decision may well be right; the silent part is the defect. A spec that contradicts its own source on tech with zero acknowledgement buries a call the human must ratify and confuses every downstream reader. Overriding without flagging is a contract violation, not a style choice.
 
-**On subsequent phases (spec already exists):** Extend the spec file directly and write the updates.
+**On subsequent phases (spec already exists):** Extend the spec file with targeted replacements only — never re-emit the whole file (`_mano/rules/core.md` → **Writing artifacts**).
 
 ### Hard constraint
 
@@ -346,7 +350,7 @@ Tech spec must stay compact. Aim for roughly 400-800 words outside compact table
 <!-- mano-rule: id=post-hook-findings-triage; incident=hook-output-triage-gap; model=not-recorded; date=2026-05-29; eval=hook-triage-no-approval,hook-triage-selected-only,hook-triage-start-no-approval,hook-triage-rules-no-approval -->
 ## Addressing post-spec hook findings
 
-When a just-run post-spec hook prints findings, follow `_mano/workflow.md` →
+When a just-run post-spec hook prints findings, follow `_mano/rules/hooks.md` →
 **Post-Hook Findings Triage** before editing anything. `mano spec` may apply
 selected findings only to `_mano_output/tech-spec.md`. A finding that requires a
 technical choice or conflicts with another artifact's owned value is `decide`;
@@ -360,17 +364,13 @@ decisions, and source-code findings to their owning skill without editing those
 targets.
 <!-- /mano-rule: post-hook-findings-triage -->
 
-## Post-spec hook suggestion
+## Post-spec hook
 
-After the spec decision is complete, always check whether `_mano/hooks/post-spec.md` exists. Ignore `_mano/hooks/post-spec.example.md`.
-
-If `_mano/hooks/post-spec.md` exists, check its `## Mode`. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; during an armed auto chain it runs automatically and pauses only when findings require triage. See `_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**. Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook. Do not write hook suggestions into generated artifacts.
-
-This check is required even when no spec update was needed. In manual or unarmed runs, mention an active suggest hook before the next-action block; during an armed auto chain, run it instead.
+If the state projection's `HOOK:` line names `post-spec`, follow `_mano/rules/hooks.md` for it. Otherwise skip hooks entirely — do not probe `_mano/hooks/` yourself. This check applies even when no spec update was needed.
 
 ## After completion
 
-Use the canonical execution-log format defined in `_mano/workflow.md`:
+Use the canonical execution-log format defined in `_mano/rules/core.md`:
 
 ```text
 [mano spec]: mano spec — _mano_output/tech-spec.md
@@ -385,7 +385,7 @@ Next:
 - `mano [action]` — [when it is useful from the current artifact state]
 ```
 
-`mano spec` must surface embedded assumptions on the right channel (see the canonical execution-log format in `_mano/workflow.md`): `⚠ Verify:` for assumptions the user can sanity-check at leisure; `❓ Decide:` whenever the confirmation should happen **before the next command** — a provisional default, a value the brief demanded a deliberate call on, a stated-preference override. If you catch yourself writing "confirm before stories" into a verify line, it's a decide. A pending `❓ Decide:` makes the `Next:` recommendation conditional on it — never announce "ready to decompose" above an unanswered decision. Overriding a directive in the brief's `## Stated Technical Preferences` block always trips a `❓ Decide:`, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently. When the user answers a decide, apply the answer to `tech-spec.md` in place — the provisional value becomes a stated decision, the hedge comes off — and reply with a one-line changelog.
+`mano spec` must surface embedded assumptions on the right channel (see the canonical execution-log format in `_mano/rules/core.md`): `⚠ Verify:` for assumptions the user can sanity-check at leisure; `❓ Decide:` whenever the confirmation should happen **before the next command** — a provisional default, a value the brief demanded a deliberate call on, a stated-preference override. If you catch yourself writing "confirm before stories" into a verify line, it's a decide. A pending `❓ Decide:` makes the `Next:` recommendation conditional on it — never announce "ready to decompose" above an unanswered decision. Overriding a directive in the brief's `## Stated Technical Preferences` block always trips a `❓ Decide:`, paired with the inline `⚠️ Note:` per the mandatory override-flag rule above. Never ship a stated-preference override silently. When the user answers a decide, apply the answer to `tech-spec.md` in place — the provisional value becomes a stated decision, the hedge comes off — and reply with a one-line changelog.
 
 Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced project layout.

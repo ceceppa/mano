@@ -229,8 +229,7 @@ class ScaffoldContractTests(unittest.TestCase):
         spec = (REPO_ROOT / "src" / "skills" / "spec.md").read_text()
         stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()
         dev = (REPO_ROOT / "src" / "skills" / "dev.md").read_text()
-        agents = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text()
-        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        core = (REPO_ROOT / "src" / "rules" / "core.md").read_text()
         template = (REPO_ROOT / "src" / "templates" / "tech-spec.md").read_text()
 
         self.assertIn("## Project Scaffold", template)
@@ -238,11 +237,10 @@ class ScaffoldContractTests(unittest.TestCase):
         self.assertIn("literal required token", spec)
         self.assertIn("Greenfield scaffold gate", stories)
         self.assertIn("route the missing guarded command to `mano spec`", stories)
-        self.assertIn("Never empty the project for a scaffold", dev)
-        self.assertIn("Greenfield scaffold safety is a hard stop", agents)
-        self.assertIn("`yolo` and auto mode do not relax this rule", agents)
-        self.assertIn("Greenfield scaffolding is staged, never destructive", workflow)
-        for text in (spec, stories, dev, agents, workflow):
+        self.assertIn("Greenfield scaffold safety is a hard stop", dev)
+        self.assertIn("`yolo` and auto mode do not relax this rule", dev)
+        self.assertIn("Greenfield scaffolding is staged, never destructive", core)
+        for text in (spec, stories, dev, core):
             self.assertIn("_mano_output", text)
             self.assertIn("scaffold", text.lower())
 

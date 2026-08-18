@@ -5,6 +5,7 @@
   "phase": 1,
   "prompt": "mano start. Scope the showcase example — approve it as the phase, it's the only thing I want in it.",
   "assertions": [
-    "start_kept_rules_visible_for_new_category"
+    "start_kept_rules_visible_for_new_category",
+    "start_did_not_mine_backlog"
   ]
 }

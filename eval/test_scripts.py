@@ -1387,13 +1387,13 @@ class AutoModeContractTests(unittest.TestCase):
 
     def test_auto_planning_keeps_material_ux_and_ui_coverage(self):
         start = (REPO_ROOT / "src" / "skills" / "start.md").read_text()
-        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        artifact = (REPO_ROOT / "src" / "rules" / "artifact.md").read_text()
         stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()
 
         self.assertIn("Planning coverage for user-facing phases", start)
-        self.assertIn("multiple selectors/actions", workflow)
-        self.assertIn("A familiar or “canonical” widget", workflow)
-        self.assertIn("only an explicit approval edit", workflow)
+        self.assertIn("multiple selectors/actions", artifact)
+        self.assertIn("A familiar or “canonical” widget", artifact)
+        self.assertIn("only an explicit approval edit", artifact)
         self.assertIn("The options require a human answer", stories)
         self.assertIn("Never choose option 2 or 3 yourself", stories)
         self.assertIn("explicit `skip ux` / `skip ui`", stories)
@@ -1405,6 +1405,7 @@ class AutoModeContractTests(unittest.TestCase):
             REPO_ROOT / "src" / "bootstrap" / "AGENTS.md",
         ]
         prompt_files.extend((REPO_ROOT / "src" / "skills").glob("*.md"))
+        prompt_files.extend((REPO_ROOT / "src" / "rules").glob("*.md"))
         prompt_files.extend((REPO_ROOT / "src" / "hooks").glob("*.md"))
 
         for prompt_file in prompt_files:
@@ -1420,22 +1421,23 @@ class AutoModeContractTests(unittest.TestCase):
                     "Do not run the hook without explicit user confirmation.", text
                 )
 
-        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        hooks_rules = (REPO_ROOT / "src" / "rules" / "hooks.md").read_text()
         agents = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text()
         hooks_readme = (REPO_ROOT / "src" / "hooks" / "README.md").read_text()
-        for text in (workflow, agents, hooks_readme):
+        for text in (hooks_rules, agents, hooks_readme):
             self.assertIn("manual mode", text)
             self.assertIn("armed auto chain", text)
 
     def test_auto_pause_preserves_chain_and_yolo_can_close_it(self):
         workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
-        agents = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text()
+        core = (REPO_ROOT / "src" / "rules" / "core.md").read_text()
+        dev = (REPO_ROOT / "src" / "skills" / "dev.md").read_text()
 
-        self.assertIn("- Remaining:", workflow)
+        self.assertIn("- Remaining:", core)
         self.assertIn("approved run plan", workflow)
-        self.assertIn("refresh the state projection", workflow)
-        self.assertIn("Auto-chain exception", agents)
-        self.assertIn("required `[mano auto]` closing block", agents)
+        self.assertIn("refresh the state projection", core)
+        self.assertIn("Auto-chain exception", dev)
+        self.assertIn("required `[mano auto]` closing block", dev)
 
     def test_mid_phase_backlog_assignment_is_the_only_stories_exception(self):
         stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()

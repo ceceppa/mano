@@ -37,8 +37,15 @@ Fast deterministic checks do not invoke a model:
 npm test
 ```
 
-This validates incident provenance, eval mappings, and the rule-stripping path
-used by retirement probes.
+This validates incident provenance, eval mappings, the rule-stripping path used
+by retirement probes, cross-file section pointers (`eval/check-refs.js` — every
+`` `file` → **Section** `` pointer in `src/` must resolve), and the scripts.
+
+Note on markers: production installs strip `<!-- mano-rule: -->` marker lines
+(the rule bodies stay). The harness therefore installs with
+`--keep-rule-markers` only for probe runs, strips the probed rules, then
+normalises the remaining markers away so the runner always sees a
+production-shaped install.
 
 ## Rule retirement probes
 
@@ -144,6 +151,10 @@ A nested `project/` prefix is copied to the temporary project root with that
 prefix removed. Use it sparingly for brownfield cases that need a small actual
 declaration or manifest surface, for example `project/src/client.ts`; ordinary
 planning fixtures should stay under `_mano_output/`.
+
+A nested `hooks/` prefix is copied into the installed `_mano/hooks/` directory.
+Use it when a case needs a custom active hook file (e.g. a legacy-shaped hook);
+use `active_hook` instead when the shipped example is the fixture.
 
 ## Notes / limits
 

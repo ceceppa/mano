@@ -13,7 +13,7 @@ def _read(relative: str) -> str:
 
 class GameplayUxContractTests(unittest.TestCase):
     def test_workflow_treats_gameplay_interaction_as_ux(self) -> None:
-        text = _read("src/workflow.md")
+        text = _read("src/rules/artifact.md")
         self.assertIn("**player-facing game loops**", text)
         self.assertIn("available-versus-locked states", text)
         self.assertIn("does not make an interaction flow self-evident", text)
@@ -45,14 +45,13 @@ class GameplayUxContractTests(unittest.TestCase):
     def test_ux_and_dev_capture_in_world_selection(self) -> None:
         ux = _read("src/skills/ux.md")
         template = _read("src/templates/ux-flow.md")
-        agents = _read("src/bootstrap/AGENTS.md")
         dev = _read("src/skills/dev.md")
 
         self.assertIn("an in-world/HUD interaction is a flow", ux)
         self.assertIn("Do not leave a hardcoded active item", ux)
         self.assertIn("## Player / In-World Interaction", template)
-        self.assertIn("6.3 **Player-choice UX gap.**", agents)
-        self.assertIn("Player choices are not story-owned interaction design", dev)
+        self.assertIn("6.3 **Player-choice UX gap.**", dev)
+        self.assertIn("do not invent a hotkey, picker, cycling scheme", dev)
 
 
 if __name__ == "__main__":

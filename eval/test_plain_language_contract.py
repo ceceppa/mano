@@ -13,7 +13,7 @@ def _read(relative: str) -> str:
 
 class PlainLanguageContractTests(unittest.TestCase):
     def test_workflow_applies_one_contract_to_every_skill(self) -> None:
-        workflow = _read("src/workflow.md")
+        workflow = _read("src/rules/artifact.md")
 
         self.assertIn("### Plain-language contract", workflow)
         self.assertIn("Every Mano skill applies this contract", workflow)
@@ -30,7 +30,7 @@ class PlainLanguageContractTests(unittest.TestCase):
         self.assertNotIn("Grade 8", workflow)
 
     def test_contract_keeps_precision_in_the_owning_artifact(self) -> None:
-        workflow = _read("src/workflow.md")
+        workflow = _read("src/rules/artifact.md")
 
         self.assertIn("Put concrete detail in its canonical home", workflow)
         self.assertIn("Do not invent technical detail merely to sound precise", workflow)
@@ -39,7 +39,7 @@ class PlainLanguageContractTests(unittest.TestCase):
         self.assertIn("Never fill the gap with confident-sounding prose", workflow)
 
     def test_contract_requires_honest_parameters_and_testable_behavior(self) -> None:
-        workflow = _read("src/workflow.md")
+        workflow = _read("src/rules/artifact.md")
 
         for vague_word in ("configurable", "tunable", "fast", "scalable"):
             self.assertIn(vague_word, workflow)
@@ -49,14 +49,14 @@ class PlainLanguageContractTests(unittest.TestCase):
         self.assertIn("Do not add empty Trigger or Out of Scope fields", workflow)
 
     def test_contract_preserves_product_feelings_as_human_questions(self) -> None:
-        workflow = _read("src/workflow.md")
+        workflow = _read("src/rules/artifact.md")
 
         self.assertIn('“Fun,” “calm,” and “rewarding”', workflow)
         self.assertIn("Name who will judge that feeling", workflow)
         self.assertIn("Never treat the adjective alone as acceptance evidence", workflow)
 
     def test_contract_makes_user_questions_clear_without_making_them_ceremonial(self) -> None:
-        workflow = _read("src/workflow.md")
+        workflow = _read("src/rules/artifact.md")
 
         self.assertIn("Ask clear questions", workflow)
         self.assertIn("Ask only when the answer changes the current work", workflow)
@@ -114,10 +114,17 @@ class PlainLanguageContractTests(unittest.TestCase):
 
         self.assertNotIn("Planned validation:", review)
         self.assertNotIn("Based on that evidence, what do you decide about:", review)
-        self.assertIn("Check what the phase promised:", review)
-        self.assertIn("Questions to consider:", review)
-        self.assertIn("Try this:", review)
-        self.assertIn("Reply naturally", review)
+        self.assertNotIn("Check what the phase promised:", review)
+        self.assertNotIn("Questions to consider:", review)
+        self.assertNotIn("Try this:\n", review)
+        self.assertIn("One list, one ask.", review)
+        self.assertIn("*(assumption)*", review)
+        self.assertIn("*(decide)*", review)
+        self.assertIn(
+            "How did it go? Reply naturally — a clear all-good verdict closes the phase; "
+            "or say \"close it\" to close without validation.",
+            review,
+        )
 
 
 if __name__ == "__main__":

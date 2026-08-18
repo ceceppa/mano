@@ -1,0 +1,11 @@
+{
+  "name": "review-positive-one-liner",
+  "description": "A clear positive one-liner with no close token still closes the phase in the same exchange: reviews.md written, resolve sweep run, no echo-back confirmation question.",
+  "fixture": "review-positive-summary",
+  "phase": 1,
+  "prompt": "mano review everything went as planned, no problems at all",
+  "assertions": [
+    "review_preserved_positive_summary",
+    "review_one_exchange_close"
+  ]
+}

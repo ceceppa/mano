@@ -1,6 +1,7 @@
 ---
 name: mano-review
 description: Use at the end of a phase to record validation results, resolve assumption outcomes, triage feedback, and write the phase review log before closing the phase.
+requires: [core, artifact, backlog]
 ---
 
 # `mano review` — Review Skill
@@ -15,6 +16,8 @@ This skill collects feedback and triages it — nothing else. Prefix every messa
 
 This skill activates when the user types `mano review`.
 The agent should execute `mano review`'s review flow directly in chat. Do not tell the user to run `mano review` themselves or treat it as an external shell command.
+
+Read this file plus `_mano/rules/core.md`, `_mano/rules/artifact.md`, and `_mano/rules/backlog.md` first — before the state projection, then artifacts — and read only those rule files; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 
 If the user's activation message already includes substantive review feedback after `mano review`, treat that text as Step 2 review input once the pre-review gate is clear. Do not ignore inline feedback just because it arrived in the same message as the command.
 
@@ -105,45 +108,24 @@ If the activation message already contains substantive review feedback, skip the
 
 ---
 
-**STEP 1 — Read the Phase goal, every Exit Criterion, Validation Plan, and Assumption Log. The Exit Criteria and Validation Plan serve different purposes. Never omit an Exit Criterion because the Validation Plan does not mention it. If the activation message has no substantive feedback, your entire response must use this format:**
+**STEP 1 — Read the Phase goal, every Exit Criterion, Validation Plan, and Assumption Log. The Exit Criteria and Validation Plan serve different purposes. Never omit an Exit Criterion because the Validation Plan does not mention it. If the activation message has no substantive feedback, your entire response is ONE numbered list and one closing question, in this format:**
 
 ```
 [mano review]: Review started for [PHASE_ID].
 
 Goal: "[phase goal]"
 
-Check what the phase promised:
-1. [first Exit Criterion, including its action and result bullets]
+1. [first Exit Criterion, including its action and result bullets] — Try: [the matching Validation Plan Try item, inline; omit when none]
 2. [next Exit Criterion]
+3. [assumption restated in plain English without changing its meaning] *(assumption)*
+4. [Validation Plan question] *(decide)*
 
-Tell me what happened.
-Optionally, say where or how you checked it.
-Reply naturally. Mano will record each check as `passed`, `failed`, or `not tested`.
-
-Questions to consider:
-- [each Validation Plan question, one per bullet]
-
-Try this:
-- [each Validation Plan Try item, one per bullet]
-
-Choose what to keep, change, reject, or test again.
-
-Check these assumptions:
-1. [assumption restated in plain English without changing its meaning]
-2. [assumption]
-
-Say which assumptions held or failed.
-Mano will record each as `confirmed`, `invalidated`, or `inconclusive`.
-Add anything broken, rough, or new.
-
-Or say "close it" to close without validation.
-Mano will mark every unchecked promise as `not tested`.
-Mano will leave every unchecked assumption `inconclusive`.
+How did it go? Reply naturally — a clear all-good verdict closes the phase; or say "close it" to close without validation.
 ```
 
-If the brief has no Assumption Log entries, omit the assumptions block.
-If a legacy brief has no Validation Plan, omit the questions and test. Still show every Exit Criterion. Never invent a missing plan during review.
-If a legacy plan uses `Decision this informs`, turn it into direct questions. Split each independent question into its own bullet. Turn `Evidence to gather` into `Try this` bullets. Map each test to a question. Put unmatched tests under `Other planned checks`. Preserve the meaning. Do not claim an unmatched test answers a question.
+One list, one ask. Every Exit Criterion is an item; each assumption is an item tagged `*(assumption)*`; each Validation-Plan question is an item tagged `*(decide)*` with its Try hint inline on the criterion it tests where one matches. Omit assumption items when the brief has no Assumption Log. If a legacy brief has no Validation Plan, omit the `*(decide)*` items and Try hints — still show every Exit Criterion; never invent a missing plan during review. If a legacy plan uses `Decision this informs`, turn it into direct `*(decide)*` questions and its `Evidence to gather` into inline Try hints, preserving the meaning.
+
+Mano records each check as `passed` / `failed` / `not tested`, each assumption as `confirmed` / `invalidated` / `inconclusive`; "close it" records every unchecked promise as `not tested` and leaves unchecked assumptions `inconclusive`. Do not print these mechanics — the list and the closing question are the whole message.
 
 That is your complete response. No preamble. No explanation. No extra commentary or planning. End of message.
 
@@ -176,7 +158,9 @@ When the verdict refers to the whole review:
 - Mark every presented assumption `confirmed`.
 - Do not infer a Decision choice. Closure and successful checks do not answer every learning question.
 
-A qualifier narrows the verdict. For example, `all tests passed` covers the tested Phase checks. It does not confirm product assumptions. If the human states a choice and a result that directly supports it, reuse that result as the Decision's `Why`. Do not make the human restate it. If the message includes `close it`, write the review now. Do not ask for another confirmation. Without `close it`, present the normal STEP 2 summary for confirmation.
+A qualifier narrows the verdict. For example, `all tests passed` covers the tested Phase checks. It does not confirm product assumptions. If the human states a choice and a result that directly supports it, reuse that result as the Decision's `Why`. Do not make the human restate it.
+
+**A clear positive verdict closes in one exchange — with or without the literal `close it`.** When the verdict is unqualified and nothing in the message needs triage judgment (no defect, refinement, new idea, gap, or rejection to classify), apply the whole-review mapping silently — verdict recorded verbatim as `Result`, every Phase check `passed`, every assumption `confirmed`, resolve sweep run — go straight to STEP 3, and reply with the terse execution-log changelog. Do not present the triage summary or ask "Did I put each outcome in the right section?". The echo-back confirmation round survives **only** for mixed or negative feedback, where Mano made triage judgments the human must check.
 <!-- /mano-rule: review-validation-without-grading -->
 
 **Phase-check rule:** Record one result for every Exit Criterion. Use only `passed`, `failed`, or `not tested`. A user-reported failure becomes a 🐛 Defect unless they reject the promised outcome. Do not treat an omitted check as passed. `close it` records every omitted check as `not tested`.
@@ -185,7 +169,7 @@ A qualifier narrows the verdict. For example, `all tests passed` covers the test
 
 **Rejected-scope rule:** When the feedback rejects a scoped direction, feature, or assumption ("reject", "drop", "abandon", "we're not doing X anymore", "different direction"), the additions are only half the triage — the other half is the open items that direction leaves orphaned. Read `_mano_output/backlog.md` and list every item still `Status: backlog` that is predicated on the rejected direction as a ❌ rejection candidate, one line each, exact title first. Matching is a judgment call the human confirms per item: propose candidates, never auto-reject, and when unsure whether an item depends on the rejected direction, include it as a candidate and say why — the user removes it from the list if it survives. In-phase items are not candidates; they belong to the phase's close sweep.
 
-Present the triaged list to the user for confirmation:
+For mixed or negative feedback — anything Mano had to classify — present the triaged list to the user for confirmation (a clear positive verdict skipped this under the whole-review verdict rule above):
 
 ```
 [mano review]: Review feedback for [PHASE_ID].
@@ -258,7 +242,7 @@ When the user confirms (e.g., "close it", "yes"):
    ```
    node _mano/scripts/backlog.js add --file [tmp].json
    ```
-   The script owns the `### / **Type:** / **Context:** / **Status:**` shape, starts every item at `Status: backlog`, and skips any title already present — so you can't misname, invent, or duplicate a field. **Script failing?** Stop and report the error — do not hand-write item blocks (see "Scripts are mandatory" in `_mano/workflow.md`). For reference, the exact shape the writer produces:
+   The script owns the `### / **Type:** / **Context:** / **Status:**` shape, starts every item at `Status: backlog`, and skips any title already present — so you can't misname, invent, or duplicate a field. **Script failing?** Stop and report the error — do not hand-write item blocks (see "Scripts are mandatory" in `_mano/rules/core.md`). For reference, the exact shape the writer produces:
 
    ```markdown
    ### [Short title]
@@ -286,7 +270,7 @@ When the user confirms (e.g., "close it", "yes"):
    **No release recap.** The review entry is a compact validation-and-decision record, not a phase summary or mini-postmortem. Do not record story counts, test counts, shipped-feature inventories, implementation summaries, empty "worked/didn't work" sections, or generic lessons unless a fact directly supports the decision. A lesson belongs in `What we learned` only when it can change a future decision or working rule; name the destination when the user provides one.
 
 Output a cold execution log:
-Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
+Use the canonical execution-log format defined in `_mano/rules/core.md` ("Canonical execution-log format"):
 
 ```
 [mano review]: mano review — _mano_output/backlog.md, _mano_output/reviews.md
@@ -339,9 +323,9 @@ That is your complete response. No preamble. No explanation. End of message.
 
 **STEP 2 (Follow-up) — Triage Feedback**
 
-When the user replies, or when substantive follow-up feedback was already included in the activation message, perform triage based on `_mano_output/backlog.md`:
+When the user replies, or when substantive follow-up feedback was already included in the activation message, perform triage based on `_mano_output/backlog.md`.
 
-Present the triaged outcomes for confirmation:
+The **whole-review verdict rule** from the standard review applies here too: a clear, unqualified positive verdict with nothing to triage skips this confirmation — apply the mapping silently, go straight to STEP 3 (Follow-up), and reply with the terse changelog. For mixed or negative feedback, present the triaged outcomes for confirmation:
 
 ```
 [mano review]: Follow-up feedback for [PHASE_ID].
@@ -391,7 +375,7 @@ When the user confirms (e.g., "close it", "yes"):
 4. Retire any confirmed ❌ items **via `node _mano/scripts/backlog.js reject --title "[exact title]"`** (same writer and same rejected-vs-resolved distinction as the standard STEP 3.3). Skip when the triage had no confirmed ❌ items.
 5. **Do not create a new follow-up review section.** Find the existing owner-aware H2 that begins with the exact projected `REVIEW_HEADING_PREFIX` and append an `### Addendum — [Date]` subsection directly under it (before the next `---` separator). Use the concise addendum structure from `_mano/templates/phase-review.md`. Always record its Validation result. Add `Checked with` only when supplied. Record a decision update only when the human made one. List only actual outcome/backlog changes.
 
-Output execution log (canonical format, see `_mano/workflow.md`):
+Output execution log (canonical format, see `_mano/rules/core.md`):
 ```
 [mano review]: mano review — _mano_output/backlog.md, _mano_output/reviews.md
 - Follow-up statuses updated in backlog
@@ -416,32 +400,9 @@ That is your complete response.
 - The example sections in `_mano/templates/phase-review.md` are structural references only. Do not copy them verbatim into the live file.
 - Keep each appended entry concise and concrete. Write for someone who was not in the room. Its job is to preserve evidence, the human decision, assumption outcomes, and resulting backlog changes — not to retell the release.
 
-## Post-Review Hook Suggestion
+## Post-review hook
 
-After `mano review` completes, always check whether this exact file exists:
-
-`_mano/hooks/post-review.md`
-
-Test for that one path directly (a targeted existence check, e.g. `test -f _mano/hooks/post-review.md`). Do **not** `ls` the hooks directory and reason about its contents: the directory always ships a `post-review.example.md` template, which is **not** an active hook, and listing-then-classifying is where it gets mistaken for one. Only the exact `post-review.md` (no `.example`) counts.
-
-If that active `post-review.md` suggest hook exists, prepare the generic hook block for the final chat response. `mano review` is always human-run and outside the auto chain, so it remains an unarmed run even when `MODE: auto`.
-
-Check the hook's `## Mode` first. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block because review is unarmed (`_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**).
-
-Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
-
-This step is required even when no review update was needed.
-
-Mention an active suggest hook in the final chat response before the next-action block.
-
-This applies whether the skill:
-- created an artifact
-- updated an artifact
-- checked existing artifacts and decided no update was needed
-
-Do not print the hook's suggested prompt unless the user asks to run or view the hook.
-Do not execute a `suggest` hook without explicit user confirmation; `mano review` is never part of the armed auto chain.
-Do not write hook suggestions into generated artifacts.
+If the state projection's `HOOK:` line names `post-review`, follow `_mano/rules/hooks.md` for it. Otherwise skip hooks entirely — do not probe or `ls` `_mano/hooks/` yourself (the shipped `post-review.example.md` is never active; the projection already excludes it). `mano review` is always human-run and outside the auto chain, so it is an unarmed run even when `MODE: auto`. This check applies even when no review update was needed.
 
 ## Forbidden
 

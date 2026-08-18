@@ -214,6 +214,32 @@ def strip_rules(project: Path, rule_ids: set[str]) -> dict[str, int]:
     return removed
 
 
+MARKER_LINE = re.compile(
+    r"^[ \t]*<!--\s*/?mano-rule:[^>]*-->[ \t]*\r?\n?",
+    re.MULTILINE,
+)
+
+
+def strip_markers(project: Path) -> int:
+    """Remove bare provenance marker lines (not rule bodies) from an install.
+
+    Production installs are marker-free (the installer strips them); a probe
+    install keeps them so `strip_rules` can remove whole rules, then calls this
+    to normalise the remaining files back to the production shape.
+    """
+    removed = 0
+    for path in _installed_files(project):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        stripped, count = MARKER_LINE.subn("", text)
+        if count:
+            path.write_text(stripped, encoding="utf-8")
+            removed += count
+    return removed
+
+
 def format_rule_table(root: Path, rules: dict[str, Rule]) -> str:
     """Compact human-readable inventory for `eval/run.py --list-rules`."""
     lines = [
