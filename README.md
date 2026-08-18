@@ -71,6 +71,7 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano track [name]` | Show, set, or clear an optional local experiment/work track. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
+| `mano build` | Build the active phase straight from its brief — no story files. The brief's own numbered Phase Scope items are the units, tracked in `progress.md`. |
 | `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
 | `mano continue` | Auto-run only when there is a single obvious next planning step. If several planning actions are still reasonable, it stops and shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
@@ -78,6 +79,19 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 `mano dev` is the named path into implementation, but you don't have to remember the command — plain phrasing like "implement the next story" routes to the same flow. Either way the agent follows the implementation contract in `AGENTS.md`.
 
 `mano dev yolo` (or the unambiguous `mano-dev yolo`) batches every story that is pending when the command starts. It still implements them as separate stories, in index order, marking each one done before moving on. It stops at the first blocker and never relaxes acceptance criteria, `Not this story`, project rules, verification, or the mandatory `mano review` phase close. Without the literal `yolo`, `mano dev` always stops after one story.
+
+#### Two ways into code
+
+`mano stories` + `mano dev` and `mano build` are both first-class, and a phase uses one or the other.
+
+- **`mano stories` → `mano dev`** decomposes the phase into story files first, then implements one story per session. The split is the point: a big model plans, a small-context model implements against a written contract. Best for a large or unfamiliar phase, and for anything you want to read before it is built.
+- **`mano build`** skips story files entirely. The unit of work is the numbered `## Phase Scope` item **you already approved in the brief**, so nothing invents a decomposition and nothing can drift from what you wrote. It keeps a small ledger at `PHASE_DIR/progress.md` — one row per scope item, one row per exit-criteria leaf — and builds the rows in order, checkpointing each one. It runs straight through, and stops to ask only when it *deviated*: a missing decision in an artifact, a scope conflict, a row it had to split, a row it had to reopen, or a correction you typed mid-build.
+
+The gates are the same on both paths. A missing spec-owned default, an undefined shared contract, an unwritten player choice, or work outside `Not This Phase` stops the run and routes to the skill that owns the decision — `mano build` runs those checks once against the whole brief, before it writes anything at all, which is the cheapest place they can fire.
+
+The ledger's two status vocabularies are deliberate: scope rows are `pending | doing | done`, exit criteria are `pending | met`. **Built is not proven** — `mano review` refuses to close a phase whose scope is complete but whose criteria are not.
+
+Because `mano build`'s ledger comes from the brief, the brief's `## Phase Scope` should be a numbered list and its `## Exit Criteria` a numbered category with lettered leaves. `mano start` writes both that way, and a script parses them — nothing retypes or paraphrases your text. A brief with a prose-only scope is refused and sent back to `mano start`, because inventing that split is the one thing this path forbids.
 
 `mano dev` is a *generic* implementer, not a language specialist. If you have a dedicated coding skill (e.g. a C++ specialist), you can have it implement instead — just point it at the contract: something like *"@cpp-pro, implement the next pending story following the 'Implementing a story' contract in `AGENTS.md`."* The specialist then writes the code under the same rules as the default implementer (AC only, one-line done, stop on a gap rather than inventing). The key is the contract reference — invoking a specialist with a bare "implement the next story" skips the discipline that keeps implementation supervised and on-scope.
 
@@ -95,6 +109,27 @@ That clone now uses `_mano_output/alice-phase-N/` and `in-alice-phase-N`. Anothe
 
 The owner is stored in repository-local Git config as `mano.owner`, so it is not committed. Setting or clearing it requires a Git checkout; run `git init` first in a new directory, or use `MANO_OWNER=alice` for a shell. Linked worktrees share the configured value. Use a stable lowercase handle, not an email address or machine username.
 
+#### The three local settings are plain Git config
+
+`mano owner`, `mano mode`, and `mano track` are thin wrappers over `git config --local`. Each command is exactly equivalent to editing the key yourself:
+
+| Command | Equivalent |
+|---------|------------|
+| `mano owner alice` | `git config --local mano.owner alice` |
+| `mano owner clear` | `git config --local --unset-all mano.owner` |
+| `mano mode auto` | `git config --local mano.mode auto` |
+| `mano mode clear` | `git config --local --unset-all mano.mode` |
+| `mano track "Option B"` | `git config --local mano.track "Option B"` |
+| `mano track clear` | `git config --local --unset-all mano.track` |
+
+Read them back with `git config --local --get mano.mode` (or `mano mode` / `mano owner` / `mano track` with no argument, which also tells you whether an environment variable is overriding the stored value).
+
+Two things the wrapper adds, which is why it is still worth typing: it **validates** the value before storing it (an invalid owner slug or a `mano mode fast` is rejected at the command rather than silently ignored later), and it prints what the setting now means. Three details matter if you edit the config by hand:
+
+- **`--local` is not optional.** Mano reads these keys with `git config --local --get`, so a `--global` or `--system` value is never picked up. That is deliberate: these record how *this checkout* is being worked on.
+- **No `=`.** It is `git config --local mano.mode auto`, not `mano.mode = auto`.
+- **The environment wins.** `MANO_OWNER`, `MANO_MODE`, and `MANO_TRACK` override the stored value for a shell or worktree, and an empty one is an error rather than a silent fallback. Every `state.js` projection prints the effective values, so that is where to look when a setting seems ignored.
+
 Ownership scopes phase discovery and lifecycle gates; it is not a concurrency lock. The backlog, tech spec, UX flow, design brief, project rules, and reviews remain shared project files. Teammates should use branches or worktrees, choose disjoint backlog scope, and coordinate merges normally.
 
 ### Optional work tracks
@@ -105,7 +140,7 @@ When you are exploring parallel directions, set a local track:
 mano track "Option B"
 ```
 
-Track is distinct from `Source`: Source records where a backlog item came from; Track records the experiment or direction it belongs to. While active, it tags imported and conversation-created items. Start copies it into the phase brief. Review items then copy that phase Track, even if your local Track changed. `mano start` considers only matching-track backlog items. `mano track clear` returns to untracked planning without modifying existing items. Track never bypasses phase approval or any conflict check.
+Track is distinct from `Source`: Source records where a backlog item came from; Track records the experiment or direction it belongs to. While active, it tags imported and conversation-created items. Start copies it into the phase brief. Review items then copy that phase Track, even if your local Track changed. `mano start` considers only matching-track backlog items. `mano track clear` returns to untracked planning without modifying existing items. Track never bypasses phase approval or any conflict check. Like the other two, it is repository-local Git config — `mano track "Option B"` is exactly `git config --local mano.track "Option B"` (see **The three local settings are plain Git config** above), and `MANO_TRACK` overrides it for a shell.
 
 Setting or clearing Track requires a Git checkout because Mano stores it in repository-local Git config. Run `git init` first in a new directory, or use `MANO_TRACK="Option B"` for a shell.
 
@@ -129,7 +164,7 @@ On a project where you have stopped reading the intermediate artifacts and just 
 mano mode auto
 ```
 
-From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano dev yolo`, without you typing each one. Three things keep it supervised:
+From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano build`, without you typing each one. (A phase that already has a stories index keeps its path and finishes at `mano dev yolo` instead.) Three things keep it supervised:
 
 - **You still approve the phase.** Auto mode is armed by that approval and never replaces it — the brief is still where you correct course, before any code exists.
 - **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.
@@ -141,7 +176,7 @@ For a new interactive frontend, auto mode normally includes `ux` and `ui` when t
 
 Suggest hooks are the one behaviour that inverts after approval: in manual or unarmed runs Mano asks before running them; during an armed auto chain they run automatically — because you are deliberately not reading the artifacts mid-chain, so the hook is the only check left. Their findings still need your approval before anything is edited. Command hooks run automatically in both modes.
 
-`mano mode` shows the current setting and `mano mode manual` turns it off. Like the owner, it lives in repository-local Git config (`mano.mode`) and is not committed — it records how much *you* review, not a property of the project. `MANO_MODE` overrides it for a shell.
+`mano mode` shows the current setting and `mano mode manual` turns it off. Like the owner, it lives in repository-local Git config (`mano.mode`) and is not committed — it records how much *you* review, not a property of the project. `mano mode auto` is exactly `git config --local mano.mode auto`; see **The three local settings are plain Git config** above. `MANO_MODE` overrides it for a shell.
 
 Persisting `mano mode auto` or `mano mode manual` therefore requires the project to be a Git checkout. In a new project directory, initialise version control first:
 
@@ -175,7 +210,9 @@ Run a Mano action again when concrete new information affects its artifact. The 
 | **`mano ui`** | Establishes visual language and component guide | `skills/ui.md` |
 | **`mano stories`** | Breaks specs into implementable stories | `skills/stories.md` |
 | **`mano review`** | Records evidence, triages feedback, closes the phase | `skills/review.md` |
+| **`mano build`** | Builds the active phase from its brief's own scope items, tracked in `progress.md` | `skills/build.md` |
 | **`mano dev [yolo]`** | Implements the next pending story, or the invocation-time pending set with explicit `yolo` | `skills/dev.md` |
+| *(shared)* | The implementation contract both code paths read: gap gates, acceptance evidence, Repair Mode, read budget, output discipline | `rules/implement.md` |
 
 The user owns scope, priorities, and product tradeoffs. `mano spec` can recommend concrete technical defaults and `mano ui` can set a concrete visual direction, but both are always overridable.
 
@@ -183,7 +220,7 @@ The user owns scope, priorities, and product tradeoffs. `mano spec` can recommen
 
 Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) planning** system.
 
-You only pay the cognitive tax for what you are building *today*. Two planning actions are usually required to execute a phase: `mano start` to scope the work, and `mano stories` to generate the tasks — then `mano dev` to implement each story (one turn each by default, or one explicit YOLO batch), and `mano review` to close the phase. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
+You only pay the cognitive tax for what you are building *today*. The shortest complete phase is two commands plus the close: `mano start` to scope the work, `mano build` to build it from that brief, and `mano review` to close the phase. The story path adds one: `mano start` → `mano stories` to generate the tasks → `mano dev` per story (one turn each by default, or one explicit YOLO batch) → `mano review`. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
 
 The optional actions can be skipped; `mano review` cannot. Review is what closes a phase — it is the only action that moves that exact phase identity's backlog items from its in-phase status to `resolved`, and `mano start` will not scope the next phase in the selected namespace until the current one is closed that way. The log is deliberately a compact decision record: evidence, the human decision it informed, assumption outcomes, and resulting backlog changes. It is not a release recap or mandatory mini-postmortem.
 
@@ -226,7 +263,8 @@ After a review, `mano review` closes the phase. If you don't need Mano for the r
 Requirements change during implementation. You don't have to finish the phase to adjust:
 
 - **Found a bug or missing feature?** Use `mano stories` — it creates a pending story numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3). Run `mano dev` when you want to implement the next pending row.
-- **Need to change the active phase scope?** Amend the current phase brief explicitly. Then rerun `mano stories` so affected pending work changes and shipped behavior receives a lettered corrective story. `mano start` will not advance while the phase remains open.
+- **On the build path, just say it to the running build.** `mano build` sorts a mid-phase report into one of three: a defect in something already marked done **reopens** those rows and fixes under them (no new work is invented — the row was simply never done); an in-goal nuance no row covers is appended as a lettered row **in your own words**; and a genuinely distinct outcome is refused and sent to `mano start`, because that is a change to the brief you approved. Every one of those shows you what changed before any code follows.
+- **Need to change the active phase scope?** Amend the current phase brief explicitly. Then rerun `mano stories` so affected pending work changes and shipped behavior receives a lettered corrective story — on the build path, rerun `mano build` against the amended brief. `mano start` will not advance while the phase remains open.
 - **Need to update specs or stories?** Run the owning action with the concrete change. It updates affected content only. Done stories remain immutable.
 
 For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real manifest and lockfile (any language — `package.json`/`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `go.sum`, `requirements.txt`/`uv.lock`, `CMakeLists.txt`, etc.), or anytime you add/remove/replace a library, run `mano spec` again so `mano spec` can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain. It also receives the exact backlog items assigned to the active phase, so source requirements are not lost when the human-facing phase brief summarizes them. For a brownfield public interface, it checks the named existing declaration surface before confirming a replacement or extension. The completeness gate is deliberately limited to consumer-visible/public or independently-owned multi-story boundaries; a local helper or component API owned by one story stays an implementation decision.
@@ -258,7 +296,8 @@ _mano_output/
 ├── phase-1/
 │   ├── phase-brief.md       ← problem, vision, scope for this phase
 │   ├── design-preview.html  ← self-contained visual preview for this phase (if generated)
-│   └── stories/
+│   ├── progress.md          ← `mano build` ledger: one row per scope item, one per exit-criteria leaf
+│   └── stories/             ← the other path's ledger; a phase has one or the other
 │       ├── README.md         ← story index
 │       └── story-*.md        ← one file per story
 ├── phase-2/

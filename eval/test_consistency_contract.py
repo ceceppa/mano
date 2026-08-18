@@ -71,13 +71,65 @@ class ConsistencyContractTests(unittest.TestCase):
         self.assertIn("Never infer the active phase from chat context or directory listings", cursor)
 
     def test_done_message_cannot_hide_an_unmet_acceptance_criterion(self) -> None:
-        dev = read("src/skills/dev.md")
+        dev = read("src/skills/dev.md") + read("src/rules/implement.md")
         stories_script = read("src/scripts/stories.js")
 
         self.assertNotIn("an AC you could not meet", dev)
         self.assertIn("An unmet or unverified AC is never an allowed suffix", dev)
-        self.assertIn("An unmet or unverified AC leaves the story pending under step 10.1", dev)
+        self.assertIn("An unmet or unverified AC leaves the row pending under step 10.1", dev)
         self.assertIn("no statuses changed", stories_script)
+
+    def test_shipped_hook_examples_ship_no_active_checks(self) -> None:
+        """A check hook is the user's own review. The shipped examples must
+        carry their items commented out, so activating one applies nothing
+        until a human chooses the checks."""
+        hooks = sorted((ROOT / "src" / "hooks").glob("post-*.example.md"))
+        self.assertEqual(len(hooks), 8)
+        for path in hooks:
+            with self.subTest(hook=path.name):
+                text = path.read_text(encoding="utf-8")
+                body = text.split("## Checklist", 1)[-1] if "## Checklist" in text else text.split("## Focus", 1)[-1]
+                active = [
+                    line for line in body.split("\n")
+                    if line.startswith("- ") and "-->" not in line
+                ]
+                # Every item must sit inside the <!-- ... --> example block.
+                commented = body.index("<!--") < body.index("- ") < body.index("-->")
+                self.assertTrue(commented, f"{path.name} ships uncommented checklist items")
+                self.assertTrue(active, f"{path.name} has no example items left to uncomment")
+
+    def test_run_section_belongs_to_suggest_hooks_only(self) -> None:
+        """`## Run` names the external skill a suggest hook points at. A check
+        hook never runs a command, so a `## Run` there would be inert and
+        misleading."""
+        for path in sorted((ROOT / "src" / "hooks").glob("post-*.example.md")):
+            with self.subTest(hook=path.name):
+                text = path.read_text(encoding="utf-8")
+                mode = text.split("## Mode", 1)[1].strip().split("\n", 1)[0].strip()
+                self.assertIn(mode, {"check", "suggest", "command"})
+                self.assertEqual(
+                    "## Run" in text,
+                    mode == "suggest",
+                    f"{path.name} is mode {mode} but {'has' if '## Run' in text else 'lacks'} a ## Run section",
+                )
+
+    def test_phase_scoped_hooks_can_see_the_phase_brief(self) -> None:
+        """A hook that checks a phase-scoped artifact needs the brief that
+        artifact was written for — otherwise it cannot tell what is missing."""
+        for name in ("post-start", "post-spec", "post-rules", "post-ux", "post-ui", "post-stories", "post-review"):
+            with self.subTest(hook=name):
+                text = (ROOT / "src" / "hooks" / f"{name}.example.md").read_text(encoding="utf-8")
+                inputs = text.split("## Inputs", 1)[1].split("\n## ", 1)[0]
+                self.assertIn("`BRIEF`", inputs, f"{name} cannot see the phase brief")
+
+    def test_hook_inputs_have_a_stated_contract(self) -> None:
+        """Every shipped hook declares ## Inputs; the rules file must say what
+        Mano does with them, per mode."""
+        hooks_rules = read("src/rules/hooks.md")
+        self.assertIn("## `## Inputs` — what the hook is allowed to look at", hooks_rules)
+        self.assertIn("Allow the review skill to read:", hooks_rules)
+        self.assertIn("A `check` hook may not out-read its own skill", hooks_rules)
+        self.assertIn("Never invent checklist items", hooks_rules)
 
     def test_readme_uses_artifact_ownership_not_a_global_rank(self) -> None:
         readme = read("README.md")

@@ -1,0 +1,11 @@
+{
+  "name": "build-nuance-row",
+  "description": "Case C — an in-goal nuance no row covers is appended as a lettered row carrying the user's own words verbatim, and no existing row is rewritten.",
+  "fixture": "build-stage-chain",
+  "phase": 1,
+  "prompt": "mano-build — compose the feature label from the base module's value rather than hard-coding the word base",
+  "assertions": [
+    "build_appended_the_users_words",
+    "build_wrote_no_story_files"
+  ]
+}

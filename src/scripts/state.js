@@ -23,9 +23,10 @@
  *   node state.js --scope         on a PROCEED to scope-backlog or resume-draft,
  *                                 also print the relevant backlog items,
  *                                 principles, and latest review
- *   node state.js --next          for mano dev: the active phase + next pending
- *                                 story (#, file) + ordered story list, so the
- *                                 implementer needn't ls or reopen the index
+ *   node state.js --next          for mano dev / mano build: the active phase +
+ *                                 the next unit of work — the next pending story
+ *                                 (#, file) on the stories path, or the next
+ *                                 non-done ledger row on the build path
  *   node state.js --ui            for mano ui: the active phase's exact brief
  *                                 and phase-local preview paths
  *   node state.js --current       exact owner-scoped phase identity and paths
@@ -106,15 +107,17 @@ Usage:
                 item's optional top-level Source provenance field
   --track       with --scope only: case-insensitive exact filter for an item's
                 optional top-level Track; otherwise uses the active local track
-  --next        for mano dev: the active phase, the next pending story (its #
-                and file path) and the ordered story list, computed fresh from
-                disk so the implementer needn't ls or reopen the index
+  --next        for mano dev and mano build: the active phase and the next unit
+                of work, computed fresh from disk — the next pending story (its
+                # and file path) plus the ordered story list, or, when the phase
+                has a progress.md ledger, its next non-done Scope row plus both
+                ledger tables
   --ui          for mano ui: report the current phase brief and phase-local
                 design preview paths without exposing backlog content or
                 scanning phase folders in the prompt
   --current     report the configured owner and exact current phase identity,
-                directory, brief, stories index, backlog status, and review
-                heading without exposing artifact contents
+                directory, brief, stories index or build ledger, backlog status,
+                and review heading without exposing artifact contents
   --spec        for mano spec: report the current phase brief path, exact
                 in-phase-N backlog items, and open spec-gap items without
                 exposing the rest of backlog.md
@@ -185,6 +188,42 @@ function readStories(storiesReadme) {
     else openTitles.push(`${r.num} ${r.title} (${r.status || "—"})`);
   }
   return { total, done, openTitles, rows };
+}
+
+// Build ledger: two tables, `| S1 | … | pending |` and `| E1a | … | pending |`.
+// A row counts when its first cell is a row address; the `S`/`E` prefix decides
+// which table it belongs to, so the two status vocabularies stay separate
+// (Scope: pending|doing|done. Exit Criteria: pending|met — built is not proven).
+// Returns { scope, exit, next } or null when the phase has no ledger. `next` is
+// the first Scope row that is not `done`, in file order — what build implements
+// now. Writer: progress.js, which owns this row format.
+function readProgress(progressFile) {
+  const text = readText(progressFile);
+  if (text === null) return null;
+  const scope = { total: 0, closed: 0, rows: [] };
+  const exit = { total: 0, closed: 0, rows: [] };
+  for (const line of text.split("\n")) {
+    if (!line.includes("|")) continue;
+    const cells = line.split("|").map((c) => c.trim());
+    while (cells.length && cells[0] === "") cells.shift();
+    while (cells.length && cells[cells.length - 1] === "") cells.pop();
+    if (cells.length < 3) continue;
+    const m = /^([SE])(\d+)([a-z]*)(?:\.(\d+))?$/.exec(cells[0]);
+    if (!m) continue; // header / separator / prose row
+    const row = {
+      id: cells[0],
+      label: cells[1],
+      status: cells[cells.length - 1].toLowerCase(),
+    };
+    const table = m[1] === "S" ? scope : exit;
+    table.rows.push(row);
+    table.total++;
+    if (row.status === (m[1] === "S" ? "done" : "met")) table.closed++;
+  }
+  if (scope.total === 0 && exit.total === 0) return null;
+  const next = scope.rows.find((r) => r.status !== "done") || null;
+  return { scope, exit, next, allDone: scope.total > 0 && scope.closed === scope.total,
+    allMet: exit.total > 0 && exit.closed === exit.total };
 }
 
 // Backlog Status counts. Matches `- **Status:** <value>` exactly (the format
@@ -598,6 +637,7 @@ function scan(projectRoot, options = {}) {
     reviewHeading: null,
     briefExists: false,
     stories: null,          // { total, done, openTitles } or null
+    progress: null,         // build ledger { scope, exit, next } or null
     reviewEntry: false,
     backlog: null,          // status counts, or null
     backlogItems: 0,        // all Status: backlog lines (backward-compatible field)
@@ -652,6 +692,16 @@ function scan(projectRoot, options = {}) {
     const phaseDir = path.join(projectRoot, ref.relativeDir);
     s.briefExists = exists(path.join(phaseDir, "phase-brief.md"));
     s.stories = readStories(path.join(phaseDir, "stories", "README.md"));
+    s.progress = readProgress(path.join(phaseDir, "progress.md"));
+    // One ledger per phase. Two would make "is this phase built?" depend on
+    // which file you opened, so report it instead of picking a winner.
+    if (s.stories && s.progress) {
+      throw new Error(
+        `${ref.id} holds both stories/README.md and progress.md. ` +
+        "A phase has one ledger: mano stories + mano dev, or mano build. " +
+        "Keep the one that matches how this phase was planned and remove the other.",
+      );
+    }
     s.reviewEntry = hasReviewEntry(s._reviewsText, ref);
     s.inPhaseRemaining = s.backlog[ref.inPhaseStatus] || 0;
   }
@@ -663,6 +713,11 @@ function scan(projectRoot, options = {}) {
 function finalize(s, options = {}) {
   const storiesAllDone = !!(s.stories && s.stories.total > 0 && s.stories.done === s.stories.total);
   const storiesMissing = !s.stories || s.stories.total === 0;
+  // The build path's ledger answers the same two questions the stories index
+  // does, with one addition: built means every Scope row done AND every Exit
+  // Criterion met. A phase has one ledger or the other (scan refuses both).
+  const buildAllDone = !!(s.progress && s.progress.allDone && s.progress.allMet);
+  const ledgerMissing = storiesMissing && !s.progress;
   // Gate condition 3: reviewed/closed — review is mandatory, and its close sweep
   // must have moved every item for this exact phase identity off its in-phase status.
   const closed = s.reviewEntry && s.inPhaseRemaining === 0;
@@ -691,10 +746,13 @@ function finalize(s, options = {}) {
     // Edge case: phase folder without a brief — a prior start didn't finalise.
     verdict = "RESUME_DRAFT";
     action = `${s.phaseId}/ exists without phase-brief.md — a previous mano start didn't finalise. Resume drafting ${s.phaseId}; do NOT start a new phase.`;
-  } else if (storiesMissing) {
+  } else if (ledgerMissing) {
     verdict = "PHASE_IN_PROGRESS";
-    action = `${s.phaseId} has a brief but no stories yet. Not complete — run mano stories. mano start must NOT scope a next phase.`;
-  } else if (!storiesAllDone) {
+    action = `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — run mano stories (then mano dev) or mano build. mano start must NOT scope a next phase.`;
+  } else if (s.progress && !buildAllDone) {
+    verdict = "PHASE_IN_PROGRESS";
+    action = `${s.phaseId} is being built (${s.progress.scope.closed}/${s.progress.scope.total} scope rows done, ${s.progress.exit.closed}/${s.progress.exit.total} exit criteria met). Not complete — run mano build. mano start must NOT scope a next phase.`;
+  } else if (!s.progress && !storiesAllDone) {
     verdict = "PHASE_IN_PROGRESS";
     action = `${s.phaseId} has open stories (${s.stories.done}/${s.stories.total} done). Not complete — run mano dev. mano start must NOT scope a next phase.`;
   } else if (!closed) {
@@ -705,7 +763,8 @@ function finalize(s, options = {}) {
     const repair = s.reviewEntry
       ? "The review entry exists but its backlog close sweep is incomplete — re-run mano review to repair it."
       : "Run mano review.";
-    action = `${s.phaseId} is built (stories all done) but not closed — ${blockers.join("; ")}. ${repair} mano start must NOT scope a next phase.`;
+    const proof = s.progress ? "every scope row done, every exit criterion met" : "stories all done";
+    action = `${s.phaseId} is built (${proof}) but not closed — ${blockers.join("; ")}. ${repair} mano start must NOT scope a next phase.`;
   } else {
     // Phase complete.
     if (s.scopeableBacklogItems > 0) {
@@ -734,6 +793,7 @@ function finalize(s, options = {}) {
   const proceeds = Object.prototype.hasOwnProperty.call(NEXT_BY_VERDICT, verdict);
 
   s.storiesAllDone = storiesAllDone;
+  s.buildAllDone = buildAllDone;
   s.closed = closed;
   s.verdict = verdict;
   s.action = action;
@@ -845,8 +905,13 @@ function renderEvidence(s) {
       if (s.stories.openTitles.length) {
         for (const t of s.stories.openTitles) L.push(`                           open: ${t}`);
       }
+    } else if (s.progress) {
+      L.push(`  build ledger:          ${s.progress.scope.closed}/${s.progress.scope.total} scope rows done, ${s.progress.exit.closed}/${s.progress.exit.total} exit criteria met`);
+      for (const r of s.progress.scope.rows) {
+        if (r.status !== "done") L.push(`                           open: ${r.id} ${r.label} (${r.status || "—"})`);
+      }
     } else {
-      L.push(`  stories:               none (no stories/README.md)`);
+      L.push(`  stories:               none (no stories/README.md, no progress.md)`);
     }
     L.push(`  reviewed (reviews.md): ${s.reviewEntry ? "yes" : "no"}`);
     L.push(`  ${s.inPhaseStatus} items:      ${s.inPhaseRemaining} remaining`);
@@ -1030,6 +1095,12 @@ function renderCurrent(s) {
   L.push(`BRIEF_STATUS: ${s.briefExists ? "present" : "missing"}`);
   L.push(`STORIES: ${s.phaseDir ? `${s.phaseDir}/stories/README.md` : "missing"}`);
   L.push(`STORIES_STATUS: ${s.stories ? "present" : "missing"}`);
+  L.push(`PROGRESS: ${s.phaseDir ? `${s.phaseDir}/progress.md` : "missing"}`);
+  L.push(`PROGRESS_STATUS: ${s.progress ? "present" : "missing"}`);
+  if (s.progress) {
+    L.push(`SCOPE: ${s.progress.scope.closed}/${s.progress.scope.total} done`);
+    L.push(`EXIT_CRITERIA: ${s.progress.exit.closed}/${s.progress.exit.total} met`);
+  }
   L.push(`IN_PHASE_STATUS: ${s.inPhaseStatus || "unavailable"}`);
   L.push(`REVIEW_HEADING_PREFIX: ${s.reviewHeading || "unavailable"}`);
   return L.join("\n");
@@ -1063,10 +1134,54 @@ function renderNext(s) {
     L.push(`PHASE_ID: ${s.phaseId}`);
     return L.join("\n");
   }
-  if (!s.stories || s.stories.total === 0) {
-    L.push(`DEV: ${s.phaseId} has a brief but no stories yet — run mano stories. Nothing for mano dev yet.`);
+
+  // Build path: this phase's ledger is progress.md, not a stories index. Same
+  // projection contract — what to work on right now, computed fresh from disk.
+  if (s.progress) {
     L.push(`PHASE: ${s.phase}`);
     L.push(`PHASE_ID: ${s.phaseId}`);
+    L.push(`PHASE_DIR: ${s.phaseDir}`);
+    L.push(`BRIEF: ${s.phaseDir}/phase-brief.md`);
+    L.push(`PROGRESS: ${s.phaseDir}/progress.md`);
+    L.push(`SCOPE: ${s.progress.scope.closed}/${s.progress.scope.total} done`);
+    L.push(`EXIT_CRITERIA: ${s.progress.exit.closed}/${s.progress.exit.total} met`);
+    if (s.progress.next) {
+      L.push(`ROW: ${s.progress.next.id}`);
+      // A plain S<n> addresses the brief; a lettered correction or a dotted
+      // sub-row carries its own text and has no brief item to read.
+      const plain = /^S(\d+)$/.exec(s.progress.next.id);
+      L.push(plain
+        ? `That row's text is item ${plain[1]} of the brief's \`## Phase Scope\` — read it there and implement against it, not against the ledger label.`
+        : "That row is a correction or a split of the item it is numbered under; its own text is the contract, bounded by that item in the brief's `## Phase Scope`.");
+    } else if (!s.progress.allMet) {
+      L.push("ROW: none");
+      L.push("Every scope row is done but not every Exit Criterion is met. Prove the remaining ones or reopen the row that owes the evidence; the phase is not built until both tables are closed.");
+    } else {
+      L.push("ROW: none");
+      L.push("Every scope row is done and every Exit Criterion is met. The phase is built but NOT closed — run mano review. Do NOT scope or start a new phase before review closes this one.");
+    }
+    L.push("");
+    L.push("Scope (Status is the only signal; → = next row):");
+    for (const r of s.progress.scope.rows) {
+      const mark = s.progress.next && r.id === s.progress.next.id ? "→" : " ";
+      L.push(`${mark} ${r.id.padEnd(6)} ${r.status.padEnd(8)} ${r.label}`);
+    }
+    L.push("");
+    L.push("Exit Criteria (every leaf must be met before review):");
+    for (const r of s.progress.exit.rows) {
+      L.push(`  ${r.id.padEnd(6)} ${r.status.padEnd(8)} ${r.label}`);
+    }
+    return L.join("\n");
+  }
+
+  if (!s.stories || s.stories.total === 0) {
+    L.push(`DEV: ${s.phaseId} has a brief but no stories yet — run mano stories, or mano build to build straight from the brief. Nothing for mano dev yet.`);
+    L.push(`PHASE: ${s.phase}`);
+    L.push(`PHASE_ID: ${s.phaseId}`);
+    L.push(`PHASE_DIR: ${s.phaseDir}`);
+    L.push(`BRIEF: ${s.phaseDir}/phase-brief.md`);
+    L.push(`PROGRESS: ${s.phaseDir}/progress.md`);
+    L.push("PROGRESS_STATUS: missing");
     return L.join("\n");
   }
 
@@ -1118,6 +1233,8 @@ function renderJson(s) {
     briefExists: s.briefExists,
     stories: s.stories,
     storiesAllDone: s.storiesAllDone,
+    progress: s.progress,
+    buildAllDone: s.buildAllDone,
     reviewEntry: s.reviewEntry,
     inPhaseRemaining: s.inPhaseRemaining,
     backlog: s.backlog,
@@ -1244,6 +1361,7 @@ module.exports = {
   GAP_TYPES,
   parseArgs,
   readStories,
+  readProgress,
   countBacklogStatuses,
   extractBacklogItems,
   assertBacklogItemsWellFormed,

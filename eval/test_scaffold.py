@@ -228,7 +228,10 @@ class ScaffoldContractTests(unittest.TestCase):
     def test_planning_and_implementation_surfaces_share_the_guarded_contract(self):
         spec = (REPO_ROOT / "src" / "skills" / "spec.md").read_text()
         stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()
-        dev = (REPO_ROOT / "src" / "skills" / "dev.md").read_text()
+        dev = (
+            (REPO_ROOT / "src" / "skills" / "dev.md").read_text()
+            + (REPO_ROOT / "src" / "rules" / "implement.md").read_text()
+        )
         core = (REPO_ROOT / "src" / "rules" / "core.md").read_text()
         template = (REPO_ROOT / "src" / "templates" / "tech-spec.md").read_text()
 

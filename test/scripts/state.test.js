@@ -242,3 +242,47 @@ test("unrecognised hook modes fall back to suggest", () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("state reads a build ledger's two tables and the next non-done scope row", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-progress-"));
+  const ledger = path.join(root, "progress.md");
+  fs.writeFileSync(ledger, `# Progress — Demo — Phase 1
+
+## Scope
+| # | What | Status |
+|---|------|--------|
+| S1 | Store | done |
+| S2 | Runner | doing |
+| S2.1 | wiring | done |
+| S3 | Tests | pending |
+
+## Exit Criteria
+| # | Criterion | Status |
+|---|-----------|--------|
+| E1a | Fresh start: a confirmation is shown | met |
+| E2a | Bad id: nothing changes | pending |
+| Notes | ignored | met |
+`);
+  const progress = state.readProgress(ledger);
+  assert.equal(progress.scope.total, 4);
+  assert.equal(progress.scope.closed, 2);
+  assert.equal(progress.exit.total, 2, "a prose row is not a criterion");
+  assert.equal(progress.exit.closed, 1);
+  assert.equal(progress.next.id, "S2");
+  assert.equal(progress.allDone, false);
+  assert.equal(progress.allMet, false);
+  assert.equal(state.readProgress(path.join(root, "absent.md")), null);
+});
+
+test("state refuses a phase that holds both a stories index and a build ledger", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-two-ledgers-"));
+  const phaseDir = path.join(root, "_mano_output", "phase-1");
+  fs.mkdirSync(path.join(phaseDir, "stories"), { recursive: true });
+  fs.writeFileSync(path.join(root, "_mano_output", "backlog.md"), "# Backlog\n\n## Items\n");
+  fs.writeFileSync(path.join(phaseDir, "phase-brief.md"), "# Phase Brief — Demo — Phase 1\n");
+  fs.writeFileSync(path.join(phaseDir, "stories", "README.md"),
+    "| # | Story | File | Status |\n|---|---|---|---|\n| 1 | Setup | story-1.md | done |\n");
+  fs.writeFileSync(path.join(phaseDir, "progress.md"),
+    "## Scope\n| # | What | Status |\n|---|---|---|\n| S1 | Store | pending |\n");
+  assert.throws(() => state.scan(root), /one ledger/i);
+});

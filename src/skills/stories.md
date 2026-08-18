@@ -24,6 +24,8 @@ Read every input fresh from disk — even if it already appears in the conversat
 
 First run `node _mano/scripts/state.js --current`. It is the only phase-directory discovery for this skill. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `STORIES`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values and never construct `phase-N` from `PHASE`. Owner-scoped routing is opt-in; legacy projects still project `phase-N`.
 
+**`PROGRESS_STATUS: present` → stop.** That phase is being built with `mano build`, whose ledger is `PHASE_DIR/progress.md`. A phase has one ledger: writing a stories index beside that one creates a state every projection afterwards refuses, so decomposing into stories is not available here. Say so in one line and route the request: work already in the brief is `mano build`; a correction mid-build is typed to `mano build` itself; work the brief does not contain is `mano start`. Write nothing.
+
 **Discard prior chat intent.** If the conversation before this command was about implementing, debugging, or modifying code, that context does not carry over. `mano stories` is a planning turn only. Treat the chat as if it were empty for the purpose of deciding what to do — your job this turn is to produce story files and nothing else. Do not "also" implement, "also" fix the bug under discussion, or "also" touch source code.
 
 ### Current phase boundary

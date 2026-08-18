@@ -12,6 +12,7 @@ becomes available to every case.
 from __future__ import annotations
 
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -59,6 +60,46 @@ class Ctx:
     def backlog(self) -> str | None:
         b = self.output_dir / "backlog.md"
         return b.read_text(encoding="utf-8") if b.is_file() else None
+
+    def progress(self) -> str | None:
+        """The build path's ledger for the active phase, or None."""
+        if self.phase is None:
+            return None
+        path = self.output_dir / f"phase-{self.phase}" / "progress.md"
+        return path.read_text(encoding="utf-8") if path.is_file() else None
+
+    def progress_rows(self) -> list[tuple[str, str, str]]:
+        """Ledger rows as (id, label, status), in file order."""
+        rows = []
+        for line in (self.progress() or "").split("\n"):
+            if "|" not in line:
+                continue
+            cells = [c.strip() for c in line.split("|")]
+            while cells and cells[0] == "":
+                cells.pop(0)
+            while cells and cells[-1] == "":
+                cells.pop()
+            if len(cells) < 3 or not re.fullmatch(r"[SE]\d+[a-z]*(?:\.\d+)?", cells[0]):
+                continue
+            rows.append((cells[0], cells[1], cells[-1].lower()))
+        return rows
+
+    def project_root(self) -> Path:
+        return self.output_dir.parent
+
+    def source_files(self) -> set[str]:
+        """Everything the run produced or kept outside Mano's own directories."""
+        root = self.project_root()
+        skip = {"_mano", "_mano_output", ".git", "node_modules"}
+        found = set()
+        for path in root.rglob("*"):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(root)
+            if rel.parts[0] in skip or rel.name in {"AGENTS.md", "CLAUDE.md", ".cursorrules"}:
+                continue
+            found.add(rel.as_posix())
+        return found
 
     def phase_dirs(self) -> list[Path]:
         if not self.output_dir.is_dir():
@@ -1945,6 +1986,265 @@ def _section(text: str, heading: str) -> str | None:
     return "\n".join(lines[start:end])
 
 
+# --- mano build ---------------------------------------------------------------
+
+def _ledger_rows_unchanged(ctx: Ctx, assertion: str, *, allow_status_change: bool) -> list[Failure]:
+    """Row ids and text are the brief's, not the model's.
+
+    The seeded ledger came from `progress.js init`, so any id or label that
+    differs afterwards is a row the model composed, paraphrased, or dropped —
+    the one thing the whole design forbids.
+    """
+    seeded = ctx.fixture_text("progress.md")
+    if seeded is None:
+        return [Failure(assertion, "fixture has no progress.md to compare against")]
+    before = [(rid, label) for rid, label, _ in _rows_of(seeded)]
+    after = [(rid, label) for rid, label, _ in ctx.progress_rows()]
+    if before != after:
+        added = [r for r in after if r not in before]
+        lost = [r for r in before if r not in after]
+        return [Failure(
+            assertion,
+            f"ledger rows changed — added {added}, removed/reworded {lost}",
+        )]
+    if not allow_status_change:
+        if [s for _, _, s in _rows_of(seeded)] != [s for _, _, s in ctx.progress_rows()]:
+            return [Failure(assertion, "a row status changed when nothing should have been written")]
+    return []
+
+
+def _rows_of(text: str) -> list[tuple[str, str, str]]:
+    rows = []
+    for line in text.split("\n"):
+        if "|" not in line:
+            continue
+        cells = [c.strip() for c in line.split("|")]
+        while cells and cells[0] == "":
+            cells.pop(0)
+        while cells and cells[-1] == "":
+            cells.pop()
+        if len(cells) < 3 or not re.fullmatch(r"[SE]\d+[a-z]*(?:\.\d+)?", cells[0]):
+            continue
+        rows.append((cells[0], cells[1], cells[-1].lower()))
+    return rows
+
+
+def build_ledger_rows_are_the_briefs(ctx: Ctx) -> list[Failure]:
+    """No row was added, reworded, or dropped; only statuses may move."""
+    return _ledger_rows_unchanged(ctx, "build_ledger_rows_are_the_briefs", allow_status_change=True)
+
+
+def build_wrote_no_story_files(ctx: Ctx) -> list[Failure]:
+    assertion = "build_wrote_no_story_files"
+    stray = [f for f in ctx.output_files() if "/stories/" in f or f.endswith("stories/README.md")]
+    return [Failure(assertion, f"build touched the stories path: {sorted(stray)}")] if stray else []
+
+
+def build_completed_the_phase(ctx: Ctx) -> list[Failure]:
+    """Every Scope row done and every Exit Criterion met, with the modules the
+    brief names actually present and correct — and the already-done row left
+    exactly as it was."""
+    assertion = "build_completed_the_phase"
+    fails = []
+    rows = ctx.progress_rows()
+    if not rows:
+        return [Failure(assertion, "no progress.md ledger after the run")]
+    open_rows = [f"{rid} ({status})" for rid, _, status in rows
+                 if (rid.startswith("S") and status != "done") or (rid.startswith("E") and status != "met")]
+    if open_rows:
+        fails.append(Failure(assertion, f"ledger still open: {', '.join(open_rows)}"))
+
+    root = ctx.project_root()
+    expected = {
+        "src/base-stage.js": "base",
+        "src/feature-stage.js": "base+feature",
+        "src/release-stage.js": "base+feature+release",
+    }
+    for rel, label in expected.items():
+        path = root / rel
+        if not path.is_file():
+            fails.append(Failure(assertion, f"{rel} was never written"))
+            continue
+        proc = subprocess.run(
+            ["node", "-e", f"process.stdout.write(String(require({str(path)!r})))"],
+            cwd=root, capture_output=True, text=True,
+        )
+        if proc.stdout.strip() != label:
+            fails.append(Failure(assertion, f"{rel} exports {proc.stdout.strip()!r}, expected {label!r}"))
+    return fails
+
+
+def build_did_not_rebuild_done_row(ctx: Ctx) -> list[Failure]:
+    """A resumed build starts at the first non-done row; it does not re-derive
+    work an earlier session already finished."""
+    assertion = "build_did_not_rebuild_done_row"
+    seeded = ctx.fixture_text("project/src/base-stage.js")
+    path = ctx.project_root() / "src" / "base-stage.js"
+    if not path.is_file():
+        return [Failure(assertion, "the already-done row's file is gone")]
+    if seeded is not None and path.read_text(encoding="utf-8") != seeded:
+        return [Failure(assertion, "the already-done row's file was rewritten")]
+    return []
+
+
+def build_wrote_no_ledger(ctx: Ctx) -> list[Failure]:
+    """A gap found at pre-flight stops before the ledger exists — the cheapest
+    possible place, and the point of running the check first."""
+    assertion = "build_wrote_no_ledger"
+    fails = []
+    if ctx.progress() is not None:
+        fails.append(Failure(assertion, "progress.md was written despite a pre-flight gap"))
+    if ctx.source_files():
+        fails.append(Failure(assertion, f"source was written despite a pre-flight gap: {sorted(ctx.source_files())}"))
+    return fails
+
+
+def build_routed_to_spec(ctx: Ctx) -> list[Failure]:
+    assertion = "build_routed_to_spec"
+    if not re.search(r"mano\s+spec", ctx.transcript, re.IGNORECASE):
+        compact = " ".join(ctx.transcript.split())
+        return [Failure(assertion, f"the gap was not routed to mano spec: {compact[-300:]!r}")]
+    return []
+
+
+def build_routed_to_start(ctx: Ctx) -> list[Failure]:
+    assertion = "build_routed_to_start"
+    if not re.search(r"mano\s+start", ctx.transcript, re.IGNORECASE):
+        compact = " ".join(ctx.transcript.split())
+        return [Failure(assertion, f"the request was not routed to mano start: {compact[-300:]!r}")]
+    return []
+
+
+def build_wrote_no_source(ctx: Ctx) -> list[Failure]:
+    """A stop before code means before code — the row may exist, the file may
+    not."""
+    assertion = "build_wrote_no_source"
+    written = sorted(ctx.source_files() - set(ctx.fixture_snapshot))
+    stale = {name[len("project/"):] for name in ctx.fixture_snapshot if name.startswith("project/")}
+    written = [w for w in written if w not in stale]
+    return [Failure(assertion, f"code was written before the stop: {written}")] if written else []
+
+
+def build_stopped_before_code(ctx: Ctx) -> list[Failure]:
+    """The ledger may exist (init runs before the coverage check) but nothing
+    was implemented and no status moved."""
+    assertion = "build_stopped_before_code"
+    fails = build_wrote_no_source(ctx)
+    fails = [Failure(assertion, f.detail) for f in fails]
+    seeded = ctx.fixture_text("progress.md")
+    expected = {rid: status for rid, _, status in _rows_of(seeded)} if seeded else {}
+    for rid, _, status in ctx.progress_rows():
+        want = expected.get(rid, "pending")
+        if status != want:
+            fails.append(Failure(assertion, f"{rid} moved {want!r} → {status!r} before the deviation was resolved"))
+    return fails
+
+
+def build_named_the_uncovered_criterion(ctx: Ctx) -> list[Failure]:
+    assertion = "build_named_the_uncovered_criterion"
+    text = ctx.transcript.lower()
+    if "stages.js" not in text and "stage listing" not in text:
+        compact = " ".join(ctx.transcript.split())
+        return [Failure(assertion, f"the uncovered exit criterion was not named: {compact[-300:]!r}")]
+    return []
+
+
+def build_refused_both_ledgers(ctx: Ctx) -> list[Failure]:
+    """A phase holding both ledgers is reported, never silently resolved."""
+    assertion = "build_refused_both_ledgers"
+    fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=False)
+    if ctx.source_files():
+        fails.append(Failure(assertion, f"code was written for an ambiguous phase: {sorted(ctx.source_files())}"))
+    seeded_index = ctx.fixture_text("stories-README.md")
+    if (ctx.readme() or "") != (seeded_index or ""):
+        fails.append(Failure(assertion, "the stories index was changed instead of reported"))
+    text = ctx.transcript.lower()
+    if "progress.md" not in text or "stories" not in text:
+        compact = " ".join(ctx.transcript.split())
+        fails.append(Failure(assertion, f"the conflict was not reported: {compact[-300:]!r}"))
+    return fails
+
+
+def build_refused_free_text_scope(ctx: Ctx) -> list[Failure]:
+    """`mano build "..."` is not a scope channel: nothing is added, nothing is
+    built for it, and the request is routed to mano start."""
+    assertion = "build_refused_free_text_scope"
+    fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=False)
+    banned = re.compile(r"dark[ _-]?mode|theme", re.IGNORECASE)
+    for rel in ctx.source_files():
+        if banned.search(rel) or banned.search((ctx.project_root() / rel).read_text(encoding="utf-8", errors="ignore")):
+            fails.append(Failure(assertion, f"the free-text request was implemented in {rel}"))
+    fails.extend(build_routed_to_start(ctx))
+    return fails
+
+
+def build_review_gate_held(ctx: Ctx) -> list[Failure]:
+    """Built is not proven: review refuses while any Exit Criterion is pending,
+    and never edits the ledger to clear its own gate."""
+    assertion = "build_review_gate_held"
+    fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=False)
+    if (ctx.output_dir / "reviews.md").is_file():
+        fails.append(Failure(assertion, "reviews.md was written despite a pending exit criterion"))
+    if "E1c" not in ctx.transcript:
+        compact = " ".join(ctx.transcript.split())
+        fails.append(Failure(assertion, f"the pending exit criterion was not named: {compact[-300:]!r}"))
+    return fails
+
+
+def build_reopened_instead_of_appending(ctx: Ctx) -> list[Failure]:
+    """Case (A): a defect in work already marked done is a status correction.
+    The rows are reopened and fixed under them; nothing is appended."""
+    assertion = "build_reopened_instead_of_appending"
+    fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=True)
+    proc = subprocess.run(
+        ["node", "-e", "process.stdout.write(String(require('./src/release-stage.js')))"],
+        cwd=ctx.project_root(), capture_output=True, text=True,
+    )
+    if proc.stdout.strip() != "base+feature+release":
+        fails.append(Failure(assertion, f"the defect was not fixed: release stage exports {proc.stdout.strip()!r}"))
+    return fails
+
+
+def build_appended_the_users_words(ctx: Ctx) -> list[Failure]:
+    """Case (C): an in-goal nuance is appended as a lettered row carrying the
+    user's own words — never a paraphrase, never a rewritten existing row."""
+    assertion = "build_appended_the_users_words"
+    fails = []
+    seeded = _rows_of(ctx.fixture_text("progress.md") or "")
+    after = ctx.progress_rows()
+    before_ids = {rid for rid, _, _ in seeded}
+    added = [(rid, label) for rid, label, _ in after if rid not in before_ids]
+    for rid, label, _ in seeded:
+        match = [r for r in after if r[0] == rid]
+        if not match or match[0][1] != label:
+            fails.append(Failure(assertion, f"existing row {rid} was reworded or removed"))
+    if not added:
+        fails.append(Failure(assertion, "no correction row was appended"))
+        return fails
+    if len(added) > 1:
+        fails.append(Failure(assertion, f"more than one row was appended: {added}"))
+    rid, label = added[0]
+    if not re.fullmatch(r"[SE]\d+[a-z]+", rid):
+        fails.append(Failure(assertion, f"correction row {rid} is not a lettered row under an existing item"))
+    verbatim = "compose the feature label from the base module's value rather than hard-coding the word base"
+    if verbatim.lower() not in label.lower():
+        fails.append(Failure(assertion, f"the row paraphrases the request: {label!r}"))
+    return fails
+
+
+def build_no_row_appended(ctx: Ctx) -> list[Failure]:
+    """Case (B): a distinct outcome the phase does not contain adds no row and
+    writes no code, in auto mode as much as in manual."""
+    assertion = "build_no_row_appended"
+    fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=False)
+    banned = re.compile(r"debug|timing", re.IGNORECASE)
+    for rel in ctx.source_files():
+        if banned.search(rel) or banned.search((ctx.project_root() / rel).read_text(encoding="utf-8", errors="ignore")):
+            fails.append(Failure(assertion, f"out-of-phase work was implemented in {rel}"))
+    fails.extend(build_routed_to_start(ctx))
+    return fails
+
+
 REGISTRY = {
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
@@ -2016,4 +2316,21 @@ REGISTRY = {
     "spec_wrote_no_stories": spec_wrote_no_stories,
     "stories_public_interface_gap_wrote_nothing": stories_public_interface_gap_wrote_nothing,
     "stories_public_interface_gap_routes_to_spec": stories_public_interface_gap_routes_to_spec,
+    # mano build
+    "build_ledger_rows_are_the_briefs": build_ledger_rows_are_the_briefs,
+    "build_wrote_no_story_files": build_wrote_no_story_files,
+    "build_completed_the_phase": build_completed_the_phase,
+    "build_did_not_rebuild_done_row": build_did_not_rebuild_done_row,
+    "build_wrote_no_ledger": build_wrote_no_ledger,
+    "build_routed_to_spec": build_routed_to_spec,
+    "build_routed_to_start": build_routed_to_start,
+    "build_stopped_before_code": build_stopped_before_code,
+    "build_wrote_no_source": build_wrote_no_source,
+    "build_named_the_uncovered_criterion": build_named_the_uncovered_criterion,
+    "build_refused_both_ledgers": build_refused_both_ledgers,
+    "build_refused_free_text_scope": build_refused_free_text_scope,
+    "build_review_gate_held": build_review_gate_held,
+    "build_reopened_instead_of_appending": build_reopened_instead_of_appending,
+    "build_appended_the_users_words": build_appended_the_users_words,
+    "build_no_row_appended": build_no_row_appended,
 }

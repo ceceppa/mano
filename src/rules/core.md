@@ -31,7 +31,7 @@ Every phase-scoped skill must use `state.js` and its exact `MODE`, `OWNER`, `PHA
 
 The projection also prints `HOOK:` (the active post-skill hooks and their modes, or `none`) and `ARTIFACTS:` (presence of the four optional project-level artifacts). Use these lines instead of probing the filesystem for hooks or opening artifacts merely to see whether they exist.
 
-To detect story status, use the exact `STORIES` path from `state.js --current` or `state.js --next`. If all stories are `done`, the phase is built and ready for review.
+To detect implementation status, use the exact `STORIES` path from `state.js --current` or `state.js --next` — or the exact `PROGRESS` path when the projection reports one, which means the phase is being built with `mano build`. A phase has one ledger or the other; the projection refuses one holding both. The phase is built and ready for review when every story is `done`, or when every Scope row is `done` and every Exit Criterion is `met`.
 
 ## Scripts are mandatory
 
@@ -137,7 +137,8 @@ it — do not compact it: compaction keeps a lossy summary of the expensive part
 paying for. One story per session is the intended shape of `mano dev` (measured: sessions averaging 1,100+
 messages replayed ~459k tokens per message). A planning command is a natural session boundary — its output is a
 file. Batch independent tool calls: every extra assistant message replays the whole session. `mano build` is the
-deliberate, checkpointed exception when it exists.
+deliberate, checkpointed exception: it runs multiple rows per session and stops when the turn's budget is spent,
+because its ledger makes the next session's resume cost a projection read.
 
 ## Auto-chain execution
 
@@ -196,4 +197,4 @@ Next:
 
 Collecting the `⚠ Verify:` lines here matters: in manual mode the user sees each one as it appears, and in auto mode they would otherwise scroll back for them. This block is the thing they read before reviewing.
 
-`mano dev yolo` keeps its strict aggregate implementation line. When it is the terminal action of an armed auto chain, that line is the dev action's log and the auto closing block follows it; this is the sole exception to the standalone YOLO rule that nothing may follow the aggregate line. Do not add an implementation recap between them.
+`mano dev yolo` keeps its strict aggregate implementation line. When it is the terminal action of an armed auto chain, that line is the dev action's log and the auto closing block follows it; this is the sole exception to the standalone YOLO rule that nothing may follow the aggregate line. Do not add an implementation recap between them. `mano build` behaves identically: its aggregate or deviation line is the action's log, then the closing block.

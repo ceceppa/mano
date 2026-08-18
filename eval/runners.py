@@ -12,6 +12,7 @@ Each runner returns the CompletedProcess so the caller can surface failures.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -25,18 +26,19 @@ class RunnerResult:
     final_response: str = ""
 
 
-def _run(cmd: list[str], cwd: str, timeout: int) -> RunnerResult:
+def _run(cmd: list[str], cwd: str, timeout: int, env: dict[str, str] | None = None) -> RunnerResult:
     proc = subprocess.run(
         cmd,
         cwd=cwd,
         capture_output=True,
         text=True,
         timeout=timeout,
+        env={**os.environ, **env} if env else None,
     )
     return RunnerResult(proc.returncode, proc.stdout, proc.stderr)
 
 
-def run_claude(project_dir: str, prompt: str, timeout: int) -> RunnerResult:
+def run_claude(project_dir: str, prompt: str, timeout: int, env: dict[str, str] | None = None) -> RunnerResult:
     # --print runs headless to completion. --permission-mode bypassPermissions
     # lets the agent write files without interactive approval.
     cmd = [
@@ -46,12 +48,12 @@ def run_claude(project_dir: str, prompt: str, timeout: int) -> RunnerResult:
         "bypassPermissions",
         prompt,
     ]
-    result = _run(cmd, project_dir, timeout)
+    result = _run(cmd, project_dir, timeout, env)
     # `claude --print` writes the last assistant message to stdout.
     return replace(result, final_response=result.stdout.strip())
 
 
-def run_codex(project_dir: str, prompt: str, timeout: int) -> RunnerResult:
+def run_codex(project_dir: str, prompt: str, timeout: int, env: dict[str, str] | None = None) -> RunnerResult:
     # `codex exec` is the non-interactive subcommand. --skip-git-repo-check
     # avoids refusing to run outside a git repo; --dangerously-bypass... lets
     # it edit files without prompting (this is a throwaway temp dir).
@@ -65,7 +67,7 @@ def run_codex(project_dir: str, prompt: str, timeout: int) -> RunnerResult:
         str(final_path),
         prompt,
     ]
-    result = _run(cmd, project_dir, timeout)
+    result = _run(cmd, project_dir, timeout, env)
     try:
         final_response = final_path.read_text(encoding="utf-8").strip()
     except FileNotFoundError:
@@ -101,7 +103,7 @@ def _opencode_final_response(raw: str) -> str:
     return "".join(messages[order[-1]]).strip()
 
 
-def run_opencode(project_dir: str, prompt: str, timeout: int) -> RunnerResult:
+def run_opencode(project_dir: str, prompt: str, timeout: int, env: dict[str, str] | None = None) -> RunnerResult:
     # --dir is explicit even though subprocess.cwd is also set: a long-lived or
     # plugin-backed OpenCode process can otherwise retain the parent repository
     # as its project and edit the eval fixture instead of the throwaway install.
@@ -116,7 +118,7 @@ def run_opencode(project_dir: str, prompt: str, timeout: int) -> RunnerResult:
         "json",
         prompt,
     ]
-    result = _run(cmd, project_dir, timeout)
+    result = _run(cmd, project_dir, timeout, env)
     return replace(result, final_response=_opencode_final_response(result.stdout))
 
 

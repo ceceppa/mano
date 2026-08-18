@@ -197,7 +197,7 @@ After presenting, stop. Do not continue to Step 7 until the user explicitly appr
 **In auto mode** (`MODE: auto` in the state projection), append the intended chain to this same message, so the user arms it with the approval they are already giving — never as a second gate:
 
 ```text
-→ Auto mode: [the actions this phase needs, in order] → dev yolo
+→ Auto mode: [the actions this phase needs, in order] → build
   Reply `1` or `go` — both approve this scope and run the chain above.
   Edit and approve together (`go, skip rules`; `1, add ux`). Pauses for questions; stops before review.
 ```
@@ -303,24 +303,27 @@ Each phase brief carries everything needed to understand the phase. No external 
 - **Design principle** — one sentence. Omit if it restates Why this phase.
 - **Core product principles** — optional. Include only durable principles from the backlog that matter for this phase. Do not invent new principles here.
 - **Phase goal** — one sentence. The single most important outcome. If you have to cut scope, this is what survives. Example: "The user can complete a goal with a reflection" — everything else is secondary.
-- **Phase scope** — what ships, one behaviour-level line per item. State *what* the user gets or what behaviour changes, not the implementation tokens. Specific hex values, pixel sizes, animation durations, function names, API contracts, file paths, or design-system tokens belong in `tech-spec.md`, `design-brief.md`, or `project-rules.md` — not here. Reference the source artifact if needed.
+- **Phase scope** — what ships, as a **numbered list** in build order, one behaviour-level line per item, each led by a short bolded title and an em dash (`1. **Task store** — tasks the user adds survive a restart…`). State *what* the user gets or what behaviour changes, not the implementation tokens. Specific hex values, pixel sizes, animation durations, function names, API contracts, file paths, or design-system tokens belong in `tech-spec.md`, `design-brief.md`, or `project-rules.md` — not here. Reference the source artifact if needed.
 
   Good: *Card visual polish to match design-brief targets (border, hover shadow, status dot, drag highlight).*
   Bad: *Card visual polish: 1px Slate Grey border, 8px shadow at 20%, 6px Leaf Green status dot, pale blue drag highlight.*
 
+  **The numbering and the bolded lead are load-bearing, not formatting.** The number is that item's stable address for the whole phase — `mano build` addresses item 2 as `S2` and parses the list into its progress ledger without a human retyping anything — and the bolded lead becomes the ledger's label, which is why it must be short and why the rest of the line still carries the full behaviour. Write the list even for a one-item phase. An item with no bolded lead is valid (its whole line becomes the label); an unnumbered list or a prose paragraph is not — it forces the build path to invent the split, which it is forbidden to do.
+
 - **Not this phase** — the negative of Phase scope: capabilities the selected items' titles imply but this phase does **not** ship, slices deferred during the Slice check (Step 7b), and adjacent work a reader would reasonably assume is included. One behaviour-level line each (B1 applies — say *what* is excluded, not how). This exists so the implementer and `mano stories` don't widen the phase by inference. Omit only when genuinely nothing was deferred or excluded — rare once any item was split.
 
-- **Exit criteria** — concrete sequence of user actions that proves the phase landed end-to-end. Never use arrows (→). Numbered top-level categories; action sub-bullets using a colon to separate action from result. Single result: keep inline after the colon. Multiple distinct results: break into a third level. Three levels maximum. Example:
+- **Exit criteria** — concrete sequence of user actions that proves the phase landed end-to-end. Never use arrows (→). **Exactly two levels:** a numbered category with a short bolded title, then lettered `a.` / `b.` / `c.` leaves, each one action and its result separated by a colon. Example:
 
-  1. App launch
-     - App opens: default content visible
-  2. Core interaction
-     - User submits form:
-       - Confirmation message appears
-       - Item added to list
-     - Invalid input: error shown, no state change
-  3. Persistence
-     - Close and reopen app: data unchanged
+  1. **Fresh start**
+     a. Open the app with no saved data: the empty state is shown, no error
+  2. **Core interaction**
+     a. Submit the form: a confirmation appears
+     b. Submit the form: the item appears in the list
+     c. Submit invalid input: an error is shown, nothing is added
+  3. **Persistence**
+     a. Close and reopen the app: the previous data is still there
+
+  **One leaf = one provable result.** Two distinct results are two leaves (`b.` and `c.`), never one leaf with a nested list under it — the third level is what lets an unverified result hide inside a category that looks satisfied. If a leaf still wants sub-points, fold them into that leaf's own sentence. Every leaf is separately addressable (`E2b` is category 2, leaf b) and downstream skills prove them one at a time at that address.
 
   If the sequence cannot be written without ambiguity, the phase scope is unclear or scattered across disconnected pieces. This is the script used to verify the phase at review time.
 

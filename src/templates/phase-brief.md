@@ -30,11 +30,11 @@
 
 ## Phase Scope
 
-<!-- What ships. One line per item. Keep the whole brief concise: target roughly 250-500 words total. -->
+<!-- What ships. A numbered list, in the order the items should be built. Lead each item with a short bolded title, then an em dash, then the behaviour-level line. The number is that item's stable address for the whole phase (`mano build` addresses item 2 as `S2`), and the bolded lead is the label its progress ledger shows, so neither is decoration. An item with no bolded lead is still valid — its full text becomes the ledger label. Keep the whole brief concise: target roughly 250-500 words total. -->
 
--
--
--
+1. **[Short title]** — [what ships, stated as behaviour]
+2. **[Short title]** — [what ships, stated as behaviour]
+3. **[Short title]** — [what ships, stated as behaviour]
 
 ## Not This Phase
 
@@ -45,7 +45,13 @@
 
 ## Exit Criteria
 
-<!-- What a real person can do when this phase is done. -->
+<!-- What a real person can do when this phase is done. Exactly two levels: a numbered category, then lettered `a.` / `b.` / `c.` leaves, each one action and its result separated by a colon. Never use arrows. Every leaf is separately addressable (`mano build` addresses them as `E1a`, `E2b`) and separately provable, so a criterion that would need a third level folds that detail into its own leaf text instead. -->
+
+1. **[Category]**
+   a. [action]: [result]
+2. **[Category]**
+   a. [action]: [result]
+   b. [action]: [result]
 
 ## Validation Plan
 

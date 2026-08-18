@@ -1,0 +1,10 @@
+{
+  "name": "build-two-ledgers",
+  "description": "A phase holding both a stories index and a progress ledger is reported, never silently resolved by picking one.",
+  "fixture": "build-two-ledgers",
+  "phase": 1,
+  "prompt": "mano-build",
+  "assertions": [
+    "build_refused_both_ledgers"
+  ]
+}

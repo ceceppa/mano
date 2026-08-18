@@ -1,0 +1,11 @@
+{
+  "name": "build-nuance-spec-gap",
+  "description": "Case C whose nuance needs a spec-owned default no artifact states: the gap check runs against the new row and routes to mano spec before any code is written.",
+  "fixture": "build-stage-chain",
+  "phase": 1,
+  "prompt": "mano-build — each module should retry loading its dependency a few times before giving up",
+  "assertions": [
+    "build_wrote_no_source",
+    "build_routed_to_spec"
+  ]
+}
