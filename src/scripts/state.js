@@ -52,6 +52,12 @@ const {
 
 const GAP_TYPES = ["spec-gap", "rule-gap"];
 
+// Post-skill hook slots and the optional project-level artifacts, projected so
+// skills never probe the filesystem for hooks or open artifacts merely to see
+// whether they exist.
+const HOOK_SKILLS = ["import", "start", "spec", "rules", "ux", "ui", "stories", "review"];
+const OPTIONAL_ARTIFACTS = ["tech-spec", "ux-flow", "design-brief", "project-rules"];
+
 function parseArgs(argv) {
   const args = {
     root: process.cwd(), json: false, verbose: false,
@@ -336,6 +342,43 @@ function resumeDraftTrack(assignedItems, selectedTrack, phaseId) {
   return named.size === 1 ? [...named.values()][0] : selectedTrack;
 }
 
+// Active post-skill hooks with their declared mode, as `mode:post-skill`
+// entries. Hooks are repo-level — never owner-namespaced. The `## Mode`
+// section's first non-empty line decides; a missing or unrecognised mode is
+// `suggest` (back-compat with hooks written before the other modes existed).
+function scanHooks(projectRoot) {
+  const out = [];
+  for (const skill of HOOK_SKILLS) {
+    const hookPath = path.join(projectRoot, "_mano", "hooks", `post-${skill}.md`);
+    if (!exists(hookPath)) continue;
+    const text = readText(hookPath) || "";
+    let mode = "suggest";
+    const match = /^##\s+Mode\s*\r?\n+[ \t]*(\S+)/im.exec(text);
+    if (match) {
+      const declared = match[1].trim().toLowerCase();
+      if (declared === "command" || declared === "check" || declared === "suggest") mode = declared;
+    }
+    out.push(`${mode}:post-${skill}`);
+  }
+  return out;
+}
+
+// Existence of the four optional project-level artifacts, as `name=present|absent`.
+function scanArtifacts(projectRoot) {
+  const outputDir = path.join(projectRoot, "_mano_output");
+  return OPTIONAL_ARTIFACTS.map(
+    (name) => `${name}=${exists(path.join(outputDir, `${name}.md`)) ? "present" : "absent"}`,
+  );
+}
+
+function hookLine(hooks) {
+  return `HOOK: ${hooks.length ? hooks.join(" ") : "none"}`;
+}
+
+function artifactsLine(artifacts) {
+  return `ARTIFACTS: ${artifacts.join(" ")}`;
+}
+
 // A narrow gap-only projection. It intentionally bypasses scan(): only
 // backlog.md is read, and only matching open gap blocks are returned.
 function scanGaps(projectRoot, type) {
@@ -347,6 +390,8 @@ function scanGaps(projectRoot, type) {
     projectRoot,
     runMode: run.mode,
     runModeSource: run.source,
+    hooks: scanHooks(projectRoot),
+    artifacts: scanArtifacts(projectRoot),
     type,
     status: "backlog",
     count: items.length,
@@ -398,6 +443,8 @@ function scanSpec(projectRoot) {
     ownerSource: routing.ownerSource,
     runMode: routing.runMode,
     runModeSource: routing.runModeSource,
+    hooks: scanHooks(projectRoot),
+    artifacts: scanArtifacts(projectRoot),
     track: routing.track,
     trackSource: routing.trackSource,
     phase,
@@ -429,6 +476,8 @@ function scanUi(projectRoot) {
     owner: projectState.owner,
     runMode: projectState.runMode,
     runModeSource: projectState.runModeSource,
+    hooks: projectState.hooks,
+    artifacts: projectState.artifacts,
     track: projectState.track,
     trackSource: projectState.trackSource,
     phase,
@@ -536,6 +585,8 @@ function scan(projectRoot, options = {}) {
     ownerMode: "legacy",
     runMode: "manual",
     runModeSource: null,
+    hooks: scanHooks(projectRoot),
+    artifacts: scanArtifacts(projectRoot),
     track: null,
     trackSource: null,
     otherOwners: [],
@@ -763,6 +814,8 @@ function renderDecision(s) {
   // before the scope payload, so show the effective value here too.
   const effectiveTrack = s.scope ? s.scope.track : s.track;
   L.push(`TRACK: ${effectiveTrack || "none"}`);
+  L.push(hookLine(s.hooks));
+  L.push(artifactsLine(s.artifacts));
   if (s.targetPhase != null) {
     L.push(`PHASE: ${s.targetPhase}`);
     L.push(`PHASE_ID: ${s.targetPhaseId}`);
@@ -858,6 +911,8 @@ function renderScope(s) {
 function renderGaps(g) {
   const L = ["--- GAP INPUT (from the state script — do NOT open _mano_output/backlog.md) ---"];
   L.push(`MODE: ${g.runMode}`);
+  L.push(hookLine(g.hooks));
+  L.push(artifactsLine(g.artifacts));
   L.push(`TYPE: ${g.type}`);
   L.push(`STATUS: ${g.status}`);
   L.push(`COUNT: ${g.count}`);
@@ -885,6 +940,8 @@ function renderSpec(spec) {
   L.push(`STATUS: ${spec.status}`);
   L.push(`OWNER: ${spec.owner || "none (legacy phase-N mode)"}`);
   L.push(`MODE: ${spec.runMode}`);
+  L.push(hookLine(spec.hooks));
+  L.push(artifactsLine(spec.artifacts));
   L.push(`TRACK: ${spec.track || "none"}`);
   L.push(`PHASE: ${spec.phase === null ? "none" : spec.phase}`);
   L.push(`PHASE_ID: ${spec.phaseId || "none"}`);
@@ -936,6 +993,8 @@ function renderUi(ui) {
   L.push(`STATUS: ${ui.status}`);
   L.push(`OWNER: ${ui.owner || "none (legacy phase-N mode)"}`);
   L.push(`MODE: ${ui.runMode}`);
+  L.push(hookLine(ui.hooks));
+  L.push(artifactsLine(ui.artifacts));
   L.push(`TRACK: ${ui.track || "none"}`);
   L.push(`PHASE: ${ui.phase === null ? "none" : ui.phase}`);
   L.push(`PHASE_ID: ${ui.phaseId || "none"}`);
@@ -961,6 +1020,8 @@ function renderCurrent(s) {
   L.push(`OWNER: ${s.owner || "none (legacy phase-N mode)"}`);
   L.push(`OWNER_MODE: ${s.ownerMode}`);
   L.push(`MODE: ${s.runMode}`);
+  L.push(hookLine(s.hooks));
+  L.push(artifactsLine(s.artifacts));
   L.push(`TRACK: ${s.track || "none"}`);
   L.push(`PHASE: ${s.phase === null ? "none" : s.phase}`);
   L.push(`PHASE_ID: ${s.phaseId || "none"}`);
@@ -979,12 +1040,15 @@ function renderCurrent(s) {
 // its file path, and the ordered story list — so the implementer needn't ls for
 // the phase or reopen the index, and can't be fooled by a stale phase carried in
 // the chat. It only *reports* the next pending row; it never decides to skip an
-// earlier pending one (that bypass stays the user's call — AGENTS.md step 5).
+// earlier pending one (that bypass stays the user's call — dev.md step 5).
 function renderNext(s) {
   const L = [];
   L.push(`OWNER: ${s.owner || "none (legacy phase-N mode)"}`);
   L.push(`MODE: ${s.runMode}`);
   L.push(`TRACK: ${s.track || "none"}`);
+
+  // No HOOK/ARTIFACTS lines here: mano dev has no hook slot and reads
+  // artifacts only where its contract's steps direct it to.
 
   // Nothing to implement: no project / no phase folder.
   if (!s.outputExists || s.phase === null) {
@@ -1018,10 +1082,10 @@ function renderNext(s) {
     L.push(`PHASE_ID: ${s.phaseId}`);
     L.push(`STORY: ${next.num}`);
     L.push(`FILE: ${s.phaseDir}/stories/${next.file}`);
-    L.push("Read that story file first, then follow AGENTS.md steps 6-10 for any required tech-spec or project-rules context; implement only its acceptance criteria; then mark it done via stories.js set-status (step 11).");
+    L.push("Read that story file first, then follow _mano/skills/dev.md steps 6-10 for any required tech-spec or project-rules context; implement only its acceptance criteria; then mark it done via stories.js set-status (step 11).");
   }
 
-  // The ordered list, so honouring story order (AGENTS.md steps 4-5) for a
+  // The ordered list, so honouring story order (dev.md steps 4-5) for a
   // user-named story needs no index reopen. `→` marks the next pending row.
   L.push("");
   L.push("Stories (Status is the only signal; → = next pending):");
@@ -1041,6 +1105,8 @@ function renderJson(s) {
     ownerMode: s.ownerMode,
     runMode: s.runMode,
     runModeSource: s.runModeSource,
+    hooks: s.hooks,
+    artifacts: s.artifacts,
     track: s.track,
     trackSource: s.trackSource,
     otherOwners: s.otherOwners,
@@ -1186,6 +1252,8 @@ module.exports = {
   extractCoreProductPrinciples,
   extractLatestReview,
   hasReviewEntry,
+  scanHooks,
+  scanArtifacts,
   scanGaps,
   scanSpec,
   scanUi,

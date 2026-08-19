@@ -5,6 +5,7 @@
   "phase": 1,
   "prompt": "mano review all went as planned, let's close this phase",
   "assertions": [
-    "review_preserved_positive_summary"
+    "review_preserved_positive_summary",
+    "review_one_exchange_close"
   ]
 }

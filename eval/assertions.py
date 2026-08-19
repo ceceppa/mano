@@ -519,13 +519,38 @@ def dev_yolo_interrupted_output_discipline(ctx: Ctx) -> list[Failure]:
 
 
 def dev_default_output_discipline(ctx: Ctx) -> list[Failure]:
-    expected = "Story 1 done — status updated in stories/README.md"
+    expected = (
+        "Story 1 done — status updated in stories/README.md. "
+        "Start a fresh session for the next story."
+    )
     if ctx.transcript.strip() != expected:
         return [Failure(
             "dev_default_output_discipline",
             f"expected the one-line singular response {expected!r}, got {ctx.transcript.strip()!r}",
         )]
     return []
+
+
+def dev_plain_words_order_gate(ctx: Ctx) -> list[Failure]:
+    """A plain-words "build story 3" must still run the dev contract: with
+    stories 1 and 2 pending, the contract's order gate (step 5) stops before
+    code and names the story that would be skipped. Implementing story 3, or
+    anything at all, proves the contract was not read."""
+    assertion = "dev_plain_words_order_gate"
+    fails = _dev_status_and_boundary_check(
+        ctx,
+        assertion,
+        {"1": "pending", "2": "pending", "3": "pending"},
+        set(),
+    )
+    text = ctx.transcript
+    if not re.search(r"\b(?:story\s*)?1\b", text, re.IGNORECASE):
+        compact = " ".join(text.strip().split())
+        fails.append(Failure(
+            assertion,
+            f"response never names story 1 as the skipped earlier story: {compact[-300:]!r}",
+        ))
+    return fails
 
 
 # --- mano import: backlog contract --------------------------------------------
@@ -972,6 +997,104 @@ def pending_review_gate_held(ctx: Ctx) -> list[Failure]:
         fails.append(Failure("pending_review_gate_held",
                              f"unexpected output files added or removed: expected {sorted(expected)}, got {sorted(actual)}"))
     return fails
+
+
+def review_one_exchange_close(ctx: Ctx) -> list[Failure]:
+    """A clear positive verdict closes in one exchange: no echo-back triage
+    confirmation question may appear in the response."""
+    assertion = "review_one_exchange_close"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    fails = []
+    for banned in (
+        "Did I put each outcome in the right section",
+        "Tell me what to move or remove",
+        'Say "close it" to record the review',
+    ):
+        if banned.lower() in text.lower():
+            fails.append(Failure(
+                assertion,
+                f"positive close still asked for confirmation: {banned!r}",
+            ))
+    if not (ctx.output_dir / "reviews.md").is_file():
+        fails.append(Failure(assertion, "reviews.md was not written in the same exchange"))
+    return fails
+
+
+# --- done-story immutability (ambient, no mano command typed) ------------------
+
+def done_story_edit_routed(ctx: Ctx) -> list[Failure]:
+    """A mid-chat request to edit a done story is refused and routed to
+    `mano stories` (lettered follow-up), never applied to the file."""
+    assertion = "done_story_edit_routed"
+    fails = []
+    path = ctx.stories_dir / "story-3-existing-shipped.md" if ctx.stories_dir else None
+    if path is None or not path.is_file():
+        fails.append(Failure(assertion, "done story file is missing"))
+    elif path.read_text(encoding="utf-8") != EXISTING_DONE_STORY:
+        fails.append(Failure(assertion, "the done story file was edited"))
+    text = ctx.transcript
+    if not re.search(r"mano\s+stories", text, re.IGNORECASE):
+        compact = " ".join(text.strip().split())
+        fails.append(Failure(
+            assertion,
+            f"refusal does not route to mano stories: {compact[-300:]!r}",
+        ))
+    return fails
+
+
+# --- hooks: check mode + legacy suggest ---------------------------------------
+
+def check_hook_ran_without_confirmation(ctx: Ctx) -> list[Failure]:
+    """A check-mode hook is the user's own checklist: Mano applies it without
+    the suggest-mode `Run it now?` ask, and creates no tracking artifacts."""
+    assertion = "check_hook_ran_without_confirmation"
+    fails = []
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if re.search(r"Run it now\?", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "check hook was offered with `Run it now?` instead of applied"))
+    expected_files = {
+        f"phase-{ctx.phase}/phase-brief.md",
+        "tech-spec.md",
+        "project-rules.md",
+    }
+    extras = ctx.output_files() - expected_files
+    if extras:
+        fails.append(Failure(assertion, f"unexpected files created: {sorted(extras)}"))
+    return fails
+
+
+def legacy_blank_suggest_hook_surfaced(ctx: Ctx) -> list[Failure]:
+    """A legacy suggest hook with a blank command placeholder is still an
+    active hook: it must be surfaced with the ask, never silently skipped."""
+    assertion = "legacy_blank_suggest_hook_surfaced"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not re.search(r"post-spec", text, re.IGNORECASE) or not re.search(
+        r"Run it now\?|run (?:it|the hook|this hook)", text, re.IGNORECASE
+    ):
+        compact = " ".join(text.strip().split())
+        return [Failure(
+            assertion,
+            f"active legacy hook was not surfaced: {compact[-400:]!r}",
+        )]
+    return []
+
+
+# --- start: SCOPE INPUT is the only backlog read ------------------------------
+
+BACKLOG_READ_CANARY = "CANARY-BACKLOG-DIRECT-READ"
+
+
+def start_did_not_mine_backlog(ctx: Ctx) -> list[Failure]:
+    """The projection never prints resolved items, so the canary title can
+    reach a transcript only through a direct backlog.md read. (Absence of the
+    canary cannot prove no read happened — this is the strongest signal a
+    file-and-response harness can check.)"""
+    if BACKLOG_READ_CANARY.lower() in ctx.transcript.lower():
+        return [Failure(
+            "start_did_not_mine_backlog",
+            "a resolved backlog item surfaced in the response — backlog.md was read directly",
+        )]
+    return []
 
 
 # --- stories mid-build path ---------------------------------------------------
@@ -1841,6 +1964,7 @@ REGISTRY = {
     "dev_yolo_interrupted_output_discipline": dev_yolo_interrupted_output_discipline,
     "dev_default_completed_only_next": dev_default_completed_only_next,
     "dev_default_output_discipline": dev_default_output_discipline,
+    "dev_plain_words_order_gate": dev_plain_words_order_gate,
     # mano import
     "backlog_was_written": backlog_was_written,
     "backlog_has_items": backlog_has_items,
@@ -1864,6 +1988,14 @@ REGISTRY = {
     "review_surfaced_rejection_candidates": review_surfaced_rejection_candidates,
     "review_triage_wrote_nothing_yet": review_triage_wrote_nothing_yet,
     "review_preserved_positive_summary": review_preserved_positive_summary,
+    "review_one_exchange_close": review_one_exchange_close,
+    # done-story immutability (ambient)
+    "done_story_edit_routed": done_story_edit_routed,
+    # hooks: check mode + legacy suggest
+    "check_hook_ran_without_confirmation": check_hook_ran_without_confirmation,
+    "legacy_blank_suggest_hook_surfaced": legacy_blank_suggest_hook_surfaced,
+    # start: projection is the only backlog read
+    "start_did_not_mine_backlog": start_did_not_mine_backlog,
     # stories mid-build
     "midbuild_lettered_story_inserted": midbuild_lettered_story_inserted,
     "existing_stories_unchanged": existing_stories_unchanged,

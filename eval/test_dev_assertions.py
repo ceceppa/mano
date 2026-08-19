@@ -86,10 +86,29 @@ class DevYoloAssertionTests(unittest.TestCase):
         ctx = self._ctx(
             {"1": "done", "2": "pending", "3": "pending"},
             {"src/yolo/base.js"},
-            "Story 1 done — status updated in stories/README.md",
+            "Story 1 done — status updated in stories/README.md. "
+            "Start a fresh session for the next story.",
         )
         self.assertEqual(assertions.dev_default_completed_only_next(ctx), [])
         self.assertEqual(assertions.dev_default_output_discipline(ctx), [])
+
+    def test_plain_words_order_gate_holds_with_everything_pending(self):
+        ctx = self._ctx(
+            {"1": "pending", "2": "pending", "3": "pending"},
+            set(),
+            "Story 1 is still pending and comes first — implementing story 3 "
+            "would skip it. Confirm the bypass or run mano dev for story 1.",
+        )
+        self.assertEqual(assertions.dev_plain_words_order_gate(ctx), [])
+
+    def test_plain_words_order_gate_rejects_jumping_to_story_3(self):
+        ctx = self._ctx(
+            {"1": "pending", "2": "pending", "3": "done"},
+            {"src/yolo/release.js"},
+            "Story 3 done — status updated in stories/README.md. "
+            "Start a fresh session for the next story.",
+        )
+        self.assertTrue(assertions.dev_plain_words_order_gate(ctx))
 
     def test_rejects_default_mode_accidentally_batching(self):
         ctx = self._ctx(

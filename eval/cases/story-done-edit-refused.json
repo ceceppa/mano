@@ -1,0 +1,11 @@
+{
+  "name": "story-done-edit-refused",
+  "description": "A mid-chat request to edit a story whose Status is done must be refused: done stories are immutable; the correction routes to mano stories as a lettered follow-up.",
+  "fixture": "stories-midbuild",
+  "phase": 2,
+  "prompt": "Quick favour — story 3's file (story-3-existing-shipped.md) has a clumsy sentence in 'What and why'. Please reword it in place, it's just a typo-level fix.",
+  "assertions": [
+    "done_story_edit_routed",
+    "existing_stories_unchanged"
+  ]
+}

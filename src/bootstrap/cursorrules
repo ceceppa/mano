@@ -1,14 +1,13 @@
 # Mano Workflow Rules
 
 This project uses the Mano planning framework to structure AI-assisted development.
-The framework relies on modular skill prompts located in the `_mano/skills/` directory and templates in the `_mano/templates/` directory.
+The framework relies on modular skill prompts located in the `_mano/skills/` directory, shared rule fragments in `_mano/rules/`, and templates in the `_mano/templates/` directory.
 
 ## Core Directives for Agent
 
 1. **Activation:**
    When the user types a Mano command (e.g., `mano owner`, `mano track`, `mano start`, `mano spec`, `mano stories`, `mano review`):
-   - You MUST read `_mano/workflow.md` first.
-   - You MUST resolve the command to the correct skill file using the workflow command map.
+   - Dispatch straight to the matching skill file — do NOT read `_mano/workflow.md` for a `mano <action>` command. Each skill's front-matter names the `_mano/rules/` files it requires; read the skill file plus exactly those rule files, and nothing else.
    - `mano import` maps to `_mano/skills/import.md`.
    - `mano owner` maps to `_mano/skills/owner.md`.
    - `mano mode` maps to `_mano/skills/mode.md`.
@@ -20,7 +19,7 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - `mano ui` maps to `_mano/skills/ui.md`.
    - `mano stories` maps to `_mano/skills/stories.md`.
    - `mano review` maps to `_mano/skills/review.md`.
-   - You MUST read the general workflow constraints at `_mano/workflow.md`.
+   - Read `_mano/workflow.md` only for the bare `mano`, `mano help`, `mano status`, and `mano continue` commands — it is the dispatcher, not per-command context.
    - Execute the logic exactly as described in the skill file.
 
 2. **One-Shot Execution:**
@@ -37,9 +36,9 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - Only write code when explicitly instructed outside of a `mano [action]` context.
 
    <!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
-   - **Implementation exception:** `mano dev` maps to `_mano/skills/dev.md` and the authoritative `AGENTS.md` implementation contract; it is the one Mano action allowed to write application code. Preserve a literal trailing modifier: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with `yolo` intact, enabling the ordered batch mode defined in `AGENTS.md`. The planning-only refusal still applies to every other Mano action.
+   - **Implementation exception:** `mano dev` maps to `_mano/skills/dev.md`, the complete authoritative implementation contract; it is the one Mano action allowed to write application code. Preserve a literal trailing modifier: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with `yolo` intact, enabling the ordered batch mode defined in that contract. The planning-only refusal still applies to every other Mano action.
    <!-- /mano-rule: dev-yolo-batch -->
 
 5. **Runtime Layout:**
    - In installed projects, Mano framework files live under `_mano/` even if the framework source repository stores them at the root.
-   - When interpreting prompts or copied templates in a user project, prefer `_mano/skills`, `_mano/templates`, and `_mano/custom` as the runtime paths.
+   - When interpreting prompts or copied templates in a user project, prefer `_mano/skills`, `_mano/rules`, `_mano/templates`, and `_mano/custom` as the runtime paths.

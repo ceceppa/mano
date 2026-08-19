@@ -22,7 +22,7 @@ npx mano-plan install
 
 This installs Mano into your project:
 
-- `_mano/` — the skills, templates, hooks, scripts, and workflow Mano reads at runtime
+- `_mano/` — the skills, shared rule fragments, templates, hooks, scripts, and workflow Mano reads at runtime
 - `AGENTS.md` — the agent contract, dropped at your project root (always)
 - `CLAUDE.md` and `.cursorrules` — optional editor entry points; the installer asks which you want
 
@@ -319,6 +319,16 @@ Mano reduces planning entropy by encouraging bounded reasoning scopes and struct
 
 This is not a fully autonomous system. It is a collaboration framework for guiding LLM-assisted planning work.
 
+### Session hygiene — the loop that keeps context cheap
+
+Mano's state lives on disk, and `_mano/scripts/state.js` rebuilds your exact position for a few hundred tokens — resuming in a fresh session is nearly free, while every message in a long session replays everything that came before it. The intended loop is concrete:
+
+- **One story per session.** Run `mano dev`, let it finish its story, end the session. Start the next story in a fresh session — `state.js --next` restores the position.
+- **One planning command per session boundary.** A planning command's output is a file; when it lands, that is a natural place to end the session rather than continue in the same context.
+- **End sessions instead of compacting them.** Compaction keeps a lossy summary of the expensive part; a fresh session plus the state projection keeps everything that matters and drops everything that doesn't.
+
+Honest note: `mano dev yolo` is by construction the least token-efficient mode — one session carries every story in the batch. That is a deliberate trade for one continuous hands-off run; use it knowingly.
+
 ## Artifact Ownership and Conflicts
 
 Explicit human decisions control the project. After that, use the artifact that owns the decision instead of ranking whole document types:
@@ -444,9 +454,11 @@ _mano/hooks/post-spec.example.md  -> inactive
 _mano/hooks/post-spec.md          -> active
 ```
 
-A hook's `## Mode` section decides how it runs — the two kinds produce different things:
+A hook's `## Mode` section decides how it runs — the three kinds produce different things:
 
-**`suggest`** (the default) produces *findings* — a specialist opinion you have to weigh. In manual mode or before an auto chain is armed, Mano mentions it after the related skill and asks whether to run it. During the armed chain Mano runs it, continues if there are no findings, and pauses for per-item triage if there are. Useful for optional external review, validation, or project-specific checks.
+**`check`** is a checklist Mano applies itself, automatically, in both modes, right after the related skill's artifacts are written — no confirmation, because the checklist is your own pre-written review. Findings still go through per-item triage before anything is edited. This is the primary shape: most project hooks are "always check these things after this skill."
+
+**`suggest`** (the default) points at an external skill or command whose *findings* are a specialist opinion you have to weigh. In manual mode or before an auto chain is armed, Mano mentions it after the related skill and asks whether to run it. During the armed chain Mano runs it, continues if there are no findings, and pauses for per-item triage if there are.
 
 **`command`** produces *an exit code* — a mechanical side effect. It names one command and Mano runs it every time, in both modes, without asking. Useful for deterministic follow-up work your project always wants done:
 
@@ -462,9 +474,9 @@ node scripts/sync-backlog.js
 
 Writing the file is the authorization, so you are not asked each time. Mano runs it from the project root, reports it in one line of the execution log, and on failure reports the exact error without retrying or editing anything to compensate. To run the same script after several skills, create one hook file per skill (`post-import.md`, `post-start.md`, `post-review.md`).
 
-The line between the kinds is judgement vs mechanism: an opinion arriving before you have formed your own changes what you think, so you are asked first; syncing a tracker has no opinion in it, and being asked each time is just a chore.
+The line between the kinds is judgement vs mechanism: an external opinion arriving before you have formed your own changes what you think, so you are asked first; your own checklist and your own script carry no such surprise, so they run every time.
 
-When any suggest hook reports findings, Mano returns a compact numbered triage.
+When any check or suggest hook reports findings, Mano returns a compact numbered triage.
 You can apply an in-scope edit, decide between options, route the finding, or
 skip it. Each hook can change only the artifact owned by its related skill.
 Running a hook never pre-approves its findings. Mano adds no findings ledger.
@@ -483,6 +495,6 @@ _mano/hooks/post-stories.example.md
 _mano/hooks/post-review.example.md
 ```
 
-To use a project-specific external check, copy an example hook and replace `[external-review-command]` in the suggested prompt with the command or skill you want to run.
+The shipped examples are short check-mode checklists; copy one, trim the checklist to what your project cares about, and rename it without `.example`. For an external specialist review instead, set `## Mode` to `suggest` and name the exact command or skill in a `## Run` section.
 
 Mano never prints a suggest hook's full prompt unless asked. It never names a specific external skill in generic output. Hook findings never authorize edits: Mano presents each finding for selection and applies only the chosen, in-scope changes. In manual or unarmed work, the human decides when to run a suggest hook. During an armed auto chain, Mano runs it after the related artifact and pauses only when findings need triage.

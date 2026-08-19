@@ -31,18 +31,15 @@ class PhaseAcceptanceIntegrityTests(unittest.TestCase):
         self.assertIn("An AC appearing in a story is coverage, not readiness", stories)
 
     def test_dev_cannot_mark_done_when_evidence_asserts_the_inverse(self) -> None:
-        agents = _read("src/bootstrap/AGENTS.md")
         dev = _read("src/skills/dev.md")
 
-        gate = agents.index("10.1 **Acceptance-evidence gate")
-        status_write = agents.index("11. After implementing, mark the story `done`")
+        gate = dev.index("10.1 **Acceptance-evidence gate")
+        status_write = dev.index("11. After implementing, mark the story `done`")
         self.assertLess(gate, status_write)
-        self.assertIn("A passing suite is not enough", agents)
-        self.assertIn("states the opposite outcome", agents)
-        self.assertIn("leave the row pending", agents)
-        self.assertIn("do not rewrite the AC's meaning, invert the test", agents)
-        self.assertIn("Green tests cannot prove the opposite AC", dev)
-        self.assertIn("never invert the AC to match stale code", dev)
+        self.assertIn("A passing suite is not enough", dev)
+        self.assertIn("states the opposite outcome", dev)
+        self.assertIn("leave the row pending", dev)
+        self.assertIn("do not rewrite the AC's meaning, invert the test", dev)
 
     def test_review_refuses_to_close_opposing_story_and_spec_outcomes(self) -> None:
         review = _read("src/skills/review.md")
@@ -57,7 +54,6 @@ class PhaseAcceptanceIntegrityTests(unittest.TestCase):
         surfaces = (
             "src/skills/spec.md",
             "src/skills/stories.md",
-            "src/bootstrap/AGENTS.md",
             "src/skills/dev.md",
             "src/skills/review.md",
         )

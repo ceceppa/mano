@@ -19,3 +19,11 @@
 - **Context:**
   Rebuilding the preview after a change is slow enough to break flow.
 - **Status:** backlog
+
+### Retired spike: manual GIF capture workflow CANARY-BACKLOG-DIRECT-READ
+- **Type:** tech-debt
+- **Context:**
+  Closed exploration; kept only as history. The projection never surfaces
+  resolved items, so this title can reach a transcript only if the agent
+  opened backlog.md directly instead of using SCOPE INPUT.
+- **Status:** resolved

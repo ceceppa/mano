@@ -1,0 +1,11 @@
+{
+  "name": "hook-check-applies-unprompted",
+  "description": "A check-mode hook is the user's own checklist: Mano applies it automatically in manual mode without a Run-it-now confirmation, and creates no tracking artifacts.",
+  "fixture": "hook-triage-spec",
+  "phase": 3,
+  "active_hook": "spec",
+  "prompt": "mano spec",
+  "assertions": [
+    "check_hook_ran_without_confirmation"
+  ]
+}

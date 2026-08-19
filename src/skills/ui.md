@@ -1,6 +1,7 @@
 ---
 name: mano-ui
 description: Use to establish or extend the visual language, CSS/theme choices, component guidelines, and HTML design preview.
+requires: [core, artifact]
 ---
 
 # `mano ui` — UI Skill
@@ -17,7 +18,9 @@ This skill sets the visual direction. Prefix every message with `[mano ui]:`. Be
 ## Activation
 
 This skill activates when the user types `mano ui`.
-When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
+When inputs are missing, follow the missing-input protocol in `_mano/rules/core.md`.
+
+Read this file plus `_mano/rules/core.md` and `_mano/rules/artifact.md` first — before the state projection, then artifacts — and read only those rule files; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 
 On activation:
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
@@ -92,7 +95,7 @@ Use the chosen accessibility target in `design-brief.md`. Do not edit `project-r
 
 ### Step 2 — Generate design brief
 
-Write `_mano_output/design-brief.md`:
+Write `_mano_output/design-brief.md` — a full-file write only when the file does not exist yet; when it exists, targeted replacements only, per `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**. It covers:
 - Accessibility target
 - Framework / component library already selected in `tech-spec.md`, when present. Reference or mirror that choice; do not choose a technical dependency here.
 - Colour palette (6-8 colours, hex values)
@@ -157,9 +160,7 @@ Before writing, enforce the ownership boundary:
 
 ### Step 4 — After Completion
 
-Output a cold, structured execution log to the user indicating completion, pointing them to view the HTML preview or edit the brief. Use this exact format:
-
-Use the canonical execution-log format defined in `_mano/workflow.md` ("Canonical execution-log format"):
+Output a cold, structured execution log to the user indicating completion, pointing them to view the HTML preview or edit the brief. Use the canonical execution-log format defined in `_mano/rules/core.md` ("Canonical execution-log format"):
 
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
 ```
@@ -185,15 +186,7 @@ If the phase has no design work to perform, use a skip log instead:
 List only files confirmed present by the projection and reads. Never print the current phase preview path in a skip log when that file does not exist.
 <!-- /mano-rule: ui-phase-preview-ownership -->
 
-Rules for the next-action block:
-- Use the same block shape as `mano start` so the framework feels consistent across skills.
-- Include only the Mano actions that are actually useful from the current artifact state after `mano ui`.
-- Omit actions whose artifacts already exist and do not obviously need refinement.
-- If only one next action is genuinely obvious, list just that one action plus `mano continue` only if it still adds value.
-- If several next actions are valid, list them all instead of prescribing a fake sequence.
-- Keep the one-line reason style used by `mano start`.
-
-Do not ask for confirmation or add conversational fluff.
+The next-action block follows `_mano/rules/artifact.md` → **Next-step suggestion rule**. Do not ask for confirmation or add conversational fluff.
 
 ## When `mano ui` runs again
 
@@ -217,34 +210,9 @@ Re-run the state projection every time; phase identity is disk state, not conver
 - Use real content from the phase brief in the sample mockup, not lorem ipsum.
 - Preference capture must stay short. Do not turn `mano ui` into open-ended design discovery.
 
-## Post-UI Hook Suggestion
+## Post-UI hook
 
-After `mano ui` completes, always check whether this file exists:
-
-`_mano/hooks/post-ui.md`
-
-Ignore this file:
-
-`_mano/hooks/post-ui.example.md`
-
-If an active `post-ui.md` suggest hook exists in a manual or unarmed run, prepare the generic hook block for the final chat response. During an armed auto chain, run it instead.
-
-Check the hook's `## Mode` first. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; during an armed auto chain it runs automatically and pauses only when findings require triage (`_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**).
-
-Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
-
-This step is required even when no UI update was needed.
-
-In manual or unarmed runs, mention it in the final chat response before the next-action block. During an armed auto chain, do not print the suggestion block.
-
-This applies whether the skill:
-- created an artifact
-- updated an artifact
-- checked existing artifacts and decided no update was needed
-
-Do not print the hook's suggested prompt unless the user asks to run or view the hook.
-Do not execute a `suggest` hook without explicit user confirmation in manual or unarmed runs. An armed auto chain is the workflow-defined exception.
-Do not write hook suggestions into generated artifacts.
+If the state projection's `HOOK:` line names `post-ui`, follow `_mano/rules/hooks.md` for it. Otherwise skip hooks entirely — do not probe `_mano/hooks/` yourself. This check applies even when no UI update was needed.
 
 ## Forbidden
 

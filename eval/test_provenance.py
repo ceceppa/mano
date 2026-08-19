@@ -11,6 +11,16 @@ import provenance
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+def _install(project: Path, *extra_args: str) -> None:
+    subprocess.run(
+        ["node", str(REPO_ROOT / "bin" / "mano-plan.js"), "install", "--yes", *extra_args],
+        cwd=project,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 class ProvenanceTests(unittest.TestCase):
     def test_repository_markers_are_valid_and_mapped(self) -> None:
         rules = provenance.discover_rules(REPO_ROOT)
@@ -44,7 +54,7 @@ class ProvenanceTests(unittest.TestCase):
         )
         self.assertEqual(
             len(rules["dev-yolo-batch"].occurrences),
-            7,
+            6,
         )
         self.assertEqual(
             rules["dev-yolo-batch"].evals,
@@ -60,30 +70,47 @@ class ProvenanceTests(unittest.TestCase):
         )
         self.assertEqual(
             len(rules["public-interface-contract-readiness"].occurrences),
-            24,
+            23,
         )
         self.assertEqual(
             rules["public-interface-contract-readiness"].evals,
             ("spec-public-interface-completeness", "stories-public-interface-gap"),
         )
 
+    def test_default_install_contains_no_rule_markers(self) -> None:
+        """P0.1 guard: installed files are marker-free (the rule bodies stay)."""
+        with tempfile.TemporaryDirectory(prefix="mano-strip-test-") as raw:
+            project = Path(raw)
+            _install(project)
+
+            offending = []
+            for relative in ("AGENTS.md", "CLAUDE.md"):
+                path = project / relative
+                if path.is_file() and "mano-rule:" in path.read_text(encoding="utf-8"):
+                    offending.append(relative)
+            for path in (project / "_mano").rglob("*.md"):
+                if "mano-rule:" in path.read_text(encoding="utf-8"):
+                    offending.append(str(path.relative_to(project)))
+            self.assertEqual(offending, [])
+
+            # The rule bodies themselves must survive the marker strip.
+            workflow = (project / "_mano" / "workflow.md").read_text(encoding="utf-8")
+            self.assertIn("`mano dev yolo` and `mano-dev yolo`", workflow)
+            hooks_rules = (project / "_mano" / "rules" / "hooks.md").read_text(encoding="utf-8")
+            self.assertIn("## Post-Hook Findings Triage", hooks_rules)
+
     def test_retirement_probe_strips_every_installed_occurrence(self) -> None:
         with tempfile.TemporaryDirectory(prefix="mano-provenance-test-") as raw:
             project = Path(raw)
-            subprocess.run(
-                ["node", str(REPO_ROOT / "bin" / "mano-plan.js"), "install", "--yes"],
-                cwd=project,
-                check=True,
-                capture_output=True,
-                text=True,
-            )
+            # Probes install with markers kept so whole rules can be removed.
+            _install(project, "--keep-rule-markers")
 
             removed = provenance.strip_rules(project, {"post-hook-findings-triage"})
             self.assertEqual(removed, {"post-hook-findings-triage": 5})
 
             stripped_sections = {
-                "AGENTS.md": "When any just-run `suggest` hook has printed findings",
-                "_mano/workflow.md": "## Post-Hook Findings Triage",
+                "AGENTS.md": "hook has printed findings",
+                "_mano/rules/hooks.md": "## Post-Hook Findings Triage",
                 "_mano/skills/start.md": "## Addressing post-start hook findings",
                 "_mano/skills/spec.md": "## Addressing post-spec hook findings",
                 "_mano/skills/rules.md": "## Addressing post-rules hook findings",
@@ -99,9 +126,10 @@ class ProvenanceTests(unittest.TestCase):
             self.assertIn("id=post-stories-hook-findings-triage;", stories)
 
             removed_yolo = provenance.strip_rules(project, {"dev-yolo-batch"})
-            # --yes installs AGENTS.md, CLAUDE.md, workflow.md, and dev.md; the
-            # optional .cursorrules surface is intentionally not installed.
-            self.assertEqual(removed_yolo, {"dev-yolo-batch": 6})
+            # --yes installs CLAUDE.md, workflow.md, and dev.md occurrences; the
+            # optional .cursorrules surface is intentionally not installed, and
+            # AGENTS.md no longer carries the dev contract.
+            self.assertEqual(removed_yolo, {"dev-yolo-batch": 5})
             for relative in (
                 "AGENTS.md",
                 "CLAUDE.md",
@@ -133,10 +161,11 @@ class ProvenanceTests(unittest.TestCase):
             )
             self.assertEqual(
                 removed_interface,
-                {"public-interface-contract-readiness": 24},
+                {"public-interface-contract-readiness": 23},
             )
             for relative in (
                 "AGENTS.md",
+                "_mano/rules/backlog.md",
                 "_mano/skills/start.md",
                 "_mano/skills/spec.md",
                 "_mano/skills/stories.md",
@@ -147,14 +176,18 @@ class ProvenanceTests(unittest.TestCase):
                 text = (project / relative).read_text(encoding="utf-8")
                 self.assertNotIn("id=public-interface-contract-readiness;", text)
 
+            # review.md keeps an untagged Identity-level mention of the
+            # safety net, so it stays out of this joined phrase check.
             stripped_prompt = "\n".join(
                 (project / relative).read_text(encoding="utf-8")
                 for relative in (
                     "AGENTS.md",
                     "_mano/workflow.md",
+                    "_mano/rules/backlog.md",
                     "_mano/skills/start.md",
                     "_mano/skills/spec.md",
                     "_mano/skills/stories.md",
+                    "_mano/skills/dev.md",
                     "_mano/templates/tech-spec.md",
                 )
             )
@@ -168,6 +201,12 @@ class ProvenanceTests(unittest.TestCase):
                 "Phase-contract safety net",
             ):
                 self.assertNotIn(incident_phrase, stripped_prompt)
+
+            # After a probe's strips, marker normalisation returns the install
+            # to the production (marker-free) shape.
+            provenance.strip_markers(project)
+            for path in (project / "_mano").rglob("*.md"):
+                self.assertNotIn("mano-rule:", path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

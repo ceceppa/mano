@@ -2,6 +2,33 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.4.0 — August 19, 2026
+
+Token-efficiency release: the measured cost of a Mano session is dominated by what sits resident in context on every message. This release cuts the always-on instruction load without deleting behaviour — rules moved to homes that load only when needed.
+
+### Added
+- **`_mano/rules/` — loadable rule fragments.** `workflow.md` split into a small dispatcher plus five fragments (`core`, `artifact`, `intake`, `backlog`, `hooks`). Each skill's front-matter declares `requires: [...]`; a command loads its skill file plus exactly those fragments, never the whole workflow. `hooks.md` loads only when a hook is actually active.
+- **`HOOK:` and `ARTIFACTS:` lines in every state projection.** `state.js` now reports active post-skill hooks (with their declared mode) and the presence of the four optional artifacts, so skills stop probing `_mano/hooks/` and stop opening artifacts just to see whether they exist. A projected `HOOK:` line is structurally unmissable — the fix for hooks being skipped.
+- **`check` hook mode.** A hook whose body is a checklist Mano applies itself, automatically, in both modes — no confirmation (the file is the authorization), findings still go through numbered triage. Shipped examples are now short check-mode checklists; `[external-review-command]` is gone.
+- **`verify.js` — verification output filtered at the source.** `node _mano/scripts/verify.js -- <cmd>` prints one `PASS:` line on success, or a deduped, head/tail-trimmed, 2,000-char-capped failure excerpt. An optional `## Verification` block in `tech-spec.md` (`failure-pattern:`) sharpens the excerpt per project. Wired into the dev contract and Repair Mode.
+- **Repair Mode in the dev contract.** A failing verification now has a fixed context budget: first error only, ±12-line windows, no re-reads, surgical edits, narrowest reproducing command, three attempts then stop. The step-11 state re-check and acceptance-evidence gate always run in full.
+- **Session hygiene is now a stated mechanism, not philosophy.** `state.js` rebuilds position for ~200 tokens, so the contract says it: one story per session, a planning command is a session boundary, end sessions instead of compacting. Dev's done-line now ends with "Start a fresh session for the next story."
+- **`eval/check-refs.js`** fails the test suite on any cross-file section pointer that no longer resolves — the drift check the workflow split needs.
+
+### Changed
+- **The dev contract moved into `_mano/skills/dev.md` whole.** `AGENTS.md` keeps a short stub with the two ambient rules (Status is the only done-signal; `Not this story` is a hard no) plus the completed-stories-immutability rule, now routed through `mano stories` → `mano dev` instead of an ambient self-implement procedure. Planning commands and non-Mano sessions no longer carry the implementer's contract.
+- **Installs are stripped of `<!-- mano-rule: -->` markers.** They are repo-side eval metadata; the installer removes the marker lines (rule bodies stay). The eval harness installs with `--keep-rule-markers` when probing rule retirement.
+- **The review close costs one exchange.** The opening is one numbered list (Exit Criteria with inline Try hints, `*(assumption)*` and `*(decide)*` tags) and one ask. A clear positive verdict closes the phase in the same exchange — with or without the literal `close it`; the echo-back confirmation survives only for mixed/negative feedback that needed triage judgment.
+- **Cumulative artifacts follow "create once, edit thereafter".** A full-file write is sanctioned only when the file does not exist; thereafter targeted replacements only, byte-identical untouched sections. Replaces the weaker "keep the diff to what changed" advice.
+- **Execution logs have a hard ceiling** (12 lines) and **flag lines stand alone** — every `⚠ Verify:` / `❓ Decide:` starts its own line, one finding per line.
+- **`mano start` treats the backlog as write-only** — scope context arrives only via the projection's `SCOPE INPUT`; the chain proposal uses `ARTIFACTS:` instead of opening artifacts.
+- **`.cursorrules` and `CLAUDE.md` dispatch straight to the skill file** instead of mandating a full `workflow.md` read for every command.
+
+### Removed
+- The dead `## Changes` / "In-Flight Story Changes" story-file mechanism — corrections are lettered stories via `stories.js add-row`; `mano dev` never edits a story file.
+- The drifted First-run and Phase-review walkthroughs in `workflow.md` (they restated `start.md`/`review.md`).
+- Per-skill hook boilerplate (8 near-verbatim copies) — replaced by one `HOOK:`-gated line per skill and a single contract in `_mano/rules/hooks.md`.
+
 ## 1.3.0 — August 10, 2026
 
 ### Added

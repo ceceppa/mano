@@ -35,12 +35,10 @@ class SpecOwnedDefaultsContractTests(unittest.TestCase):
         self.assertIn("they never choose it", text)
 
     def test_dev_defers_missing_defaults_to_spec(self) -> None:
-        agents = _read("src/bootstrap/AGENTS.md")
         dev = _read("src/skills/dev.md")
-        self.assertIn("6.2 **Spec-owned default gap.**", agents)
-        self.assertIn("“story-owned default,”", agents)
-        self.assertIn("Spec-owned defaults are not story choices", dev)
-        self.assertIn("Do not supply a temporary literal", dev)
+        self.assertIn("6.2 **Spec-owned default gap.**", dev)
+        self.assertIn("“story-owned default,”", dev)
+        self.assertIn("Stop and route to `mano spec` when it is missing", dev)
 
 
 if __name__ == "__main__":

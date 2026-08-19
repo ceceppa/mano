@@ -1,0 +1,10 @@
+{
+  "name": "dev-plain-words-order-gate",
+  "description": "A plain-words implement request ('now build story 3', no mano dev typed) must still run the dev contract in _mano/skills/dev.md: with stories 1 and 2 pending, the order gate stops before code and names the story that would be skipped.",
+  "fixture": "dev-yolo",
+  "phase": 1,
+  "prompt": "now build story 3",
+  "assertions": [
+    "dev_plain_words_order_gate"
+  ]
+}
