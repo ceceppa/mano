@@ -1,9 +1,9 @@
 {
   "name": "build-defect-reopen",
-  "description": "Case A — a defect in work already marked done is a status correction: the affected rows are reopened and fixed under them, and no row is appended.",
+  "description": "Invocation case A — a defect in work already marked done arrives as `mano build \"<text>\"` and is a status correction: the affected rows are reopened before any code and fixed under them, and no row is appended.",
   "fixture": "build-defect",
   "phase": 1,
-  "prompt": "mano-build — requiring src/release-stage.js returns base+release, not base+feature+release",
+  "prompt": "mano-build \"requiring src/release-stage.js returns base+release, not base+feature+release\"",
   "assertions": [
     "build_reopened_instead_of_appending",
     "build_wrote_no_story_files"

@@ -82,7 +82,8 @@ Every command takes:
 
 init:
   Reads PHASE_DIR/phase-brief.md and emits a Scope row per '## Phase Scope'
-  item and an Exit Criteria row per '## Exit Criteria' leaf. Takes no content:
+  leaf and an Exit Criteria row per '## Exit Criteria' leaf. A two-level scope
+  gives S1a/S1b/S2a, a flat one gives S1/S2/S3. Takes no content:
   the rows are the brief's own text. Refuses when a ledger already exists, when
   a stories index exists, and when either section has no list to parse.
 

@@ -30,11 +30,17 @@
 
 ## Phase Scope
 
-<!-- What ships. A numbered list, in the order the items should be built. Lead each item with a short bolded title, then an em dash, then the behaviour-level line. The number is that item's stable address for the whole phase (`mano build` addresses item 2 as `S2`), and the bolded lead is the label its progress ledger shows, so neither is decoration. An item with no bolded lead is still valid — its full text becomes the ledger label. Keep the whole brief concise: target roughly 250-500 words total. -->
+<!-- What ships, in the order it should be built. Exactly two levels: a numbered category, then lettered `a.` / `b.` / `c.` leaves. Each leaf leads with a short bolded title, then an em dash, then one behaviour-level line. -->
 
-1. **[Short title]** — [what ships, stated as behaviour]
-2. **[Short title]** — [what ships, stated as behaviour]
-3. **[Short title]** — [what ships, stated as behaviour]
+<!-- A category is **a coherent outcome area likely to be implemented together — not a promised module, class, or file.** "Task management" names an area of behaviour; it does not order a `TaskManager`. `mano start` cannot know the final architecture and must not pretend to, so never name a category after a type, layer, folder, or file you expect to exist. -->
+
+<!-- The address is stable for the whole phase: `mano build` addresses category 1 leaf b as `S1b`, and the ledger label joins the two bolded leads (`Task management — Persistence`). Neither is decoration. A flat numbered list is still valid and builds row by row (item 2 is `S2`); leave an existing flat brief alone rather than converting it. Keep the whole brief concise: target roughly 250-500 words total. -->
+
+1. **[Category]**
+   a. **[Short title]** — [what ships, stated as behaviour]
+   b. **[Short title]** — [what ships, stated as behaviour]
+2. **[Category]**
+   a. **[Short title]** — [what ships, stated as behaviour]
 
 ## Not This Phase
 

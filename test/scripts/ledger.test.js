@@ -2,6 +2,8 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const L = require("../../src/scripts/ledger.js");
 
@@ -161,6 +163,41 @@ test("a nested Scope leaf keeps its full behaviour line, not just its bolded lea
     "Persistence — Write on change — every mutation is flushed to disk immediately",
   );
   assert.equal(scope.rows[0].text, "Flat item — the whole behaviour on one line.");
+});
+
+test("the shipped phase-brief template's two-level Scope parses to category+leaf rows", () => {
+  // 4.2: the template and the parser have to agree, or `init` refuses a brief
+  // mano start just wrote. Parse the template's own placeholder list.
+  const template = fs.readFileSync(
+    path.join(__dirname, "..", "..", "src", "templates", "phase-brief.md"),
+    "utf8",
+  );
+  const scope = L.parseScope(template);
+  assert.deepEqual(scope.rows.map((r) => r.id), ["S1a", "S1b", "S2a"]);
+  // The label is derived, never authored: category lead — leaf lead.
+  assert.equal(scope.rows[0].label, "[Category] — [Short title]");
+  const exit = L.parseExitCriteria(template);
+  assert.deepEqual(exit.rows.map((r) => r.id), ["E1a", "E2a", "E2b"]);
+});
+
+test("a flat brief still parses row by row — two-level is not a migration", () => {
+  // 4.2: existing flat briefs stay valid and are never auto-converted.
+  const flat = `# Phase Brief — Demo — Phase 1
+
+## Phase Scope
+
+1. **One** — first behaviour.
+2. **Two** — second behaviour.
+3. **Three** — third behaviour.
+
+## Exit Criteria
+
+1. **Proof**
+   a. run it: it works
+`;
+  const scope = L.parseScope(flat);
+  assert.deepEqual(scope.rows.map((r) => r.id), ["S1", "S2", "S3"]);
+  assert.equal(scope.rows[1].label, "Two");
 });
 
 test("Exit Criteria join their category lead into each leaf", () => {

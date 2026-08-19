@@ -12,4 +12,6 @@ When the user types a Mano command (`mano owner`, `mano track`, `mano start`, `m
 Preserve command arguments during dispatch: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with the literal `yolo` modifier intact. Do not resolve either form to a nonexistent `mano-dev-yolo` skill or discard the modifier and fall back to ordinary one-story mode.
 <!-- /mano-rule: dev-yolo-batch -->
 
+The same holds for `mano build "[what changed]"`: the quoted text is a mid-phase correction the skill classifies itself, and its exact wording is the human's contract. Pass it through verbatim — never paraphrase it, tidy it, or drop it.
+
 For implementation, follow the rules in `AGENTS.md` under "Implementing a story" (`mano dev`) or "Building a phase" (`mano build`). Both read the shared `_mano/rules/implement.md`, which owns the gap gates, the acceptance-evidence gate, Repair Mode, the read budget, and Implementation Output Discipline.

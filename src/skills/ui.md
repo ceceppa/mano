@@ -172,9 +172,12 @@ Output a cold, structured execution log to the user indicating completion, point
 
 Next:
 - `mano rules` — if project conventions, accessibility rules, or shared-component boundaries still need codifying
-- `mano stories` — if the phase is already clear enough to break into implementable work
+- `mano stories` — if the phase is already clear enough to break into implementable work, and you want story files a small-context implementer works one at a time
+- `mano build` — if the phase is already clear enough to break into implementable work, and you want it built straight from the brief with no story files
 - `mano continue` — if you want Mano to pick only when there is a single obvious next step
 ```
+
+**Show both implementation paths in `manual`, and only `mano build` in `auto`.** `_mano/rules/artifact.md` → **Next-step suggestion rule** owns this: at the no-ledger planning stage the mode decides, so read `MODE:` from the projection rather than defaulting to whichever path the examples use most.
 
 If the phase has no design work to perform, use a skip log instead:
 

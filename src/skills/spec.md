@@ -389,10 +389,13 @@ Next:
 
 Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced project layout.
-- `mano stories` — if the phase is technically clear enough to break into implementable work
+- `mano stories` — if the phase is technically clear enough to break into implementable work, and you want story files a small-context implementer works one at a time
+- `mano build` — if the phase is technically clear enough to break into implementable work, and you want it built straight from the brief with no story files
 - `mano ux` — if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase. For player-facing games, this includes world interaction, placement/selection, progression or unlock actions, available-versus-locked states, and feedback for unmet conditions; a minimal or in-world presentation is still a flow.
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
 - `mano continue` — only if it adds value and there may be a single obvious next step
+
+**Show both implementation paths in `manual`, and only `mano build` in `auto`.** `_mano/rules/artifact.md` → **Next-step suggestion rule** owns this: at the no-ledger planning stage the mode decides, so read `MODE:` from the projection rather than defaulting to whichever path the examples use most.
 
 ## Forbidden
 

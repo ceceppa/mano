@@ -57,10 +57,24 @@ words. Do not implement from a story file alone. Two rules apply even before you
 
 `mano build` is the other implementation path: no story files, the brief's own numbered `## Phase Scope` items
 are the units, and `PHASE_DIR/progress.md` is the ledger. Its full contract is `_mano/skills/build.md`, plus the
-same `_mano/rules/implement.md`. Two rules apply even before you read them:
+same `_mano/rules/implement.md`. Three rules apply even before you read them:
 - The ledger is written only by `_mano/scripts/progress.js` — never by hand, and never with rows you composed.
-- `Not this phase` in the brief is a hard boundary, and work the brief does not contain goes through
-  `mano start`, not into the build.
+- `Not this phase` in the brief is a hard boundary. Once the ledger exists the brief is frozen: an in-goal
+  correction is a row inside `mano build`, a distinct outcome goes to the backlog or the next phase, and
+  neither goes back through `mano start`.
+- `mano build "[what changed]"` is a mid-phase correction, not new scope, and only a phase that already has a
+  valid ledger accepts one. The exact wording is the human's — never paraphrase it.
+
+### Which implementation entry
+
+Decide by **validated state, then mode** — never by which path is more familiar:
+- either ledger invalid, or a phase holding both → refuse and report;
+- a pending rework event, an open Scope row, or an unresolved deviation → `mano build`;
+- an incomplete stories ledger → `mano dev`; a complete one → `mano review`;
+- a `progress.md` with every Scope leaf `done` and every Exit leaf `met` or `needs-human` → `mano review`;
+- no ledger at all → the mode decides: `auto` ends at `mano build`, `manual` offers `mano stories` first and
+  `mano build` second.
+The narrative contract is `_mano/workflow.md` → **Implementation entry**.
 
 ### Completed stories are immutable
 

@@ -21,7 +21,7 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - `mano dev` maps to `_mano/skills/dev.md`.
    - `mano build` maps to `_mano/skills/build.md`.
    - `mano review` maps to `_mano/skills/review.md`.
-   - **Preserve a literal trailing modifier.** `mano dev yolo` invokes `mano-dev` with `yolo` intact; `mano build "add dark mode"` invokes `mano-build` with that argument intact so the skill can refuse it itself. Never fold a modifier into a skill name, and never silently drop one.
+   - **Preserve a literal trailing modifier or argument.** `mano dev yolo` invokes `mano-dev` with `yolo` intact; `mano build "the picker keeps the old value"` invokes `mano-build` with that exact text intact — it is a mid-phase correction the skill classifies itself, and its wording is the human's contract. Never fold a modifier into a skill name, never paraphrase an argument, and never silently drop one.
    - Read `_mano/workflow.md` only for the bare `mano`, `mano help`, `mano status`, and `mano continue` commands — it is the dispatcher, not per-command context.
    - Execute the logic exactly as described in the skill file.
 

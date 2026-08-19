@@ -922,7 +922,14 @@ function finalize(s, options = {}) {
       "Do NOT hand-repair it, and do NOT treat this phase as unstarted.";
   } else if (ledgerMissing) {
     verdict = "PHASE_IN_PROGRESS";
-    action = `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — run mano stories (then mano dev) or mano build. mano start must NOT scope a next phase.`;
+    // The one state where the run mode decides the implementation entry: with
+    // no ledger both paths are still open, so an armed auto chain must not be
+    // offered a branch it is forbidden to choose (its terminal action is
+    // mano build), and a manual user must not be handed one path as if the
+    // other did not exist. Every other state is decided by the ledger itself.
+    action = s.runMode === "auto"
+      ? `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — the armed chain's terminal action is mano build, which creates the ledger from this brief. mano start must NOT scope a next phase.`
+      : `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — run mano stories (then mano dev) for story files, or mano build to build straight from the brief. Both are valid; the human picks. mano start must NOT scope a next phase.`;
   } else if (building && !buildAllDone) {
     verdict = "PHASE_IN_PROGRESS";
     action = openRework
@@ -1412,7 +1419,11 @@ function renderNext(s) {
   }
 
   if (!s.stories || s.stories.total === 0) {
-    L.push(`DEV: ${s.phaseId} has a brief but no stories yet — run mano stories, or mano build to build straight from the brief. Nothing for mano dev yet.`);
+    L.push(
+      s.runMode === "auto"
+        ? `DEV: ${s.phaseId} has a brief but no stories yet — in auto the implementation entry is mano build, which builds straight from the brief. Nothing for mano dev yet.`
+        : `DEV: ${s.phaseId} has a brief but no stories yet — run mano stories for story files, or mano build to build straight from the brief. Nothing for mano dev yet.`,
+    );
     L.push(`PHASE: ${s.phase}`);
     L.push(`PHASE_ID: ${s.phaseId}`);
     L.push(`PHASE_DIR: ${s.phaseDir}`);

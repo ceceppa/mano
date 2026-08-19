@@ -71,12 +71,12 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano track [name]` | Show, set, or clear an optional local experiment/work track. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
-| `mano build` | Build the active phase straight from its brief — no story files. The brief's own numbered Phase Scope items are the units, tracked in `progress.md`. |
+| `mano build ["what changed"]` | Build the active phase straight from its brief — no story files. The brief's own numbered Phase Scope items are the units, tracked in `progress.md`. The optional quoted text is a mid-phase correction, accepted only once a valid ledger exists. |
 | `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
 | `mano continue` | Auto-run only when there is a single obvious next planning step. If several planning actions are still reasonable, it stops and shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
 
-`mano dev` is the named path into implementation, but you don't have to remember the command — plain phrasing like "implement the next story" routes to the same flow. Either way the agent follows the implementation contract in `AGENTS.md`.
+`mano dev` and `mano build` are the two named paths into implementation, but you don't have to remember either command — plain phrasing like "implement the next story" or "build the phase" routes to the same flows. Either way the agent follows the implementation contract in `AGENTS.md`.
 
 `mano dev yolo` (or the unambiguous `mano-dev yolo`) batches every story that is pending when the command starts. It still implements them as separate stories, in index order, marking each one done before moving on. It stops at the first blocker and never relaxes acceptance criteria, `Not this story`, project rules, verification, or the mandatory `mano review` phase close. Without the literal `yolo`, `mano dev` always stops after one story.
 
@@ -84,14 +84,16 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 
 `mano stories` + `mano dev` and `mano build` are both first-class, and a phase uses one or the other.
 
+Which one you get asked for is not a coin flip. Once a phase has a ledger, that ledger decides: a stories index means `mano dev`, a `progress.md` means `mano build`, and a complete ledger of either kind means `mano review`. The choice is open only *before* a ledger exists — and there, in `manual` Mano shows you both; in `auto` the approved chain ends at `mano build`.
+
 - **`mano stories` → `mano dev`** decomposes the phase into story files first, then implements one story per session. The split is the point: a big model plans, a small-context model implements against a written contract. Best for a large or unfamiliar phase, and for anything you want to read before it is built.
-- **`mano build`** skips story files entirely. The unit of work is the numbered `## Phase Scope` item **you already approved in the brief**, so nothing invents a decomposition and nothing can drift from what you wrote. It keeps a small ledger at `PHASE_DIR/progress.md` — one row per scope item, one row per exit-criteria leaf — and builds the rows in order, checkpointing each one. It runs straight through, and stops to ask only when it *deviated*: a missing decision in an artifact, a scope conflict, a row it had to split, a row it had to reopen, or a correction you typed mid-build.
+- **`mano build`** skips story files entirely. The unit of work is the `## Phase Scope` leaf **you already approved in the brief**, so nothing invents a decomposition and nothing can drift from what you wrote. It keeps a small ledger at `PHASE_DIR/progress.md` — one row per scope leaf, one row per exit-criteria leaf — and builds the rows in order, checkpointing each one. Adjacent leaves of one scope category can be built in a single pass when they are genuinely one piece of work; the category you wrote is the ceiling on that, and every leaf is still proven separately. It runs straight through, and stops to ask only when it *deviated*: a missing decision in an artifact, a scope conflict, a row it had to split, a row it had to reopen, or a correction you typed mid-build.
 
 The gates are the same on both paths. A missing spec-owned default, an undefined shared contract, an unwritten player choice, or work outside `Not This Phase` stops the run and routes to the skill that owns the decision — `mano build` runs those checks once against the whole brief, before it writes anything at all, which is the cheapest place they can fire.
 
-The ledger's two status vocabularies are deliberate: scope rows are `pending | doing | done`, exit criteria are `pending | met`. **Built is not proven** — `mano review` refuses to close a phase whose scope is complete but whose criteria are not.
+The ledger's two status vocabularies are deliberate: scope rows are `pending | doing | done`, exit criteria are `pending | met | needs-human`. **Built is not proven** — `mano review` refuses to close a phase whose scope is complete but whose criteria are not.
 
-Because `mano build`'s ledger comes from the brief, the brief's `## Phase Scope` should be a numbered list and its `## Exit Criteria` a numbered category with lettered leaves. `mano start` writes both that way, and a script parses them — nothing retypes or paraphrases your text. A brief with a prose-only scope is refused and sent back to `mano start`, because inventing that split is the one thing this path forbids.
+Because `mano build`'s ledger comes from the brief, `mano start` writes both `## Phase Scope` and `## Exit Criteria` as a numbered category with lettered leaves, and a script parses them — nothing retypes or paraphrases your text. A scope category is an outcome area you expect to be built together, not a module you are ordering; it is what gives one build pass a ceiling that came from you rather than from the model. A flat numbered scope list is still valid and builds one row at a time. A brief with a prose-only scope is refused and sent back to `mano start`, because inventing that split is the one thing this path forbids.
 
 `mano dev` is a *generic* implementer, not a language specialist. If you have a dedicated coding skill (e.g. a C++ specialist), you can have it implement instead — just point it at the contract: something like *"@cpp-pro, implement the next pending story following the 'Implementing a story' contract in `AGENTS.md`."* The specialist then writes the code under the same rules as the default implementer (AC only, one-line done, stop on a gap rather than inventing). The key is the contract reference — invoking a specialist with a bare "implement the next story" skips the discipline that keeps implementation supervised and on-scope.
 
@@ -164,7 +166,7 @@ On a project where you have stopped reading the intermediate artifacts and just 
 mano mode auto
 ```
 
-From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano build`, without you typing each one. (A phase that already has a stories index keeps its path and finishes at `mano dev yolo` instead.) Three things keep it supervised:
+From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano build`, without you typing each one — including when you came in through `mano import`, where the whole path from document to built phase writes no story files. (A phase that already has a stories index keeps its path and finishes at `mano dev yolo` instead.) Three things keep it supervised:
 
 - **You still approve the phase.** Auto mode is armed by that approval and never replaces it — the brief is still where you correct course, before any code exists.
 - **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.
@@ -262,9 +264,9 @@ After a review, `mano review` closes the phase. If you don't need Mano for the r
 ### Mid-build feedback
 Requirements change during implementation. You don't have to finish the phase to adjust:
 
-- **Found a bug or missing feature?** Use `mano stories` — it creates a pending story numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3). Run `mano dev` when you want to implement the next pending row.
-- **On the build path, just say it to the running build.** `mano build` sorts a mid-phase report into one of three: a defect in something already marked done **reopens** those rows and fixes under them (no new work is invented — the row was simply never done); an in-goal nuance no row covers is appended as a lettered row **in your own words**; and a genuinely distinct outcome is refused and sent to `mano start`, because that is a change to the brief you approved. Every one of those shows you what changed before any code follows.
-- **Need to change the active phase scope?** Amend the current phase brief explicitly. Then rerun `mano stories` so affected pending work changes and shipped behavior receives a lettered corrective story — on the build path, rerun `mano build` against the amended brief. `mano start` will not advance while the phase remains open.
+- **On the stories path, found a bug or missing feature?** Use `mano stories` — it creates a pending story numbered to reflect ship order (e.g. `story-3a-…`, where the letter marks insertion position, not a sub-task of story 3). Run `mano dev` when you want to implement the next pending row.
+- **On the build path, just say it — to the running build, or at invocation.** Both `mano build "the picker keeps the old value"` and the same sentence typed mid-run go through one classifier: a defect in something already marked done **reopens** those rows and fixes under them (no new work is invented — the row was simply never done); an in-goal nuance no row covers is appended as a lettered row **in your own words**; and a genuinely distinct outcome adds no row and no code, and is offered to the backlog instead. Every one of those shows you what changed before any code follows. The argument is accepted only once a valid ledger exists — with no ledger there is nothing to correct, and `mano start "[the change]"` revises the brief instead.
+- **Need to change the active phase scope?** Before implementation starts, `mano start "[what changed]"` revises the brief in place and re-asks for your approval. Once a ledger exists the brief is frozen: on the stories path a change becomes a lettered corrective story, on the build path a correction row. `mano start` will not advance while the phase remains open.
 - **Need to update specs or stories?** Run the owning action with the concrete change. It updates affected content only. Done stories remain immutable.
 
 For `mano spec`, rerunning the command is also how you sync the planning doc back to reality after project setup. Once the project has a real manifest and lockfile (any language — `package.json`/`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.lockb`, `Cargo.lock`, `go.sum`, `requirements.txt`/`uv.lock`, `CMakeLists.txt`, etc.), or anytime you add/remove/replace a library, run `mano spec` again so `mano spec` can reconcile `_mano_output/tech-spec.md` with the actual installed toolchain. It also receives the exact backlog items assigned to the active phase, so source requirements are not lost when the human-facing phase brief summarizes them. For a brownfield public interface, it checks the named existing declaration surface before confirming a replacement or extension. The completeness gate is deliberately limited to consumer-visible/public or independently-owned multi-story boundaries; a local helper or component API owned by one story stays an implementation decision.
@@ -296,7 +298,7 @@ _mano_output/
 ├── phase-1/
 │   ├── phase-brief.md       ← problem, vision, scope for this phase
 │   ├── design-preview.html  ← self-contained visual preview for this phase (if generated)
-│   ├── progress.md          ← `mano build` ledger: one row per scope item, one per exit-criteria leaf
+│   ├── progress.md          ← `mano build` ledger: one row per scope leaf, one per exit-criteria leaf
 │   └── stories/             ← the other path's ledger; a phase has one or the other
 │       ├── README.md         ← story index
 │       └── story-*.md        ← one file per story

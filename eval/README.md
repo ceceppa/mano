@@ -294,6 +294,12 @@ phase. A phase seeded with both a `stories-README.md` and a `progress.md` is a
 deliberately invalid state — `build-two-ledgers` asserts it is reported, not
 resolved by guessing.
 
+A seeded ledger is stamped **last**, so `state.js` never reports a seeded
+optional artifact as "changed after the ledger was last written". A fixture
+cannot express mtime intent, and copy order alone would otherwise make every
+fixture that pairs `progress.md` with `tech-spec.md` carry a permanent,
+meaningless advisory. Seeded state is coherent by definition.
+
 Add `"run_mode": "auto"` to pin a case's run mode. The temp project has no Git
 config for the harness to write, so the value travels as the documented
 `MANO_MODE` override. Use it where the contract must hold *because* the chain is
@@ -359,6 +365,57 @@ row overflows a turn's output budget, and the `--expect-phase-id` owner guard
 needs the owner to change *between* two commands. Both are covered in
 `test/scripts/progress.test.js`. Prefer a deterministic test wherever a property
 can be decided by a script — the same trade `verify.js` and `state.js` made.
+
+### Grouping cases, and what a fixture cannot show
+
+`mano build` may cover several contiguous leaves of one brief category in a
+single pass. Grouping changes how many rows one *turn* covers, and the final
+ledger does not record pass boundaries — so "it grouped" is not directly
+observable from a finished run. The cases assert the properties that must hold
+whether it grouped or not:
+
+- `build-single-pass` builds a two-level brief from scratch. Its first category
+  has four leaves on one surface, deliberately more than one comfortable pass:
+  since there is **no numeric cap**, the honest check is that every row it
+  closed is genuinely proven, each Exit leaf exercised in its own process.
+  Taking fewer rows always passes; closing a row it could not prove does not.
+- `build-group-boundary` puts a spec-owned default gap in category 2, which
+  turns the category boundary into an observable stop: the leaves before it
+  close and work, the blocked leaf stays `pending`, no capacity value is
+  invented, and the gap routes to `mano spec`. Its second step proves a partial
+  pass resumes at the first unresolved leaf instead of closing what it could not
+  build.
+- `build-resume` keeps the flat fixture and asserts a flat brief never grows
+  lettered leaves — two-level scope is a new-brief shape, not a migration.
+
+Three grouping rules cannot be provoked by any fixture and are pinned in
+`test_implementation_entry_contract.py` instead: stopping at a *surface*
+boundary and stopping for *budget* certainty both depend on a turn boundary no
+fixture can force, and "a correction or split row is never grouped" is a
+statement about a pass that only ever contains one row anyway. The same file
+pins that the entry rule's six clauses exist, in order, at every operational
+site — the drift wave 4 fixed was prose agreeing with the rule beside an
+operational block that did not.
+
+### Invocation-argument cases
+
+`mano build "<text>"` is a correction channel, never a scope channel, and it is
+accepted only when a valid ledger exists. Each classifier case passes the text
+as a real quoted argument, because the channel is part of what is under test:
+
+| case | what it pins |
+|---|---|
+| `build-defect-reopen` | **A** — reopen the promised rows before any code; append nothing |
+| `build-arg-distinct-outcome` | **B** — no row, no code, offered to the backlog (not `mano start`) |
+| `build-scope-refusal-auto` | **B** again, with the chain armed — auto removes typing, not decisions |
+| `build-nuance-row` | **C** — a `+N` row carrying the exact words, linked to an Exit leaf |
+| `build-nuance-spec-gap` | **C** whose nuance needs a default no artifact owns — no code |
+| `build-arg-rework-precedence` | a pending `R…` event outranks the argument; nothing is written |
+| `build-arg-no-ledger` | with no ledger, no ledger is created to hold it, and it routes to `mano start` |
+
+`build-auto-direct` is the whole path in one case: `mano import` → `mano start`
+→ approval, in auto, ending at `mano build` with no story file anywhere and no
+review entry.
 
 ## Notes / limits
 
