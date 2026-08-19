@@ -12,6 +12,8 @@ STATE_SCRIPT = REPO_ROOT / "src" / "scripts" / "state.js"
 BACKLOG_SCRIPT = REPO_ROOT / "src" / "scripts" / "backlog.js"
 STORIES_SCRIPT = REPO_ROOT / "src" / "scripts" / "stories.js"
 OWNER_SCRIPT = REPO_ROOT / "src" / "scripts" / "owner.js"
+MODE_SCRIPT = REPO_ROOT / "src" / "scripts" / "mode.js"
+TRACK_SCRIPT = REPO_ROOT / "src" / "scripts" / "track.js"
 
 OPEN_SPEC_BLOCK = """### Open spec
 - **Type:** spec-gap
@@ -189,12 +191,60 @@ class ManoScriptTests(unittest.TestCase):
             env=env,
         )
 
+    def run_mode(self, *args, env_mode=None):
+        env = os.environ.copy()
+        env.pop("MANO_MODE", None)
+        if env_mode is not None:
+            env["MANO_MODE"] = env_mode
+        return subprocess.run(
+            ["node", str(MODE_SCRIPT), *args],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def run_state_with_mode(self, env_mode, *args):
+        env = os.environ.copy()
+        env["MANO_MODE"] = env_mode
+        return subprocess.run(
+            ["node", str(STATE_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def run_state_with_track(self, track, *args):
+        env = os.environ.copy()
+        env["MANO_TRACK"] = track
+        return subprocess.run(
+            ["node", str(STATE_SCRIPT), *args, str(self.root)],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
     def run_owner(self, *args):
         return subprocess.run(
             ["node", str(OWNER_SCRIPT), *args],
             cwd=self.root,
             text=True,
             capture_output=True,
+        )
+
+    def run_track(self, *args, env_track=None):
+        env = os.environ.copy()
+        env.pop("MANO_TRACK", None)
+        if env_track is not None:
+            env["MANO_TRACK"] = env_track
+        return subprocess.run(
+            ["node", str(TRACK_SCRIPT), *args],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
         )
 
     def run_backlog_here(self, *args):
@@ -255,6 +305,24 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("cannot read _mano_output/backlog.md", result.stderr)
         self.assertNotIn("COUNT: 0", result.stdout)
 
+    def test_scope_and_gap_projections_reject_malformed_items(self):
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Missing status
+- **Type:** rule-gap
+- **Context:**
+  The filter cannot classify this item safely.
+""")
+
+        for args in (("--scope",), ("--gaps", "rule-gap")):
+            with self.subTest(args=args):
+                result = self.run_state(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("malformed backlog item", result.stderr)
+                self.assertNotIn("(none)", result.stdout)
+
     def test_gap_projection_rejects_invalid_or_conflicting_modes(self):
         self.backlog.write_text(MIXED_BACKLOG)
         for args in (
@@ -266,6 +334,184 @@ class ManoScriptTests(unittest.TestCase):
             with self.subTest(args=args):
                 result = self.run_state(*args)
                 self.assertNotEqual(result.returncode, 0)
+
+    def test_scope_projection_filters_open_items_by_source(self):
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Piano keyboard interactions
+- **Type:** feature
+- **Source:** Piano brief
+- **Context:**
+  Play a mapped note from the keyboard.
+- **Status:** backlog
+
+### Piano tutorial polish
+- **Type:** refinement
+- **Source:** piano playtest notes
+- **Context:**
+  Make the first interaction easier to discover.
+- **Status:** backlog
+
+### Garden controls
+- **Type:** feature
+- **Source:** Garden brief
+- **Context:**
+  Place a seed in a plot.
+- **Status:** backlog
+""")
+
+        result = self.run_state("--scope", "--source", "PIANO")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Source contains "PIANO" (2)', result.stdout)
+        self.assertIn("Piano keyboard interactions", result.stdout)
+        self.assertIn("Piano tutorial polish", result.stdout)
+        self.assertNotIn("Garden controls", result.stdout)
+
+        no_match = self.run_state("--scope", "--source", "unknown")
+        self.assertEqual(no_match.returncode, 0, no_match.stderr)
+        self.assertIn('Source contains "unknown" (0)', no_match.stdout)
+
+    def test_source_filter_requires_scope_and_text(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        for args in (("--source", "Phase 2"), ("--next", "--source", "Phase 2")):
+            with self.subTest(args=args):
+                result = self.run_state(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("--source", result.stderr)
+
+    def test_scope_projection_filters_by_source_and_track(self):
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Option B keyboard
+- **Type:** feature
+- **Source:** Piano brief
+- **Track:** Option B
+- **Context:**
+  Play notes with mapped keyboard keys.
+- **Status:** backlog
+
+### Option A keyboard
+- **Type:** feature
+- **Source:** Piano brief
+- **Track:** Option A
+- **Context:**
+  Play notes with mapped keyboard keys.
+- **Status:** backlog
+
+### Option B garden
+- **Type:** feature
+- **Source:** Garden brief
+- **Track:** option b
+- **Context:**
+  Place a seed in a plot.
+- **Status:** backlog
+
+### Option B human-edited track
+- **Type:** feature
+- **Source:** Legacy notes
+- **Track**: Option B
+- **Context:**
+  Preserve compatible Markdown written by a human.
+- **Status:** backlog
+
+### Untracked piano cleanup
+- **Type:** refinement
+- **Source:** Piano review
+- **Context:**
+  Clarify the first interaction.
+- **Status:** backlog
+""")
+
+        # Explicit Source and Track form an intersection. Track is exact but
+        # case-insensitive; Source remains a case-insensitive substring.
+        result = self.run_state("--scope", "--source", "piano", "--track", "OPTION B")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Source contains "piano"; Track is "OPTION B" (1)', result.stdout)
+        self.assertIn("TRACK: OPTION B", result.stdout)
+        self.assertIn("Option B keyboard", result.stdout)
+        self.assertNotIn("Option A keyboard", result.stdout)
+        self.assertNotIn("Option B garden", result.stdout)
+        self.assertNotIn("Untracked piano cleanup", result.stdout)
+
+        # A configured track automatically constrains the normal scope path;
+        # items with no Track field never sneak into an active track.
+        active = self.run_state_with_track("Option B", "--scope")
+        self.assertEqual(active.returncode, 0, active.stderr)
+        self.assertIn('Track is "Option B" (3)', active.stdout)
+        self.assertIn("Option B keyboard", active.stdout)
+        self.assertIn("Option B garden", active.stdout)
+        self.assertIn("Option B human-edited track", active.stdout)
+        self.assertNotIn("Option A keyboard", active.stdout)
+        self.assertNotIn("Untracked piano cleanup", active.stdout)
+
+        no_match = self.run_state("--scope", "--track", "Option C")
+        self.assertEqual(no_match.returncode, 0, no_match.stderr)
+        self.assertIn('Track is "Option C" (0)', no_match.stdout)
+
+    def test_resume_draft_keeps_exact_phase_assignments_and_excludes_closed_work(self):
+        (self.output / "phase-2").mkdir()
+        self.backlog.write_text("""# Backlog
+
+## Items
+
+### Assigned option A
+- **Type:** feature
+- **Track:** Option A
+- **Context:**
+  Already assigned before the interrupted brief write.
+- **Status:** in-phase-2
+
+### Open option B
+- **Type:** feature
+- **Track:** Option B
+- **Context:**
+  Must stay outside the interrupted Option A phase.
+- **Status:** backlog
+
+### Open option A
+- **Type:** feature
+- **Track:** Option A
+- **Context:**
+  Still available for confirmation in the interrupted phase.
+- **Status:** backlog
+
+### Resolved option B
+- **Type:** feature
+- **Track:** Option B
+- **Context:**
+  Historical work must stay closed.
+- **Status:** resolved
+
+### Other phase option B
+- **Type:** feature
+- **Track:** Option B
+- **Context:**
+  Work assigned elsewhere must not enter recovery.
+- **Status:** in-phase-1
+""")
+
+        result = self.run_state_with_track("Option B", "--scope")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("NEXT: resume-draft", result.stdout)
+        self.assertIn("TRACK: Option A", result.stdout)
+        self.assertIn("Assigned option A", result.stdout)
+        self.assertIn("Open option A", result.stdout)
+        self.assertNotIn("Open option B", result.stdout)
+        self.assertNotIn("Resolved option B", result.stdout)
+        self.assertNotIn("Other phase option B", result.stdout)
+
+    def test_track_filter_requires_scope_and_text(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        for args in (("--track", "Option B"), ("--next", "--track", "Option B"), ("--scope", "--track", "")):
+            with self.subTest(args=args):
+                result = self.run_state(*args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("--track", result.stderr)
 
     def test_spec_projection_exposes_only_current_phase_and_open_spec_gaps(self):
         phase = self.output / "phase-3"
@@ -568,6 +814,42 @@ class ManoScriptTests(unittest.TestCase):
         self.assertEqual(second.returncode, 0, second.stderr)
         self.assertIn("already resolved", second.stdout)
         self.assertEqual(self.backlog.read_text(), expected)
+
+    def test_backlog_writer_persists_source_and_track_as_distinct_metadata(self):
+        result = self.run_backlog(
+            "add", "--title", "Option B review follow-up", "--type", "refinement",
+            "--source", "phase-1 review", "--track", "Option B",
+            "--context", "Clarify the first interaction.",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Track: Option B", result.stdout)
+        written = self.backlog.read_text()
+        self.assertIn("- **Source:** phase-1 review", written)
+        self.assertIn("- **Track:** Option B", written)
+
+    def test_bulk_add_prints_each_track_including_undefined(self):
+        items = self.root / "items.json"
+        items.write_text(json.dumps([
+            {
+                "title": "Tracked review item",
+                "type": "refinement",
+                "context": "Keep this experiment grouped.",
+                "source": "phase-1 review",
+                "track": "Option B",
+            },
+            {
+                "title": "Untracked review item",
+                "type": "refinement",
+                "context": "Expose the missing track.",
+                "source": "phase-1 review",
+            },
+        ]))
+
+        result = self.run_backlog("add", "--file", str(items))
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("  + Tracked review item\n    Track: Option B\n", result.stdout)
+        self.assertIn("  + Untracked review item\n    Track: undefined\n", result.stdout)
 
     def test_resolve_gap_refuses_unsafe_targets_without_writing(self):
         attempts = (
@@ -892,6 +1174,31 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("| 1 | Owned story | story-1-owned.md | pending |", index.read_text())
         self.assertFalse((self.output / "phase-2").exists())
 
+    def test_stories_status_update_fails_atomically_for_a_missing_row(self):
+        created = self.run_stories_as(
+            "alice", "add-row", "--phase", "2", "--story", "1",
+            "--title", "Owned story", "--file", "story-1-owned.md",
+            "--project", "Demo",
+        )
+        self.assertEqual(created.returncode, 0, created.stderr)
+        index = self.output / "alice-phase-2" / "stories" / "README.md"
+
+        missing = self.run_stories_as(
+            "alice", "set-status", "--phase", "2", "--story", "1",
+            "--story", "99", "--status", "done",
+        )
+
+        self.assertNotEqual(missing.returncode, 0)
+        self.assertIn("no matching row for 99", missing.stderr)
+        self.assertIn("| 1 | Owned story | story-1-owned.md | pending |", index.read_text())
+
+        updated = self.run_stories_as(
+            "alice", "set-status", "--phase", "2", "--story", "1",
+            "--status", "done",
+        )
+        self.assertEqual(updated.returncode, 0, updated.stderr)
+        self.assertIn("| 1 | Owned story | story-1-owned.md | done |", index.read_text())
+
     def test_owned_review_closes_only_with_matching_owner_heading(self):
         phase = self.output / "alice-phase-1"
         stories = phase / "stories"
@@ -919,6 +1226,95 @@ class ManoScriptTests(unittest.TestCase):
         data = json.loads(matching.stdout)
         self.assertTrue(data["reviewEntry"])
         self.assertTrue(data["closed"])
+
+    def test_run_mode_defaults_to_manual_and_is_an_explicit_local_opt_in(self):
+        initialized = subprocess.run(
+            ["git", "init"], cwd=self.root, text=True, capture_output=True
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+
+        # A project that never opted in is manual, and says so as a default.
+        shown = self.run_mode("show", str(self.root))
+        self.assertEqual(shown.returncode, 0, shown.stderr)
+        self.assertIn("manual (default)", shown.stdout)
+        self.assertIn("MODE: manual", self.run_state().stdout)
+
+        # `mano mode auto` is the natural spelling — no `set` required.
+        enabled = self.run_mode("auto", str(self.root))
+        self.assertEqual(enabled.returncode, 0, enabled.stderr)
+        self.assertIn("auto", enabled.stdout)
+        self.assertIn("Never runs mano review", enabled.stdout)
+        self.assertIn("auto (git config --local mano.mode)", self.run_mode("show", str(self.root)).stdout)
+
+        cleared = self.run_mode("clear", str(self.root))
+        self.assertEqual(cleared.returncode, 0, cleared.stderr)
+        self.assertIn("manual is active", cleared.stdout)
+        self.assertIn("manual (default)", self.run_mode("show", str(self.root)).stdout)
+
+        for bad in ("turbo", "yolo", "AUTO-ish"):
+            with self.subTest(bad=bad):
+                invalid = self.run_mode("set", bad, str(self.root))
+                self.assertNotEqual(invalid.returncode, 0)
+                self.assertIn("invalid Mano mode", invalid.stderr)
+        # Still manual after every rejected value — a failed set never opts in.
+        self.assertIn("manual (default)", self.run_mode("show", str(self.root)).stdout)
+
+    def test_track_command_is_explicit_local_opt_in_and_can_be_cleared(self):
+        initialized = subprocess.run(
+            ["git", "init"], cwd=self.root, text=True, capture_output=True
+        )
+        self.assertEqual(initialized.returncode, 0, initialized.stderr)
+
+        self.assertIn("no track configured", self.run_track("show", str(self.root)).stdout)
+        enabled = self.run_track("Option B", str(self.root))
+        self.assertEqual(enabled.returncode, 0, enabled.stderr)
+        self.assertIn('track set to "Option B"', enabled.stdout)
+        shown = self.run_track("show", str(self.root))
+        self.assertEqual(shown.returncode, 0, shown.stderr)
+        self.assertIn('"Option B" (git config --local mano.track)', shown.stdout)
+        self.assertIn("TRACK: Option B", self.run_state().stdout)
+
+        overridden = self.run_track("show", str(self.root), env_track="Option A")
+        self.assertEqual(overridden.returncode, 0, overridden.stderr)
+        self.assertIn('"Option A" (MANO_TRACK)', overridden.stdout)
+
+        cleared = self.run_track("clear", str(self.root))
+        self.assertEqual(cleared.returncode, 0, cleared.stderr)
+        self.assertIn("local track cleared", cleared.stdout)
+        self.assertIn("no track configured", self.run_track("show", str(self.root)).stdout)
+
+        for bad in ("", "bad\ntrack", "x" * 121):
+            with self.subTest(bad=bad):
+                invalid = self.run_track("set", bad, str(self.root))
+                self.assertNotEqual(invalid.returncode, 0)
+                self.assertIn("invalid Mano track", invalid.stderr)
+
+    def test_run_mode_reaches_every_projection_a_skill_reads(self):
+        (self.output / "phase-1").mkdir()
+        (self.output / "phase-1" / "phase-brief.md").write_text("# Phase Brief\n")
+        self.backlog.write_text(MIXED_BACKLOG)
+
+        # Skills decide whether to chain from the projection they already run,
+        # so every projection must carry the mode — not just the default one.
+        for args in (
+            [], ["--current"], ["--next"], ["--ui"], ["--spec"],
+            ["--gaps", "rule-gap"],
+        ):
+            with self.subTest(args=args or ["(default)"]):
+                self.assertIn("MODE: auto", self.run_state_with_mode("auto", *args).stdout)
+                self.assertIn("MODE: manual", self.run_state_with_mode("manual", *args).stdout)
+
+        for args in (
+            ["--json"], ["--current", "--json"], ["--ui", "--json"],
+            ["--spec", "--json"], ["--gaps", "rule-gap", "--json"],
+        ):
+            with self.subTest(json_args=args):
+                auto = self.run_state_with_mode("auto", *args)
+                manual = self.run_state_with_mode("manual", *args)
+                self.assertEqual(auto.returncode, 0, auto.stderr)
+                self.assertEqual(manual.returncode, 0, manual.stderr)
+                self.assertEqual(json.loads(auto.stdout)["runMode"], "auto")
+                self.assertEqual(json.loads(manual.stdout)["runMode"], "manual")
 
     def test_owner_command_is_explicit_local_opt_in_and_can_be_cleared(self):
         initialized = subprocess.run(
@@ -974,6 +1370,79 @@ class GapSkillContractTests(unittest.TestCase):
             "node _mano/scripts/backlog.js resolve-gap --type rule-gap", rules
         )
         self.assertIn("Do not open `_mano_output/backlog.md`", rules)
+
+
+class AutoModeContractTests(unittest.TestCase):
+    def test_scope_approval_tokens_are_synonyms_and_arm_the_displayed_chain(self):
+        start = (REPO_ROOT / "src" / "skills" / "start.md").read_text()
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        readme = (REPO_ROOT / "README.md").read_text()
+
+        for text in (start, workflow, readme):
+            self.assertIn("`1` and `go` are exact synonyms", text)
+        self.assertIn(
+            "Approve this scope and run the auto chain shown below.", start
+        )
+        self.assertIn("An edit without `1` or `go`", start)
+
+    def test_auto_planning_keeps_material_ux_and_ui_coverage(self):
+        start = (REPO_ROOT / "src" / "skills" / "start.md").read_text()
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()
+
+        self.assertIn("Planning coverage for user-facing phases", start)
+        self.assertIn("multiple selectors/actions", workflow)
+        self.assertIn("A familiar or “canonical” widget", workflow)
+        self.assertIn("only an explicit approval edit", workflow)
+        self.assertIn("The options require a human answer", stories)
+        self.assertIn("Never choose option 2 or 3 yourself", stories)
+        self.assertIn("explicit `skip ux` / `skip ui`", stories)
+
+    def test_suggest_hook_mode_is_consistent_across_prompt_surfaces(self):
+        prompt_files = [
+            REPO_ROOT / "README.md",
+            REPO_ROOT / "src" / "workflow.md",
+            REPO_ROOT / "src" / "bootstrap" / "AGENTS.md",
+        ]
+        prompt_files.extend((REPO_ROOT / "src" / "skills").glob("*.md"))
+        prompt_files.extend((REPO_ROOT / "src" / "hooks").glob("*.md"))
+
+        for prompt_file in prompt_files:
+            text = prompt_file.read_text()
+            with self.subTest(file=prompt_file.relative_to(REPO_ROOT)):
+                self.assertNotIn(
+                    "Do not run a `suggest` hook automatically.", text
+                )
+                self.assertNotIn(
+                    "When this hook is active, do not run it automatically.", text
+                )
+                self.assertNotIn(
+                    "Do not run the hook without explicit user confirmation.", text
+                )
+
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        agents = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text()
+        hooks_readme = (REPO_ROOT / "src" / "hooks" / "README.md").read_text()
+        for text in (workflow, agents, hooks_readme):
+            self.assertIn("manual mode", text)
+            self.assertIn("armed auto chain", text)
+
+    def test_auto_pause_preserves_chain_and_yolo_can_close_it(self):
+        workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
+        agents = (REPO_ROOT / "src" / "bootstrap" / "AGENTS.md").read_text()
+
+        self.assertIn("- Remaining:", workflow)
+        self.assertIn("approved run plan", workflow)
+        self.assertIn("refresh the state projection", workflow)
+        self.assertIn("Auto-chain exception", agents)
+        self.assertIn("required `[mano auto]` closing block", agents)
+
+    def test_mid_phase_backlog_assignment_is_the_only_stories_exception(self):
+        stories = (REPO_ROOT / "src" / "skills" / "stories.md").read_text()
+
+        self.assertIn("sole exception is the exact `backlog.js assign`", stories)
+        self.assertIn("Do not hand-edit `_mano_output/backlog.md`", stories)
+        self.assertIn("exact user-named item", stories)
 
 
 if __name__ == "__main__":

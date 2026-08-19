@@ -6,6 +6,10 @@
 
 <!-- Specific: "React Native with Expo (managed), TypeScript" not just "React Native". -->
 
+## Project Scaffold
+
+<!-- Greenfield only. If the chosen generator expects an empty target, record its exact guarded command using `node _mano/scripts/scaffold.js run ... -- ... {target}`. Omit when the application is already scaffolded or no generator is needed. -->
+
 ## Libraries & Dependencies
 
 <!-- Use exact versions only when syncing from a real manifest or lockfile. Otherwise keep the install command provisional instead of inventing a version number here. -->
@@ -20,6 +24,8 @@
 |--------|--------|-------|
 | | | |
 
+<!-- When an Exit Criterion depends on a starting or first-use state, name the owning initial/default field here (for example initial_radius, starting_capacity, or initial_delay). Never leave that value to a story. -->
+
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
 ## Public / Integration Interface Contracts
 
@@ -27,6 +33,12 @@
 
 | Surface | Exact operation / event | Inputs & defaults | Result / failure | Canonical mapping / ownership |
 |---------|-------------------------|-------------------|------------------|-------------------------------|
+| | | | | |
+
+<!-- For fluent/builder/pipeline APIs, also trace chain closure. Omit otherwise. -->
+
+| Expression before call | Operation / modifier | Exact returned type | Context retained | Terminals still callable |
+|------------------------|----------------------|---------------------|------------------|--------------------------|
 | | | | | |
 <!-- /mano-rule: public-interface-contract-readiness -->
 

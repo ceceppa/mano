@@ -1,6 +1,7 @@
 # Phase Brief — [Project Name] — Phase [N]
 
 <!-- Owner-scoped mode only: add `**Owner:** [slug]` below. Omit it entirely for default phase-N mode. -->
+<!-- Active work-track only: add `**Track:** [name]` below. Omit it entirely when no track is selected. -->
 
 <!-- Self-contained. Everything needed to understand this phase is here. -->
 
@@ -45,6 +46,19 @@
 ## Exit Criteria
 
 <!-- What a real person can do when this phase is done. -->
+
+## Validation Plan
+
+<!-- This plan captures learning. Exit Criteria still captures every promised result. -->
+
+### Questions
+
+- [One concrete question per bullet. Every question needs a matching test below.]
+
+### Try
+
+- [What the human will use, show, play, or measure to answer a question]
+- [What result the human will watch for]
 
 ## Assumption Log
 

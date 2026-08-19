@@ -890,6 +890,64 @@ def review_triage_wrote_nothing_yet(ctx: Ctx) -> list[Failure]:
     return failures
 
 
+def review_preserved_positive_summary(ctx: Ctx) -> list[Failure]:
+    failures = []
+    reviews_path = ctx.output_dir / "reviews.md"
+    if not reviews_path.is_file():
+        return [Failure(
+            "review_preserved_positive_summary",
+            "reviews.md was not written after the explicit close",
+        )]
+
+    review = reviews_path.read_text(encoding="utf-8")
+    checks = {
+        "summary result": bool(re.search(
+            r"\*\*(?:Result|Observed):\*\*[^\n]*(?:all went as planned|everything went as planned)",
+            review,
+            re.IGNORECASE,
+        )),
+        "passed phase promise": bool(re.search(
+            r"\|[^\n]*save[^\n]*\|\s*passed\s*\|",
+            review,
+            re.IGNORECASE,
+        )),
+        "confirmed assumption": bool(re.search(
+            r"\|[^\n]*Save button[^\n]*\|\s*confirmed\s*\|",
+            review,
+            re.IGNORECASE,
+        )),
+    }
+    failures.extend(
+        Failure("review_preserved_positive_summary", f"missing {label}")
+        for label, present in checks.items()
+        if not present
+    )
+
+    if re.search(r"\*\*(?:Level|Status|Tried):\*\*", review, re.IGNORECASE):
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "review retained the removed evidence grading fields",
+        ))
+    if "Not recorded" in review:
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "review printed a missing-field placeholder",
+        ))
+    if re.search(r"\*\*Checked with:\*\*", review, re.IGNORECASE):
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "review invented optional validation context",
+        ))
+
+    backlog = ctx.backlog() or ""
+    if "**Status:** resolved" not in backlog or "**Status:** in-phase-1" in backlog:
+        failures.append(Failure(
+            "review_preserved_positive_summary",
+            "the explicit close did not resolve the phase backlog item",
+        ))
+    return failures
+
+
 def pending_review_gate_held(ctx: Ctx) -> list[Failure]:
     fails = []
     reviews = ctx.output_dir / "reviews.md"
@@ -1034,6 +1092,104 @@ def existing_stories_unchanged(ctx: Ctx) -> list[Failure]:
     if not brief.is_file() or brief.read_text(encoding="utf-8") != MIDBUILD_PHASE_BRIEF:
         fails.append(Failure("existing_stories_unchanged", "phase brief input was modified"))
     return fails
+
+
+# --- mano stories: pulling a backlog item into an already-open phase ---------
+
+MIDPHASE_PULLED_ITEM = "Show export progress while a file is written"
+MIDPHASE_OUT_OF_GOAL_ITEM = "Sync notes to a hosted account"
+
+
+def _backlog_status_of(text: str, title: str) -> str | None:
+    """The Status of one exact `### title` block, or None if absent."""
+    blocks = re.split(r"^###\s+", text or "", flags=re.MULTILINE)
+    for block in blocks[1:]:
+        lines = block.split("\n")
+        if lines[0].strip().lower() != title.lower():
+            continue
+        found = re.search(r"^-\s*\*\*Status:\*\*\s*(.+?)\s*$", block, re.MULTILINE)
+        return found.group(1).strip().lower() if found else None
+    return None
+
+
+def midphase_item_assigned_to_open_phase(ctx: Ctx) -> list[Failure]:
+    failures = []
+    backlog = ctx.backlog() or ""
+
+    status = _backlog_status_of(backlog, MIDPHASE_PULLED_ITEM)
+    if status is None:
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f'backlog item "{MIDPHASE_PULLED_ITEM}" is gone from the backlog',
+            )
+        )
+    elif status != "in-phase-2":
+        # Still `backlog` means the story was written over an unassigned item;
+        # anything else means a status was invented.
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f'named item was not assigned to the open phase: Status is "{status}", expected "in-phase-2"',
+            )
+        )
+
+    # Only the item the user named may move. The out-of-goal item is the trap.
+    untouched = _backlog_status_of(backlog, MIDPHASE_OUT_OF_GOAL_ITEM)
+    if untouched != "backlog":
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f'an item the user did not name changed status: "{MIDPHASE_OUT_OF_GOAL_ITEM}" is "{untouched}"',
+            )
+        )
+
+    # A story must exist for the pulled-in work, and the index must know it.
+    readme = ctx.readme() or ""
+    story_rows = [r for r in readme.split("\n") if "|" in r and "progress" in r.lower()]
+    if not story_rows:
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                "no story row was added to the index for the pulled-in item",
+            )
+        )
+    if not any("progress" in name.lower() for name in ctx.story_texts()):
+        failures.append(
+            Failure(
+                "midphase_item_assigned_to_open_phase",
+                f"no story file was written for the pulled-in item; files: {sorted(ctx.story_texts())}",
+            )
+        )
+    return failures
+
+
+def midphase_brief_untouched_and_flagged(ctx: Ctx) -> list[Failure]:
+    failures = []
+
+    # The brief belongs to mano start. Growing the phase must be flagged, never
+    # written into an artifact this skill does not own.
+    brief = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if not brief.is_file():
+        failures.append(Failure("midphase_brief_untouched_and_flagged", "phase brief is missing"))
+    elif brief.read_text(encoding="utf-8") != MIDBUILD_PHASE_BRIEF:
+        failures.append(
+            Failure(
+                "midphase_brief_untouched_and_flagged",
+                "mano stories edited the phase brief; it must flag the scope change instead",
+            )
+        )
+
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not re.search(r"⚠\s*Verify", text, re.IGNORECASE):
+        compact = " ".join(text.strip().split())
+        failures.append(
+            Failure(
+                "midphase_brief_untouched_and_flagged",
+                f"phase scope grew with no ⚠ Verify flag; runner output ended: {compact[-400:]!r}",
+            )
+        )
+    return failures
 
 
 # --- mano ui: project brief + phase-local preview ownership -----------------
@@ -1203,6 +1359,50 @@ def ui_no_phase_preview_routes_to_start(ctx: Ctx) -> list[Failure]:
     if missing:
         return [Failure(assertion, f"response missing {missing}: {text!r}")]
     return []
+
+
+# --- mano start: rules visibility for a new category -------------------------
+
+def start_kept_rules_visible_for_new_category(ctx: Ctx) -> list[Failure]:
+    """`mano rules` must survive the existence filter when the phase adds a category.
+
+    The fixture ships a substantive project-rules.md and a current tech-spec.md
+    on purpose: an existence-only next-action filter skips both, which is the
+    exact shape that hid `mano rules` in the reported incident.
+    """
+    assertion = "start_kept_rules_visible_for_new_category"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    failures = []
+
+    # Only the next-action block counts. Naming the skill while explaining that
+    # rules already exist is the failure, not the pass.
+    tail = text
+    marker = re.search(r"^\s*Next:", text, re.IGNORECASE | re.MULTILINE)
+    if marker:
+        tail = text[marker.start():]
+    if not re.search(r"mano[\s-]+rules", tail, re.IGNORECASE):
+        compact = " ".join(text.strip().split())
+        failures.append(
+            Failure(
+                assertion,
+                "next actions omitted `mano rules` although the phase introduces a new "
+                f"example category; output ended: {compact[-500:]!r}",
+            )
+        )
+
+    # The brief is still mano start's deliverable — a next-action fix must not
+    # come at the cost of skipping the phase itself.
+    brief = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if not brief.is_file():
+        failures.append(Failure(assertion, "no phase brief was written for the approved scope"))
+
+    # project-rules.md belongs to mano rules; mano start may not write it.
+    rules = ctx.output_dir / "project-rules.md"
+    if rules.is_file() and rules.read_text(encoding="utf-8") != (ctx.fixture_text("project-rules.md") or ""):
+        failures.append(
+            Failure(assertion, "mano start edited project-rules.md; it may only suggest `mano rules`")
+        )
+    return failures
 
 
 # --- public-interface planning readiness ------------------------------------
@@ -1658,12 +1858,18 @@ REGISTRY = {
     "selected_hook_finding_applied_only_in_spec": selected_hook_finding_applied_only_in_spec,
     # review hard gate
     "pending_review_gate_held": pending_review_gate_held,
+    # mano start: rules visibility
+    "start_kept_rules_visible_for_new_category": start_kept_rules_visible_for_new_category,
     # review: rejected scope
     "review_surfaced_rejection_candidates": review_surfaced_rejection_candidates,
     "review_triage_wrote_nothing_yet": review_triage_wrote_nothing_yet,
+    "review_preserved_positive_summary": review_preserved_positive_summary,
     # stories mid-build
     "midbuild_lettered_story_inserted": midbuild_lettered_story_inserted,
     "existing_stories_unchanged": existing_stories_unchanged,
+    # stories: pulling a backlog item into an already-open phase
+    "midphase_item_assigned_to_open_phase": midphase_item_assigned_to_open_phase,
+    "midphase_brief_untouched_and_flagged": midphase_brief_untouched_and_flagged,
     # mano ui
     "ui_phase_preview_owned_by_current_phase": ui_phase_preview_owned_by_current_phase,
     "ui_cumulative_brief_extended": ui_cumulative_brief_extended,

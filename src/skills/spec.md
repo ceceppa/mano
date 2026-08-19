@@ -21,7 +21,7 @@ This skill activates when the user types `mano spec`. When inputs are missing, f
 
 On activation:
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-1. Run `node _mano/scripts/state.js --spec`. Its `SPEC INPUT` is the complete backlog-derived context for this skill: the selected owner namespace's exact current-phase item blocks plus unresolved `spec-gap` items. **Do not open `_mano_output/backlog.md` before or after this command.** Treat the projection as valid only when all of these integrity checks pass: the exact opening `--- SPEC INPUT (from the state script — do NOT open _mano_output/backlog.md) ---` and exact closing `--- END SPEC INPUT ---` sentinels are present; `STATUS: READY`, `OWNER:`, `PHASE:`, `PHASE_ID:`, `PHASE_DIR:`, `BRIEF:`, `IN_PHASE_STATUS:`, `IN_PHASE_COUNT:`, and `SPEC_GAP_COUNT:` are present; `END_IN_PHASE_COUNT` and `END_SPEC_GAP_COUNT` equal their matching header counts; and the number and sequence of matching BEGIN/END item envelopes equals each count. **Any tool/runtime notice that output was truncated, elided, or omitted invalidates the projection regardless of which sentinels survived.** If the command fails or any integrity check fails, stop and report the exact failure; do not inspect the script source, another skill such as `start.md`, or the backlog to reconstruct its result. Never construct `phase-N` from the numeric field; use the exact projected paths. Phase-item context is input evidence, not permission to expand the approved phase: if it conflicts with the phase brief, surface the conflict instead of silently combining them.
+1. Run `node _mano/scripts/state.js --spec`. Its `SPEC INPUT` is the complete backlog-derived context for this skill: the selected owner namespace's exact current-phase item blocks plus unresolved `spec-gap` items. **Do not open `_mano_output/backlog.md` before or after this command.** Treat the projection as valid only when all of these integrity checks pass: the exact opening `--- SPEC INPUT (from the state script — do NOT open _mano_output/backlog.md) ---` and exact closing `--- END SPEC INPUT ---` sentinels are present; `STATUS: READY`, `MODE:`, `OWNER:`, `PHASE:`, `PHASE_ID:`, `PHASE_DIR:`, `BRIEF:`, `IN_PHASE_STATUS:`, `IN_PHASE_COUNT:`, and `SPEC_GAP_COUNT:` are present; `END_IN_PHASE_COUNT` and `END_SPEC_GAP_COUNT` equal their matching header counts; and the number and sequence of matching BEGIN/END item envelopes equals each count. **Any tool/runtime notice that output was truncated, elided, or omitted invalidates the projection regardless of which sentinels survived.** If the command fails or any integrity check fails, stop and report the exact failure; do not inspect the script source, another skill such as `start.md`, or the backlog to reconstruct its result. Never construct `phase-N` from the numeric field; use the exact projected paths. Phase-item context is input evidence, not permission to expand the approved phase: if it conflicts with the phase brief, surface the conflict instead of silently combining them.
 <!-- /mano-rule: public-interface-contract-readiness -->
 2. Read the phase brief from the exact `BRIEF` path printed by the projection.
 3. Read `_mano_output/tech-spec.md` if it exists.
@@ -35,10 +35,16 @@ On activation:
 
 **Change-ripple — when the requested change introduces a new mechanism.** A change is rarely just the line it names. When a requested edit swaps in a new node type, interface, entity, or capability (e.g. a single value becomes a collection, a static field becomes computed, a plain-text field becomes rich text), that new mechanism *brings its own required data* — and the localized edit will home the named thing while silently leaving the new data unhomed. Do not apply such a change as a one-line swap. Re-run the Domain model completeness check and, when a consumer-visible or independently-owned cross-component surface is involved, the Public interface completeness check. List what the new mechanism needs to work; home each requirement or **explicitly defer it in writing** (an Assumption Log / deferral note), naming its future owner. This is decisive, not interrogative — make the logical assumption and record it; do not stop to ask the user step-by-step. Surface anything newly required-but-unhomed as a bullet in the completion log.
 
-Do not conclude "consistent, no updates needed" until all four checks have run clean. Apply required non-conflicting updates directly in the same run and report them in the completion log; do not present a pre-write diff and ask for routine apply confirmation. If the checks expose a conflicting shared value or another decision the workflow reserves for the human, stop before writing that conflict and surface the exact alternatives. If nothing has changed and no spec-gaps exist, say so and skip the write.
+Do not conclude "consistent, no updates needed" until all four checks and the Phase-promise consistency gate have run clean. Apply required non-conflicting updates directly in the same run and report them in the completion log; do not present a pre-write diff and ask for routine apply confirmation. If the checks expose a conflicting shared value or another decision the workflow reserves for the human, stop before writing that conflict and surface the exact alternatives. If nothing has changed and no spec-gaps exist, say so and skip the write.
 
 8. If spec doesn't exist yet, generate from scratch using the projected current-phase items and gaps as requirements for the initial artifact.
 <!-- /mano-rule: public-interface-contract-readiness -->
+
+<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+**Phase-promise consistency — hard gate.** Build a small requirement ledger from the current phase's `Phase Goal` and every `Exit Criteria` action/result, including nested bullets. For each promised result, identify the data, state transition, gate, and public/user route that make it possible in the current-state spec. Then search the whole spec for its opposite or a stale deferral—for example, the brief says a pending item becomes recoverable while another spec paragraph says it remains locked, unavailable, unwired, deferred, or returns failure. A positive statement in one section never cancels a negative statement elsewhere.
+
+When the current phase deliberately advances something an earlier phase left locked or unimplemented, replace the stale decision in place and define the newly required transition/prerequisites. Do not preserve the earlier limitation as current truth merely because it already exists in the spec. If the two outcomes reflect a real unresolved product decision, stop before writing and raise `❓ Decide:` with the conflicting brief promise and spec statement. Do not confirm or log the spec as complete while any ledger row has no enabling decision or has an opposing decision elsewhere.
+<!-- /mano-rule: phase-acceptance-integrity -->
 
 This same command is also how sync-back works after real project setup. Rerun `mano spec` when:
 - the project was just initialized and now has a real lockfile
@@ -149,6 +155,10 @@ The Drain check removes things that don't belong; this one captures things that 
 
 Run it mechanically: list every quantity the implementation will need (scan the spec and the brief it came from). For each, write down the named field/config/constant that holds it and **which entity owns it** — and be deliberate about values that belong to a collection or process rather than to an individual record (e.g. "how many to spawn" belongs to whatever does the spawning, not to the thing being spawned), since those are the ones most easily attached to the wrong entity. Any quantity for which you cannot name a home is the defect: add the field or named constant to the spec before writing. This is the capture-direction face of "one canonical home": the Drain check pushes mislocated values out, this check pulls unhomed values in.
 
+**Exit-state sweep — mandatory, not a prose skim.** Read every Phase Brief Exit Criterion, including nested action/result bullets, for initial and first-use conditions. Terms such as “small area”, “starting amount”, “initial capacity”, “first wave”, “after a delay”, “within range”, or “enough room” often hide a value even when no numeral appears. When code needs that value to create, validate, or test the promised state, resolve it to a named spec-owned field/config/constant and exact value or relationship. A starting healed area, for example, requires an `initial_radius` owner; if a later unlock must make a footprint possible, define its `radius_increase` relationship alongside it. Do not let a later story choose either value.
+
+When the exact value is a product/gameplay tradeoff rather than a safe technical consequence, raise `❓ Decide:` and keep stories conditional on the answer. Otherwise choose the smallest consistent value, record the rationale in the spec, and state the owner. Never conceal the missing decision with a story-owned default, an implementation note, or an arbitrary literal.
+
 **Quantities are not the only unhomed values.** A **policy default** — a new rule's default severity, an enabled/disabled default, an enum choice — drives behaviour exactly like a number does, and slips past a scan that only looks for counts and thresholds. When the spec introduces a mechanism that carries a policy (a new validation rule, a new mode, a new check), its default is a value this check covers: name where it's stated. And **sweep the brief's `Acknowledged Risks`**: when a risk names a decision the spec owns ("severity needs a deliberate call, not a default guess"), the spec must either state that decision — with its one-line reason — or raise it as a `❓ Decide:` in the completion output. Leaving it unstated hands the call to the implementer, which is the exact outcome the risk was recorded to prevent.
 
 ## Artifact boundary
@@ -241,6 +251,18 @@ When a package manager is detectable, name it explicitly and use matching comman
 
 Include developer tooling (linting, formatting, type-checking, testing, codegen) when it's a meaningful project decision. If the stack makes the choice obvious or it's pure boilerplate, keep it compact.
 
+### Greenfield scaffold safety
+
+When the project has no real application manifest yet and the chosen stack normally begins with a project generator, add a `## Project Scaffold` section containing the exact generator command wrapped by Mano's staged runner:
+
+```bash
+node _mano/scripts/scaffold.js run --name [stable-project-slug] -- [generator command with {target} as its destination]
+```
+
+`{target}` is a literal required token, not prose. The runner replaces it with an empty directory outside the project, preflights the generated tree, and merges only non-conflicting files. Never specify `.` or the project root as the generator's destination. Never prescribe moving `_mano`, `_mano_output`, `.git`, `AGENTS.md`, or any existing project file out of the way and restoring it later. Do not use a raw generator command plus `cp`, `mv`, `rsync`, or manual cleanup as an alternative.
+
+Keep the wrapper only for creation of the application scaffold. Ordinary dependency additions still use the package-manager install commands above. If the app already has a real manifest or lockfile, reconcile the spec with it instead of proposing a new scaffold.
+
 ## Domain model completeness check
 
 When the phase includes domain mechanics, game rules, workflows, entities, state machines, or non-trivial business logic, `mano spec` must define the minimum data model needed to implement and test the phase.
@@ -276,7 +298,18 @@ Build a compact interface matrix from the phase brief **and every projected curr
 - ownership/lifetime, evaluation timing for relative/lazy/dynamic values, or state transition when it changes how the interface is used;
 - semantic-to-canonical mapping when the interface is a convenience layer, adapter, alias, serializer, or protocol translation.
 
+For a fluent, builder, pipeline, query, or composed API, the callable contract is not complete at the first method. Add a compact **chain-closure matrix** that traces every in-scope transition:
+
+| Expression before the call | Operation / modifier | Exact returned type | Context retained | Terminals still callable |
+|---|---|---|---|---|
+
+`Context retained` names any bound target, owner, transaction, request, scheduler, or other state a later terminal needs. A terminal promised after a chain is covered only when it remains callable on the exact returned type of every in-scope leaf, modifier, and composer. Declaring `play()` on one leaf type does not cover `with()`, `then()`, `repeat()`, keyframes, or another operation that returns a wrapper or base type.
+
+Treat words such as “any”, “all”, “entirely fluent”, “combined”, and “after every modifier” as quantified contract claims. Expand the named categories into matrix rows; one happy-path example is not evidence for the rest. If the intended breadth is unclear, raise `❓ Decide:` instead of silently narrowing it.
+
 Names such as “position, relative movement, opacity, and generic property” are only capability families; they do not define callable methods. A heading named “API contract” is not evidence of completeness. If two reasonable method names, argument shapes, property mappings, or failure results would produce materially different consumer code, choose and record the most consistent one or raise `❓ Decide:` when the choice is reserved for the human. Never leave it for `mano stories` or `mano dev` to invent.
+
+A downstream citation counts only when the cited section or matrix row contains the exact promised operation and path. Do not let a nearby playback section, capability list, or related type stand in for a missing terminal contract.
 
 After completing the matrix, compare every row with the surrounding data model, decisions, and prose. The same operation must not acquire a second default, mapping, validation point, ownership rule, or evaluation time elsewhere in the spec. A correct statement in one section does not cancel a contradictory statement in another; resolve the contradiction before writing or confirming the artifact.
 
@@ -286,7 +319,7 @@ When the matrix changes or composes with an interface that the projected context
 
 1. Search only for the named public symbols/types with a narrow text search such as `rg`; do not inventory the codebase or mine source for new requirements.
 2. Read only the declaration/export surface and directly required public types. Do not trace implementation bodies, debug behavior, or broaden phase scope.
-3. Compare actual names, signatures/defaults, return shapes, and language/framework constraints with the proposed matrix.
+3. Compare actual names, signatures/defaults, return shapes, and language/framework constraints with the proposed matrix. For fluent contracts, inspect the declared return type at every named chain boundary and verify that it exposes the promised terminal while retaining the context that terminal needs.
 4. Record an explicit replacement, adapter/alias, or compatible extension. If the source and approved requirement conflict and the resolution changes consumer behavior, raise `❓ Decide:` before stories.
 
 If the named existing interface cannot be located, state that as `⚠ Verify:`; do not pretend compatibility was checked. This bounded exception verifies an already-selected contract—it does not let `mano spec` derive the work list from source.
@@ -331,9 +364,9 @@ targets.
 
 After the spec decision is complete, always check whether `_mano/hooks/post-spec.md` exists. Ignore `_mano/hooks/post-spec.example.md`.
 
-If `_mano/hooks/post-spec.md` exists, prepare the generic hook block for the final chat response. Do not run the hook automatically. Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook. Do not write hook suggestions into generated artifacts.
+If `_mano/hooks/post-spec.md` exists, check its `## Mode`. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; during an armed auto chain it runs automatically and pauses only when findings require triage. See `_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**. Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook. Do not write hook suggestions into generated artifacts.
 
-This step is required even when no spec update was needed. Mention it in the final chat response before the next-action block.
+This check is required even when no spec update was needed. In manual or unarmed runs, mention an active suggest hook before the next-action block; during an armed auto chain, run it instead.
 
 ## After completion
 
@@ -357,7 +390,7 @@ Next:
 Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced project layout.
 - `mano stories` — if the phase is technically clear enough to break into implementable work
-- `mano ux` — only if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase
+- `mano ux` — if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase. For player-facing games, this includes world interaction, placement/selection, progression or unlock actions, available-versus-locked states, and feedback for unmet conditions; a minimal or in-world presentation is still a flow.
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
 - `mano continue` — only if it adds value and there may be a single obvious next step
 

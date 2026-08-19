@@ -21,7 +21,7 @@ When inputs are missing, follow the missing-input protocol in `_mano/workflow.md
 
 On activation:
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
-1. Run `node _mano/scripts/state.js --ui`. Its `UI INPUT` is the only phase-directory discovery for this skill. Do not list or scan phase folders yourself. If the command fails or its output lacks the `UI INPUT`, `STATUS`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `PREVIEW` lines, stop and report the exact failure. Use the exact projected paths; never construct `phase-N` from the number.
+1. Run `node _mano/scripts/state.js --ui`. Its `UI INPUT` is the only phase-directory discovery for this skill. Do not list or scan phase folders yourself. If the command fails or its output lacks the `UI INPUT`, `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `PREVIEW` lines, stop and report the exact failure. Use the exact projected paths; never construct `phase-N` from the number.
 2. `STATUS: BLOCKED` → relay the script's route and stop without writing anything. A phase brief is required because the preview must have an unambiguous phase owner; do not offer to continue without one.
 3. `STATUS: READY` → read the exact `BRIEF` path printed by the script.
 4. Read `_mano_output/ux-flow.md` if it exists — know what screens and navigation exist before designing components.
@@ -35,7 +35,7 @@ On activation:
 
 ## Inputs
 
-- Phase brief (required — warn if missing)
+- Phase brief (required — stop and route to `mano start` if missing)
 - UX flow (recommended — `mano ui` should know what screens exist before designing)
 - Tech spec (optional — constrains component library choices)
 - `_mano_output/project-rules.md` (optional — a11y rules, component patterns)
@@ -81,7 +81,7 @@ Use this format:
 If you don't care, say "default it" and I'll choose.
 ```
 
-If the user gives no preference, says to default it, or says they have no strong opinion, assume these practical defaults:
+If the project rules or existing design brief already records an accessibility target, preserve it. Never downgrade an existing target because the user says to default unrelated preferences. Otherwise, if the user gives no preference, says to default it, or says they have no strong opinion, assume these practical defaults:
 1. **Accessibility level:** Default to `WCAG 2.1 AA`. Record this conservatively.
 2. **Visual style:** Default to `Clean, minimal, high utility`.
 3. **Mode:** Default to `System preference (light/dark supported)`.
@@ -94,7 +94,7 @@ Use the chosen accessibility target in `design-brief.md`. Do not edit `project-r
 
 Write `_mano_output/design-brief.md`:
 - Accessibility target
-- Framework / component library
+- Framework / component library already selected in `tech-spec.md`, when present. Reference or mirror that choice; do not choose a technical dependency here.
 - Colour palette (6-8 colours, hex values)
 - Typography (font, heading sizes, body, caption)
 - Navigation pattern
@@ -127,7 +127,7 @@ Common components to include **only if they appear in the current scope:**
 - Navigation (only the pattern from the UX flow)
 - Feedback (success, error, loading, empty — only states relevant to this phase)
 
-Every value concrete: hex codes, pixel values, component names.
+Make every owned value concrete: hex codes, named components, and dimensions with platform-native units. Use CSS pixels for web, density-independent pixels for Android, and points for iOS. For other platforms, name the unit explicitly.
 
 If the HTML preview includes a sample screen or composed mockup, the design brief must also include a short "Screen Composition" section for that screen. Describe:
 - the screen name
@@ -213,7 +213,7 @@ Re-run the state projection every time; phase identity is disk state, not conver
 - Keep the current visual system and component guide compact enough to review in under five minutes. Aim for roughly 500-900 words plus concise, phase-labelled Screen Composition entries; do not erase valid prior entries merely to meet the target.
 - Each phase HTML preview is one self-contained file with no external dependencies.
 <!-- /mano-rule: ui-phase-preview-ownership -->
-- Make decisions, not suggestions. Every colour has a hex. Every size has a pixel value.
+- Make decisions, not suggestions. Every colour has a hex. Every size names its platform-appropriate unit.
 - Use real content from the phase brief in the sample mockup, not lorem ipsum.
 - Preference capture must stay short. Do not turn `mano ui` into open-ended design discovery.
 
@@ -227,15 +227,15 @@ Ignore this file:
 
 `_mano/hooks/post-ui.example.md`
 
-If an active `post-ui.md` hook exists, prepare the generic hook block for the final chat response.
+If an active `post-ui.md` suggest hook exists in a manual or unarmed run, prepare the generic hook block for the final chat response. During an armed auto chain, run it instead.
 
-Do not run the hook automatically.
+Check the hook's `## Mode` first. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; during an armed auto chain it runs automatically and pauses only when findings require triage (`_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**).
 
 Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
 
 This step is required even when no UI update was needed.
 
-Mention it in the final chat response before the next-action block.
+In manual or unarmed runs, mention it in the final chat response before the next-action block. During an armed auto chain, do not print the suggestion block.
 
 This applies whether the skill:
 - created an artifact
@@ -243,7 +243,7 @@ This applies whether the skill:
 - checked existing artifacts and decided no update was needed
 
 Do not print the hook's suggested prompt unless the user asks to run or view the hook.
-Do not execute the hook without explicit user confirmation.
+Do not execute a `suggest` hook without explicit user confirmation in manual or unarmed runs. An armed auto chain is the workflow-defined exception.
 Do not write hook suggestions into generated artifacts.
 
 ## Forbidden

@@ -2,6 +2,42 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.3.0 — August 10, 2026
+
+### Added
+- **`mano mode auto|manual` adds an explicit, local hands-off option** — `manual` remains the default. After the human approves a phase scope, auto mode runs the approved, phase-specific planning chain through `mano dev yolo`, pauses for every human decision or blocker, and always stops before `mano review` or another phase. The mode lives in repository-local Git config, can be overridden with `MANO_MODE`, and is projected by every `state.js` view, including gap-only and JSON output.
+- **`mano track` adds an optional local experiment filter** — imports and conversational Start items receive the active Track, approved briefs preserve it, and review-created items copy the phase Track. Start can also filter one run by Source, Track, or their intersection without changing priority, scope, or approval.
+- **Hooks now support deterministic `command` mode** — a command hook names one project command that runs after its skill in both manual and auto modes. Existing and mode-less hooks remain `suggest`: Mano asks before running them in manual or unarmed work, while an approved auto chain runs them as the substitute for skipped intermediate human review and pauses if their findings need triage.
+- **Exact backlog items can be pulled into an open phase through `mano stories`** — when the human names an existing item and it fits the already-approved goal, stories may assign that exact title with the backlog writer and add a lettered story. It cannot choose work, hand-edit the backlog, broaden the phase goal, or bypass the normal readiness gates.
+- **Greenfield scaffolding now has a non-destructive runner** — `scaffold.js` runs empty-directory project generators outside the project, preflights every destination, preserves identical files, rejects differing collisions before copying, and never overwrites or deletes existing Mano artifacts. Spec, stories, and development contracts require this guarded path instead of moving `_mano` / `_mano_output` away or hand-merging generated files.
+
+### Changed
+- **Auto chains are approved run plans, not repeatedly guessed next steps** — `mano start` performs a narrow project-artifact check before proposing the chain, preserves its ordered remaining actions across pauses, refreshes mode at each handoff, and resumes in the same turn after an answer is captured. New evidence can still pause or invalidate the plan; the agent never answers a fork for the human.
+- **Auto planning now keeps material UX and UI work visible** — a new interactive frontend includes `mano ux` and `mano ui` in its proposed auto chain when the exact flow, responsive composition, hierarchy, or visual states are not already covered. Familiar controls are not treated as a substitute for product decisions; only the human may explicitly skip those actions.
+- **New repeatable artifact categories keep `mano rules` visible** — a phase that introduces a recurring file, module, component, document, example, or asset shape is treated as new rule territory even when a substantive rules file already exists.
+- **Phase closure no longer masquerades as validation** — phase briefs now state the human decision a phase can inform and the evidence to gather. `mano review` records a compact validation-and-decision log instead of a release recap, keeps assumption outcomes separate, and preserves `close it` as an immediate `Validation: Not tested` / `Decision: Not assessed` close instead of making feedback theatre mandatory.
+- **Every Mano artifact and user prompt now follows one clarity contract.** Skills name actors, triggers, outcomes, and boundaries. Questions name the decision and its consequence without forcing one question per turn. Skills avoid jargon and unsupported marketing language. They unpack dense conditions into ordered steps. Technical details stay in their canonical artifact. Product feelings remain valid human learning questions.
+- **Phase learning plans now use direct Questions and Try lists.** Each question has a matching test. Capability checks remain in Exit Criteria. `mano review` keeps learning and completion separate.
+
+### Fixed
+- **Auto scope approval and run approval are no longer ambiguous** — at the scope prompt `1` and `go` are exact synonyms that approve the scope and arm the displayed chain; edit-only replies revise the proposal without starting it.
+- **Stories no longer rationalises away a missing planning artifact** — material UX, UI, rules, or contract gaps always pause for the human, even when an earlier auto plan omitted the artifact or the interface looks conventional.
+- **Auto hook semantics no longer contradict themselves across skills and templates** — workflow, bootstrap instructions, every Mano skill, hook documentation, and example hooks now agree on manual suggest, auto suggest, and always-on command behavior.
+- **`mano dev yolo` and auto-mode summaries no longer have incompatible output contracts** — standalone YOLO still emits exactly one aggregate line; as the terminal auto action, that line is followed only by the required auto closing block.
+- **Paused chains no longer lose their continuation state** — the closing block records `Remaining:` actions, decision answers become mid-chain logs when appropriate, and switching to manual while paused cleanly hands control back instead of continuing from cached mode.
+- **The mid-phase assignment path no longer conflicts with stories' write boundary** — the hard no-implementation gate and Forbidden section now name the single writer-mediated backlog exception while continuing to reject every direct or unrelated artifact edit.
+- **Review can no longer hide an Exit Criterion behind the learning plan.** The opening prompt lists every phase promise. The review log records each promise. Results use passed, failed, or not tested. `close it` records unchecked promises honestly.
+- **Review no longer grades optional validation context.** A whole-review verdict such as `all went as planned, close it` records the result, passes the listed phase checks, and confirms the presented assumptions. Where or how the human checked it remains optional. Missing fields disappear instead of showing `Not recorded`; bare closes record `Not tested`.
+- **Green tests can no longer prove the opposite acceptance outcome.** Spec, stories, development, and review now stop on reversed outcomes. Done stories remain immutable. Corrective work uses the normal spec and lettered-story path.
+- **Backlog adds now report each item's Track.** Missing values print as `undefined`. Bulk adds report every item separately. This makes lost review or import tracks visible immediately.
+- **Track filtering now accepts both common Markdown forms.** It reads `**Track:**` and `**Track**:`. Human edits no longer hide matching backlog items.
+- **Stories no longer infer missing behavior-driving values.** Missing defaults, thresholds, and contracts return to their owning artifact. Stories never disguise those gaps as provisional story decisions.
+- **State projections now fail closed on malformed backlog items.** Scope, status, spec, and gap views no longer hide a human-edited item whose Type or Status envelope is unreadable.
+- **Deferred Start items retain the active Track.** Split remainders and finalisation-time deferrals no longer disappear from later Track-filtered planning.
+- **Interrupted drafts keep their assigned Track.** A newer local Track no longer relabels an unfinished phase or mixes in candidates from another experiment. Conflicting assigned Track fields now stop for repair.
+- **Story status updates now have an atomic postcondition.** A missing requested row fails before any status changes, and Dev verifies the updated state before claiming completion.
+- **Stale cross-contract wording is aligned.** State detection uses deterministic projections, phases require one independently verifiable outcome, every suggest hook has a triage boundary, and exact component interfaces have one owner.
+
 ## 1.2.0
 
 ### Added

@@ -1,11 +1,16 @@
 "use strict";
 
 /**
- * Shared phase identity and path rules.
+ * Shared phase identity, path rules, and local execution context.
  *
  * Legacy projects use `phase-N`. Team mode is opt-in through an explicit owner
  * slug and uses `<owner>-phase-N`. Owner identity is local execution context,
  * never inferred from an email address or OS username.
+ *
+ * Run mode (`manual` / `auto`) is the other piece of local execution context:
+ * it decides whether a finished skill chains into the next action or hands
+ * back. Like the owner, it is stored per clone and never committed — it is a
+ * statement about how much this person reviews, not a property of the project.
  */
 
 const fs = require("node:fs");
@@ -13,6 +18,7 @@ const path = require("node:path");
 const childProcess = require("node:child_process");
 
 const OWNER_RE = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/;
+const TRACK_MAX_LENGTH = 120;
 
 function validateOwner(value) {
   const owner = value == null ? "" : String(value).trim();
@@ -44,6 +50,75 @@ function resolveConfiguredOwner(projectRoot) {
   }
   const owner = gitConfigOwner(projectRoot);
   return owner ? { owner, source: "git config --local mano.owner" } : { owner: null, source: null };
+}
+
+function validateTrack(value) {
+  const track = value == null ? "" : String(value).trim();
+  if (!track || track.length > TRACK_MAX_LENGTH || /[\u0000-\u001F\u007F]/.test(track)) {
+    throw new Error(
+      `invalid Mano track ${JSON.stringify(value)}; use 1-${TRACK_MAX_LENGTH} printable characters on one line`,
+    );
+  }
+  return track;
+}
+
+function gitConfigTrack(projectRoot) {
+  const result = childProcess.spawnSync(
+    "git",
+    ["config", "--local", "--get", "mano.track"],
+    { cwd: projectRoot, encoding: "utf8" },
+  );
+  if (result.status !== 0) return null;
+  const value = String(result.stdout || "").trim();
+  return value ? validateTrack(value) : null;
+}
+
+function resolveConfiguredTrack(projectRoot) {
+  if (Object.prototype.hasOwnProperty.call(process.env, "MANO_TRACK")) {
+    const value = String(process.env.MANO_TRACK || "").trim();
+    if (!value) throw new Error("MANO_TRACK is set but empty");
+    return { track: validateTrack(value), source: "MANO_TRACK" };
+  }
+  const track = gitConfigTrack(projectRoot);
+  return track ? { track, source: "git config --local mano.track" } : { track: null, source: null };
+}
+
+const MODES = ["manual", "auto"];
+const DEFAULT_MODE = "manual";
+
+function validateMode(value) {
+  const mode = value == null ? "" : String(value).trim().toLowerCase();
+  if (!MODES.includes(mode)) {
+    throw new Error(
+      `invalid Mano mode ${JSON.stringify(value)}; use ${MODES.join(" or ")}`,
+    );
+  }
+  return mode;
+}
+
+function gitConfigMode(projectRoot) {
+  const result = childProcess.spawnSync(
+    "git",
+    ["config", "--local", "--get", "mano.mode"],
+    { cwd: projectRoot, encoding: "utf8" },
+  );
+  if (result.status !== 0) return null;
+  const value = String(result.stdout || "").trim();
+  return value ? validateMode(value) : null;
+}
+
+// Manual is the default everywhere: a project that has never opted in must
+// never chain, and an unreadable/absent config is not an opt-in.
+function resolveConfiguredMode(projectRoot) {
+  if (Object.prototype.hasOwnProperty.call(process.env, "MANO_MODE")) {
+    const value = String(process.env.MANO_MODE || "").trim();
+    if (!value) throw new Error("MANO_MODE is set but empty");
+    return { mode: validateMode(value), source: "MANO_MODE" };
+  }
+  const mode = gitConfigMode(projectRoot);
+  return mode
+    ? { mode, source: "git config --local mano.mode" }
+    : { mode: DEFAULT_MODE, source: null };
 }
 
 function parsePhaseDirName(name) {
@@ -98,10 +173,18 @@ function phaseRouting(projectRoot, outputDir = path.join(projectRoot, "_mano_out
     ? all.filter((ref) => ref.owner === configured.owner)
     : all.filter((ref) => ref.owner === null);
   refs.sort((a, b) => a.number - b.number);
+  const run = resolveConfiguredMode(projectRoot);
+  const track = resolveConfiguredTrack(projectRoot);
   return {
     owner: configured.owner,
     ownerSource: configured.source,
+    // `mode` here is the long-standing owner-routing mode. The run mode is a
+    // separate axis and is deliberately not folded into it.
     mode: configured.owner ? "owned" : "legacy",
+    runMode: run.mode,
+    runModeSource: run.source,
+    track: track.track,
+    trackSource: track.source,
     refs,
     latest: refs.length ? refs[refs.length - 1] : null,
     otherOwners: [...new Set(owned.map((ref) => ref.owner).filter((owner) => owner !== configured.owner))].sort(),
@@ -119,8 +202,15 @@ function reviewHeadingPattern(ref) {
 
 module.exports = {
   OWNER_RE,
+  TRACK_MAX_LENGTH,
+  MODES,
+  DEFAULT_MODE,
   validateOwner,
+  validateTrack,
+  validateMode,
   resolveConfiguredOwner,
+  resolveConfiguredTrack,
+  resolveConfiguredMode,
   parsePhaseDirName,
   phaseRef,
   listPhaseRefs,

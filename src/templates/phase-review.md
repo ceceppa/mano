@@ -10,53 +10,57 @@
 Owner opt-in: `## Phase [N] Review — Owner: [owner-slug] — [Date]` -->
 ## Phase [N] Review — [Date]
 
-### What worked
+### Validation
 
--
--
+- **Result:** [what happened, or `Not tested`]
+- **Checked with:** [where or how the human checked it]
+<!-- Omit `Checked with` when the human did not supply it. -->
 
-### What didn't
+### Phase checks
 
--
--
+| Phase promise | Result | What happened |
+|---|---|---|
+| [Exit Criterion] | passed / failed / not tested | [concrete result, or `Not tested`] |
 
-### Assumption results
+### Decision
 
-| Assumption | Predicted | Actual | Action |
-|-----------|-----------|--------|--------|
-| | | | |
+- **Choice:** [human choice, `Not enough evidence`, or `Not assessed`]
+- **Why:** [stated reason, or a stated result that directly supports the choice]
+<!-- Omit `Why` when the human supplied no reason. -->
 
-<!-- Action: confirmed / invalidated / inconclusive -->
+### Assumptions
 
-### Feedback that changes future scope
+| Assumption | Result | What showed this |
+|-----------|---------|------------------------|
+| | confirmed / invalidated / inconclusive | |
 
-<!-- Specific observations from real usage that should influence what gets built next. -->
+### Backlog changes
 
--
--
+- [Type] [Exact title] — [why it was added or rejected]
+<!-- Write `None` when the review changed no backlog items. -->
 
 ### What we learned
 
-<!-- Short lessons from shipping and reviewing this phase. -->
-
--
--
+<!-- Optional. Omit this entire section unless a reusable, surprising lesson changes future work. Name its destination when known. -->
+- [Lesson] — [future decision, rule, or artifact it changes]
 
 ### Addendum — [Date]
 
 <!-- Only present if follow-up fix work was reviewed after the main review. Append here; do not create a new ## Phase heading. -->
 
-#### What changed
+#### Validation
 
--
--
+- **Result:** [what happened, or `Not tested`]
+- **Checked with:** [where or how the human checked it]
+<!-- Omit `Checked with` when the human did not supply it. -->
 
-#### Still open
+#### Decision update
 
--
--
+- **Choice:** [changed choice, `Unchanged`, `Not enough evidence`, or omit this section]
+- **Why:** [stated reason, or a stated result that directly supports the choice]
+<!-- Omit `Why` when the human supplied no reason. -->
 
-#### New items
+#### Outcome changes
 
--
--
+- [Resolved, still open, new, or rejected backlog outcome]
+<!-- Write `None` when the follow-up changed no outcomes. -->

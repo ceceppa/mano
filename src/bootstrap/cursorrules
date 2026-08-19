@@ -6,11 +6,13 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
 ## Core Directives for Agent
 
 1. **Activation:**
-   When the user types a Mano command (e.g., `mano owner`, `mano start`, `mano spec`, `mano stories`, `mano review`):
+   When the user types a Mano command (e.g., `mano owner`, `mano track`, `mano start`, `mano spec`, `mano stories`, `mano review`):
    - You MUST read `_mano/workflow.md` first.
    - You MUST resolve the command to the correct skill file using the workflow command map.
    - `mano import` maps to `_mano/skills/import.md`.
    - `mano owner` maps to `_mano/skills/owner.md`.
+   - `mano mode` maps to `_mano/skills/mode.md`.
+   - `mano track` maps to `_mano/skills/track.md`.
    - `mano start` maps to `_mano/skills/start.md`.
    - `mano spec` maps to `_mano/skills/spec.md`.
    - `mano ux` maps to `_mano/skills/ux.md`.
@@ -28,7 +30,7 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - Once complete, output a short execution log (as defined in the skill file) to the console. Do NOT append conversational fluff.
 
 3. **Status Check:**
-   When the user types `mano status`, read `_mano/workflow.md` to see the logic for determining the current active phase and the next logical missing artifact.
+   When the user types `mano status`, follow `_mano/workflow.md` and run the required `_mano/scripts/state.js` projection. Use its exact owner-aware phase identity and paths. If the script fails or omits a required field, stop and report that failure. Never infer the active phase from chat context or directory listings.
 
 4. **Code Execution Directive:**
    - **Actively refuse to write code.** As an agent executing a Mano skill, your directive is strict planning and spec-generation. You must explicitly refuse to modify source (`src/`) files or application code while running a Mano phase.

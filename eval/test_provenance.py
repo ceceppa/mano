@@ -60,7 +60,7 @@ class ProvenanceTests(unittest.TestCase):
         )
         self.assertEqual(
             len(rules["public-interface-contract-readiness"].occurrences),
-            21,
+            24,
         )
         self.assertEqual(
             rules["public-interface-contract-readiness"].evals,
@@ -82,7 +82,7 @@ class ProvenanceTests(unittest.TestCase):
             self.assertEqual(removed, {"post-hook-findings-triage": 5})
 
             stripped_sections = {
-                "AGENTS.md": "When a just-run `post-start`, `post-spec`, or `post-rules`",
+                "AGENTS.md": "When any just-run `suggest` hook has printed findings",
                 "_mano/workflow.md": "## Post-Hook Findings Triage",
                 "_mano/skills/start.md": "## Addressing post-start hook findings",
                 "_mano/skills/spec.md": "## Addressing post-spec hook findings",
@@ -133,13 +133,15 @@ class ProvenanceTests(unittest.TestCase):
             )
             self.assertEqual(
                 removed_interface,
-                {"public-interface-contract-readiness": 21},
+                {"public-interface-contract-readiness": 24},
             )
             for relative in (
                 "AGENTS.md",
                 "_mano/skills/start.md",
                 "_mano/skills/spec.md",
                 "_mano/skills/stories.md",
+                "_mano/skills/dev.md",
+                "_mano/skills/review.md",
                 "_mano/templates/tech-spec.md",
             ):
                 text = (project / relative).read_text(encoding="utf-8")
@@ -162,6 +164,8 @@ class ProvenanceTests(unittest.TestCase):
                 "Public-interface readiness",
                 "A section title or broad capability list is not a usable contract",
                 "Exact operation / event",
+                "Final-story phase-contract gate",
+                "Phase-contract safety net",
             ):
                 self.assertNotIn(incident_phrase, stripped_prompt)
 

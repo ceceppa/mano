@@ -1,6 +1,6 @@
 ---
 name: mano-ux
-description: Use to define UX flows, navigation, and user interactions for visual screens.
+description: Use to define UX flows, navigation, and user interactions for visual screens and player-facing in-world interactions.
 ---
 
 # `mano ux` — UX Flow Skill
@@ -20,12 +20,12 @@ This skill activates when the user types `mano ux`.
 When inputs are missing, follow the missing-input protocol in `_mano/workflow.md`.
 
 On activation:
-1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Never construct `phase-N` from the number.
+1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Never construct `phase-N` from the number.
 2. Read the exact projected `BRIEF` path.
 3. Read `_mano_output/ux-flow.md` if it exists.
 4. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
 5. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
-6. Check for missing inputs — if the projected phase brief does not exist, warn and ask if user wants to run `mano start` first.
+6. If the projected phase brief does not exist, stop and route to `mano start`. Do not write or offer to continue without it.
 
 ## Inputs
 
@@ -36,7 +36,7 @@ On activation:
 
 ## Role
 
-Define how users move through the application. Generate the UX flow for the current phase only — new screens, changed screens, new navigation. Do not regenerate existing screens that haven't changed.
+Define how users move through the application or game. Generate the UX flow for the current phase only — new screens, changed screens, in-world interactions, and new navigation. Do not regenerate existing flows that haven't changed.
 
 `mano ux` is responsible for reducing avoidable screen overload before it reaches story generation. If a single screen would otherwise carry too many primary actions or decisions, restructure the flow into smaller steps or companion screens within the same phase instead of documenting the overload as-is.
 
@@ -67,6 +67,8 @@ For each screen, include:
 
 Use plain language. "Tapping a todo on the list opens Todo Detail as a full screen. Back button returns to the list." Not "stack screen pushed from tab context."
 
+For a player-facing game, an in-world/HUD interaction is a flow even when it opens no conventional screen. When two or more tools, buildables, abilities, modes, or rewards can be available at once, document: what makes each available; how the player invokes the choice; how they select or change it; how the active choice is communicated; what executing it does; and locked, unavailable, and cancel/back behaviour. Do not leave a hardcoded active item standing in for the player decision.
+
 ## Post-UX Hook Suggestion
 
 After `mano ux` completes, always check whether this file exists:
@@ -77,15 +79,15 @@ Ignore this file:
 
 `_mano/hooks/post-ux.example.md`
 
-If an active `post-ux.md` hook exists, prepare the generic hook block for the final chat response.
+If an active `post-ux.md` suggest hook exists in a manual or unarmed run, prepare the generic hook block for the final chat response. During an armed auto chain, run it instead.
 
-Do not run the hook automatically.
+Check the hook's `## Mode` first. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; during an armed auto chain it runs automatically and pauses only when findings require triage (`_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**).
 
 Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook.
 
 This step is required even when no UX update was needed.
 
-Mention it in the final chat response before the next-action block.
+In manual or unarmed runs, mention it in the final chat response before the next-action block. During an armed auto chain, do not print the suggestion block.
 
 This applies whether the skill:
 - created an artifact
@@ -93,7 +95,7 @@ This applies whether the skill:
 - checked existing artifacts and decided no update was needed
 
 Do not print the hook's suggested prompt unless the user asks to run or view the hook.
-Do not execute the hook without explicit user confirmation.
+Do not execute a `suggest` hook without explicit user confirmation in manual or unarmed runs. An armed auto chain is the workflow-defined exception.
 Do not write hook suggestions into generated artifacts.
 
 ## After completion

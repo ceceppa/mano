@@ -1,0 +1,10 @@
+{
+  "name": "review-positive-summary",
+  "description": "A positive whole-review verdict with a close instruction must survive without evidence grading or mandatory validation context.",
+  "fixture": "review-positive-summary",
+  "phase": 1,
+  "prompt": "mano review all went as planned, let's close this phase",
+  "assertions": [
+    "review_preserved_positive_summary"
+  ]
+}

@@ -1,6 +1,13 @@
 ## Mode
 suggest
 
+<!-- Two kinds of hook. `suggest` (this one) produces findings: Mano asks
+     before running it in manual/unarmed runs, runs it during an armed auto
+     chain, and you approve
+     each finding. Change this to `command`
+     and add a `## Command` section naming one command to instead run that
+     command automatically, every time, after this skill. See hooks/README.md. -->
+
 ## Purpose
 Optional post-review audit after `mano review` triages a phase and writes findings to the backlog.
 
@@ -50,17 +57,17 @@ Source code inspection: allowed and expected for this hook, but bounded to modul
 
 Output format: one bullet per finding. Each finding states the issue, the affected artifact or code location, and either the suggested fix or which Mano flow owns the resolution (`mano spec`, `mano rules`, `mano start` for backlog adjustment). No prose preamble, no executive summary, no closing commentary.
 
-Do not modify any files. Report findings only. If the user wants changes made, they will run the appropriate Mano skill after reviewing your findings.
+Do not modify any files. Report findings only. Mano will triage them and apply only selected changes through the artifact owner.
 ```
 
 ## Instruction for Mano
 
-When this hook is active, do not run it automatically.
+`mano review` always runs outside the auto chain, so this `suggest` hook is always unarmed. Ask before running it in both configured modes. If you change `## Mode` to `command`, the command runs automatically in both modes — see hooks/README.md.
 
-After the related Mano skill completes, mention that the hook is available and ask whether to run it.
+In a manual or unarmed run, after the related Mano skill completes, mention that the hook is available and ask whether to run it.
 
 Do not print the hook's suggested prompt unless the user asks to run or view the hook.
 
 Do not mention specific external skill names in generic Mano output.
 
-Do not execute the hook without explicit user confirmation.
+Do not execute this suggest hook without explicit user confirmation.

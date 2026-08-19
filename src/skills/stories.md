@@ -9,7 +9,7 @@ description: Use to break down a phase brief and any available supporting contex
 
 This skill writes stories a developer can pick up without a meeting and a non-technical person can read and verify. Prefix every message with `[mano stories]:`.
 
-**This skill only writes story files. It never edits, creates, or fixes source code, runs builds, or modifies any file outside the exact `PHASE_DIR/stories/` projected by `state.js --current` — even if the chat history suggests implementation was in progress or the user previously asked for code changes.**
+**This skill only writes story files. It never edits, creates, or fixes source code, runs builds, or modifies any file outside the exact `PHASE_DIR/stories/` projected by `state.js --current` — except for the single deterministic `backlog.js assign` call allowed by “Pulling a backlog item into the open phase” when the user names an exact existing item. Even then, never hand-edit the backlog.**
 
 **This includes other Mano artifacts.** The phase brief, tech spec, UX flow, design brief, and project rules are *inputs* to `mano stories` — read-only. Never edit them, even when the user points out one is wrong. If the user says an input is stale, incorrect, or out of date (e.g. "that assumption in the brief is wrong"), that is a correction to *use* when generating stories and a thing to *flag*, not a license to edit the input. Apply the corrected understanding to the stories, and surface the staleness in your output so the owning skill (`mano start` for the brief, `mano spec` for the tech spec, etc.) can fix the source. Editing another skill's artifact is out of lane — it belongs to whoever owns that artifact, never to `mano stories`.
 
@@ -19,7 +19,7 @@ This skill activates when the user types `mano stories`. When inputs are missing
 
 Read every input fresh from disk — even if it already appears in the conversation context. Artifacts may have been edited earlier this same session (e.g. a spec extended then a decision backported); the filesystem is the source of truth, a context snapshot is not.
 
-First run `node _mano/scripts/state.js --current`. It is the only phase-directory discovery for this skill. If it fails, lacks `STATUS`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `STORIES`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values and never construct `phase-N` from `PHASE`. Owner-scoped routing is opt-in; legacy projects still project `phase-N`.
+First run `node _mano/scripts/state.js --current`. It is the only phase-directory discovery for this skill. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `STORIES`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values and never construct `phase-N` from `PHASE`. Owner-scoped routing is opt-in; legacy projects still project `phase-N`.
 
 **Discard prior chat intent.** If the conversation before this command was about implementing, debugging, or modifying code, that context does not carry over. `mano stories` is a planning turn only. Treat the chat as if it were empty for the purpose of deciding what to do — your job this turn is to produce story files and nothing else. Do not "also" implement, "also" fix the bug under discussion, or "also" touch source code.
 
@@ -91,7 +91,7 @@ Only include fields relevant to this story. Omit empty categories. Do not invent
 An artifact pointer is not proof that its named section is complete. Before pointing at a public/package contract—or a cross-component contract consumed by independently-owned components or multiple stories—verify that the section actually contains the exact operations/events, inputs/defaults, result/failure behavior, and any semantic-to-canonical mapping the story needs. A broad paragraph that only names capability families cannot be promoted into an implementation-ready contract by citing it.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-When project rules or the tech spec own exact tokens — prop names, attribute names, file paths, state keys, install commands, constants — point to the exact owning section instead of copying the value. When a project rule implies a required file, module, constant, or prohibition, make the obligation explicit while leaving any shared literal at its canonical home.
+When an input artifact owns exact tokens, point to that exact section instead of copying the value. A particular component's consumer-visible props, events, variants, defaults, and state transitions belong to the tech spec. Project rules may own reusable naming patterns, required file locations, and prohibitions. Make each obligation explicit while leaving every shared literal at its canonical home.
 
 **No hedged paths or ambiguous ownership.** Name one location. Do not write `src/foo.cpp or src/bar.cpp`, `either A or B`, `wherever the X helper lives`, or `if needed`. If ownership genuinely splits (computation in one file, enforcement in another), say so with each file's role: `compute in src/foo.cpp; enforce in src/bar.cpp`. If the correct location is genuinely unknown and not determinable from existing artifacts, flag it during the artifact gap check — do not ship the ambiguity.
 
@@ -138,7 +138,9 @@ Example:
 - **Do not:** no inline colour values (see `project-rules.md §Colour constants`); no new auth logic in this story
 ```
 
-For `story-0` and setup/dependency stories: point to the exact package-manager, dependency, and install-command section in the tech spec. AGENTS.md step 7 requires the implementer to read it; do not create a second copy in the story.
+For `story-0` and setup/dependency stories: point to the exact package-manager, dependency, scaffold, and install-command sections in the tech spec. AGENTS.md step 7 requires the implementer to read them; do not create a second copy in the story.
+
+**Greenfield scaffold gate.** If the application does not have a real manifest yet and bootstrap requires a generator that expects an empty directory, the tech spec must provide a `## Project Scaffold` command through `node _mano/scripts/scaffold.js run`, with a literal `{target}` destination. Put that requirement in `story-0`'s Implementation Reference. A raw generator aimed at `.`, the project root, or a temporary child followed by manual moving/copying is not developer-ready: stop and route the missing guarded command to `mano spec`. Never instruct development to move, rename, delete, or temporarily hide `_mano`, `_mano_output`, `.git`, `AGENTS.md`, or any existing file.
 
 For stateful frontend stories: name what persists across restart, what stays transient, and which module owns it. Include a persistence criterion in `Done when` too — do not bury it only here.
 
@@ -182,7 +184,13 @@ For stateful frontend stories: name what persists across restart, what stays tra
   Bad — adjectival: *After releasing the card, correct snap behaviour.*
   Bad — noun-phrase placeholder: *Smooth drag interaction.*
 
-  The adjectival and noun-phrase forms have an extra failure mode: they often *replace* the AC's verb instead of qualifying it. "After releasing the card, correct snap behaviour" has no verb describing what the user observes — it labels a moment and gestures at it. Rewrite to name the observable: *"After releasing the card, it snaps into the target column within one frame and both columns' item counts update to match."*
+  The adjectival and noun-phrase forms have an extra failure mode: they often *replace* the AC's verb instead of qualifying it. "After releasing the card, correct snap behaviour" has no verb describing what the user observes. Rewrite it with one trigger and separate results:
+
+  ```markdown
+  - [ ] After releasing the card:
+    - It snaps into the target column within one frame.
+    - Both columns show the new item counts.
+  ```
 
 - **Move implementation mechanics to Implementation Reference.** If a detail is necessary but not directly observable — for example "compute once at drag start", "use a shared seam-width constant", or "fold committed offset into visual offset" — put it in `Implementation Reference`, not `Done when`. Pair it with an observable AC that describes the visible effect.
 
@@ -199,6 +207,8 @@ For stateful frontend stories: name what persists across restart, what stays tra
   - [ ] Each row displays: checkbox, todo text, delete button
   - [ ] Test: checkbox toggles completed state
   ```
+
+- **Unpack compound acceptance criteria.** Put the trigger on the checkbox line. Put each condition, observable result, and exception in a nested bullet. Do not join several results with commas or `and`. Treat every nested result as required acceptance evidence. Keep a simple single-result AC on one line.
 
 - **Stories must be small.** One focused session. Aim for five acceptance criteria or fewer; six is acceptable when the story is genuinely small and cohesive (the extra AC observes a distinct behaviour, not a rephrased one). Seven or more is a sizing signal — split the story, or merge AC that describe the same observable behaviour. Treat five as the soft target, not a hard ceiling: don't pad to reach it, don't artificially split a cohesive story to stay under it.
 
@@ -217,7 +227,7 @@ For stateful frontend stories: name what persists across restart, what stays tra
 
 Before drafting the story set, run these against the inputs. Each is a real check that produces concrete AC adjustments.
 
-- **Phase goal (mandatory).** The phase brief's `Phase goal` is the single most important outcome of the phase. At least one story must carry an AC that, taken with the chain's end-to-end AC, verifies that exact goal. Decomposing the goal into separate feature stories is not sufficient on its own: qualities embedded in the goal's wording — "in real time", "instantly", "correctly", "smoothly", latency/feel words — must each surface as an explicit testable AC, not be left implicit. If a quality cannot be written as an observable AC, say so and flag it; do not silently drop it.
+- **Phase goal (mandatory).** The phase brief's `Phase goal` is the single most important outcome of the phase. At least one story must carry an AC that, taken with the chain's end-to-end AC, verifies that exact goal. Decomposing the goal into separate feature stories is not sufficient on its own. Objective qualities such as latency, persistence, and visible state changes need observable AC. Subjective product feelings such as “calm,” “fun,” or “rewarding” belong in the Validation Plan unless the brief already defines observable behavior for them. Never invent a proxy AC for a feeling. Preserve the learning question and flag any missing validation path instead.
 
 - **Tech spec.** If a tech spec exists, ensure its decisions are reflected in AC. If the spec says offline-first, at least one story must include "data persists after closing and reopening the app." If the spec says biometric auth, a story must test it. Tech decisions that never appear in AC are invisible to QA and will be skipped.
 
@@ -282,7 +292,7 @@ Verify the filename matches this contract before writing any story file.
 
 Run these before writing any stories. Resolve each before moving on.
 
-**0⊘. No-implementation gate (hard stop).** Before any other step, confirm the only file-writing tools you will call this turn target the exact projected `PHASE_DIR/stories/` or its README. If you find yourself about to Edit, Write, or run a shell command that modifies any source file, config, build script, **another Mano artifact (the phase brief, tech spec, UX flow, design brief, project rules)**, another owner's phase, or anything else outside that directory, **stop immediately**. That is not a `mano stories` action. For source code it is implementation; for another artifact it is out-of-lane editing that belongs to the skill that owns it. Either way, belongs to a separate user-initiated turn. This applies even if the chat history shows implementation was the prior intent, even if a bug was just reported, even if the user just told you an input artifact is wrong, and even if it seems efficient to combine. Write the bug story; do not fix the bug. Flag the stale brief; do not edit the brief.
+**0⊘. No-implementation gate (hard stop).** Before any other step, confirm the only file-writing tools you will call this turn target the exact projected `PHASE_DIR/stories/` or its README. The sole exception is the exact `backlog.js assign` command in **Pulling a backlog item into the open phase**, and only after the user names an exact existing item for the already-approved active phase. If you find yourself about to Edit, Write, or run any other shell command that modifies a source file, config, build script, **another Mano artifact (the phase brief, tech spec, UX flow, design brief, project rules, or backlog)**, another owner's phase, or anything else outside that directory, **stop immediately**. That is not a `mano stories` action. For source code it is implementation; for another artifact it is out-of-lane editing that belongs to the skill that owns it. Either way, belongs to a separate user-initiated turn. This applies even if the chat history shows implementation was the prior intent, even if a bug was just reported, even if the user just told you an input artifact is wrong, and even if it seems efficient to combine. Write the bug story; do not fix the bug. Flag the stale brief; do not edit the brief.
 
 **0a. Overloaded screens.** If a UX flow screen handles more than two primary actions (excluding back/close/cancel/continue unless they perform mutation or branching), flag it before story generation.
 
@@ -314,8 +324,16 @@ If a story depends on missing domain structure, do not hide the gap in vague AC.
 
 Examples: do not write a checkout story unless the cart model is defined. Do not write a notification story unless a delivery channel is represented. Do not write a dashboard story unless a default or empty data state exists.
 
+**0c.0 Spec-owned defaults and initial state — hard gate.** When an Exit Criterion or prospective story depends on a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, verify the canonical tech spec names its owning field/config/constant and gives its exact value or required relationship. A brief may say “small healed area” or “enough room”; if code must turn that into a number, it is a technical decision, not story setup.
+
+If that owner or value is missing, **write no story files**. Report `⚠️ Story readiness gap: spec-owned default missing`, name the affected exit path and field that needs defining, and route to `mano spec`. Do not offer a story-owned default, an implementation `Notes` placeholder, or options to continue with a temporary value. Stories may decompose an already-decided default into tests; they never choose it.
+
+**0c.1 Player choice interaction — hard gate.** When a player can choose among two or more simultaneously available tools, buildables, abilities, modes, rewards, or other alternatives, verify `_mano_output/ux-flow.md` defines the choice as a player path. It must cover what makes each option available, how the player enters or invokes the choice, how they select or change the active option, how the active choice is communicated, and what happens when an option is locked, unavailable, or the player cancels. The choice may be in-world or minimal; it is still UX.
+
+If that flow is absent or leaves any of those decisions to implementation, **write no story files**. Report `⚠️ Story readiness gap: player choice interaction missing`, name the affected phase path and missing UX behaviour, and route to `mano ux`. Do not propose a hotkey, picker, cycling scheme, default active item, HUD treatment, or other story-owned interaction. The general artifact-gap options do not waive this gate; only a completed UX flow or an explicit human decision to skip `mano ux` can do so.
+
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-**0c.1 Public-interface readiness — hard gate.** For every prospective story that creates, changes, wraps, or depends on a public/package API, command, event protocol, plugin hook, external integration, persisted/wire format, or cross-component contract consumed by independently-owned components or multiple stories, verify its canonical owning artifact defines:
+**0c.2 Public-interface readiness — hard gate.** For every prospective story that creates, changes, wraps, or depends on a public/package API, command, event protocol, plugin hook, external integration, persisted/wire format, or cross-component contract consumed by independently-owned components or multiple stories, verify its canonical owning artifact defines:
 
 - the exact consumer-visible operation, method, command, or event names;
 - input order/shape, required vs optional values, and behavior-driving defaults;
@@ -323,12 +341,24 @@ Examples: do not write a checkout story unless the cart model is defined. Do not
 - ownership/lifetime and evaluation timing for relative/lazy/dynamic values when they change consumer use;
 - semantic-to-canonical mappings for convenience layers, adapters, aliases, serializers, or protocol translations.
 
-Apply this only to that consumer-visible or independently-owned boundary, not a private helper, internal service, or component API that one story and one implementer can safely design locally. “Supports position, movement, opacity, and generic properties” is not a callable contract: method names, argument shapes, and property mappings are still missing. “See tech-spec §API” is also insufficient when that section contains only the same family list.
+For a fluent, builder, pipeline, query, or composed API, also trace every in-scope chain transition from the canonical spec: the exact returned type, the target/owner/context it retains, and which terminal operations remain callable. A terminal AC such as `builder.move(...).play()` does not prove `builder.move(...).with(...).play()` or `builder.keyframes(...).play()` unless the spec closes those return-type paths too. Words such as “any”, “all”, “entirely fluent”, and “combined” require coverage of every named category, not one representative leaf.
+
+Apply this only to that consumer-visible or independently-owned boundary, not a private helper, internal service, or component API that one story and one implementer can safely design locally. “Supports position, movement, opacity, and generic properties” is not a callable contract: method names, argument shapes, and property mappings are still missing. “See tech-spec §API” is also insufficient when that section contains only the same family list. Verify every `Implementation Reference` citation against its target: the exact operation and promised path must actually be present there.
 
 If any behavior-driving interface field needed by the story is absent or has two materially different readings, **write no story files**. Report one `⚠️ Story readiness gap` naming every missing field and route to `mano spec`. The general gap-check options to continue with a temporary note or partial guidance do not waive this gate; an implementer cannot safely invent a shared/public contract story by story.
+
+Before accepting a `Not this story` boundary, compare it with the phase goal, Exit Criteria, and the rest of the story chain. It may defer an adjacent use case; it may not contradict a promised path or prohibit the shared contract surface another story needs to satisfy the phase. Resolve the story split, or route an unresolved contract choice to `mano spec`.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-**0d. Artifact gap check.** For each prospective story, check whether it depends on a visual, interaction, accessibility, technical, data, API, constant, shared measurement, or rule detail that is not defined by the artifacts read this run. This is a warning/decision point, not a default blocker.
+<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+**0c.3 Phase-promise polarity — hard gate.** Map every `Phase Goal` outcome and every `Exit Criteria` action/result—including each nested bullet—to its prospective `Done when` owner and the supporting artifact decisions it needs. Read those decisions for meaning, not keyword presence. If any artifact states the opposite outcome or preserves a stale deferral (`recoverable` vs `stays locked`, `available` vs `unavailable`, `implemented` vs `not wired`, success vs required failure), **write no new story files**. Report one `⚠️ Story readiness gap: supporting artifact contradicts phase promise`, quote both statements, and route to the artifact's owning skill—normally `mano spec` for technical/data/gate contradictions.
+
+Do not disguise the conflict with wording such as “existing behaviour, now reachable” unless the cited artifact actually defines every prerequisite that makes the route reachable. An AC appearing in a story is coverage, not readiness; its implementation reference must point to a compatible contract rather than an opposing one.
+<!-- /mano-rule: phase-acceptance-integrity -->
+
+**0d. Artifact gap check.** For each prospective story, check whether it depends on a visual, interaction, accessibility, technical, data, API, constant, shared measurement, or rule detail that is not defined by the artifacts read this run. This is a warning/decision point, not a default blocker; the hard gates in 0c.0–0c.3 remain non-continuable.
+
+**Player-flow check.** A game mechanic is not exempt from UX because it happens in the world rather than a screen. When the phase includes player activation, direct manipulation, placement/selection, progression/unlock actions, available-versus-locked states, or feedback for an unmet condition, check `_mano_output/ux-flow.md` for the concrete path: what the player notices, does, sees after success, and sees when the action is unavailable. Multiple simultaneously available choices are the hard gate in 0c.1, not a continuable artifact gap. “Minimal” presentation does not let stories invent discoverability or feedback behaviour.
 
 Look for partial-but-usable guidance before flagging a gap. A detail is not missing merely because it is brief. If an artifact contains a relevant section, subsection, token, note, rule, constant, or implementation reference, reuse it and cite the artifact location in the story's `Implementation Reference`.
 
@@ -358,6 +388,8 @@ Use the relevant Mano action for the gap type:
 
 Do not invent final design, UX, rules, or technical contracts inside stories. If the user chooses to continue with a temporary note, mark it clearly in `Notes` as temporary and bounded.
 
+**The options require a human answer.** After presenting a material gap, stop. Never choose option 2 or 3 yourself because the artifact is optional, the approved auto chain omitted it, the control is familiar/canonical, or enough implementation can be guessed. In an armed auto chain this is a named pause with the remaining chain preserved. Continue without the owning artifact only after the human explicitly chooses that path; an explicit `skip ux` / `skip ui` in the approved chain already counts as that choice.
+
 If sufficient guidance exists, do not warn. Include a compact pointer in `Implementation Reference` instead:
 
 ```markdown
@@ -384,6 +416,8 @@ If wiring lives in another story, that story must already exist and run earlier 
 4. If any element has no owning AC, the story set is **incomplete**. Add the missing AC to the most appropriate story, add a story, or — if it is a quality that cannot be expressed as an observable AC — flag it explicitly. If a quality word from the phase goal does not appear (or have a direct synonym) in any AC across the story set, treat it as silently dropped — do not assume it is "implicitly covered" by feature stories.
 
 Report the mapping in the execution log only if something was missing and had to be added or flagged. A fully covered goal needs no narration. Never write story files until every element of the phase goal maps to a concrete AC or an explicit flag.
+
+**0f.1 Exit-path coverage.** Map every phase Exit Criterion—including each nested action/result bullet—to one specific story AC that exercises the same observable route end-to-end. Preserve the caller or user path, sequence, and breadth: an alternative entry point that reaches the same internal result does not satisfy a criterion promising a particular direct call, command, screen path, or fluent terminal. For composed behavior, the owning AC must include the composition and its terminal action in the same path. If no AC owns an Exit Criterion exactly, revise the story set before writing files.
 
 <!-- mano-rule: id=project-rule-story-coverage; incident=applicable-documentation-rule-omitted; model=not-recorded; date=2026-07-31; eval=stories-project-rule-coverage -->
 **0g. Project-rule coverage map.** After drafting the story set and before writing any files:
@@ -432,7 +466,7 @@ When all stories are written, output the execution log:
 - 1. [title] — [exact PHASE_DIR]/stories/story-1-[slug].md
 - 2. ...
 ⚠ Verify: [embedded assumption worth checking — advisory, omit if none]
-❓ Decide: [decision to confirm or change before the affected story is implemented, phrased as a question with the inferred value — omit if none]
+❓ Decide: [decision explicitly permitted by this skill — never an inferred upstream value; omit if none]
 
 [Optional hook block if active]
 
@@ -442,10 +476,10 @@ Next:
 
 Give each story its **full project-root-relative path** (as above), not a bare `story-N-[slug].md` — that is what makes each line tap-to-open in the editor. The path replaces the old parenthesised filename.
 
-Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact should have stated a behaviour-driving value and didn't (a default, a threshold, a severity), infer the most consistent value, build the story with it, and raise the inference as a `❓ Decide:` — never leave the implementer to invent it, and never edit the upstream artifact yourself (flag the gap for its owning skill). **(2)** A pending `❓ Decide:` makes the affected next action conditional: name which story is blocked and write `mano dev` as available only after that decision. Do not add a separate `Status:` line.
+Two rules for the flag lines (see the canonical execution-log format in `_mano/workflow.md`): **(1)** When an input artifact omits a behaviour-driving value, apply the readiness hard gates. Write no story files. Route the missing decision to its owning skill. Do not infer a value, embed a provisional default, or turn the gap into a story-level `❓ Decide:`. **(2)** If another decision explicitly permitted by this skill remains open, a pending `❓ Decide:` makes the affected next action conditional. Name which story is blocked. Show `mano dev` only after that decision. Do not add a separate `Status:` line.
 
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-The inference path above does not apply to the Public-interface readiness hard gate: route that missing contract to `mano spec` and write no stories.
+The no-inference rule applies to public interfaces, spec-owned defaults, and every other behaviour-driving value.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
 Do not ask for per-story approval. The user reviews the files at their own pace in their editor.
@@ -470,6 +504,13 @@ During implementation, the user may come back via `mano stories` to report a bug
 
 **`mano stories` writes story files. `mano stories` never writes or fixes code.** When a user reports a bug, `mano stories` creates a bug story — it does not go fix the code.
 
+**Step 0 pre-flight still applies.** A mid-build story is a new story, so it runs the same readiness and gap checks as any other — 0c (missing domain structure), 0c.1 (public-interface readiness, which writes *no* story files and routes to `mano spec`), and 0d (artifact gap check, routing to `mano ui` / `mano ux` / `mano spec` / `mano rules` by gap type). The short flows below describe what is *different* about a mid-build run; they never replace Step 0. Arriving mid-phase is not a reason for a story to be less ready than one written at the start of the phase — it is a reason to be more careful, because the artifacts were written before this work was in scope.
+
+There are two kinds of mid-build addition, and they differ only in whether the work is already a backlog item:
+
+- **Emergent work** — a bug or gap found while building, not in the backlog. Write the lettered story and nothing else. This is the flow immediately below.
+- **An existing backlog item the user pulls in** — needs the item assigned to this phase first. See **Pulling a backlog item into the open phase** after this flow.
+
 When the user reports something mid-build:
 
 1. Create a new story using sub-numbering based on the last completed story (e.g. `story-3a`, then `story-3b`). Sub-numbers attach to the most recently *completed* story, not to an upcoming one — even if the bug is about behaviour an upcoming story will introduce. Sub-numbering follows ship order, not scope order. Lettered insertions only block the subsequent number if explicitly marked as a blocker in story dependencies.
@@ -490,6 +531,43 @@ When the user reports something mid-build:
 Next:
 - `mano dev` — implement the next pending story
 ```
+
+<!-- mano-rule: id=mid-phase-addition-owner; incident=stories-assigned-backlog-item-out-of-lane; model=not-recorded; date=2026-08-05; eval=stories-midphase-assign -->
+### Pulling a backlog item into the open phase
+
+When the user names an **exact existing backlog item** to bring into the phase already being built ("bring in *Mirror easing on reversal*"), `mano stories` may assign it and write its story. The full rule is `_mano/workflow.md` → **Mid-phase additions**; this is the procedure.
+
+**Check the goal first.** Read the phase brief's goal. If the named item would change that goal rather than fit inside it, this is the next phase, not an addition — say so and stop:
+
+```text
+[mano stories]: "[item]" changes the phase-[N] goal ("[goal]") rather than fitting inside it.
+That makes it the next phase, not an addition. Finish phase-[N], then `mano start` picks it up.
+```
+
+Do not assign it, do not write the story, do not offer to shrink it to fit. If it fits the existing goal, proceed:
+
+1. **Assign the item to this phase via the writer** — one `--title` per item the user named exactly:
+   ```
+   node _mano/scripts/backlog.js assign --phase [N] --title "[exact backlog title]"
+   ```
+   **Script failing?** Stop and report the error — never hand-edit a status. If the script reports no matching item, the work is not in the backlog: treat it as ordinary emergent work (the lettered-story flow above) and do not invent a backlog item for it.
+2. Write the story with the same lettered flow as above (steps 1–3) — including Step 0 pre-flight. If 0c.1 blocks or 0d finds a gap, the item stays assigned and the story is not written: report the gap and route it, exactly as on any other path. Assignment is not a commitment to produce a story this turn.
+3. **Flag the scope change — do not record it yourself.** The phase now contains work its brief does not describe, and `mano review` reads that brief for the phase goal and Assumption Log. The brief belongs to `mano start`; never edit it here.
+
+```text
+[mano stories]: mano stories — [exact PHASE_DIR]/stories/README.md, [exact PHASE_DIR]/stories/story-[N][letter]-[slug].md
+- Assigned "[item]" to [PHASE_ID]
+- Inserted story [N][letter]: [title]
+⚠ Verify: [PHASE_ID] scope grew — its brief doesn't mention "[item]". Add a line to [PHASE_DIR]/phase-brief.md if you want it on the record before review.
+
+[Optional hook block if active]
+
+Next:
+- `mano dev` — implement the next pending story
+```
+
+Never select items yourself, never assign more than the user named, and never assign to a phase that does not already exist with approved scope. Adding to an open phase is the human's call, made in the message that names the item.
+<!-- /mano-rule: mid-phase-addition-owner -->
 
 <!-- mano-rule: id=post-stories-hook-findings-triage; incident=post-stories-hook-findings; model=not-recorded; date=2026-05-29; eval=pending -->
 ## Addressing post-stories hook findings
@@ -537,13 +615,13 @@ Never silently edit approved work.
 
 After `mano stories` completes, check whether `_mano/hooks/post-stories.md` exists. Ignore `_mano/hooks/post-stories.example.md`.
 
-If `_mano/hooks/post-stories.md` exists, prepare the generic hook block for the final chat response. Do not run the hook automatically. Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook. Do not write hook suggestions into generated artifacts.
+If `_mano/hooks/post-stories.md` exists, check its `## Mode`. A `command` hook runs automatically in both modes. A `suggest` hook asks with the generic `Run it now?` block in manual or unarmed runs; during an armed auto chain it runs automatically and pauses only when findings require triage. See `_mano/workflow.md` → **Optional Post-Skill Hooks** and **Run Mode**. Do not mention specific third-party skill names, slash commands, external tool names, or the hook's full suggested prompt unless the user explicitly asks to run or inspect the hook. Do not write hook suggestions into generated artifacts.
 
-This step is required even when no stories update was needed. Mention it before the next-action block.
+This check is required even when no stories update was needed. In manual or unarmed runs, mention an active suggest hook before the next-action block; during an armed auto chain, run it instead.
 
 ## Forbidden
 
-- Do not write to `_mano_output/backlog.md`. If story planning reveals deferred work, output a suggested backlog item in the execution log and tell the user to run `mano start` or edit the backlog manually.
+- Do not hand-edit `_mano_output/backlog.md`. The only backlog mutation allowed here is `backlog.js assign` for an exact user-named item under **Pulling a backlog item into the open phase**. If ordinary story planning reveals deferred work, output a suggested backlog item in the execution log and tell the user to run `mano start` or edit the backlog manually.
 - **Do not modify a story marked as `done` in the README index.** The file is immutable. Create a new sub-numbered story (e.g. story-4a) that describes the change and references the original. This applies even if the user explicitly asks — explain why and offer the sub-numbered alternative.
 - **Do not write or fix code.** `mano stories` creates story files. If a user reports a bug, create a bug story. Do not touch source code, fix issues, or implement changes directly.
 - **Do not add `Test:` AC unless the tech spec or `project-rules.md` defines a testing convention** that applies to this story.
