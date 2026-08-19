@@ -473,6 +473,25 @@ class MainIntegrationTests(unittest.TestCase):
             self.assertEqual([r["attempt"] for r in records], [1, 2])
             self.assertIn("deterministic", out)
 
+    def test_a_seeded_ledger_is_never_reported_stale_by_copy_order(self) -> None:
+        # `state.js` flags an optional artifact modified after the ledger. Copy
+        # order alone decided that before, so any fixture pairing progress.md
+        # with tech-spec.md carried a permanent, meaningless advisory.
+        with tempfile.TemporaryDirectory() as tmp:
+            fixture = Path(tmp) / "fixtures" / "paired"
+            fixture.mkdir(parents=True)
+            (fixture / "phase-brief.md").write_text(MINI_BRIEF, encoding="utf-8")
+            (fixture / "progress.md").write_text("# Progress\n", encoding="utf-8")
+            (fixture / "tech-spec.md").write_text("# Tech Spec\n", encoding="utf-8")
+            project = Path(tmp) / "project"
+            project.mkdir()
+            with mock.patch.object(run, "FIXTURES_DIR", fixture.parent):
+                run.seed_fixture(project, "paired", "seed", 1)
+            out = project / "_mano_output"
+            ledger = (out / "phase-1" / "progress.md").stat().st_mtime_ns
+            spec = (out / "tech-spec.md").stat().st_mtime_ns
+            self.assertGreaterEqual(ledger, spec)
+
     def test_no_manifest_leaves_the_results_directory_alone(self) -> None:
         with contextlib.ExitStack() as stack:
             results = self._harness(stack, {"one": {"prompt": "mano build", "assertions": []}}, {})

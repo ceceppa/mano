@@ -1,0 +1,11 @@
+{
+  "name": "build-arg-rework-precedence",
+  "description": "Durable state outranks a new argument: with an `R…` review finding still pending, `mano build \"<new text>\"` refuses without mutation and asks for the open event to be resolved or dismissed first. Nothing is written — not a row, not a status, not code.",
+  "fixture": "build-rework-pending",
+  "phase": 1,
+  "prompt": "mano-build \"the base stage label should be upper-case\"",
+  "assertions": [
+    "build_arg_stopped_for_the_pending_rework",
+    "build_wrote_no_story_files"
+  ]
+}

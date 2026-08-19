@@ -1,0 +1,15 @@
+{
+  "name": "build-group-boundary",
+  "description": "A pass groups the contiguous leaves of one category and stops at the category boundary, where gate 6.2 fires on a capacity default no artifact owns. The rows it closed must be proven; the blocked row must stay open with none of its behaviour invented. Step 2 proves a partial pass resumes correctly rather than closing what it could not build.",
+  "fixture": "build-group-boundary",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano build", "session": "fresh" },
+    { "prompt": "mano build", "session": "fresh" }
+  ],
+  "assertions": [
+    "group_stopped_at_the_category_gate",
+    "group_resumed_without_reopening_proven_rows",
+    "build_wrote_no_story_files"
+  ]
+}

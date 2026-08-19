@@ -5,7 +5,7 @@ description: The implementation contract shared by mano dev and mano build — t
 
 # Implementation contract (shared)
 
-Shared by the two skills that produce code: `mano dev` (one story) and `mano build` (one Scope row of the phase brief). Both name this file in `requires:`. Read it once, immediately after the skill's own contract and before the state projection — it is identical on every run, so that order keeps the prompt prefix cacheable.
+Shared by the two skills that produce code: `mano dev` (one story) and `mano build` (the phase brief's own Scope rows). Both name this file in `requires:`. Read it once, immediately after the skill's own contract and before the state projection — it is identical on every run, so that order keeps the prompt prefix cacheable.
 
 One implementation contract, two units of work. Where this file says **the unit**, read:
 
@@ -17,6 +17,13 @@ One implementation contract, two units of work. Where this file says **the unit*
 | the status write | `stories.js set-status` (dev step 11) | `progress.js set-status` |
 
 Step numbers are stable across both paths and are cited by name elsewhere in Mano — do not renumber them.
+
+**One pass may cover several units. The gates never do.** `mano dev` implements one story per invocation (`yolo` runs the pending set sequentially, each story keeping its own boundaries). `mano build` may cover several contiguous Scope rows in one pass when they share a single implementation surface; `_mano/skills/build.md` owns exactly when that is allowed. Either way:
+
+- gates **6.2**, **6.3**, and **6.4** run **per unit**, before any code and before any status write;
+- the acceptance-evidence gate **10.1** is applied **per unit and per acceptance criterion**, after implementation.
+
+Verification may be shared across a pass — one suite run can serve several units. **Evidence may not.** A green suite is evidence for a unit only where something in it exercises that unit's stated outcome through its stated route. A pass that covers three units and proves two closes two, and the third stays open.
 
 ## Before writing code — the gap gates
 

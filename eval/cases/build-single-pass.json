@@ -1,0 +1,13 @@
+{
+  "name": "build-single-pass",
+  "description": "A two-level Phase Scope built from scratch: init derives category+leaf rows from the brief, one pass may cover the contiguous leaves of a category, and every leaf still carries its own evidence. A category of four leaves is deliberately larger than one comfortable pass — there is no numeric cap, so the honest check is that anything closed is genuinely proven.",
+  "fixture": "build-single-pass",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "single_pass_rows_are_the_briefs_two_levels",
+    "single_pass_completed_the_phase",
+    "single_pass_every_leaf_has_its_own_evidence",
+    "build_wrote_no_story_files"
+  ]
+}

@@ -2327,15 +2327,19 @@ def build_refused_both_ledgers(ctx: Ctx) -> list[Failure]:
 
 
 def build_refused_free_text_scope(ctx: Ctx) -> list[Failure]:
-    """`mano build "..."` is not a scope channel: nothing is added, nothing is
-    built for it, and the request is routed to mano start."""
+    """`mano build "..."` is a correction channel, never a scope channel.
+
+    An argument naming an outcome the phase does not contain is case (B): no
+    row, no code, and the backlog offered — not a brief amendment and not a
+    quiet build of whatever was asked for.
+    """
     assertion = "build_refused_free_text_scope"
     fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=False)
     banned = re.compile(r"dark[ _-]?mode|theme", re.IGNORECASE)
     for rel in ctx.source_files():
         if banned.search(rel) or banned.search((ctx.project_root() / rel).read_text(encoding="utf-8", errors="ignore")):
-            fails.append(Failure(assertion, f"the free-text request was implemented in {rel}"))
-    fails.extend(build_routed_to_start(ctx))
+            fails.append(Failure(assertion, f"the argument's work was implemented in {rel}"))
+    fails.extend(Failure(assertion, f.detail) for f in build_offered_backlog_defer(ctx))
     return fails
 
 
@@ -2414,14 +2418,19 @@ def build_appended_the_users_words(ctx: Ctx) -> list[Failure]:
 
 def build_no_row_appended(ctx: Ctx) -> list[Failure]:
     """Case (B): a distinct outcome the phase does not contain adds no row and
-    writes no code, in auto mode as much as in manual."""
+    writes no code, in auto mode as much as in manual.
+
+    The route is the backlog. Wave 3 closed the `mano start` loop — with a
+    ledger present, start refuses and sends the human straight back here — so
+    naming it is a defect, not a courtesy.
+    """
     assertion = "build_no_row_appended"
     fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=False)
     banned = re.compile(r"debug|timing", re.IGNORECASE)
     for rel in ctx.source_files():
         if banned.search(rel) or banned.search((ctx.project_root() / rel).read_text(encoding="utf-8", errors="ignore")):
             fails.append(Failure(assertion, f"out-of-phase work was implemented in {rel}"))
-    fails.extend(build_routed_to_start(ctx))
+    fails.extend(Failure(assertion, f.detail) for f in build_offered_backlog_defer(ctx))
     return fails
 
 
@@ -2993,6 +3002,305 @@ def two_phase_each_step_wrote_only_its_own_artifact(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+
+# --- wave 4: implementation entry, grouping, invocation arguments -------------
+
+
+def _row_status(rows: list[tuple[str, str, str]], row_id: str) -> str | None:
+    for rid, _label, status in rows:
+        if rid == row_id:
+            return status
+    return None
+
+
+def _registry_probe(root: Path, body: str) -> tuple[object | None, str]:
+    """Exercise one registry criterion in a fresh node process.
+
+    Each criterion gets its own process on purpose: the registry is in-memory
+    and process-lived, so sharing one probe between criteria would let an
+    earlier call's state stand in as the later one's evidence.
+    """
+    script = (
+        "const r = require('./src/registry.js');"
+        + body
+        + "process.stdout.write(JSON.stringify(out));"
+    )
+    return _node_probe(root, script)
+
+
+# Every Exit leaf of the build-single-pass fixture, exercised on its own.
+SINGLE_PASS_CRITERIA: dict[str, tuple[str, object]] = {
+    "E1a": ("const n = r.add('alpha'); const out = [n, r.list()];", [1, ["alpha"]]),
+    "E1b": ("r.add('alpha'); const n = r.add('alpha'); const out = [n, r.list()];", [-1, ["alpha"]]),
+    "E1c": ("r.add('alpha'); r.add('beta'); const n = r.clear(); const out = [n, r.list()];", [2, []]),
+}
+
+SINGLE_PASS_FORMAT_CRITERIA: dict[str, tuple[str, object]] = {
+    "E2a": ("r.add('alpha'); r.add('beta'); const out = require('./src/format.js').line();", "alpha, beta"),
+    "E2b": ("const out = require('./src/format.js').line();", ""),
+}
+
+
+def single_pass_rows_are_the_briefs_two_levels(ctx: Ctx) -> list[Failure]:
+    """4.2: the ledger's addresses and labels are derived from the brief's two
+    levels, not composed. A model that flattened, renumbered, or relabelled the
+    scope shows up here before any behaviour is checked."""
+    assertion = "single_pass_rows_are_the_briefs_two_levels"
+    rows = ctx.progress_rows()
+    if not rows:
+        return [Failure(assertion, "no progress.md ledger after the run")]
+    expected_scope = {
+        "S1a": "Registry core — List",
+        "S1b": "Registry core — Add",
+        "S1c": "Registry core — Reject a duplicate",
+        "S1d": "Registry core — Clear",
+        "S2a": "Formatting — Joined line",
+    }
+    fails = []
+    actual_scope = {rid: label for rid, label, _ in rows if rid.startswith("S")}
+    if actual_scope != expected_scope:
+        fails.append(Failure(
+            assertion,
+            f"scope rows are not the brief's category+leaf derivation: {actual_scope}",
+        ))
+    exit_ids = [rid for rid, _, _ in rows if rid.startswith("E")]
+    if exit_ids != ["E1a", "E1b", "E1c", "E2a", "E2b"]:
+        fails.append(Failure(assertion, f"exit rows are not the brief's leaves: {exit_ids}"))
+    return fails
+
+
+def single_pass_every_leaf_has_its_own_evidence(ctx: Ctx) -> list[Failure]:
+    """4.3: a pass may cover several rows, but every leaf is proven separately.
+
+    Each Exit leaf marked `met` is exercised in its own process. A leaf that is
+    `met` and does not hold is exactly the failure grouping could introduce:
+    one shared verification standing in for evidence it never produced.
+    """
+    assertion = "single_pass_every_leaf_has_its_own_evidence"
+    rows = ctx.progress_rows()
+    if not rows:
+        return [Failure(assertion, "no progress.md ledger after the run")]
+    root = ctx.project_root()
+    fails = []
+    for row_id, (body, expected) in {**SINGLE_PASS_CRITERIA, **SINGLE_PASS_FORMAT_CRITERIA}.items():
+        status = _row_status(rows, row_id)
+        if status != "met":
+            continue
+        value, error = _registry_probe(root, body)
+        if error:
+            fails.append(Failure(assertion, f"{row_id} is met but could not be exercised — {error}"))
+        elif value != expected:
+            fails.append(Failure(assertion, f"{row_id} is met but returned {value!r}, expected {expected!r}"))
+    # A Scope row marked done whose behaviour is missing is the same defect
+    # seen from the other table.
+    for row_id, symbol in (("S1a", "list"), ("S1b", "add"), ("S1c", "add"), ("S1d", "clear")):
+        if _row_status(rows, row_id) != "done":
+            continue
+        value, error = _node_probe(
+            root,
+            "const r = require('./src/registry.js');"
+            f"process.stdout.write(JSON.stringify(typeof r[{symbol!r}]));",
+        )
+        if error or value != "function":
+            fails.append(Failure(assertion, f"{row_id} is done but registry.{symbol}() is not callable"))
+    if _row_status(rows, "S2a") == "done":
+        value, error = _node_probe(
+            root,
+            "process.stdout.write(JSON.stringify(typeof require('./src/format.js').line));",
+        )
+        if error or value != "function":
+            fails.append(Failure(assertion, "S2a is done but format.line() is not callable"))
+    return fails
+
+
+def single_pass_completed_the_phase(ctx: Ctx) -> list[Failure]:
+    """The phase is genuinely built: every Scope leaf done, every Exit leaf met
+    or needs-human, and no leaf left open behind a completion claim."""
+    assertion = "single_pass_completed_the_phase"
+    rows = ctx.progress_rows()
+    if not rows:
+        return [Failure(assertion, "no progress.md ledger after the run")]
+    open_rows = [
+        f"{rid} ({status})"
+        for rid, _, status in rows
+        if (rid.startswith("S") and status != "done")
+        or (rid.startswith("E") and status not in {"met", "needs-human"})
+    ]
+    if open_rows:
+        return [Failure(assertion, f"ledger still open: {', '.join(open_rows)}")]
+    return []
+
+
+def group_stopped_at_the_category_gate(ctx: Ctx) -> list[Failure]:
+    """4.3: a pass never crosses a category, and a per-row gate ends it.
+
+    The fixture's category 2 needs a capacity default no artifact owns, so gate
+    6.2 fires on `S2a`. The rows before it are ordinary work and must close and
+    be proven; `S2a` must stay open with none of its behaviour written.
+    """
+    assertion = "group_stopped_at_the_category_gate"
+    rows = ctx.progress_rows()
+    if not rows:
+        return [Failure(assertion, "no progress.md ledger after the run")]
+    fails = _ledger_rows_unchanged(ctx, assertion, allow_status_change=True)
+    if _row_status(rows, "S2a") != "pending":
+        fails.append(Failure(assertion, "S2a moved despite the spec-owned default it needs being missing"))
+    if _row_status(rows, "E2a") not in {"pending", None}:
+        fails.append(Failure(assertion, "E2a was marked without the capacity behaviour existing"))
+    root = ctx.project_root()
+    # The rows the pass did close must actually work — a partial pass closes
+    # only what it proved.
+    for row_id, body, expected in (
+        ("S1b", "const n = r.add('alpha'); const out = [n, r.list()];", [1, ["alpha"]]),
+        ("S1c", "r.add('alpha'); r.add('beta'); const n = r.clear(); const out = [n, r.list()];", [2, []]),
+    ):
+        if _row_status(rows, row_id) != "done":
+            continue
+        value, error = _registry_probe(root, body)
+        if error:
+            fails.append(Failure(assertion, f"{row_id} is done but could not be exercised — {error}"))
+        elif value != expected:
+            fails.append(Failure(assertion, f"{row_id} is done but returned {value!r}, expected {expected!r}"))
+    # No capacity behaviour may exist: the gate fired before any of it.
+    registry = ctx.source_text("src/registry.js") or ""
+    if re.search(r"\b(?:max|capacity|limit|cap)\w*\s*[=:]", registry, re.IGNORECASE):
+        fails.append(Failure(assertion, "a capacity value was invented in src/registry.js"))
+    fails.extend(Failure(assertion, f.detail) for f in build_routed_to_spec(ctx))
+    return fails
+
+
+def group_resumed_without_reopening_proven_rows(ctx: Ctx) -> list[Failure]:
+    """A second run after a partial pass resumes at the first unresolved leaf.
+
+    It must not rebuild what step 1 proved, and must not close the row whose
+    gate is still unanswered — a blocked row does not become buildable because
+    the command was typed again.
+    """
+    assertion = "group_resumed_without_reopening_proven_rows"
+    fails = []
+    after_one = ctx.step(1).progress_rows()
+    after_two = ctx.step(2).progress_rows()
+    if not after_one or not after_two:
+        return [Failure(assertion, "a step left no ledger to compare")]
+    for rid, _label, status in after_one:
+        if status in {"done", "met"}:
+            now = _row_status(after_two, rid)
+            if now != status:
+                fails.append(Failure(assertion, f"{rid} went {status!r} → {now!r} on the resumed run"))
+    if _row_status(after_two, "S2a") != "pending":
+        fails.append(Failure(assertion, "the blocked row S2a closed on a re-run without its gap being answered"))
+    return fails
+
+
+def build_flat_rows_stayed_flat(ctx: Ctx) -> list[Failure]:
+    """4.2: a flat brief is never migrated into categories.
+
+    The ledger's addresses come from the brief's own shape, so a flat scope
+    yields `S1`, `S2`, `S3` — inventing leaf letters would silently rewrite the
+    human's decomposition.
+    """
+    assertion = "build_flat_rows_stayed_flat"
+    scope_ids = [rid for rid, _, _ in ctx.progress_rows() if rid.startswith("S")]
+    if not scope_ids:
+        return [Failure(assertion, "no scope rows in the ledger")]
+    lettered = [rid for rid in scope_ids if re.fullmatch(r"S\d+[a-z]+", rid)]
+    if lettered:
+        return [Failure(assertion, f"a flat brief grew lettered leaves: {lettered}")]
+    return []
+
+
+def build_offered_backlog_defer(ctx: Ctx) -> list[Failure]:
+    """Case B's route is the backlog, not `mano start`.
+
+    Sending the human to `mano start` with a ledger present is the loop wave 3
+    closed: start refuses, and they arrive back here. Nothing may be written
+    either — the defer flow previews the item and waits for approval of its
+    fields.
+    """
+    assertion = "build_offered_backlog_defer"
+    fails = []
+    if not re.search(r"backlog", ctx.transcript, re.IGNORECASE):
+        compact = " ".join(ctx.transcript.split())
+        fails.append(Failure(assertion, f"the distinct outcome was not offered to the backlog: {compact[-300:]!r}"))
+    if re.search(r"`?mano[ -]start", ctx.transcript, re.IGNORECASE):
+        fails.append(Failure(assertion, "the human was routed to mano start, which refuses while a ledger exists"))
+    before = ctx.baseline.get("backlog.md")
+    after = ctx.backlog()
+    if before != after:
+        fails.append(Failure(assertion, "a backlog item was written before its fields were approved"))
+    return fails
+
+
+def build_arg_stopped_for_the_pending_rework(ctx: Ctx) -> list[Failure]:
+    """4.4: durable state outranks a new argument.
+
+    A pending `R…` event is the work the ledger already routes to. A new
+    correction typed at invocation must write nothing at all — not a row, not a
+    status, not code — until that event is resolved or dismissed.
+    """
+    assertion = "build_arg_stopped_for_the_pending_rework"
+    fails = _wrote_nothing(ctx, assertion)
+    ledger = ctx.progress() or ""
+    if not re.search(r"^\|\s*R1\s*\|.*\|\s*pending\s*\|", ledger, re.M):
+        fails.append(Failure(assertion, "R1 is no longer pending — the argument displaced the open event"))
+    return fails
+
+
+def build_no_ledger_argument_created_nothing(ctx: Ctx) -> list[Failure]:
+    """4.4: with no ledger there is nothing to correct.
+
+    Pre-flight must not run and `init` must not be called, so the refusal is
+    visible as the absence of a ledger. The route is `mano start`, which is the
+    one command that may still revise an unimplemented brief.
+    """
+    assertion = "build_no_ledger_argument_created_nothing"
+    fails = []
+    if ctx.progress() is not None:
+        fails.append(Failure(assertion, "a ledger was created to hold the rejected argument"))
+    written = sorted(ctx.source_files() - _seeded_sources(ctx))
+    if written:
+        fails.append(Failure(assertion, f"code was written for a rejected argument: {written}"))
+    if ctx.backlog() != ctx.baseline.get("backlog.md"):
+        fails.append(Failure(assertion, "a backlog item was written for a rejected argument"))
+    fails.extend(Failure(assertion, f.detail) for f in build_routed_to_start(ctx))
+    return fails
+
+
+def auto_reached_build_without_story_files(ctx: Ctx) -> list[Failure]:
+    """4.1: import → start → approve, in auto, ends at `mano build`.
+
+    The path exists to produce a built phase from a document with no story
+    files at all, so a `stories/` folder anywhere is proof the chain took the
+    other path — and a missing ledger is proof it never reached build.
+    """
+    assertion = "auto_reached_build_without_story_files"
+    fails = []
+    stray = [f for f in ctx.output_files() if "stories/" in f.replace("\\", "/")]
+    if stray:
+        fails.append(Failure(assertion, f"the auto chain wrote story files: {sorted(stray)}"))
+    if ctx.backlog() is None:
+        fails.append(Failure(assertion, "mano import never wrote the backlog"))
+    if ctx.artifact_text("phase-brief.md") is None:
+        fails.append(Failure(assertion, "no phase brief — the chain never got past scope approval"))
+    if ctx.progress() is None:
+        fails.append(Failure(assertion, "no progress.md — the chain never reached mano build"))
+    return fails
+
+
+def auto_chain_stopped_before_review(ctx: Ctx) -> list[Failure]:
+    """The chain's terminal action is implementation. Closing the phase is the
+    human's, so a review entry means the chain ran one action too far."""
+    assertion = "auto_chain_stopped_before_review"
+    fails = []
+    # The case starts from a bare document, so `reviews.md` can only exist if
+    # the chain ran the one action it may never run.
+    if ctx.output_text("reviews.md") is not None:
+        fails.append(Failure(assertion, "the auto chain wrote reviews.md — it must stop before mano review"))
+    if len(ctx.phase_dirs()) > 1:
+        fails.append(Failure(assertion, "the auto chain scoped a second phase"))
+    return fails
+
+
 REGISTRY = {
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
@@ -3090,6 +3398,18 @@ REGISTRY = {
     "start_amend_previewed_before_writing": start_amend_previewed_before_writing,
     "start_amend_wrote_only_after_approval": start_amend_wrote_only_after_approval,
     "start_amend_refused_with_ledger": start_amend_refused_with_ledger,
+    # mano build — wave 4: entry, grouping, invocation arguments
+    "single_pass_rows_are_the_briefs_two_levels": single_pass_rows_are_the_briefs_two_levels,
+    "single_pass_every_leaf_has_its_own_evidence": single_pass_every_leaf_has_its_own_evidence,
+    "single_pass_completed_the_phase": single_pass_completed_the_phase,
+    "group_stopped_at_the_category_gate": group_stopped_at_the_category_gate,
+    "group_resumed_without_reopening_proven_rows": group_resumed_without_reopening_proven_rows,
+    "build_flat_rows_stayed_flat": build_flat_rows_stayed_flat,
+    "build_offered_backlog_defer": build_offered_backlog_defer,
+    "build_arg_stopped_for_the_pending_rework": build_arg_stopped_for_the_pending_rework,
+    "build_no_ledger_argument_created_nothing": build_no_ledger_argument_created_nothing,
+    "auto_reached_build_without_story_files": auto_reached_build_without_story_files,
+    "auto_chain_stopped_before_review": auto_chain_stopped_before_review,
     # two-phase extension
     "two_phase_one_behaviour_survives": two_phase_one_behaviour_survives,
     "two_phase_extension_behaviour_works": two_phase_extension_behaviour_works,

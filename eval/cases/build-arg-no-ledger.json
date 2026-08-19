@@ -1,0 +1,12 @@
+{
+  "name": "build-arg-no-ledger",
+  "description": "With no ledger there is nothing to correct, so the argument is rejected before pre-flight and before `init`: no ledger is created to hold it, no code is written, and the change routes to `mano start` for a fresh scope approval. Run in auto so the refusal cannot quietly consume the standing approval and build anyway.",
+  "fixture": "build-arg-no-ledger",
+  "phase": 1,
+  "run_mode": "auto",
+  "prompt": "mano-build \"also add a debug stage module that prints load timings\"",
+  "assertions": [
+    "build_no_ledger_argument_created_nothing",
+    "build_wrote_no_story_files"
+  ]
+}

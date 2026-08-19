@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -129,6 +130,16 @@ def seed_fixture(project: Path, fixture: str, mode: str, phase: int | None) -> N
             dest = (phase_dir if f.name in PHASE_SCOPED else out) / f.name
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(f, dest)
+
+    # `state.js` reports an optional artifact modified after the ledger as an
+    # advisory. Copy order decides mtimes, and a fixture cannot express mtime
+    # intent at all, so a seeded ledger would look stale purely because
+    # `tech-spec.md` sorts after `progress.md`. Seeded state is coherent by
+    # definition: stamp the ledger last.
+    if phase is not None:
+        ledger = phase_dir / "progress.md"
+        if ledger.is_file():
+            os.utime(ledger, None)
 
 
 def activate_hook(project: Path, skill: str) -> None:

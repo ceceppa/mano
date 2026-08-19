@@ -47,8 +47,10 @@ class AmbientContractTests(unittest.TestCase):
         rules = _read("src/bootstrap/cursorrules")
         self.assertIn("`mano build` maps to `_mano/skills/build.md`", rules)
         self.assertIn("`mano dev` maps to `_mano/skills/dev.md`", rules)
-        # A dropped argument would silently turn a refusal case into a build.
-        self.assertIn('`mano build "add dark mode"` invokes `mano-build` with that argument intact', rules)
+        # A dropped argument would silently turn a correction into a plain build.
+        self.assertIn("**Preserve a literal trailing modifier or argument.**", rules)
+        self.assertIn("invokes `mano-build` with that exact text intact", rules)
+        self.assertIn("never paraphrase an argument", rules)
         self.assertIn(
             "`mano dev` and `mano build` are the two Mano actions allowed to write application code",
             rules,

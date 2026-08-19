@@ -204,18 +204,19 @@ Planning artifacts remain optional to the human; auto mode must not silently ski
 
 - Do not suggest a command just because it usually comes next if its artifact already exists and is still usable.
 - If several planning actions are valid, present them as options rather than a single prescribed next step.
-- Use this decision tree when evaluating next steps for the planning stage:
+- **Which implementation action a planning skill names is not a style choice.** A planning skill always runs at the no-ledger stage, which is the one case where the mode decides: in `manual`, offer **both** `mano stories` (decompose into story files first) and `mano build` (build straight from the brief, no story files) and let the human pick; in `auto`, the approved chain terminates at `mano build`, so name that one. Read `MODE:` from the state projection — never infer the path from which one appears more often in examples. Once a ledger exists, the path is no longer open: a stories index means `mano dev`, a `progress.md` means `mano build`, and neither is a planning skill's call.
+- Use this decision tree when evaluating next steps for the planning stage. Where it says **implementation**, substitute the rule above:
   ```
   Phase introduces a new category of file/example/module/component
   whose naming, placement, or shared format will repeat?
   └─ yes → keep `mano rules` in the options, however mature project-rules.md is
 
   Phase is user-facing or mobile?
-  ├─ design coverage or the current visual preview missing/stale? → suggest `mano ui` (do not auto-run stories)
-  ├─ project-rules still default? → list `mano rules` + `mano stories` as options
-  └─ design coverage, visual preview, and useful rules present? → suggest `mano stories`
+  ├─ design coverage or the current visual preview missing/stale? → suggest `mano ui` (do not auto-run implementation)
+  ├─ project-rules still default? → list `mano rules` + implementation as options
+  └─ design coverage, visual preview, and useful rules present? → suggest implementation
 
   Phase is non-user-facing (backend/infra)?
-  └─ go straight to `mano stories` unless tech is genuinely fuzzy (suggest `mano spec`)
+  └─ go straight to implementation unless tech is genuinely fuzzy (suggest `mano spec`)
   ```
   The first branch exists because the others are asymmetric: `mano ui` is gated on a **phase-scoped** artifact (`PHASE_DIR/design-preview.html`), which is missing at the start of every phase, while `mano rules` was gated only on `project-rules still default?` — a **project-lifetime** condition that can never fire again once the file is customised. Existence of `project-rules.md` proves earlier categories were homed; it says nothing about a category this phase introduces. Judge rules by what the phase adds, not by whether the file has been written before.
