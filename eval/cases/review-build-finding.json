@@ -1,0 +1,14 @@
+{
+  "name": "review-build-finding",
+  "description": "A confirmed defect on a completed build-path phase becomes a durable R… rework event with its own exact text, routes to `mano build`, and never reaches `mano stories` or `mano dev` — which would give the phase the second ledger the projection refuses (B6, D4).",
+  "fixture": "review-build-finding",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano review", "session": "fresh" },
+    { "prompt": "the release stage is wrong — requiring src/release-stage.js should return base+feature+release but the label drops the feature part", "session": "continue" },
+    { "prompt": "yes, that's right", "session": "continue" }
+  ],
+  "assertions": [
+    "review_persisted_findings_as_rework"
+  ]
+}

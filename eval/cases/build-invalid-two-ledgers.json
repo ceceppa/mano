@@ -1,0 +1,10 @@
+{
+  "name": "build-invalid-two-ledgers",
+  "description": "The dual-ledger refusal fires even when progress.md is malformed. B4: the check used to be skipped in exactly the state that most needed it, because it only fired when progress parsed.",
+  "fixture": "build-invalid-two-ledgers",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_refused_two_ledgers_when_invalid"
+  ]
+}

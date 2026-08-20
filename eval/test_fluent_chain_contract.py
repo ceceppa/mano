@@ -55,11 +55,29 @@ class FluentChainContractTests(unittest.TestCase):
 
     def test_review_cannot_close_unowned_phase_contract(self) -> None:
         text = _read("src/skills/review.md")
-        self.assertIn("**Phase-contract safety net.**", text)
+        self.assertIn("**Phase-contract safety net — stories path only.**", text)
         self.assertIn("before asking for feedback or closing the phase", text)
         self.assertIn("exact cited canonical spec section", text)
         self.assertIn("closes the chain through each named returned type", text)
         self.assertIn("do not let `close it` waive this gate", text)
+
+    def test_the_story_safety_nets_are_scoped_to_the_stories_path(self) -> None:
+        # B6: review branched on PROGRESS_STATUS and then still asked for "the
+        # story's Implementation Reference" and routed gaps through mano stories
+        # / mano dev — which on a build-path phase creates the second ledger the
+        # projection refuses.
+        text = _read("src/skills/review.md")
+        self.assertIn("**Artifact-polarity safety net — stories path only.**", text)
+        self.assertIn(
+            "Review never asks for an `Implementation Reference`, never opens a story file, "
+            "and never routes to `mano stories` or `mano dev`",
+            text,
+        )
+        self.assertIn(
+            "**Review's only sanctioned `progress.js` surfaces are `request-rework`, "
+            "`resolve-rework`, and `sign-off`.**",
+            text,
+        )
 
 
 if __name__ == "__main__":

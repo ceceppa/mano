@@ -334,6 +334,32 @@ would leave, proves all eight assertions pass on it, then reintroduces one defec
 at a time and proves the owning assertion fires. Do the same for any expensive
 case you add — an assertion that cannot fail is not coverage.
 
+### Build-path cases
+
+The `mano build` path has no story files, so several of its contracts can only
+be checked as *refusals* — the interesting outcome is that nothing was written.
+`build-invalid-ledger`, `build-invalid-two-ledgers`, `build-brief-edited`, and
+`start-amend-with-ledger` all assert byte-identical fixture state afterwards,
+not just a well-worded message: a refusal that leaves a half-written ledger is a
+partial action, not a refusal.
+
+Three contracts need step traces rather than a final artifact, because the final
+state cannot distinguish the right order from a plausible one:
+
+- `start-amend-pre-ledger` — a preview that writes nothing, then a write after
+  approval. Checked with `ctx.changed_in_step(1)`; the final brief alone cannot
+  tell preview-then-write from write-then-describe.
+- `review-build-finding` — a confirmed finding becomes a durable `R…` event.
+- `build-rework-pending` — that event routes back to build even though every row
+  already reads `done`.
+
+Some build contracts are pinned by deterministic tests instead of evals, because
+no fixture can provoke them on demand: the lazy sub-row split fires only when a
+row overflows a turn's output budget, and the `--expect-phase-id` owner guard
+needs the owner to change *between* two commands. Both are covered in
+`test/scripts/progress.test.js`. Prefer a deterministic test wherever a property
+can be decided by a script — the same trade `verify.js` and `state.js` made.
+
 ## Notes / limits
 
 - Assertions are deterministic text checks. Subjective qualities

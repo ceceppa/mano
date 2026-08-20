@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This project uses **Mano** for planning. Mano is a structured thinking tool — it produces planning artifacts, not code.
+This project uses **Mano** for planning. Mano is a structured thinking tool: almost every command produces planning artifacts rather than code. The two exceptions are deliberate — `mano dev` and `mano build` implement what the planning already decided.
 
 ## For coding agents
 
@@ -74,7 +74,7 @@ documents — those update in place.
 
 - Modify files in `_mano/` or `_mano/templates/` — these are framework files.
 - Interpret `mano` commands (e.g. `mano start`, `mano review`) as implementation instructions — these are planning commands. Execute the relevant planning flow instead.
-- Create extra tracking files — Mano does not use a dedicated phase-state file. Determine state through `_mano/scripts/state.js`, which applies the optional local owner configuration and returns exact paths.
+- Create extra tracking files — the framework specifies exactly two ledgers, `PHASE_DIR/stories/README.md` and `PHASE_DIR/progress.md`, each written only by its own script. There is no third state file to invent. Determine state through `_mano/scripts/state.js`, which applies the optional local owner configuration and returns exact paths.
 - Auto-advance phases. A completed phase (every story `done`, or every ledger row `done` and every exit criterion `met`) never triggers planning or implementing the next one. Stop and let the user decide; never run `mano start`/`mano stories` on your own initiative.
 
 ## Project structure
