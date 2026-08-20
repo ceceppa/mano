@@ -23,7 +23,11 @@ If the user's activation message already includes substantive review feedback af
 
 On activation:
 1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, `STORIES`, `PROGRESS`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values; never construct `phase-N` or a review heading from the number.
-2. **Which ledger this phase used decides what you read.** `STORIES_STATUS: present` → read the exact projected `STORIES` path for story completion. `PROGRESS_STATUS: present` → this phase was built with `mano build`: read the exact projected `PROGRESS` path instead, and read no story files (there are none). The projection refuses a phase holding both, so exactly one applies.
+2. **Activation requires exactly one valid ledger, and which one decides everything you read afterwards.** Branch on `STORIES_STATUS` and `PROGRESS_STATUS` together:
+   - **Neither present** → refuse. Nothing was implemented on either path, so there is nothing to review. Name both entry points: `mano stories` then `mano dev`, or `mano build`. Stop.
+   - **`PROGRESS_STATUS: invalid`**, or both ledgers present → refuse the invalid state and relay the projection's repair instruction verbatim. Do not pick a winner, do not repair the file, and do not review around it. Stop.
+   - **`STORIES_STATUS: present`** → the stories path. Read the exact projected `STORIES` path and the story files it names. The story-specific coverage and `Implementation Reference` safety nets apply.
+   - **`PROGRESS_STATUS: present`** → the build path. Read the exact projected `PROGRESS` path and the phase brief, and **read no story files — there are none, and asking for one would create the second ledger the projection forbids.** Only the build-specific gate below applies.
 3. Read `_mano_output/reviews.md` if it exists to check for an H2 review heading that begins with the exact projected `REVIEW_HEADING_PREFIX` and then adds ` — [Date]`. An owner-scoped prefix must never match a legacy or different-owner heading.
 4. If that exact review entry already exists, treat this as a follow-up review focused on what changed after the fix work.
 5. After the pre-review gate below is clear, if that review entry exists but `_mano_output/backlog.md` still contains any items with the exact projected `IN_PHASE_STATUS`, the prior close was interrupted. Repair the already-approved close sweep before follow-up triage:
@@ -45,7 +49,11 @@ At the beginning of every later turn in this multi-turn review, rerun `node _man
 
 ## Pre-review gate
 
-**On the build path (`PROGRESS_STATUS: present`)**, the gate reads the ledger's two tables and refuses when **any Scope row is not `done` or any Exit Criterion is not `met`**. Built is not proven: a phase whose scope is complete but whose criteria are still `pending` has not shown that it works, and closing it would make the review a formality. Report what is open and stop:
+**On the build path (`PROGRESS_STATUS: present`)**, the gate reads the ledger's tables and refuses when **any Scope leaf is not `done`, any Exit leaf is neither `met` nor validly `needs-human`, or any rework event is still `pending`**. Built is not proven: a phase whose scope is complete but whose criteria are still `pending` has not shown that it works, and closing it would make the review a formality. A roll-up parent's status is derived from its split parts — judge the leaves.
+
+A `needs-human` leaf is **not** an open row. It is an explicit handoff: the implementer is saying this criterion cannot be honestly exercised by an agent, and it carries a recorded reason. Those are exactly what a human review is for, so they pass this gate and appear in the opening message beside their reason and the brief's matching `Try` line when one exists.
+
+Report what is open and stop:
 
 ```text
 [mano review]: [PHASE_ID] isn't finished yet, per [PHASE_DIR]/progress.md:
@@ -56,7 +64,13 @@ At the beginning of every later turn in this multi-turn review, rerun `node _man
 I can't review a phase that isn't complete, and managing that ledger isn't my job. Run `mano build` to finish the open rows and prove the open criteria. If a criterion can't be proven as written, `mano start` owns the brief that states it.
 ```
 
-That is your complete response. Do not edit `progress.md`, do not flip a row or a criterion, do not proceed to triage. When both tables are closed, the ledger plus the brief is the whole review input — that Exit Criteria table is review's coverage map, and it is why the table exists. The phase-contract and artifact-polarity safety nets below apply per Exit Criterion leaf; on this path there are no story ACs to map, so the leaves themselves are the contract and the ledger has already recorded which were proven.
+That is your complete response. Do not flip a row or a criterion, do not proceed to triage.
+
+**When the tables are closed, the brief plus the ledger is the whole review input, and the gate ends here.** The Exit Criteria leaves **are** the contract on this path — there are no story acceptance criteria to map them onto, and the ledger has already recorded which were proven and by what. Verify each leaf against the fingerprinted brief it was addressed from, and go to Standard review.
+
+The story-specific safety nets below **do not apply on this path**. Review never asks for an `Implementation Reference`, never opens a story file, and never routes to `mano stories` or `mano dev` — on a build-path phase, both of those would create the second ledger the projection refuses.
+
+**Review's only sanctioned `progress.js` surfaces are `request-rework`, `resolve-rework`, and `sign-off`.** It may not flip a Scope row, add or split a row, cut work, or hand-edit the ledger.
 
 **On the stories path**, if any stories are not marked `done`, **refuse and stop**. Review does not manage story state — that is not its job. Report what's pending and point to the right path:
 
@@ -76,7 +90,7 @@ I can't review a phase that isn't complete, and managing story status isn't my j
 That is your complete response. Do not edit the README index, do not mark or cut stories, do not proceed to triage. Re-running `mano review` after the index shows every story `done` (or no longer lists the cut ones) clears this gate.
 
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-**Phase-contract safety net.** Once every row is `done`, read the exact projected phase brief and each story file named by the exact projected index before beginning Standard review. On the build path, read the brief and the ledger — the `Done when` AC this gate maps to is the `## Exit Criteria` leaf itself, already addressed and already marked. This remains artifact inspection, not implementation investigation. Map every distinct Phase goal outcome and every Exit Criterion—including each nested action/result bullet—to a concrete `Done when` AC. Require the same observable user/caller route and breadth: an alternative API, command, screen route, or non-terminal fluent path that reaches a similar result does not count.
+**Phase-contract safety net — stories path only.** Once every story is `done`, read the exact projected phase brief and each story file named by the exact projected index before beginning Standard review. This remains artifact inspection, not implementation investigation. Map every distinct Phase goal outcome and every Exit Criterion—including each nested action/result bullet—to a concrete `Done when` AC. Require the same observable user/caller route and breadth: an alternative API, command, screen route, or non-terminal fluent path that reaches a similar result does not count.
 
 For each mapped public/shared interface path, follow only the story's `Implementation Reference` to the exact cited canonical spec section. Confirm that section actually defines the operation and, for fluent/composed paths, closes the chain through each named returned type while retaining required context. Do not browse other spec sections or source code. A correctly worded AC backed by a missing or incompatible canonical contract still fails this gate and routes to `mano spec` first.
 
@@ -95,7 +109,7 @@ Do not inspect source or tests to decide whether the uncovered behavior happens 
 <!-- /mano-rule: public-interface-contract-readiness -->
 
 <!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
-**Artifact-polarity safety net.** Coverage alone is insufficient when an owning AC and its cited canonical artifact promise opposite outcomes. While doing the phase-contract mapping above, compare the meaning of each AC with the exact cited spec section: success versus failure, recoverable versus locked, available versus unavailable, wired versus explicitly unwired/deferred. If a cited section contains both outcomes, that is still a conflict; do not select the sentence that makes the story look complete.
+**Artifact-polarity safety net — stories path only.** Coverage alone is insufficient when an owning AC and its cited canonical artifact promise opposite outcomes. On the build path the equivalent check ran as build's own pre-flight gate 0c.3 and again in its terminal sweep, against the same fingerprinted brief. While doing the phase-contract mapping above, compare the meaning of each AC with the exact cited spec section: success versus failure, recoverable versus locked, available versus unavailable, wired versus explicitly unwired/deferred. If a cited section contains both outcomes, that is still a conflict; do not select the sentence that makes the story look complete.
 
 If any opposing statement exists, stop before asking for feedback or closing the phase. Quote the AC and opposing canonical statement, then route to `mano spec`; after it is resolved, route to `mano stories` for pending corrective coverage when the owning story is already `done`. Do not inspect source/tests, accept `close it`, or infer that implementation happened to follow the AC—the artifact contract is internally inconsistent and the review cannot close it.
 <!-- /mano-rule: phase-acceptance-integrity -->
@@ -139,6 +153,8 @@ How did it go? Reply naturally — a clear all-good verdict closes the phase; or
 One list, one ask. Every Exit Criterion is an item; each assumption is an item tagged `*(assumption)*`; each Validation-Plan question is an item tagged `*(decide)*` with its Try hint inline on the criterion it tests where one matches. Omit assumption items when the brief has no Assumption Log. If a legacy brief has no Validation Plan, omit the `*(decide)*` items and Try hints — still show every Exit Criterion; never invent a missing plan during review. If a legacy plan uses `Decision this informs`, turn it into direct `*(decide)*` questions and its `Evidence to gather` into inline Try hints, preserving the meaning.
 
 Mano records each check as `passed` / `failed` / `not tested`, each assumption as `confirmed` / `invalidated` / `inconclusive`; "close it" records every unchecked promise as `not tested` and leaves unchecked assumptions `inconclusive`. Do not print these mechanics — the list and the closing question are the whole message.
+
+**On the build path, show every `needs-human` leaf with its reason.** The implementer marked it as something only a person can judge and said why. Put the criterion, that reason, and the brief's matching `Try` line when one exists, in the opening list alongside the rest — they are the checks most likely to be worth the human's minute.
 
 That is your complete response. No preamble. No explanation. No extra commentary or planning. End of message.
 
@@ -233,6 +249,14 @@ Skip the triage presentation and go straight to STEP 3. Write no backlog items. 
 **The close instruction is terminal — never re-confirm it.** A message may carry a whole-review verdict, individual verdicts, or feedback with its close instruction. Examples include `all went as planned, close it` and `1 confirmed, 2 invalidated; close it`. Apply the supplied outcomes, then go straight to writing files. Do **not** emit another triage-confirmation prompt. The user already confirmed the review.
 <!-- /mano-rule: review-validation-without-grading -->
 
+**Dismissing a build-path finding is the human's word, never an inference.** When the human rejects a finding outright during triage — "that's intended", "not doing that, close it" — and it had already been written as a rework event, record that exact decision:
+
+```
+node _mano/scripts/progress.js resolve-rework --phase [N] --expect-phase-id [PHASE_ID] --id R2 --status dismissed --reason-file [tmp].txt
+```
+
+The reason file holds the human's own words; the script refuses a dismissal without one. **Relay a dismissal, never conclude one** — not because a finding looks minor, not because it seems already handled, and not to clear the way to a close.
+
 The one thing that survives a close instruction is a ❌ rejection candidate the user has not seen. "Drop the dock work, close it" closes the phase, but the open backlog items that rejection orphans are information the user has not been shown, not a re-confirmation of something they already approved. Present the ❌ list alone — no other buckets, no re-litigating the rest of the triage — and write the rest of the close in the same turn.
 
 ---
@@ -266,6 +290,30 @@ When the user confirms (e.g., "close it", "yes"):
      [what it is; why it matters]
    - **Status:** backlog
    ```
+1b. **On the build path only — persist confirmed findings as durable rework, and record the human's sign-off.**
+
+   These two calls are review's entire write surface on `progress.md`. Skip both on the stories path.
+
+   **Findings first.** For every confirmed **substantive** finding — 🐛 Defects, 📋 Spec gaps, 📏 Rule gaps, and any 🔧 Refinement the human wants fixed in this phase — write one event per finding, in the order they were triaged:
+
+   ```
+   node _mano/scripts/progress.js request-rework --phase [N] --expect-phase-id [PHASE_ID] --text-file [tmp].txt
+   ```
+
+   **One event per finding, each with its own exact text.** Never squeeze mixed feedback into a single blob: build classifies each event A/B/C on its own, and an aggregate event cannot be classified at all. The text file holds the finding as the human described it — their words, not a summary — because that text is what a fresh session will read weeks later.
+
+   This is why the events exist: a conversation does not survive a compaction, a restart, or an interleaved command, and a confirmed finding must. Once written, `state.js` routes the phase back to `mano build` while any event is `pending`, even though every row already reads `done`. A ✨ New idea is not a finding — it is backlog, and it does not reopen the phase.
+
+   **Then the sign-off.** When the human closes the phase — a clear positive verdict, or the literal `close it` — record that attestation:
+
+   ```
+   node _mano/scripts/progress.js sign-off --phase [N] --expect-phase-id [PHASE_ID]
+   ```
+
+   It flips every `pending` and `needs-human` Exit leaf to `met` and records `human sign-off at review, [date]` against each one. Typing `close it` **is** a human attestation, and the ledger records *who* proved each criterion rather than leaving it as a status nobody owns. The script refuses while any rework event is pending — which is correct: a phase with an open finding is not closing.
+
+   Do not run `sign-off` when the review produced findings that route back to build. Do not run it to tidy a ledger the human did not close.
+
 2. **Resolve shipped items — via the writer's close sweep:**
    ```
    node _mano/scripts/backlog.js resolve --phase [N]
@@ -424,7 +472,9 @@ If the state projection's `HOOK:` line names `post-review`, follow `_mano/rules/
 - Do not write any files until the user confirms the triage in STEP 3.
 - Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. `mano review` only classifies feedback and updates backlog/review files after confirmation.
 - Do not create stories. `mano review` writes to the backlog and review log only.
-- Do not manage story or ledger state. Do not edit story files, mark stories `done`, cut stories, touch the stories README index, or run `progress.js` — not even in the pre-review gate. If stories aren't `done`, refuse per the pre-review gate and point the user to `mano dev` or their own README edit.
+- Do not manage story or ledger state. Do not edit story files, mark stories `done`, cut stories, or touch the stories README index — not even in the pre-review gate. If stories aren't `done`, refuse per the pre-review gate and point the user to `mano dev` or their own README edit.
+- Do not run `progress.js` outside its three sanctioned surfaces: `request-rework`, `resolve-rework`, and `sign-off`. Never `init`, `set-status`, `split`, or `add-row` — flipping a Scope row would make review the thing that decides work is done.
+- On a build-path phase, do not ask for an `Implementation Reference`, open a story file, or route to `mano stories` / `mano dev`. There are no stories, and creating one would give the phase two ledgers.
 - Do not check off acceptance criteria in story files.
 - Do not scope the next phase. That's `mano start`'s job.
 - Do not present the backlog or use it for scoping. Reading it is allowed for two purposes only: in STEP 2, to find rejection candidates when the feedback rejects a scoped direction (list only those candidates, never the backlog at large); and in STEP 3, to append, deduplicate, resolve, or reject items.

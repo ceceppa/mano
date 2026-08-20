@@ -1,0 +1,11 @@
+{
+  "name": "build-invalid-ledger",
+  "description": "A ledger that exists and does not validate is a hard stop with one repair instruction \u2014 never a phase to init over. B4: a versionless or malformed ledger used to read as no ledger at all.",
+  "fixture": "build-invalid-ledger",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_refused_invalid_ledger",
+    "build_wrote_no_story_files"
+  ]
+}

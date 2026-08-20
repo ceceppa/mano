@@ -22,7 +22,12 @@ Step numbers are stable across both paths and are cited by name elsewhere in Man
 
 6.2 **Spec-owned default gap.** If the unit or its cited phase Exit Criterion needs a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, the named canonical spec section must state the owning field/config/constant and exact value or relationship. A vague phrase such as “small area” is not an implementation value. Stop and route to `mano spec` when it is missing; do not choose a “story-owned default,” add a temporary literal, or treat a test fixture as the product default.
 6.3 **Player-choice UX gap.** If the unit lets a player choose among two or more simultaneously available tools, buildables, abilities, modes, rewards, or alternatives, the cited UX flow must define how the player invokes the choice, selects/changes the active option, sees that active state, and receives locked/unavailable/cancel feedback. If it does not, stop and route to `mano ux`; do not invent a hotkey, picker, cycling scheme, default active item, or HUD treatment while implementing.
-6.4 **Phase-scope conflict.** Before changing code, compare the unit and any user-requested behaviour change with the exact projected phase brief's `Phase goal`, `Phase scope`, and `Not this phase`. Work that directly supports an existing outcome can proceed. A distinct outcome, or anything the brief explicitly excludes, is outside this phase: stop before code. Do not treat “do it anyway” as permission to leave the brief stale. Ask the human to either defer it to the backlog/next phase or amend the phase brief to include it, then rerun `mano stories` to create or update the bounded story — on the build path, resume `mano build` against the amended brief instead. This gate applies in default, YOLO, and auto mode.
+6.4 **Phase-scope conflict.** Before changing code, compare the unit and any user-requested behaviour change with the exact projected phase brief's `Phase goal`, `Phase scope`, and `Not this phase`. Work that directly supports an existing outcome can proceed. A distinct outcome, or anything the brief explicitly excludes, is outside this phase: stop before code. Do not treat “do it anyway” as permission to leave the brief stale. Route it, and route it once — the route depends on whether a ledger already addresses the brief:
+
+- **A ledger exists** (it does, if you are implementing): the brief is frozen. On the stories path, an in-goal change is a lettered follow-up story via `mano stories "[what changed]"`; on the build path it is a `+N` correction row. A distinct outcome goes to the backlog or the next phase, and neither path amends the brief. Do **not** send the human to `mano start` from here: with a ledger present it will refuse, and telling them to amend and re-run is the loop this rule exists to close.
+- **No ledger yet** — the phase is scoped but nothing is being implemented: `mano start "[what changed]"` may revise the brief in place, showing the complete proposed scope and writing nothing until the human approves it.
+
+This gate applies in default, YOLO, and auto mode.
 7. If the unit is bootstrap, setup, tooling, infrastructure, or dependency-related, also read `_mano_output/tech-spec.md` before implementing. Treat library choices, package-manager choice, and install commands there as normative unless the unit's own text already repeats them exactly.
 8. Execute install commands exactly as written. Do not merge separate command groups, switch tools, or normalize mixed-tool instructions into a single package-manager invocation unless the unit or the tech spec explicitly tells you to. In particular, keep `npx expo install` commands separate from `npm install` or other package-manager commands so Expo can resolve SDK-compatible versions.
 
@@ -59,6 +64,38 @@ acceptance-evidence gate (10.1), run in full regardless.
 ## Read budget
 
 Read source in the smallest useful unit: signatures and declarations first (search/grep), then narrow line ranges around the edit site. Open a full file only when you are editing it and it is small. Do not preload artifacts or source "for context" beyond what the unit's implementation reference names.
+
+## Writing source: surgical edits only
+
+A new file is written in full — that is the only sanctioned full-file write. **An existing file is edited in the smallest regions the change actually owns.** Never re-emit a whole file to change part of it.
+
+- One replacement per changed region: the smallest unique block containing the change.
+- Everything you did not come to change stays byte-identical. No reordering, renaming, reformatting, import re-sorting, comment tidying, or "while I was in here" cleanup.
+- Adding a function or a case means replacing its neighbour, not the file.
+
+A full-file rewrite is invisible in the rendered result and catastrophic in a diff: it buries the one real change in a wall of noise, turns every concurrent edit into a merge conflict, and silently reverts anything another change added since you read the file. Restructuring is a human decision — say so and let them ask for it. The equivalent rule for planning artifacts is `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**; neither implementation skill loads `core.md`, which is why source needs its own statement of it here.
+
+## Closing an armed auto chain
+
+Both implementation skills are the terminal action of an armed `mano mode auto` chain. When one finishes such a chain, its ordinary aggregate or deviation line is that action's log, and exactly one closing block follows it:
+
+```text
+[mano auto]: phase-[N] — [first] → … → [last]
+- Ran: [actions, in order]
+- Stopped: [completed implementation | waiting on the question below]
+- Remaining: [ordered actions still approved for this run — omit only when none]
+⚠ Verify: [every advisory flag collected across the run, one per line — omit if none]
+
+[the pending question, if that is why it stopped]
+
+Next:
+- [when implementation completed] `mano review` — when you have checked the result
+- [when paused] Reply to the named question — the recorded remaining chain resumes automatically
+```
+
+That block is the **only** permitted content after the aggregate line, and it is not an implementation summary: do not add a recap, a file list, or restated acceptance criteria between them. In `manual` mode there is no chain and no closing block — the aggregate line is the whole response. Re-read `MODE` from the freshest projection before deciding which applies.
+
+This contract is stated here, in full, on purpose. Both implementation skills declare themselves self-contained and forbid opening `_mano/workflow.md` or `_mano/rules/core.md` mid-skill, so a pointer into either would be an instruction they cannot follow. The planning skills' copy lives in `_mano/rules/core.md` → **Auto-chain execution**; the two must stay in step.
 
 ## Implementation Output Discipline
 

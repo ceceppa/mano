@@ -43,6 +43,27 @@ On activation:
 
    An explicit abandonment does not silently bypass closure. Tell the user to remove or cut unfinished story rows as appropriate, run `mano review` to record and close the phase, then re-run `mano start`. **Script failing?** Stop and report the error — do not derive the go/no-go by scanning `_mano_output/` yourself (see "Scripts are mandatory" in `_mano/rules/core.md`).
 
+## Amending the current phase's brief — `mano start "[what changed]"`
+
+`mano start` with an explicit change argument, on a phase that is **open but not yet being implemented**, revises that phase's brief in place. It is the one route by which an approved brief changes, and it exists so the old advice — "amend the brief, then re-run build/stories" — stops looping back here.
+
+Run the dedicated projection first. It is the only source of truth for whether this is allowed:
+
+```
+node _mano/scripts/state.js --scope --amend-current
+```
+
+- `DECISION: REFUSE` → relay its `REASON:` line and stop. Write nothing. The reason is always that something already addresses this brief: a stories index, a build ledger, or no brief at all. An in-goal change goes through that path's own correction mechanism (`mano stories "[what changed]"`, or a `+N` correction row in `mano build`); a distinct outcome goes to the backlog or the next phase. **Never** offer to edit the brief anyway, and never route the user to a command that will route them back here.
+- `DECISION: AMEND_CURRENT` → no ledger addresses this brief yet, so it may still be revised.
+
+The flow, in order, and it writes nothing until step 3:
+
+1. Read the exact projected `BRIEF`. Draft the **complete revised** `## Phase Goal`, `## Phase Scope`, `## Not This Phase`, and `## Exit Criteria` — not a diff, not a summary. Fold the user's change into the existing scope; do not re-derive the phase from the backlog.
+2. **Show the whole proposed scope and stop.** Nothing is written. This is not a "does that look right?" courtesy: it is the approval of a *changed contract*, and it is the only approval that contract will get.
+3. On explicit approval: re-run `state.js --scope --amend-current`, confirm it still reports `AMEND_CURRENT` with the same `OWNER` and `PHASE_ID` and that neither ledger has appeared, then write the brief in one targeted edit per changed section (`_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**). If anything moved, write nothing and say so.
+
+That approval **is** the fresh approval of the revised contract, so there is no window in which an edited brief could be mistaken for an approved one. An amendment creates no new phase, changes no backlog item's status, and assigns nothing. A prior auto-mode approval covered the *old* scope: it is invalidated, not reused — an armed chain pauses here for this approval like any other human decision.
+
 For a new project:
 
 ```

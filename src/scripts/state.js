@@ -23,6 +23,9 @@
  *   node state.js --scope         on a PROCEED to scope-backlog or resume-draft,
  *                                 also print the relevant backlog items,
  *                                 principles, and latest review
+ *   node state.js --scope --amend-current
+ *                                 may the current phase's brief still be amended?
+ *                                 AMEND_CURRENT only while no ledger exists
  *   node state.js --next          for mano dev / mano build: the active phase +
  *                                 the next unit of work — the next pending story
  *                                 (#, file) on the stories path, or the next
@@ -65,12 +68,14 @@ function parseArgs(argv) {
     root: process.cwd(), json: false, verbose: false,
     scope: false, next: false, ui: false, current: false,
     spec: false, gaps: null, source: null, track: null, help: false,
+    amendCurrent: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--json") args.json = true;
     else if (a === "--verbose" || a === "-v") args.verbose = true;
     else if (a === "--scope") args.scope = true;
+    else if (a === "--amend-current") args.amendCurrent = true;
     else if (a === "--next") args.next = true;
     else if (a === "--ui") args.ui = true;
     else if (a === "--current") args.current = true;
@@ -102,6 +107,9 @@ Usage:
   node state.js [projectRoot] [--scope [--source <text>] [--track <name>] | --next | --ui | --current | --spec | --gaps <type>] [--verbose] [--json]
 
   projectRoot   directory containing _mano_output/ (default: current dir)
+  --amend-current  with --scope only: ask whether the *current* phase's brief may
+                still be amended in place. AMEND_CURRENT only when this exact
+                owner and phase have a brief and neither ledger exists.
   --scope       on a PROCEED to scope-backlog or resume-draft, also print the
                 relevant backlog items, core principles, and latest review
   --source      with --scope only: case-insensitive substring filter for an
@@ -488,6 +496,67 @@ function mtimeOf(file) {
   try { return fs.statSync(file).mtimeMs; } catch { return null; }
 }
 
+/**
+ * May the current phase's brief still be amended in place?
+ *
+ * Only while **no ledger exists**. A ledger's row addresses point into the
+ * brief's `## Phase Scope` and `## Exit Criteria`, and `init` fingerprints them
+ * — so once one exists, editing the brief is not an amendment, it is a
+ * migration nobody asked for. Before that point there is nothing addressing the
+ * brief, and re-approving a revised scope costs one exchange.
+ *
+ * This closes the loop the documented route used to have: build sent the user
+ * to `mano start`, which sent them to `mano stories`, which saw `progress.md`
+ * and sent them back to `mano start`.
+ */
+function renderAmendCurrent(s) {
+  const L = ["--- AMEND CURRENT (from the state script — do NOT scan phase folders) ---"];
+  L.push(`OWNER: ${s.owner || "none (legacy phase-N mode)"}`);
+  L.push(`MODE: ${s.runMode}`);
+  L.push(`TRACK: ${s.track || "none"}`);
+
+  const reason = amendBlocker(s);
+  L.push(`DECISION: ${reason ? "REFUSE" : "AMEND_CURRENT"}`);
+  if (s.phaseId) {
+    L.push(`PHASE: ${s.phase}`);
+    L.push(`PHASE_ID: ${s.phaseId}`);
+    L.push(`PHASE_DIR: ${s.phaseDir}`);
+    L.push(`BRIEF: ${s.phaseDir}/phase-brief.md`);
+  }
+  L.push(`STORIES_STATUS: ${s.storiesExists ? "present" : "missing"}`);
+  L.push(`PROGRESS_STATUS: ${s.progressStatus}`);
+  if (reason) {
+    L.push(`REASON: ${reason}`);
+  } else {
+    L.push("The brief may be revised in place. Show the complete proposed scope and write");
+    L.push("nothing until the human approves it; that approval is the approval of the revised");
+    L.push("contract. Re-check this projection immediately before writing.");
+  }
+  L.push("--- END AMEND CURRENT ---");
+  return L.join("\n");
+}
+
+function amendBlocker(s) {
+  if (!s.outputExists || s.phase === null) {
+    return "no phase exists for this owner — mano start scopes one; there is nothing to amend";
+  }
+  if (!s.briefExists) {
+    return `${s.phaseId} has no phase-brief.md — finish the draft rather than amending it`;
+  }
+  if (s.storiesExists && s.progressExists) {
+    return `${s.phaseId} holds both ledgers — resolve that first`;
+  }
+  if (s.storiesExists) {
+    return `${s.phaseId} already has a stories index; its stories address this brief. `
+      + "An in-goal change is a lettered story via mano stories; a distinct outcome goes to the backlog or the next phase";
+  }
+  if (s.progressExists) {
+    return `${s.phaseId} already has a build ledger; its rows address this brief and init fingerprinted it. `
+      + "An in-goal change is a correction row via mano build; a distinct outcome goes to the backlog or the next phase";
+  }
+  return null;
+}
+
 function hookLine(hooks) {
   return `HOOK: ${hooks.length ? hooks.join(" ") : "none"}`;
 }
@@ -809,7 +878,11 @@ function finalize(s, options = {}) {
   // does, with one addition: built means every Scope row done AND every Exit
   // Criterion met. A phase has one ledger or the other (scan refuses both).
   const building = s.progressStatus === "present";
-  const buildAllDone = !!(building && s.progress.allDone && s.progress.allMet);
+  // D4: a confirmed review finding is durable state, not conversation. While one
+  // is pending the phase routes back to build even though every row reads done —
+  // that is the whole reason the finding is in the ledger and not in the chat.
+  const openRework = building ? s.progress.openRework.length : 0;
+  const buildAllDone = !!(building && s.progress.allDone && s.progress.allMet && openRework === 0);
   const ledgerMissing = storiesMissing && !s.progressExists;
   // Gate condition 3: reviewed/closed — review is mandatory, and its close sweep
   // must have moved every item for this exact phase identity off its in-phase status.
@@ -852,7 +925,9 @@ function finalize(s, options = {}) {
     action = `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — run mano stories (then mano dev) or mano build. mano start must NOT scope a next phase.`;
   } else if (building && !buildAllDone) {
     verdict = "PHASE_IN_PROGRESS";
-    action = `${s.phaseId} is being built (${s.progress.scope.closed}/${s.progress.scope.total} scope rows done, ${s.progress.exit.closed}/${s.progress.exit.total} exit criteria met). Not complete — run mano build. mano start must NOT scope a next phase.`;
+    action = openRework
+      ? `${s.phaseId} has ${openRework} pending review finding(s) in its ledger. Not complete — run mano build to work the first pending R… event. mano start must NOT scope a next phase.`
+      : `${s.phaseId} is being built (${s.progress.scope.closed}/${s.progress.scope.total} scope rows done, ${s.progress.exit.closed}/${s.progress.exit.total} exit criteria met). Not complete — run mano build. mano start must NOT scope a next phase.`;
   } else if (!building && !storiesAllDone) {
     verdict = "PHASE_IN_PROGRESS";
     action = `${s.phaseId} has open stories (${s.stories.done}/${s.stories.total} done). Not complete — run mano dev. mano start must NOT scope a next phase.`;
@@ -1216,6 +1291,7 @@ function renderCurrent(s) {
   if (s.progressStatus === "present") {
     L.push(`SCOPE: ${s.progress.scope.closed}/${s.progress.scope.total} done`);
     L.push(`EXIT_CRITERIA: ${s.progress.exit.closed}/${s.progress.exit.total} met`);
+    if (s.progress.needsHuman.length) L.push(`NEEDS_HUMAN: ${s.progress.needsHuman.map((r) => r.id).join(" ")}`);
     if (s.progress.openRework.length) L.push(`REWORK: ${s.progress.openRework.length} pending`);
     for (const artifact of s.staleInputs) {
       L.push(`⚠ ${artifact} changed after the ledger was last written`);
@@ -1303,6 +1379,9 @@ function renderNext(s) {
         for (const line of contract.split("\n")) L.push(`  ${line}`);
         L.push("END_ROW_CONTRACT");
       }
+    } else if (s.progress.openRework.length) {
+      L.push("ROW: none");
+      L.push(`Every scope row is done, but ${s.progress.openRework.length} review finding(s) are still pending. Work the first pending R… event in order; each one keeps its own exact text in \`## Row Contracts\`. The phase does not go back to review until none is pending.`);
     } else if (!s.progress.allMet) {
       L.push("ROW: none");
       L.push("Every scope row is done but not every Exit Criterion is met. Prove the remaining ones or reopen the row that owes the evidence; the phase is not built until both tables are closed.");
@@ -1426,6 +1505,10 @@ function main() {
     process.stdout.write(HELP + "\n");
     process.exit(0);
   }
+  if (args.amendCurrent && !args.scope) {
+    process.stderr.write("[mano state] --amend-current can only be used with --scope.\n");
+    process.exit(1);
+  }
   if ((args.source !== null && (!args.scope || !String(args.source).trim())) ||
       (args.track !== null && (!args.scope || !String(args.track).trim()))) {
     process.stderr.write("[mano state] --source and --track require non-empty text and can only be used with --scope.\n");
@@ -1508,6 +1591,8 @@ function main() {
   } else if (args.next) {
     out = renderNext(s);
     if (args.verbose) out += "\n\n" + renderEvidence(s);
+  } else if (args.scope && args.amendCurrent) {
+    out = renderAmendCurrent(s);
   } else {
     out = renderDecision(s);
     if (args.scope && s.scope) out += "\n\n" + renderScope(s);
@@ -1538,6 +1623,8 @@ module.exports = {
   scanSpec,
   scanUi,
   scan,
+  renderAmendCurrent,
+  amendBlocker,
   finalize,
   renderDecision,
   renderEvidence,

@@ -1,0 +1,11 @@
+{
+  "name": "build-brief-edited",
+  "description": "D12: the addressed brief is immutable once a ledger exists. A contract-digest mismatch stops the run with no write and offers no migration.",
+  "fixture": "build-brief-edited",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_refused_edited_brief",
+    "build_wrote_no_story_files"
+  ]
+}

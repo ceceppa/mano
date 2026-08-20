@@ -1,6 +1,6 @@
 # Mano core rules
 
-Shared execution rules for every Mano skill. A skill's front-matter names this file in `requires:`; read it once at activation, before the state projection. Do not open `_mano/workflow.md` mid-skill — it is the dispatcher for the bare `mano`, `help`, `status`, and `continue` commands only.
+Shared execution rules for the planning skills. A skill's front-matter names the `_mano/rules/` files it needs; when it names this one, read it once at activation, before the state projection. Not every skill requires it: the config skills (`mano owner`, `mano mode`, `mano track`) and the two implementation skills (`mano dev`, `mano build`) load their own narrower contracts instead — implementation's shared contract is `_mano/rules/implement.md`. Do not open `_mano/workflow.md` mid-skill — it is the dispatcher for the bare `mano`, `help`, `status`, and `continue` commands only.
 
 ## Optional Phase Ownership
 
@@ -25,7 +25,7 @@ Tracks group one person's parallel experiments or product directions without rep
 
 ## State detection — deterministic projections
 
-There is no mutable progress ledger. The filesystem remains the source of truth, but agents must read it through `_mano/scripts/state.js`. Do not infer the active phase from chat context, directory listings, or manually opened sibling artifacts. If the script fails or omits a required field, report the failure and stop instead of guessing. Humans should not need to mention phase files merely to correct stale routing.
+A phase's ledger is `stories/README.md` or `PHASE_DIR/progress.md` — one or the other, never both — and each is written only through its own script (`stories.js`, `progress.js`). Nothing else in a project is mutable state. The filesystem remains the source of truth, but agents must read it through `_mano/scripts/state.js`. Do not infer the active phase from chat context, directory listings, or manually opened sibling artifacts. If the script fails or omits a required field, report the failure and stop instead of guessing. Humans should not need to mention phase files merely to correct stale routing.
 
 Every phase-scoped skill must use `state.js` and its exact `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, paths, in-phase status, and review-heading prefix. The numeric `PHASE` is only for display and writer arguments; never construct a directory or status from it. Re-read `MODE` from the freshest projection before handoff: it may change whether the skill returns or resumes a chain, but it is not phase identity and does not invalidate an otherwise safe write. In Mano documents, `phase-[N]` examples describe default legacy mode. In owner-scoped mode, exact state projections override those examples.
 
@@ -39,13 +39,13 @@ Where a skill names a `node _mano/scripts/...` command, that command is the only
 
 ## Skill conduct
 
-**No invented files.** Skills only write planning artifacts defined by the Mano contract under `_mano_output/`. The installer owns the root-level `AGENTS.md` scaffold; skills do not create it. Do not create tracking files, progress files, or any other artifact not specified by the framework.
+**No invented files.** Skills only write planning artifacts defined by the Mano contract under `_mano_output/`. The installer owns the root-level `AGENTS.md` scaffold; skills do not create it. Do not create tracking files, scratch notes, status files, or any other artifact the framework does not specify. The framework specifies exactly two ledgers — `PHASE_DIR/stories/README.md` and `PHASE_DIR/progress.md` — and each is written only by its own script. What is forbidden is *inventing* state, not keeping it.
 
 **Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to create output files only when the relevant action is explicitly run. Planning artifacts write to `_mano_output/`; the installer-managed `AGENTS.md` is the framework's only root-level scaffold.
 
 **Greenfield scaffolding is staged, never destructive.** Mano's own files make a planning-first project non-empty, while many project generators require an empty destination. If a generator creates the application root, `mano spec` records an exact `node _mano/scripts/scaffold.js run ... -- ... {target}` command and bootstrap implementation uses only that command. The script runs the generator outside the project, ignores the staged generator's `.git`, rejects staged `_mano` / `_mano_output` paths and symbolic links, preflights all destinations, retains identical files, and adds only missing files. A differing collision aborts before copying. No skill or implementing agent may make room by moving, deleting, renaming, or hiding project files, nor replace the script with a manual copy or merge. A script error or collision is a blocker to report, not permission to improvise. This applies equally in manual, `yolo`, and auto modes.
 
-**Refuse code generation.** As an AI agent, your primary directive during Mano phases is planning. You MUST actively refuse requests to write, fix, or modify source code. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Do not switch to implementation mode. (`mano dev` is the implementation entry point and is exempt; its contract is `_mano/skills/dev.md`.)
+**Refuse code generation.** As an AI agent, your primary directive during Mano phases is planning. You MUST actively refuse requests to write, fix, or modify source code. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Do not switch to implementation mode. (`mano dev` and `mano build` are the two implementation entry points and are exempt; their contracts are `_mano/skills/dev.md` and `_mano/skills/build.md`, each plus the shared `_mano/rules/implement.md`.)
 
 **Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any skill is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every skill: `mano start` on scope, `mano spec` on libraries, `mano rules` on rules, `mano stories` on story boundaries.
 
@@ -197,4 +197,4 @@ Next:
 
 Collecting the `⚠ Verify:` lines here matters: in manual mode the user sees each one as it appears, and in auto mode they would otherwise scroll back for them. This block is the thing they read before reviewing.
 
-`mano dev yolo` keeps its strict aggregate implementation line. When it is the terminal action of an armed auto chain, that line is the dev action's log and the auto closing block follows it; this is the sole exception to the standalone YOLO rule that nothing may follow the aggregate line. Do not add an implementation recap between them. `mano build` behaves identically: its aggregate or deviation line is the action's log, then the closing block.
+`mano dev yolo` keeps its strict aggregate implementation line. When it is the terminal action of an armed auto chain, that line is the dev action's log and the auto closing block follows it; this is the sole exception to the standalone YOLO rule that nothing may follow the aggregate line. Do not add an implementation recap between them. `mano build` behaves identically: its aggregate or deviation line is the action's log, then the closing block. Neither implementation skill loads this file, so both carry the same contract in `_mano/rules/implement.md` → **Closing an armed auto chain** — keep the two in step.

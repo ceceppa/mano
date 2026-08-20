@@ -1,0 +1,10 @@
+{
+  "name": "build-rework-pending",
+  "description": "D4: a pending review finding routes to build even though every row already reads done, and is resolved by fixing the defect it names \u2014 not by appending a row and not by dismissing it.",
+  "fixture": "build-rework-pending",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_worked_the_pending_rework"
+  ]
+}

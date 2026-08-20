@@ -52,6 +52,59 @@ def parse_progress_rows(text: str) -> list[tuple[str, str, str]]:
     return rows
 
 
+def parse_row_contracts(text: str) -> dict[str, dict]:
+    """`## Row Contracts` as {id: {"attributes": {...}, "text": str | None}}.
+
+    Mirrors `ledger.js`: attributes live outside the fence and the fence holds
+    the authored text and nothing else, so a correction whose first line reads
+    like `reason:` still round-trips.
+    """
+    out: dict[str, dict] = {}
+    lines = (text or "").split("\n")
+    try:
+        start = next(i for i, l in enumerate(lines) if l.strip() == "## Row Contracts")
+    except StopIteration:
+        return out
+    row_id = None
+    attributes: dict[str, str] = {}
+    body: list[str] | None = None
+    fence = None
+    buffer: list[str] = []
+
+    def flush():
+        nonlocal row_id, attributes, body
+        if row_id is not None:
+            out[row_id] = {"attributes": attributes, "text": None if body is None else "\n".join(body)}
+        row_id, attributes, body = None, {}, None
+
+    for line in lines[start + 1:]:
+        if fence is not None:
+            if line.strip() == fence:
+                body = list(buffer)
+                fence, buffer = None, []
+            else:
+                buffer.append(line)
+            continue
+        if re.match(r"^##\s+(?!#)", line):
+            break
+        heading = re.match(r"^###\s+(\S+)\s*$", line)
+        if heading:
+            flush()
+            row_id = heading.group(1)
+            continue
+        if row_id is None:
+            continue
+        opening = re.match(r"^(`{3,})text\s*$", line.strip())
+        if opening:
+            fence, buffer = opening.group(1), []
+            continue
+        attribute = re.match(r"^([a-z][a-z0-9-]*):\s?(.*)$", line)
+        if attribute and body is None:
+            attributes[attribute.group(1)] = attribute.group(2)
+    flush()
+    return out
+
+
 @dataclass
 class Step:
     """One prompt of an ordered multi-step case, and the state it left behind.
@@ -2331,12 +2384,31 @@ def build_appended_the_users_words(ctx: Ctx) -> list[Failure]:
         return fails
     if len(added) > 1:
         fails.append(Failure(assertion, f"more than one row was appended: {added}"))
-    rid, label = added[0]
-    if not re.fullmatch(r"[SE]\d+[a-z]+", rid):
-        fails.append(Failure(assertion, f"correction row {rid} is not a lettered row under an existing item"))
+    rid, _label = added[0]
+    if not re.fullmatch(r"S\d+[a-z]*\+\d+", rid):
+        fails.append(Failure(
+            assertion,
+            f"correction row {rid} is not a `+N` correction under an existing normal row",
+        ))
+        return fails
+
+    # The table cell is a derived handle; `## Row Contracts` is authoritative.
+    contracts = parse_row_contracts(ctx.progress() or "")
+    body = contracts.get(rid)
+    if body is None or not body["text"]:
+        fails.append(Failure(assertion, f"{rid} has no exact text in `## Row Contracts`"))
+        return fails
     verbatim = "compose the feature label from the base module's value rather than hard-coding the word base"
-    if verbatim.lower() not in label.lower():
-        fails.append(Failure(assertion, f"the row paraphrases the request: {label!r}"))
+    if verbatim.lower() not in body["text"].lower():
+        fails.append(Failure(assertion, f"the recorded contract paraphrases the request: {body['text']!r}"))
+    affects = [v.strip() for v in body["attributes"].get("affects", "").split(",") if v.strip()]
+    if not affects:
+        fails.append(Failure(assertion, f"{rid} names no affected Exit Criterion — the fix could close unproven"))
+    else:
+        exit_ids = {rid_ for rid_, _, _ in after if rid_.startswith("E")}
+        for target in affects:
+            if target not in exit_ids:
+                fails.append(Failure(assertion, f"{rid} affects {target}, which is not a row in the ledger"))
     return fails
 
 
@@ -2350,6 +2422,232 @@ def build_no_row_appended(ctx: Ctx) -> list[Failure]:
         if banned.search(rel) or banned.search((ctx.project_root() / rel).read_text(encoding="utf-8", errors="ignore")):
             fails.append(Failure(assertion, f"out-of-phase work was implemented in {rel}"))
     fails.extend(build_routed_to_start(ctx))
+    return fails
+
+
+# --- wave 3: the build path's contracts ---------------------------------------
+
+
+def _seeded_sources(ctx: Ctx) -> set[str]:
+    """Project-relative paths the fixture seeded through its `project/` prefix."""
+    return {name[len("project/"):] for name in ctx.fixture_snapshot if name.startswith("project/")}
+
+
+def _seeded_output_path(name: str, phase: int | None) -> str:
+    """Where `run.seed_fixture` puts a fixture file under `_mano_output/`."""
+    if "/" in name:
+        return name  # nested fixture paths are copied verbatim
+    if phase is not None and name == "stories-README.md":
+        return f"phase-{phase}/stories/README.md"
+    if phase is not None and name.startswith("story-") and name.endswith(".md"):
+        return f"phase-{phase}/stories/{name}"
+    return _phase_relative(name, phase)
+
+
+def _wrote_nothing(ctx: Ctx, assertion: str) -> list[Failure]:
+    """No source appeared and no Mano artifact changed, byte for byte.
+
+    A refusal that leaves a half-written ledger, an edited brief, or one stray
+    source file is not a refusal — it is a partial action the human now has to
+    unpick.
+    """
+    fails = []
+    new_source = sorted(ctx.source_files() - _seeded_sources(ctx))
+    if new_source:
+        fails.append(Failure(assertion, f"source was written despite the refusal: {new_source}"))
+    for name, original in sorted(ctx.fixture_snapshot.items()):
+        if name.startswith("project/"):
+            continue
+        current = ctx.output_text(_seeded_output_path(name, ctx.phase))
+        if current is None:
+            fails.append(Failure(assertion, f"{name} was deleted"))
+        elif current != original:
+            fails.append(Failure(assertion, f"{name} was modified despite the refusal"))
+    return fails
+
+
+def build_refused_invalid_ledger(ctx: Ctx) -> list[Failure]:
+    """B4: a ledger that exists and does not validate is a hard stop.
+
+    The failure this pins is the *quiet* one: a versionless or malformed ledger
+    used to read as no ledger at all, so build cheerfully ran `init` over the
+    top of work someone had already done.
+    """
+    assertion = "build_refused_invalid_ledger"
+    fails = _wrote_nothing(ctx, assertion)
+    response = ctx.transcript
+    if not re.search(r"invalid", response, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response never says the ledger is invalid"))
+    if not re.search(r"delete", response, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response does not give the one repair instruction (delete and re-run)"))
+    if re.search(r"\bmigrat", response, re.IGNORECASE) and not re.search(
+        r"no migration|not supported|cannot be migrated", response, re.IGNORECASE
+    ):
+        fails.append(Failure(assertion, "the response offers a migration; there is no migration path"))
+    return fails
+
+
+def build_refused_two_ledgers_when_invalid(ctx: Ctx) -> list[Failure]:
+    """B4's second half: the dual-ledger refusal used to be skipped in exactly
+    the state that most needed it, because it only fired when progress parsed."""
+    assertion = "build_refused_two_ledgers_when_invalid"
+    fails = _wrote_nothing(ctx, assertion)
+    response = ctx.transcript
+    if not re.search(r"both|two ledgers|one ledger", response, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response does not report that the phase holds both ledgers"))
+    return fails
+
+
+def build_refused_edited_brief(ctx: Ctx) -> list[Failure]:
+    """D12: the addressed brief is immutable once a ledger exists."""
+    assertion = "build_refused_edited_brief"
+    fails = _wrote_nothing(ctx, assertion)
+    response = ctx.transcript
+    if not re.search(r"brief.{0,40}chang|chang.{0,40}brief|contract", response, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response does not name the brief change as the cause"))
+    if re.search(r"i(?:'ll| will) (?:update|re-?fingerprint|migrate|reconcile)", response, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response offers to reconcile or migrate the ledger"))
+    return fails
+
+
+def build_worked_the_pending_rework(ctx: Ctx) -> list[Failure]:
+    """D4: a pending review finding routes to build even though every row is
+    already `done` — and it is resolved by fixing the thing, not by editing the
+    event."""
+    assertion = "build_worked_the_pending_rework"
+    fails = []
+    contracts = parse_row_contracts(ctx.progress() or "")
+    rows = ctx.progress_rows()
+    rework = [(rid, status) for rid, _, status in rows if rid.startswith("R")]
+    if not rework:
+        return [Failure(assertion, "the rework event disappeared from the ledger")]
+    if any(status == "pending" for _, status in rework):
+        fails.append(Failure(assertion, f"the finding was never resolved: {rework}"))
+    if any(status == "dismissed" for _, status in rework):
+        fails.append(Failure(assertion, "the finding was dismissed; only the human may dismiss one"))
+    body = contracts.get("R1")
+    if body is None or "base+feature+release" not in (body["text"] or ""):
+        fails.append(Failure(assertion, "R1's exact text no longer round-trips"))
+
+    # The defect the finding names is actually fixed.
+    proc = subprocess.run(
+        ["node", "-e", "process.stdout.write(String(require('./src/release-stage.js')))"],
+        cwd=ctx.project_root(), capture_output=True, text=True,
+    )
+    if proc.stdout.strip() != "base+feature+release":
+        fails.append(Failure(assertion, f"the defect was not fixed: release stage exports {proc.stdout.strip()!r}"))
+
+    # Case (A): a defect in work already promised reopens existing rows. It does
+    # not append a correction row, and it does not create stories.
+    seeded_ids = {rid for rid, _, _ in _rows_of(ctx.fixture_text("progress.md") or "")}
+    added = [rid for rid, _, _ in rows if rid not in seeded_ids]
+    if added:
+        fails.append(Failure(assertion, f"rows were appended for work an existing row already required: {added}"))
+    if ctx.story_files() or ctx.readme() is not None:
+        fails.append(Failure(assertion, "story files were written on the build path"))
+    return fails
+
+
+def review_persisted_findings_as_rework(ctx: Ctx) -> list[Failure]:
+    """D4 + B6: a confirmed build-path finding becomes durable ledger state, and
+    review never routes it through the stories path."""
+    assertion = "review_persisted_findings_as_rework"
+    fails = []
+    rows = ctx.progress_rows()
+    rework = [(rid, status) for rid, _, status in rows if rid.startswith("R")]
+    if not rework:
+        fails.append(Failure(
+            assertion,
+            "no R… rework event was written — the finding lives only in the conversation, "
+            "which a compaction or a restart loses",
+        ))
+    else:
+        contracts = parse_row_contracts(ctx.progress() or "")
+        for rid, _ in rework:
+            body = contracts.get(rid)
+            if body is None or not (body["text"] or "").strip():
+                fails.append(Failure(assertion, f"{rid} has no exact text in `## Row Contracts`"))
+
+    # No Scope row may move: review does not decide work is done or undone.
+    seeded = [(rid, status) for rid, _, status in _rows_of(ctx.fixture_text("progress.md") or "")]
+    after = {rid: status for rid, _, status in rows}
+    for rid, status in seeded:
+        if after.get(rid) != status:
+            fails.append(Failure(assertion, f"review changed {rid} from {status} to {after.get(rid)}"))
+
+    if ctx.story_files() or ctx.readme() is not None:
+        fails.append(Failure(assertion, "review created story artifacts on a build-path phase"))
+    if re.search(r"mano\s+stories|mano\s+dev\b", ctx.transcript, re.IGNORECASE):
+        fails.append(Failure(
+            assertion,
+            "review routed a build-path finding to mano stories / mano dev, which would "
+            "give the phase a second ledger",
+        ))
+    if not re.search(r"mano\s+build", ctx.transcript, re.IGNORECASE):
+        fails.append(Failure(assertion, "review does not route the finding to mano build"))
+    return fails
+
+
+def start_amend_previewed_before_writing(ctx: Ctx) -> list[Failure]:
+    """The amendment shows the complete proposed scope and writes nothing.
+
+    Checked against the state after step 1 specifically: comparing only the
+    final state cannot tell a preview-then-write from a write-then-describe.
+    """
+    assertion = "start_amend_previewed_before_writing"
+    if not ctx.steps:
+        return [Failure(assertion, "case ran no steps")]
+    fails = []
+    changed = ctx.changed_in_step(1)
+    if changed:
+        fails.append(Failure(assertion, f"step 1 wrote before any approval: {sorted(changed)}"))
+    proposal = ctx.step(1).final_response
+    for section in ("Phase Goal", "Phase Scope", "Exit Criteria"):
+        if section.lower() not in proposal.lower():
+            fails.append(Failure(assertion, f"the proposal omits `## {section}` — it is not the complete revised scope"))
+    return fails
+
+
+def start_amend_wrote_only_after_approval(ctx: Ctx) -> list[Failure]:
+    """After approval the brief is revised in place — and nothing else moves."""
+    assertion = "start_amend_wrote_only_after_approval"
+    fails = []
+    brief = ctx.artifact_text("phase-brief.md")
+    if brief is None:
+        return [Failure(assertion, "the phase brief is gone")]
+    seeded = ctx.fixture_text("phase-brief.md") or ""
+    if brief == seeded:
+        fails.append(Failure(assertion, "the brief was never amended"))
+    if "release" not in brief.lower():
+        fails.append(Failure(assertion, "the amended brief does not contain the requested change"))
+
+    # An amendment creates no phase, writes no ledger, and moves no backlog item.
+    phases = sorted(p.name for p in ctx.phase_dirs())
+    if phases != ["phase-1"]:
+        fails.append(Failure(assertion, f"phase directories are {phases}; an amendment creates no phase"))
+    if ctx.progress() is not None or ctx.readme() is not None:
+        fails.append(Failure(assertion, "an amendment wrote a ledger"))
+    if (ctx.backlog() or "") != (ctx.fixture_text("backlog.md") or ""):
+        fails.append(Failure(assertion, "an amendment changed a backlog item's status"))
+    return fails
+
+
+def start_amend_refused_with_ledger(ctx: Ctx) -> list[Failure]:
+    """B5: with a ledger present the brief is frozen — and the refusal must not
+    point back at a command that points back here."""
+    assertion = "start_amend_refused_with_ledger"
+    fails = _wrote_nothing(ctx, assertion)
+    response = ctx.transcript
+    if not re.search(r"ledger|progress\.md|being built|already", response, re.IGNORECASE):
+        fails.append(Failure(assertion, "the refusal does not say why the brief is frozen"))
+    # The loop: start → stories → sees progress.md → start.
+    if re.search(r"mano\s+stories", response, re.IGNORECASE):
+        fails.append(Failure(
+            assertion,
+            "the refusal routes to `mano stories`, which refuses a build-path phase and routes back here",
+        ))
+    if not re.search(r"mano\s+build|backlog|next phase", response, re.IGNORECASE):
+        fails.append(Failure(assertion, "the refusal names no onward route"))
     return fails
 
 
@@ -2783,6 +3081,15 @@ REGISTRY = {
     "build_reopened_instead_of_appending": build_reopened_instead_of_appending,
     "build_appended_the_users_words": build_appended_the_users_words,
     "build_no_row_appended": build_no_row_appended,
+    # mano build — wave 3 contracts
+    "build_refused_invalid_ledger": build_refused_invalid_ledger,
+    "build_refused_two_ledgers_when_invalid": build_refused_two_ledgers_when_invalid,
+    "build_refused_edited_brief": build_refused_edited_brief,
+    "build_worked_the_pending_rework": build_worked_the_pending_rework,
+    "review_persisted_findings_as_rework": review_persisted_findings_as_rework,
+    "start_amend_previewed_before_writing": start_amend_previewed_before_writing,
+    "start_amend_wrote_only_after_approval": start_amend_wrote_only_after_approval,
+    "start_amend_refused_with_ledger": start_amend_refused_with_ledger,
     # two-phase extension
     "two_phase_one_behaviour_survives": two_phase_one_behaviour_survives,
     "two_phase_extension_behaviour_works": two_phase_extension_behaviour_works,
