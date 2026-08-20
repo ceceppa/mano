@@ -11,9 +11,13 @@ Each case runs end-to-end against a real install:
 1. Install Mano into a throwaway temp dir via the actual installer
    (`bin/mano-plan.js`) — so the fixture matches a true install, no drift.
 2. Seed the case's fixture input files into `_mano_output/`.
-3. Invoke a CLI **headless** to run the skill (`mano stories`, etc.).
-4. Run deterministic, text-only **assertions** over the files the skill wrote
-   and, only for chat-native contracts, the runner's final response.
+3. Invoke a CLI **headless** to run the skill (`mano stories`, etc.) — once for
+   a single-prompt case, or once per ordered step for a multi-step case.
+4. Run deterministic, text-only **assertions** over the files the skill wrote,
+   the state each step left behind, and — only for chat-native contracts — the
+   runner's final response.
+5. Append one **manifest record** per run to `eval/results/`, carrying whatever
+   the CLI reported about what the run cost.
 
 The harness does not inspect hidden reasoning or tool traces and does not require
 a specific model. No Anthropic API key is required; it drives whichever CLI you
@@ -25,11 +29,15 @@ already use.
 python3 eval/run.py                        # all cases, claude runner
 python3 eval/run.py --runner opencode      # or codex
 python3 eval/run.py --case stories-bugfix  # one case
+python3 eval/run.py --model opus           # pin the model for this run
+python3 eval/run.py --rerun-failures       # re-run each failure once (flake check)
+python3 eval/run.py --baseline             # record a committable baseline
 python3 eval/run.py --keep                 # keep temp dirs to inspect output
 ```
 
 Exit code is 0 only if the runner exits cleanly, stays inside its throwaway
-project, and every assertion passes.
+project, and every assertion passes — with the [expected-red](#expected-red)
+allowlist as the single, explicit exception.
 
 Fast deterministic checks do not invoke a model:
 
@@ -98,10 +106,146 @@ eval/
   runners.py         swappable headless CLI runners (claude | codex | opencode)
   assertions.py      pure-function checks on artifacts/final response (REGISTRY)
   provenance.py      validates incident markers and strips rules in temp installs
+  expected-red.json  cases that must fail until their fix lands
   test_provenance.py deterministic tests for provenance + retirement probes
-  cases/*.json       declarative: skill prompt + fixture + which assertions
+  test_run.py        deterministic tests for the harness itself (no model spend)
+  test_runners.py    deterministic tests for usage capture and CLI invocation
+  test_two_phase_assertions.py  trap matrix for the two-phase extension checks
+  cases/*.json       declarative: skill prompt(s) + fixture + which assertions
   fixtures/<name>/   input artifacts a case runs against
+  results/*.json     one manifest record per measured run
 ```
+
+## Multi-step cases
+
+A case has `prompt` **or** `steps`, never both. `steps` runs ordered prompts
+**in one retained temp project** — the shape of every interesting Mano
+behaviour, and the only honest way to test something like "build, then review
+in a fresh session".
+
+```json
+{
+  "name": "build-then-review", "fixture": "build-stage-chain", "phase": 1,
+  "steps": [
+    { "prompt": "mano build",  "session": "fresh" },
+    { "prompt": "mano review", "session": "fresh" }
+  ],
+  "assertions": ["..."]
+}
+```
+
+- `session` is `fresh` (default) or `continue`. `fresh` starts a new CLI
+  invocation with no history; `continue` resumes the previous one. A runner that
+  cannot resume a session **fails the step with a message saying so** rather than
+  silently starting fresh — today only the `claude` runner can continue one.
+- A failed step stops the chain. Every step that ran keeps its recorded cost:
+  a failed run is real spend and belongs in the manifest.
+- Do not emulate a multi-step scenario with two unrelated fixtures. The point is
+  that step 2 sees exactly what step 1 left behind.
+
+Assertions see both the final project state and each step:
+
+```python
+ctx.step(1).progress_rows()      # the ledger right after step 1
+ctx.step(2).artifact_text("tech-spec.md")
+ctx.changed_in_step(2)           # output paths that step created/edited/deleted
+ctx.all_responses()              # every step's final message, joined
+ctx.transcript                   # the LAST step's final message
+```
+
+`ctx.baseline` is `_mano_output/` as seeded, before any step ran, so a change can
+be attributed to the step that made it. Every existing single-`prompt` case keeps
+working untouched: it becomes one `fresh` step and `ctx.transcript` is unchanged.
+
+## Measurement
+
+Each run records what the CLI reports it cost, per step:
+
+| field | meaning |
+|---|---|
+| `input` / `output` | tokens sent and generated |
+| `cache_create` / `cache_read` | prompt-cache writes and hits |
+| `messages` | assistant-message count where the runner exposes one (the `claude` runner reports its envelope's `num_turns`) |
+| `wall_ms` | wall time for that step |
+
+**A metric the runner does not expose is `null`, never `0`.** A zero is
+indistinguishable from a measurement and silently poisons an average. Today only
+the `claude` runner reports usage (via `--output-format json`); `codex` and
+`opencode` report `null` for every field, and the results table says
+`unavailable` rather than substituting a number.
+
+`--model` is passed through to the CLI, and the manifest records both the
+`requested_model` (the alias you typed) and the `resolved_model` (what the
+provider says it actually ran).
+
+Every measured run appends one record to `eval/results/<timestamp>.json`:
+
+```json
+{
+  "commit": "1993155", "dirty": false,
+  "runner": "claude", "runner_version": "...",
+  "requested_model": "opus", "resolved_model": "claude-opus-5",
+  "fixture": "two-phase-extension", "case": "two-phase-extension", "attempt": 1,
+  "steps": [
+    { "prompt": "mano build", "session": "fresh",
+      "usage": { "input": 172, "output": 47077, "cache_create": 168948,
+                 "cache_read": 11984906, "messages": 41 },
+      "wall_ms": 412000, "passed": true, "error": null }
+  ],
+  "assertions": { "passed": 8, "failed": 0 },
+  "passed": true, "total_tokens": 12201103
+}
+```
+
+**The primary KPI is total tokens per *passing* scenario.** A cohort with any
+failing assertion is reported as a failure with its cost — never as a saving.
+`cache_read / message`, message count, output tokens, and wall time are
+diagnostics, not headline numbers. Scope leaves and stories are not
+interchangeable units, so no per-leaf or per-story denominator may be used to
+claim a win.
+
+**Cadence:** one run per revision by default. Three runs only for a number you
+intend to publish — and then report all three, including the failures.
+
+### Recording a baseline
+
+```bash
+python3 eval/run.py --baseline --model <pinned-model>
+```
+
+This names the manifest `baseline-<commit>-<stamp>.json` (the only manifest
+shape Git tracks) and re-runs every failure once, so a deterministic failure is
+distinguishable from a flake. Record the baseline **before** the change it is
+meant to be the *before* of. Ad-hoc manifests stay untracked local noise.
+
+### Honest claims
+
+The 26.9% total-token reduction observed across the 1.4.0 work is **observed and
+directional, not causal**. The "before" revision was branch-internal dogfooding,
+the assistant-message count and per-message cache-read were never recorded, and
+no fixture pinned the scenario. It is not reconstructed — reconstructing it buys
+a number for a claim already positioned as secondary. This harness exists so the
+*next* comparison is controlled: same commit, same pinned model, same fixture,
+recorded per step. Public wording follows the same rule: *observed*,
+*directional*, never *caused*.
+
+### expected-red
+
+`eval/expected-red.json` lists regression cases written *before* their fix. Each
+entry needs a `reason` and a `fixed_by` naming the owning fix:
+
+```json
+{ "cases": { "some-case": { "reason": "…", "fixed_by": "wave 2 resume fix" } } }
+```
+
+An allowlisted case is expected to fail: it prints `RED (expected)` and does not
+break the run. When it starts passing, the run **fails** with `RED-PASSED` — the
+fix landed and the entry must be deleted, not edited. A later change may never
+silently relabel a known pre-existing failure as its own, or quietly absorb a new
+one.
+
+The allowlist is ignored during `--probe-rule` runs: a probe deliberately removes
+behaviour, so "expected red" says nothing about it.
 
 ## Adding a check
 
@@ -169,6 +313,26 @@ planning fixtures should stay under `_mano_output/`.
 A nested `hooks/` prefix is copied into the installed `_mano/hooks/` directory.
 Use it when a case needs a custom active hook file (e.g. a legacy-shaped hook);
 use `active_hook` instead when the shipped example is the fixture.
+
+### The two-phase extension case
+
+`fixtures/two-phase-extension` + `cases/two-phase-extension.json` is the
+reference multi-step case and the one worth copying. It seeds a finished Phase 1
+— source plus a cumulative `tech-spec.md`, `project-rules.md`, `ux-flow.md`, and
+`design-brief.md` — and an active Phase 2 that extends the same feature across
+five ordered fresh sessions (`mano spec`, `mano rules`, `mano ux`, `mano ui`,
+`mano build`). It pins what nothing else did: that Phase 1's behaviour survives,
+that untouched regions of every pre-existing artifact and source file stay
+byte-identical, that no section or row is duplicated or reordered, that the
+active phase does not drift across a session boundary, and that Phase 2 never
+opens another phase's non-cumulative brief (a canary planted in
+`phase-1/phase-brief.md`).
+
+Because the case itself costs real model spend, its assertions are pinned by
+`test_two_phase_assertions.py`: that test builds the state a *correct* Phase 2
+would leave, proves all eight assertions pass on it, then reintroduces one defect
+at a time and proves the owning assertion fires. Do the same for any expensive
+case you add — an assertion that cannot fail is not coverage.
 
 ## Notes / limits
 

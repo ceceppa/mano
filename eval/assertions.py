@@ -11,9 +11,10 @@ becomes available to every case.
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -23,11 +24,79 @@ class Failure:
     detail: str
 
 
+def _phase_relative(name: str, phase: int | None) -> str:
+    """Where an artifact lives under `_mano_output/`, phase-scoped ones included."""
+    if phase is not None and name in {"phase-brief.md", "progress.md"}:
+        return f"phase-{phase}/{name}"
+    return name
+
+
+def parse_progress_rows(text: str) -> list[tuple[str, str, str]]:
+    """Ledger rows as (id, label, status), in file order."""
+    rows = []
+    for line in (text or "").split("\n"):
+        if "|" not in line:
+            continue
+        cells = [c.strip() for c in line.split("|")]
+        while cells and cells[0] == "":
+            cells.pop(0)
+        while cells and cells[-1] == "":
+            cells.pop()
+        if len(cells) < 3 or not re.fullmatch(r"[SE]\d+[a-z]*(?:\.\d+)?", cells[0]):
+            continue
+        rows.append((cells[0], cells[1], cells[-1].lower()))
+    return rows
+
+
+@dataclass
+class Step:
+    """One prompt of an ordered multi-step case, and the state it left behind.
+
+    A step carries both what the runner said and a snapshot of `_mano_output/`
+    taken immediately after it, so an assertion can compare across the session
+    boundary — "the row was `doing` after step 1 and `done` after step 2" — not
+    only inspect the final state.
+
+    `usage` is a `runners.Usage` or `None`. A step that failed still carries its
+    usage: a failed run is real spend and belongs in the manifest.
+    """
+
+    index: int
+    prompt: str
+    session: str = "fresh"
+    returncode: int | None = None
+    passed: bool = False
+    error: str | None = None
+    final_response: str = ""
+    usage: object | None = None
+    resolved_model: str | None = None
+    runner_version: str | None = None
+    wall_ms: int | None = None
+    output_snapshot: dict[str, str] = field(default_factory=dict)
+    source_files: tuple[str, ...] = ()
+    phase: int | None = None
+
+    def output_files(self) -> set[str]:
+        return set(self.output_snapshot)
+
+    def artifact_text(self, name: str) -> str | None:
+        """An artifact's text as it stood right after this step, or None."""
+        return self.output_snapshot.get(_phase_relative(name, self.phase))
+
+    def progress_rows(self) -> list[tuple[str, str, str]]:
+        return parse_progress_rows(self.artifact_text("progress.md") or "")
+
+
 class Ctx:
     """Read-only view of what a skill produced, plus the inputs it ran against.
 
     `phase` is only meaningful for phase-scoped skills (stories). Import-style
     skills that produce project-level artifacts (the backlog) pass phase=None.
+
+    `steps` is empty for a single-`prompt` case and holds one `Step` per step,
+    in order, for a multi-step case. `transcript` is always the *last* step's
+    final assistant message, so every existing single-prompt assertion reads
+    exactly as before.
     """
 
     def __init__(
@@ -36,12 +105,49 @@ class Ctx:
         phase: int | None = None,
         fixture_snapshot: dict[str, str] | None = None,
         transcript: str = "",
+        steps: "tuple[Step, ...] | list[Step]" = (),
+        baseline: dict[str, str] | None = None,
     ):
         self.output_dir = output_dir
         self.phase = phase
         self.fixture_snapshot = fixture_snapshot or {}
         self.transcript = transcript
+        self.steps = tuple(steps)
+        # `_mano_output/` as it stood after seeding and before any step ran.
+        self.baseline = baseline or {}
         self.stories_dir = output_dir / f"phase-{phase}" / "stories" if phase is not None else None
+
+    def snapshot_before(self, index: int) -> dict[str, str]:
+        """`_mano_output/` as it stood just before 1-based step `index` ran."""
+        if index <= 1:
+            return self.baseline
+        return self.steps[index - 2].output_snapshot
+
+    def changed_in_step(self, index: int) -> set[str]:
+        """Output paths this step created, edited, or deleted."""
+        before = self.snapshot_before(index)
+        after = self.step(index).output_snapshot
+        return {
+            name
+            for name in set(before) | set(after)
+            if before.get(name) != after.get(name)
+        }
+
+    def step(self, index: int) -> Step:
+        """The 1-based step `index`. Raises IndexError when a case has no such step."""
+        if not 1 <= index <= len(self.steps):
+            raise IndexError(f"case has {len(self.steps)} steps; no step {index}")
+        return self.steps[index - 1]
+
+    def all_responses(self) -> str:
+        """Every step's final assistant message, joined.
+
+        Use this for a canary check that must hold across the whole case;
+        `transcript` alone only covers the last step.
+        """
+        if not self.steps:
+            return self.transcript
+        return "\n".join(s.final_response for s in self.steps if s.final_response)
 
     def story_files(self) -> list[Path]:
         if self.stories_dir is None or not self.stories_dir.is_dir():
@@ -70,19 +176,7 @@ class Ctx:
 
     def progress_rows(self) -> list[tuple[str, str, str]]:
         """Ledger rows as (id, label, status), in file order."""
-        rows = []
-        for line in (self.progress() or "").split("\n"):
-            if "|" not in line:
-                continue
-            cells = [c.strip() for c in line.split("|")]
-            while cells and cells[0] == "":
-                cells.pop(0)
-            while cells and cells[-1] == "":
-                cells.pop()
-            if len(cells) < 3 or not re.fullmatch(r"[SE]\d+[a-z]*(?:\.\d+)?", cells[0]):
-                continue
-            rows.append((cells[0], cells[1], cells[-1].lower()))
-        return rows
+        return parse_progress_rows(self.progress() or "")
 
     def project_root(self) -> Path:
         return self.output_dir.parent
@@ -114,6 +208,16 @@ class Ctx:
             path = self.output_dir / f"phase-{self.phase}" / name
         else:
             path = self.output_dir / name
+        return path.read_text(encoding="utf-8") if path.is_file() else None
+
+    def output_text(self, relative: str) -> str | None:
+        """Any file under `_mano_output/`, addressed by its relative path."""
+        path = self.output_dir / relative
+        return path.read_text(encoding="utf-8") if path.is_file() else None
+
+    def source_text(self, relative: str) -> str | None:
+        """Any file under the project root, addressed by its relative path."""
+        path = self.project_root() / relative
         return path.read_text(encoding="utf-8") if path.is_file() else None
 
     def output_files(self) -> set[str]:
@@ -2245,6 +2349,348 @@ def build_no_row_appended(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+# --- two-phase extension ------------------------------------------------------
+#
+# One fixture, one ordered case: a finished Phase 1 (source plus four cumulative
+# artifacts) and an active Phase 2 that extends the same feature. Phase 2 must
+# edit each artifact it owns rather than re-emit it, must leave every untouched
+# region byte-identical, and must never reach into Phase 1's own brief.
+
+# The canary lives only in phase-1/phase-brief.md. Phase 2 has no route to it,
+# so its appearance anywhere means that non-cumulative artifact was read.
+CROSS_PHASE_BRIEF_CANARY = "kestrel-spike-parked"
+
+# Which artifact each step of the chain is allowed to write. `mano rules`
+# additionally resolves its projected rule-gap through the backlog writer.
+TWO_PHASE_STEP_OWNERSHIP = {
+    1: ("mano spec", {"tech-spec.md"}),
+    2: ("mano rules", {"project-rules.md", "backlog.md"}),
+    3: ("mano ux", {"ux-flow.md"}),
+    4: ("mano ui", {"design-brief.md", "phase-2/design-preview.html"}),
+    5: ("mano build", {"phase-2/progress.md"}),
+}
+
+# Lines that existed before Phase 2 ran and that no Phase 2 edit has any reason
+# to touch. Order matters too — these must still appear in this sequence.
+TWO_PHASE_ARTIFACT_ANCHORS = {
+    "tech-spec.md": [
+        "<!-- sentinel: spec-phase-1-must-survive -->",
+        "- Node.js 18+, CommonJS, no runtime dependencies.",
+        "An entry is a plain object: `{ title: string, status: \"open\" | \"blocked\" | \"done\" }`.",
+        "- Persistence, HTTP transport, HTML output, and colour.",
+    ],
+    "project-rules.md": [
+        "<!-- sentinel: rules-phase-1-must-survive -->",
+        "Accessibility level: WCAG 2.1 AA",
+        "## Module Shape",
+        "## Composition",
+    ],
+    "ux-flow.md": [
+        "<!-- sentinel: ux-phase-1-must-survive -->",
+        "## Phase 1 — Read one entry",
+        "2. Every entry appears as a single line: its title, then its status.",
+    ],
+    "design-brief.md": [
+        "<!-- sentinel: design-phase-1-must-survive -->",
+        "| Primary | Signal blue | `#2457D6` |",
+        "### Phase 1 — Digest List",
+        "### EntryLine",
+    ],
+}
+
+TWO_PHASE_ENTRIES = [
+    {"title": "Launch review", "status": "open"},
+    {"title": "Data migration", "status": "done"},
+    {"title": "Vendor contract", "status": "blocked"},
+    {"title": "Pricing page", "status": "open"},
+]
+
+TWO_PHASE_EXPECTED_RENDER = [
+    "## Open",
+    "- Launch review — open",
+    "- Pricing page — open",
+    "## Blocked",
+    "- Vendor contract — blocked",
+    "## Done",
+    "- Data migration — done",
+]
+
+
+def _node_probe(root: Path, script: str) -> tuple[object | None, str]:
+    """Run a tiny node script in the built project and parse its JSON stdout."""
+    try:
+        proc = subprocess.run(
+            ["node", "-e", script], cwd=root, capture_output=True, text=True, timeout=60
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, f"could not run node: {exc}"
+    if proc.returncode != 0:
+        detail = (proc.stderr.strip().splitlines() or [""])[-1]
+        return None, f"node exited {proc.returncode}: {detail[:300]}"
+    try:
+        return json.loads(proc.stdout.strip()), ""
+    except json.JSONDecodeError:
+        return None, f"probe printed non-JSON: {proc.stdout.strip()[:200]!r}"
+
+
+def two_phase_one_behaviour_survives(ctx: Ctx) -> list[Failure]:
+    """Phase 1's promise still holds after Phase 2 built on top of it."""
+    assertion = "two_phase_one_behaviour_survives"
+    root = ctx.project_root()
+    entry = root / "src" / "digest" / "format-entry.js"
+    index = root / "src" / "digest" / "index.js"
+    for path in (entry, index):
+        if not path.is_file():
+            return [Failure(assertion, f"{path.relative_to(root).as_posix()} is gone after Phase 2")]
+    script = (
+        f"const fe = require({str(entry)!r});"
+        f"const ix = require({str(index)!r});"
+        "process.stdout.write(JSON.stringify({"
+        "direct: fe.formatEntry({ title: 'Launch review', status: 'open' }),"
+        "viaIndex: typeof ix.formatEntry === 'function'"
+        " ? ix.formatEntry({ title: 'Launch review', status: 'open' }) : null"
+        "}));"
+    )
+    data, error = _node_probe(root, script)
+    if data is None:
+        return [Failure(assertion, f"Phase 1 entry line no longer loads — {error}")]
+    fails = []
+    if data.get("direct") != "Launch review — open":
+        fails.append(Failure(
+            assertion,
+            f"formatEntry now returns {data.get('direct')!r}, not 'Launch review — open'",
+        ))
+    if data.get("viaIndex") != "Launch review — open":
+        fails.append(Failure(
+            assertion,
+            f"index.js no longer re-exports the Phase 1 entry line (got {data.get('viaIndex')!r})",
+        ))
+    return fails
+
+
+def two_phase_extension_behaviour_works(ctx: Ctx) -> list[Failure]:
+    """Every Phase 2 Exit Criterion, exercised rather than inferred."""
+    assertion = "two_phase_extension_behaviour_works"
+    root = ctx.project_root()
+    index = root / "src" / "digest" / "index.js"
+    if not index.is_file():
+        return [Failure(assertion, "src/digest/index.js is missing")]
+    entries = json.dumps(TWO_PHASE_ENTRIES)
+    script = (
+        f"const ix = require({str(index)!r});"
+        f"const entries = {entries};"
+        "const out = { exports: Object.keys(ix).sort() };"
+        "if (typeof ix.groupEntries === 'function') {"
+        "  out.groups = ix.groupEntries(entries);"
+        "  out.empty = ix.groupEntries([]);"
+        "}"
+        "if (typeof ix.renderDigest === 'function') {"
+        "  out.rendered = ix.renderDigest(entries);"
+        "}"
+        "process.stdout.write(JSON.stringify(out));"
+    )
+    data, error = _node_probe(root, script)
+    if data is None:
+        return [Failure(assertion, f"the Phase 2 surface does not load — {error}")]
+
+    fails = []
+    missing = [
+        name for name in ("formatEntry", "groupEntries", "renderDigest")
+        if name not in (data.get("exports") or [])
+    ]
+    if missing:
+        fails.append(Failure(assertion, f"index.js does not export {', '.join(missing)}"))
+
+    groups = data.get("groups")
+    if groups is None:
+        fails.append(Failure(assertion, "groupEntries is not callable from index.js"))
+    else:
+        got = [(g.get("status"), [e.get("title") for e in (g.get("entries") or [])]) for g in groups]
+        want = [
+            ("open", ["Launch review", "Pricing page"]),
+            ("blocked", ["Vendor contract"]),
+            ("done", ["Data migration"]),
+        ]
+        if got != want:
+            fails.append(Failure(assertion, f"groupEntries returned {got!r}, expected {want!r}"))
+        if data.get("empty") != []:
+            fails.append(Failure(
+                assertion,
+                f"groupEntries([]) returned {data.get('empty')!r}, expected an empty array",
+            ))
+
+    rendered = data.get("rendered")
+    if rendered is None:
+        fails.append(Failure(assertion, "renderDigest is not callable from index.js"))
+    else:
+        lines = [line for line in str(rendered).split("\n") if line.strip()]
+        if lines != TWO_PHASE_EXPECTED_RENDER:
+            fails.append(Failure(
+                assertion,
+                f"renderDigest produced {lines!r}, expected {TWO_PHASE_EXPECTED_RENDER!r}",
+            ))
+    return fails
+
+
+def two_phase_source_untouched_regions_preserved(ctx: Ctx) -> list[Failure]:
+    """A file Phase 2 had no reason to open is byte-identical; the one file it
+    must extend keeps its pre-existing lines exactly."""
+    assertion = "two_phase_source_untouched_regions_preserved"
+    fails = []
+    for relative in (
+        "src/digest/format-entry.js",
+        "spec/format-entry.spec.js",
+        "package.json",
+    ):
+        seeded = ctx.fixture_text(f"project/{relative}")
+        current = ctx.source_text(relative)
+        if current is None:
+            fails.append(Failure(assertion, f"{relative} was deleted"))
+        elif current != seeded:
+            fails.append(Failure(assertion, f"{relative} was rewritten; Phase 2 does not own it"))
+
+    index = ctx.source_text("src/digest/index.js")
+    if index is None:
+        return fails + [Failure(assertion, "src/digest/index.js was deleted")]
+    for line in (
+        '"use strict";',
+        "// sentinel: phase-1-public-surface-must-survive",
+        'const { formatEntry } = require("./format-entry.js");',
+    ):
+        if line not in index:
+            fails.append(Failure(
+                assertion,
+                f"index.js lost a pre-existing line it should have kept: {line!r}",
+            ))
+    return fails
+
+
+def two_phase_artifacts_extended_not_reemitted(ctx: Ctx) -> list[Failure]:
+    """Each cumulative artifact grew, and every anchored Phase 1 line survived
+    verbatim. A re-emitted artifact drops or paraphrases those lines."""
+    assertion = "two_phase_artifacts_extended_not_reemitted"
+    fails = []
+    for name, anchors in TWO_PHASE_ARTIFACT_ANCHORS.items():
+        current = ctx.output_text(name)
+        if current is None:
+            fails.append(Failure(assertion, f"{name} is missing after Phase 2"))
+            continue
+        seeded = ctx.fixture_text(name)
+        if seeded is not None and current == seeded:
+            fails.append(Failure(assertion, f"{name} was never extended for Phase 2"))
+        for anchor in anchors:
+            if anchor not in current:
+                fails.append(Failure(assertion, f"{name} lost a Phase 1 line: {anchor!r}"))
+    return fails
+
+
+def two_phase_no_duplicated_or_reordered_sections(ctx: Ctx) -> list[Failure]:
+    """Extension adds sections; re-emission duplicates or reshuffles them."""
+    assertion = "two_phase_no_duplicated_or_reordered_sections"
+    fails = []
+    for name, anchors in TWO_PHASE_ARTIFACT_ANCHORS.items():
+        current = ctx.output_text(name)
+        if current is None:
+            continue
+        headings = [
+            m.group(1).strip()
+            for m in re.finditer(r"^#{1,6}\s+(.*?)\s*$", current, re.MULTILINE)
+        ]
+        duplicates = sorted({h for h in headings if headings.count(h) > 1})
+        if duplicates:
+            fails.append(Failure(assertion, f"{name} has duplicated heading(s): {duplicates}"))
+        positions = [current.find(a) for a in anchors if a in current]
+        if positions != sorted(positions):
+            fails.append(Failure(assertion, f"{name} reordered its pre-existing sections"))
+
+    ids = [rid for rid, _, _ in ctx.progress_rows()]
+    repeated = sorted({rid for rid in ids if ids.count(rid) > 1})
+    if repeated:
+        fails.append(Failure(assertion, f"ledger has duplicate row id(s): {repeated}"))
+
+    backlog = ctx.backlog() or ""
+    titles = re.findall(r"^###\s+(.*?)\s*$", backlog, re.MULTILINE)
+    dupe_items = sorted({t for t in titles if titles.count(t) > 1})
+    if dupe_items:
+        fails.append(Failure(assertion, f"backlog has duplicate item(s): {dupe_items}"))
+    return fails
+
+
+def two_phase_identity_and_ledger_held(ctx: Ctx) -> list[Failure]:
+    """Five fresh sessions in a row, and the active phase never drifted."""
+    assertion = "two_phase_identity_and_ledger_held"
+    fails = []
+    phase_dirs = sorted(p.name for p in ctx.phase_dirs())
+    if phase_dirs != ["phase-1", "phase-2"]:
+        fails.append(Failure(assertion, f"phase directories are {phase_dirs}, expected phase-1 and phase-2"))
+
+    for name in ("phase-1/phase-brief.md", "phase-1/progress.md"):
+        if ctx.output_text(name) != ctx.fixture_text(name):
+            fails.append(Failure(assertion, f"{name} was modified — Phase 1 is closed"))
+    if ctx.output_text("phase-2/phase-brief.md") != ctx.fixture_text("phase-brief.md"):
+        fails.append(Failure(assertion, "phase-2/phase-brief.md was edited; no step owns the brief"))
+
+    if (ctx.output_dir / "phase-2" / "stories").is_dir():
+        fails.append(Failure(assertion, "a stories/ directory appeared in a build-path phase"))
+
+    rows = ctx.progress_rows()
+    if not rows:
+        fails.append(Failure(assertion, "no phase-2/progress.md ledger after the build step"))
+    else:
+        open_rows = [
+            f"{rid} ({status})" for rid, _, status in rows
+            if (rid.startswith("S") and status != "done") or (rid.startswith("E") and status != "met")
+        ]
+        if open_rows:
+            fails.append(Failure(assertion, f"ledger still open: {', '.join(open_rows)}"))
+    return fails
+
+
+def two_phase_did_not_read_other_phase_brief(ctx: Ctx) -> list[Failure]:
+    """The canary reaches a response or an artifact only by opening Phase 1's
+    own brief, which no Phase 2 action may do. (Absence cannot prove no read
+    happened — it is the strongest signal a file-and-response harness has.)"""
+    assertion = "two_phase_did_not_read_other_phase_brief"
+    fails = []
+    if CROSS_PHASE_BRIEF_CANARY.lower() in ctx.all_responses().lower():
+        fails.append(Failure(
+            assertion,
+            "Phase 1's brief-only content surfaced in a response — that brief was read",
+        ))
+    for name in sorted(ctx.output_files()):
+        if name == "phase-1/phase-brief.md":
+            continue
+        text = ctx.output_text(name) or ""
+        if CROSS_PHASE_BRIEF_CANARY.lower() in text.lower():
+            fails.append(Failure(assertion, f"Phase 1's brief-only content was copied into {name}"))
+    for relative in ctx.source_files():
+        text = ctx.source_text(relative) or ""
+        if CROSS_PHASE_BRIEF_CANARY.lower() in text.lower():
+            fails.append(Failure(assertion, f"Phase 1's brief-only content was copied into {relative}"))
+    return fails
+
+
+def two_phase_each_step_wrote_only_its_own_artifact(ctx: Ctx) -> list[Failure]:
+    """Per-step ownership across the session boundary: each command changed the
+    artifact it owns and nothing else."""
+    assertion = "two_phase_each_step_wrote_only_its_own_artifact"
+    if not ctx.steps:
+        return [Failure(assertion, "case ran no steps")]
+    fails = []
+    for index, (label, allowed) in TWO_PHASE_STEP_OWNERSHIP.items():
+        if index > len(ctx.steps):
+            fails.append(Failure(assertion, f"step {index} ({label}) never ran"))
+            continue
+        changed = ctx.changed_in_step(index)
+        trespass = sorted(changed - allowed)
+        if trespass:
+            fails.append(Failure(
+                assertion,
+                f"step {index} ({label}) wrote artifacts it does not own: {trespass}",
+            ))
+    return fails
+
+
 REGISTRY = {
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
@@ -2333,4 +2779,13 @@ REGISTRY = {
     "build_reopened_instead_of_appending": build_reopened_instead_of_appending,
     "build_appended_the_users_words": build_appended_the_users_words,
     "build_no_row_appended": build_no_row_appended,
+    # two-phase extension
+    "two_phase_one_behaviour_survives": two_phase_one_behaviour_survives,
+    "two_phase_extension_behaviour_works": two_phase_extension_behaviour_works,
+    "two_phase_source_untouched_regions_preserved": two_phase_source_untouched_regions_preserved,
+    "two_phase_artifacts_extended_not_reemitted": two_phase_artifacts_extended_not_reemitted,
+    "two_phase_no_duplicated_or_reordered_sections": two_phase_no_duplicated_or_reordered_sections,
+    "two_phase_identity_and_ledger_held": two_phase_identity_and_ledger_held,
+    "two_phase_did_not_read_other_phase_brief": two_phase_did_not_read_other_phase_brief,
+    "two_phase_each_step_wrote_only_its_own_artifact": two_phase_each_step_wrote_only_its_own_artifact,
 }
