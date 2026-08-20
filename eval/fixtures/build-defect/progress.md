@@ -1,5 +1,8 @@
 # Progress — Stage Chain — Phase 1
 
+<!-- mano-progress: v2 -->
+<!-- contract: 350d5b58c9d7f142 -->
+
 ## Scope
 | # | What | Status |
 |---|------|--------|

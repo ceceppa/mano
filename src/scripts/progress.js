@@ -16,32 +16,40 @@
  *
  * The other commands perform only mechanical edits already decided elsewhere:
  * a status flip `mano build` earned by implementing, a split of the row it is
- * currently building, or a correction row carrying the user's own words. The
+ * currently building, a correction row carrying the user's own words, a rework
+ * event carrying a review finding, or the human's sign-off at review. The
  * script never decides what to build or when something is done.
  *
- * Row addressing — one namespace, self-describing:
- *   S<n>      a `## Phase Scope` item                    (pending|doing|done)
- *   S<n><x>   a lettered correction under that item      (pending|doing|done)
- *   S<n>.<k>  a sub-row: build's own split of S<n>       (pending|doing|done)
- *   E<n><x>   an `## Exit Criteria` leaf                  (pending|met)
+ * The row grammar, the parser, the validator, and the renderer all live in
+ * `ledger.js`, shared with `state.js`. Two copies of a row regex is how the
+ * reader came to disagree with the writer about what a lettered row means.
  *
- * The prefix carries the table, so the split between the two status
- * vocabularies is enforced here rather than trusted: `met` on an S row and
- * `done` on an E row are both errors. Built is not proven.
+ * Three properties hold for every command here:
  *
- * Commands:
- *   init        parse the brief and write both tables (once per phase)
- *   set-status  flip one or more rows; a backwards move needs --reopen
- *   split       append dot-numbered sub-rows under the row being built
- *   add-row     append a lettered correction row carrying the user's words
+ *   Fail closed. A ledger that does not validate is `invalid` and the only
+ *   repair is to delete it and re-run `mano build`. Nothing is best-effort
+ *   parsed, and no refusal writes a partial file.
+ *
+ *   Identity guarded. Every mutation takes `--expect-phase-id` and refuses when
+ *   the owner or phase resolved now differs from the one the caller saw in the
+ *   projection it is acting on.
+ *
+ *   Atomic. Every write goes through `writeAtomic`, so an interrupt leaves the
+ *   previous ledger intact rather than a truncated one.
+ *
+ * Text never travels on the command line. Every text-bearing argument is a
+ * `--*-file` path: quotes, backticks, `$()`, and newlines all break through a
+ * shell, and `fish` expands sequences other shells do not.
  *
  * Usage:
- *   node progress.js init --phase 3
- *   node progress.js set-status --phase 3 --row S2 --status done
- *   node progress.js set-status --phase 3 --row S2 --status doing --reopen \
- *        --row E2c --status pending --reopen
- *   node progress.js split --phase 3 --row S2 --part "add + wiring" --part "list + done"
- *   node progress.js add-row --phase 3 --row S2a --text "the user's own words"
+ *   node progress.js init --phase 3 --expect-phase-id phase-3
+ *   node progress.js set-status --phase 3 --expect-phase-id phase-3 --row S2 --status done
+ *   node progress.js split --phase 3 --expect-phase-id phase-3 --row S2 --part-file a.txt
+ *   node progress.js add-row --phase 3 --expect-phase-id phase-3 --parent S2 \
+ *        --text-file words.txt --exit E1b
+ *   node progress.js request-rework --phase 3 --expect-phase-id phase-3 --text-file f.txt
+ *   node progress.js resolve-rework --phase 3 --expect-phase-id phase-3 --id R1 --status resolved
+ *   node progress.js sign-off --phase 3 --expect-phase-id phase-3
  *   node progress.js --help
  *
  * A trailing positional arg is the project root (default: current dir).
@@ -52,54 +60,61 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
-const { phaseRef, phaseRouting } = require("./phase.js");
-
-const SCOPE_HEADER = "| # | What | Status |";
-const SCOPE_SEPARATOR = "|---|------|--------|";
-const EXIT_HEADER = "| # | Criterion | Status |";
-const EXIT_SEPARATOR = "|---|-----------|--------|";
-
-const SCOPE_STATUSES = ["pending", "doing", "done"];
-const EXIT_STATUSES = ["pending", "met"];
-
-// S2, S2a, S2.1 — the whole address space, in one regex.
-const ROW_ID = /^([SE])(\d+)([a-z]*)(?:\.(\d+))?$/;
+const { phaseRef, phaseRouting, parsePhaseDirName } = require("./phase.js");
+const { writeAtomic } = require("./atomic.js");
+const L = require("./ledger.js");
 
 const HELP = `mano progress — deterministic writer for the configured phase's progress.md
 
 Commands:
-  init        parse the phase brief and write both ledger tables (once per phase)
-  set-status  flip one or more rows to a new status
-  split       append dot-numbered sub-rows under the row being built
-  add-row     append a lettered correction row
+  init            parse the phase brief and write both ledger tables (once per phase)
+  set-status      flip one or more rows to a new status
+  split           append dot-numbered sub-rows under the row being built
+  add-row         append a human correction row under an existing item
+  request-rework  append an ordered review finding
+  resolve-rework  close one rework event
+  sign-off        record the human's sign-off across the Exit Criteria
+
+Every command takes:
+  --phase N               the configured owner's phase number (required)
+  --expect-phase-id ID    the PHASE_ID the caller saw in the state projection
+                          (required on every mutation; refuses on mismatch)
 
 init:
-  --phase N         the configured owner's phase number (required)
   Reads PHASE_DIR/phase-brief.md and emits a Scope row per '## Phase Scope'
   item and an Exit Criteria row per '## Exit Criteria' leaf. Takes no content:
-  the rows are the brief's own text. Refuses when a ledger already exists, and
-  when either section has no list to parse (route that back to mano start).
+  the rows are the brief's own text. Refuses when a ledger already exists, when
+  a stories index exists, and when either section has no list to parse.
 
 set-status:
-  --phase N         the configured owner's phase number (required)
-  --row <id>        row to flip, repeatable (S2, S2a, S2.1, E2c)
-  --status <s>      S rows: pending|doing|done. E rows: pending|met.
-  --reopen          required for any backwards move (done -> doing, met -> pending)
-  A --status applies to every --row before it that has none yet, so both
-  '--row S2 --row S3 --status done' and '--row S2 --status doing --reopen
-  --row E2c --status pending --reopen' mean what they look like.
+  --row <id>              row to flip, repeatable (S2, S2a, S2.1, S2a+1, E2c)
+  --status <s>            S rows: pending|doing|done. E rows: pending|met|needs-human.
+  --reopen                required for any backwards move
+  --reason-file <path>    required for needs-human
+  A --status applies to every --row before it that has none yet. A roll-up
+  parent's status is derived from its children and cannot be written directly.
 
 split:
-  --phase N         the configured owner's phase number (required)
-  --row S<n>        the row being built; must exist and be 'doing'
-  --part "..."      one sub-row, repeatable (required)
-  The first split of a row records its first part as already done — a split is
-  only legitimate once one part is complete. Later splits append as pending.
+  --row <id>              the row being built; must be actionable and 'doing'
+  --part-file <path>      one sub-row's exact text, repeatable (required)
 
 add-row:
-  --phase N         the configured owner's phase number (required)
-  --row <id>        a lettered row under an existing item (S2a, E2e)
-  --text "..."      the row's text, copied from the user's own words (required)
+  --parent <id>           an existing normal row (S2, S2a) — never a correction
+  --text-file <path>      the user's own words, verbatim (required)
+  --exit <E-id>           the Exit Criterion this correction changes (required)
+  --exit-text-file <path> optional: exact wording for a new Exit leaf under --exit
+
+request-rework:
+  --text-file <path>      one finding's exact text, repeatable (required)
+
+resolve-rework:
+  --id R<n>               the event to close (required)
+  --status <s>            resolved|dismissed
+  --reason-file <path>    required for dismissed — the human's exact authorisation
+
+sign-off:
+  Flips every pending and needs-human Exit leaf to met and records who proved
+  it. Typing 'close it' at review is a human attestation; this is its record.
 
 A trailing positional argument = project root (default: current dir).
 
@@ -111,28 +126,39 @@ by the human and the skill — it never decides scope, or when work is done.`;
 function parseArgs(argv) {
   const args = {
     command: null, root: process.cwd(), help: false,
-    phase: null, entries: [], parts: [], text: null,
+    phase: null, expectPhaseId: null, entries: [], partFiles: [], textFiles: [],
+    parent: null, exit: null, exitTextFile: null, reasonFile: null, id: null,
+    status: null, legacyText: null, legacyParts: [],
   };
   let current = null;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--help" || a === "-h") args.help = true;
     else if (a === "--phase") args.phase = argv[++i];
+    else if (a === "--expect-phase-id") args.expectPhaseId = argv[++i];
     else if (a === "--row") {
       current = { row: argv[++i], status: null, reopen: false };
       args.entries.push(current);
     } else if (a === "--status") {
       const status = argv[++i];
+      args.status = status;
       // Bind to every row that has no status yet, so a shared trailing
       // --status and per-row pairing both read the way they look.
       const open = args.entries.filter((e) => e.status === null);
       for (const e of open) e.status = status;
-      if (open.length === 0) args.danglingStatus = status;
+      if (open.length === 0 && args.entries.length) args.danglingStatus = status;
     } else if (a === "--reopen") {
       if (current) current.reopen = true;
       else args.danglingReopen = true;
-    } else if (a === "--part") args.parts.push(argv[++i]);
-    else if (a === "--text") args.text = argv[++i];
+    } else if (a === "--part-file") args.partFiles.push(argv[++i]);
+    else if (a === "--text-file") args.textFiles.push(argv[++i]);
+    else if (a === "--exit-text-file") args.exitTextFile = argv[++i];
+    else if (a === "--reason-file") args.reasonFile = argv[++i];
+    else if (a === "--parent") args.parent = argv[++i];
+    else if (a === "--exit") args.exit = argv[++i];
+    else if (a === "--id") args.id = argv[++i];
+    else if (a === "--part") { args.legacyParts.push(argv[++i]); }
+    else if (a === "--text") { args.legacyText = argv[++i]; }
     else if (a === "--root") args.root = path.resolve(argv[++i]);
     else if (!a.startsWith("-")) {
       if (!args.command) args.command = a;
@@ -147,16 +173,92 @@ function fail(msg) {
   process.exit(1);
 }
 
+function out(msg) {
+  process.stdout.write(msg);
+}
+
 function readText(p) {
   try { return fs.readFileSync(p, "utf8"); } catch { return null; }
 }
 
-function configuredPhase(args) {
+/**
+ * Read a text-bearing argument from a file, preserving it exactly.
+ *
+ * Only the trailing newline a text editor adds is dropped; nothing else is
+ * touched, because this text is the human's own words and becomes the row's
+ * authoritative contract.
+ */
+function readContractText(file, label) {
+  if (!file) fail(`${label} is required and takes a file path, never inline text.`);
+  const text = readText(path.resolve(file));
+  if (text === null) fail(`${label}: cannot read ${file}`);
+  const trimmed = text.replace(/\n$/, "");
+  if (!trimmed.trim()) fail(`${label}: ${file} is empty.`);
+  return trimmed;
+}
+
+function refuseInlineText(args) {
+  if (args.legacyText !== null || args.legacyParts.length) {
+    fail(
+      "text arguments travel as files, not inline: use --text-file / --part-file. " +
+      "Quotes, backticks, $(), and newlines do not survive a shell round-trip, " +
+      "and the row's exact text is its contract.",
+    );
+  }
+}
+
+// ---- identity -------------------------------------------------------------
+
+/**
+ * Resolve the phase this command may touch, or refuse.
+ *
+ * B3: build wrote `done`/`met` and only afterwards checked owner and phase,
+ * while the path was resolved from whatever owner was configured at invocation
+ * time. An owner change mid-implementation therefore mutated a different
+ * owner's same-numbered phase. The caller now passes the exact PHASE_ID it saw
+ * in the projection it is acting on, and a mismatch writes nothing.
+ */
+function resolveRef(args, { requireExpect = true } = {}) {
   if (args.phase == null || !/^\d+$/.test(String(args.phase)) || Number(args.phase) < 1) {
     fail(`${args.command} needs --phase <N> (a positive integer).`);
   }
+  const number = Number(args.phase);
+  let configured;
   try {
-    return phaseRef(phaseRouting(args.root).owner, Number(args.phase));
+    configured = phaseRouting(args.root).owner;
+  } catch (error) {
+    fail(`${args.command}: ${error.message}`);
+  }
+
+  if (!requireExpect && args.expectPhaseId == null) {
+    return phaseRef(configured, number);
+  }
+  if (args.expectPhaseId == null) {
+    fail(
+      `${args.command} needs --expect-phase-id <PHASE_ID> — the exact PHASE_ID from the ` +
+      "state projection you are acting on. Without it a mutation cannot tell that the " +
+      "owner or phase changed underneath it.",
+    );
+  }
+  const expected = parsePhaseDirName(String(args.expectPhaseId).trim());
+  if (!expected) {
+    fail(`${args.command}: "${args.expectPhaseId}" is not a phase id (phase-3, alice-phase-3).`);
+  }
+  if (expected.number !== number) {
+    fail(
+      `${args.command}: --phase ${number} and --expect-phase-id ${expected.id} disagree. ` +
+      "Re-run state.js --next and use the values it printed.",
+    );
+  }
+  if ((expected.owner || null) !== (configured || null)) {
+    fail(
+      `${args.command}: identity changed. You expected ${expected.id}, but the owner ` +
+      `configured now is ${configured ? configured : "none (legacy phase-N mode)"}. ` +
+      "Nothing was written. Re-run state.js --next and act on what it reports.",
+    );
+  }
+  try {
+    return phaseRef(expected.owner, number);
   } catch (error) {
     fail(`${args.command}: ${error.message}`);
   }
@@ -170,260 +272,141 @@ function briefPath(root, ref) {
   return path.join(root, ref.relativeDir, "phase-brief.md");
 }
 
-// ---- row addressing -------------------------------------------------------
-
-function parseRowId(id) {
-  const m = ROW_ID.exec(String(id == null ? "" : id).trim());
-  if (!m) return null;
-  const sub = m[4] === undefined ? 0 : Number(m[4]);
-  if (m[1] === "E" && sub) return null; // dots are build's own decomposition; E leaves are the human's
-  return { table: m[1], number: Number(m[2]), letters: m[3], sub, id: `${m[1]}${m[2]}${m[3]}${sub ? `.${sub}` : ""}` };
+function storiesPath(root, ref) {
+  return path.join(root, ref.relativeDir, "stories", "README.md");
 }
 
-// Sorts S2 < S2.1 < S2.2 < S2a < S3 < S10: number, then decomposition, then
-// lettered corrections. Dots and letters are separate namespaces on purpose.
-function rowKey(parsed) {
-  return [parsed.number, parsed.letters, parsed.sub];
-}
+// ---- load -----------------------------------------------------------------
 
-function keyLess(a, b) {
-  const ka = rowKey(a), kb = rowKey(b);
-  if (ka[0] !== kb[0]) return ka[0] < kb[0];
-  if (ka[1] !== kb[1]) return ka[1] < kb[1];
-  return ka[2] < kb[2];
-}
-
-// One mechanical transform, applied to every cell: a ledger cell is one line
-// and cannot contain the column separator. It never shortens or rewords.
-function cell(value) {
-  return String(value).replace(/\r?\n/g, " ").replace(/\|/g, " / ").replace(/\s+/g, " ").trim();
-}
-
-function formatRow(id, label, status) {
-  return `| ${cell(id)} | ${cell(label)} | ${cell(status)} |`;
-}
-
-function rowCells(line) {
-  if (!line.includes("|")) return null;
-  const cells = line.split("|").map((c) => c.trim());
-  while (cells.length && cells[0] === "") cells.shift();
-  while (cells.length && cells[cells.length - 1] === "") cells.pop();
-  return cells;
-}
-
-// A ledger data row = a table row whose first cell is a row id.
-function rowIdOf(line) {
-  const cells = rowCells(line);
-  if (!cells || cells.length < 3) return null;
-  return parseRowId(cells[0]);
-}
-
-// ---- brief parsing (init's whole job) -------------------------------------
-
-const LIST_ITEM = /^(\s*)(?:(\d+)[.)]|([a-z])[.)]|[-*+])\s+(.*)$/;
-
-// The lines under `## <heading>`, up to the next `##` heading. HTML comments
-// (the template's own guidance) are not content.
-function sectionLines(text, heading) {
-  const lines = String(text).split("\n");
-  const start = lines.findIndex((l) => new RegExp(`^##\\s+${heading}\\s*$`, "i").test(l.trim()));
-  if (start === -1) return null;
-  const out = [];
-  for (let i = start + 1; i < lines.length; i++) {
-    if (/^##\s+/.test(lines[i])) break;
-    out.push(lines[i]);
-  }
-  // Drop the template's own guidance comments, including multi-line ones.
-  return out.join("\n").replace(/<!--[\s\S]*?-->/g, "").split("\n");
-}
-
-// Flatten a section into list items with their nesting depth. A non-list line
-// that follows an item is that item's continuation (a wrapped sentence).
-function listItems(lines) {
-  const items = [];
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    const m = LIST_ITEM.exec(line);
-    if (m) {
-      items.push({
-        indent: m[1].replace(/\t/g, "    ").length,
-        number: m[2] ? Number(m[2]) : null,
-        letter: m[3] || null,
-        text: m[4].trim(),
-      });
-    } else if (items.length) {
-      items[items.length - 1].text += ` ${line.trim()}`;
-    }
-  }
-  return items;
-}
-
-// Two levels, capped: top-level items and their direct children. Anything
-// deeper folds into the child's own text — an unbounded tree has no stable
-// address scheme.
-function tree(items) {
-  if (items.length === 0) return [];
-  const top = Math.min(...items.map((i) => i.indent));
-  const roots = [];
-  let childIndent = null;
-  for (const item of items) {
-    if (item.indent === top) {
-      roots.push({ ...item, children: [] });
-      childIndent = null;
-      continue;
-    }
-    if (roots.length === 0) continue; // indented text before any item
-    const parent = roots[roots.length - 1];
-    if (childIndent === null) childIndent = item.indent;
-    if (item.indent <= childIndent) parent.children.push({ ...item, children: [] });
-    else if (parent.children.length) {
-      const last = parent.children[parent.children.length - 1];
-      last.text += `; ${item.text}`;
-    } else parent.children.push({ ...item, children: [] });
-  }
-  return roots;
-}
-
-// `**Short title** — the full behaviour line` -> "Short title". The lead is
-// how a ledger row gets a scannable handle without anything paraphrasing the
-// brief. No lead is fine: the whole line becomes the label, long but never wrong.
-function boldLead(text) {
-  const m = /^\*\*([^*]+)\*\*(?:\s*[—–-]\s*.+)?$/.exec(text.trim());
-  return m ? m[1].trim() : null;
-}
-
-function stripMarkers(text) {
-  return text.replace(/\*\*/g, "").trim();
-}
-
-function letterFor(index) {
-  let n = index, out = "";
-  do { out = String.fromCharCode(97 + (n % 26)) + out; n = Math.floor(n / 26) - 1; } while (n >= 0);
-  return out;
-}
-
-// Numbers come from the brief when the brief numbered them; otherwise document
-// order. Nothing here invents a split, and nothing shortens by judgment.
-function numberRoots(roots) {
-  const allNumbered = roots.every((r) => r.number !== null);
-  return roots.map((r, i) => ({ ...r, num: allNumbered ? r.number : i + 1 }));
-}
-
-function parseScope(briefText) {
-  const lines = sectionLines(briefText, "Phase Scope");
-  if (lines === null) return { error: "the brief has no `## Phase Scope` section" };
-  const roots = numberRoots(tree(listItems(lines)));
-  if (roots.length === 0) {
-    return { error: "`## Phase Scope` has no list to parse — only prose" };
-  }
-  const rows = [];
-  for (const root of roots) {
-    if (root.children.length === 0) {
-      rows.push({ id: `S${root.num}`, label: boldLead(root.text) || stripMarkers(root.text), status: "pending" });
-    } else {
-      // A nested scope item: its leaves are the rows, the parent is the address.
-      const lettered = root.children.every((c) => c.letter !== null);
-      root.children.forEach((child, i) => {
-        rows.push({
-          id: `S${root.num}${lettered ? child.letter : letterFor(i)}`,
-          label: boldLead(child.text) || stripMarkers(child.text),
-          status: "pending",
-        });
-      });
-    }
-  }
-  const seen = new Set();
-  for (const row of rows) {
-    if (seen.has(row.id)) return { error: `the brief numbers two Phase Scope items ${row.id.slice(1)}` };
-    seen.add(row.id);
-  }
-  return { rows };
-}
-
-function parseExitCriteria(briefText) {
-  const lines = sectionLines(briefText, "Exit Criteria");
-  if (lines === null) return { error: "the brief has no `## Exit Criteria` section" };
-  const roots = numberRoots(tree(listItems(lines)));
-  if (roots.length === 0) {
-    return { error: "`## Exit Criteria` has no list to parse — only prose" };
-  }
-  const rows = [];
-  for (const root of roots) {
-    const lead = boldLead(root.text);
-    if (root.children.length === 0) {
-      rows.push({ id: `E${root.num}`, label: stripMarkers(root.text), status: "pending" });
-      continue;
-    }
-    const lettered = root.children.every((c) => c.letter !== null);
-    root.children.forEach((child, i) => {
-      const leaf = stripMarkers(child.text);
-      rows.push({
-        id: `E${root.num}${lettered ? child.letter : letterFor(i)}`,
-        label: lead ? `${lead} — ${leaf}` : leaf,
-        status: "pending",
-      });
-    });
-  }
-  return { rows };
-}
-
-function projectName(briefText) {
-  const m = /^#\s+Phase Brief\s+—\s+(.+?)\s+—\s+Phase\s+\d+/m.exec(String(briefText));
-  return m ? m[1].trim() : null;
-}
-
-// ---- ledger read/write ----------------------------------------------------
-
-function renderLedger(project, ref, scopeRows, exitRows) {
-  const title = `# Progress — ${project ? `${project} — ` : ""}Phase ${ref.number}${ref.owner ? ` — Owner: ${ref.owner}` : ""}`;
-  const L = [title, "", "## Scope", SCOPE_HEADER, SCOPE_SEPARATOR];
-  for (const r of scopeRows) L.push(formatRow(r.id, r.label, r.status));
-  L.push("", "## Exit Criteria", EXIT_HEADER, EXIT_SEPARATOR);
-  for (const r of exitRows) L.push(formatRow(r.id, r.label, r.status));
-  return L.join("\n") + "\n";
-}
-
-function loadLedger(file) {
+/**
+ * Read, validate, and digest-check the ledger, or refuse.
+ *
+ * The digest check is D12: the addressed brief — Phase Goal, Phase Scope, Not
+ * This Phase, Exit Criteria — is immutable once a ledger exists, because every
+ * row address points into it. An edit there fails closed rather than silently
+ * repointing rows at text that moved.
+ */
+function loadLedger(args, ref) {
+  const file = progressPath(args.root, ref);
   const text = readText(file);
-  if (text === null) return null;
-  const lines = text.split("\n");
-  const rows = [];
-  for (let i = 0; i < lines.length; i++) {
-    const parsed = rowIdOf(lines[i]);
-    if (!parsed) continue;
-    const cells = rowCells(lines[i]);
-    rows.push({ line: i, parsed, id: parsed.id, label: cells[1], status: (cells[2] || "").toLowerCase() });
+  if (text === null) {
+    fail(
+      `${args.command}: no ledger at ${ref.relativeDir}/progress.md. ` +
+      `Run 'progress.js init --phase ${ref.number} --expect-phase-id ${ref.id}' first.`,
+    );
   }
-  return { lines, rows };
+  const parsed = L.parseLedger(text);
+  if (!parsed.ok) {
+    fail(
+      `${args.command}: ${ref.relativeDir}/progress.md is invalid and nothing was written:\n` +
+      parsed.errors.map((e) => `  - ${e}`).join("\n") +
+      "\n  Delete progress.md and re-run mano build. There is no repair-in-place path.",
+    );
+  }
+  const brief = readText(briefPath(args.root, ref));
+  if (brief === null) {
+    fail(`${args.command}: no phase brief at ${ref.relativeDir}/phase-brief.md; nothing was written.`);
+  }
+  const digest = L.contractDigest(brief);
+  if (digest !== parsed.ledger.contract) {
+    fail(
+      `${args.command}: the phase brief changed after this ledger was created ` +
+      `(contract ${parsed.ledger.contract} → ${digest}); nothing was written.\n` +
+      "  The addressed brief — Phase Goal, Phase Scope, Not This Phase, Exit Criteria — is\n" +
+      "  immutable while a ledger exists, because every row address points into it. An\n" +
+      "  in-goal nuance is a correction (add-row); a distinct outcome goes to the backlog\n" +
+      "  or the next phase.",
+    );
+  }
+  return { file, ledger: parsed.ledger, brief };
 }
 
-function findRow(ledger, id) {
-  return ledger.rows.find((r) => r.id.toLowerCase() === String(id).toLowerCase()) || null;
+/**
+ * Re-render the whole ledger from the parsed model.
+ *
+ * The ledger is script-owned, so a canonical render is always correct and
+ * removes the line-index bookkeeping that a splice-in-place writer needs. Row
+ * order comes from the comparator, never from incidental file order.
+ */
+function save(file, ledger) {
+  ledger.scope.sort((a, b) => L.compareRows(a.parsed, b.parsed));
+  ledger.exit.sort((a, b) => L.compareRows(a.parsed, b.parsed));
+  ledger.rework.sort((a, b) => a.number - b.number);
+
+  // Contracts render in row order so the section stays scannable beside the
+  // tables it explains.
+  const ordered = new Map();
+  for (const row of [...ledger.scope, ...ledger.exit, ...ledger.rework]) {
+    const body = ledger.contracts.get(row.id);
+    if (body && (body.text !== null || Object.keys(body.attributes || {}).length)) {
+      ordered.set(row.id, body);
+    }
+  }
+  writeAtomic(file, L.renderLedger({
+    title: ledger.title,
+    contract: ledger.contract,
+    scope: ledger.scope,
+    exit: ledger.exit,
+    rework: ledger.rework,
+    contracts: ordered,
+  }));
 }
 
-function statusesFor(table) {
-  return table === "S" ? SCOPE_STATUSES : EXIT_STATUSES;
+/** Roll-up parents are derived, never written. Recompute them after any change. */
+function refreshRollUps(ledger) {
+  const promoted = [];
+  const parents = L.rollUpIds(ledger.scope);
+  // Deepest first, so a parent of a parent sees its children already settled.
+  const ids = [...parents].sort((a, b) => L.compareRows(L.parseRowId(b), L.parseRowId(a)));
+  for (const id of ids) {
+    const parent = ledger.byId.get(id);
+    if (!parent) continue;
+    const derived = L.derivedParentStatus(L.splitChildrenOf(ledger.scope, id));
+    if (parent.status !== derived) {
+      promoted.push({ id, was: parent.status, now: derived });
+      parent.status = derived;
+    }
+  }
+  return promoted;
 }
 
-function rank(table, status) {
-  return statusesFor(table).indexOf(String(status).toLowerCase());
+function setContract(ledger, id, body) {
+  const existing = ledger.contracts.get(id) || { attributes: {}, text: null };
+  ledger.contracts.set(id, {
+    attributes: { ...existing.attributes, ...(body.attributes || {}) },
+    text: body.text === undefined ? existing.text : body.text,
+  });
 }
 
 // ---- init -----------------------------------------------------------------
 
 function cmdInit(args) {
-  const ref = configuredPhase(args);
+  const ref = resolveRef(args);
   const file = progressPath(args.root, ref);
+  const stories = storiesPath(args.root, ref);
   if (fs.existsSync(file)) {
-    fail(`init: ${ref.relativeDir}/progress.md already exists — the ledger is written once and stays authoritative. Use set-status, split, or add-row.`);
+    fail(
+      `init: ${ref.relativeDir}/progress.md already exists — the ledger is written once and ` +
+      "stays authoritative. Use set-status, split, or add-row.",
+    );
+  }
+  // Independent of state.js's own dual-ledger refusal, and deliberately so: a
+  // phase has one ledger, and neither script may rely on the other having
+  // looked.
+  if (fs.existsSync(stories)) {
+    fail(
+      `init: ${ref.relativeDir} already holds stories/README.md. A phase has one ledger — ` +
+      "mano stories + mano dev, or mano build. Keep the one that matches how this phase " +
+      "was planned and remove the other.",
+    );
   }
   const brief = readText(briefPath(args.root, ref));
   if (brief === null) {
     fail(`init: no phase brief at ${ref.relativeDir}/phase-brief.md — run mano start first.`);
   }
 
-  const scope = parseScope(brief);
-  const exit = parseExitCriteria(brief);
+  const scope = L.parseScope(brief);
+  const exit = L.parseExitCriteria(brief);
   const problems = [scope.error, exit.error].filter(Boolean);
   if (problems.length) {
     fail(
@@ -433,141 +416,140 @@ function cmdInit(args) {
     );
   }
 
+  const text = L.renderLedger({
+    project: L.projectName(brief),
+    phaseNumber: ref.number,
+    owner: ref.owner,
+    contract: L.contractDigest(brief),
+    scope: scope.rows,
+    exit: exit.rows,
+  });
+
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, renderLedger(projectName(brief), ref, scope.rows, exit.rows));
-  process.stdout.write(
-    `[mano build] init → ${ref.relativeDir}/progress.md, ${scope.rows.length} scope row(s), ${exit.rows.length} exit criterion row(s)\n`,
+  // Re-check immediately before writing: between the checks above and here,
+  // another session may have created either ledger.
+  if (fs.existsSync(file) || fs.existsSync(stories)) {
+    fail("init: a ledger appeared in this phase while init was running; nothing was written.");
+  }
+  writeAtomic(file, text);
+  out(
+    `[mano build] init → ${ref.relativeDir}/progress.md, ${scope.rows.length} scope row(s), ` +
+    `${exit.rows.length} exit criterion row(s)\n`,
   );
-  for (const r of scope.rows) process.stdout.write(`  + ${r.id.padEnd(5)} ${r.label}\n`);
-  for (const r of exit.rows) process.stdout.write(`  + ${r.id.padEnd(5)} ${r.label}\n`);
+  for (const r of [...scope.rows, ...exit.rows]) out(`  + ${r.id.padEnd(5)} ${r.label}\n`);
 }
 
 // ---- set-status -----------------------------------------------------------
 
 function cmdSetStatus(args) {
-  const ref = configuredPhase(args);
+  const ref = resolveRef(args);
   if (args.entries.length === 0) fail("set-status needs at least one --row <id>.");
   if (args.danglingStatus) fail("set-status: a --status must follow the --row it applies to.");
 
-  const file = progressPath(args.root, ref);
-  const ledger = loadLedger(file);
-  if (!ledger) fail(`set-status: no ledger at ${ref.relativeDir}/progress.md. Run 'progress.js init --phase ${ref.number}' first.`);
+  const { file, ledger } = loadLedger(args, ref);
+  const rollUps = L.rollUpIds(ledger.scope);
 
-  // Validate every entry before writing anything: a partial status write would
-  // leave the ledger claiming something no caller asked for.
+  // Validate every entry before writing any of them: a partial status write
+  // would leave the ledger claiming something no caller asked for.
   const plan = [];
+  const targets = new Set();
   for (const entry of args.entries) {
-    const parsed = parseRowId(entry.row);
-    if (!parsed) fail(`set-status: "${entry.row}" is not a row address (S2, S2a, S2.1, E2c).`);
+    const parsed = L.parseRowId(entry.row);
+    if (!parsed) fail(`set-status: "${entry.row}" is not a row address (S2, S2a, S2.1, S2a+1, E2c).`);
+    if (targets.has(parsed.id)) {
+      fail(`set-status: ${parsed.id} appears twice in one call; nothing was written.`);
+    }
+    targets.add(parsed.id);
     if (entry.status === null) fail(`set-status: --row ${parsed.id} has no --status.`);
     const status = String(entry.status).trim().toLowerCase();
-    const allowed = statusesFor(parsed.table);
+    const allowed = L.statusesFor(parsed.table);
     if (!allowed.includes(status)) {
-      const other = parsed.table === "S" ? EXIT_STATUSES : SCOPE_STATUSES;
+      const other = parsed.table === "S" ? L.EXIT_STATUSES : L.SCOPE_STATUSES;
       const hint = other.includes(status)
         ? ` '${status}' belongs to the ${parsed.table === "S" ? "Exit Criteria" : "Scope"} table — built is not proven.`
         : "";
       fail(`set-status: ${parsed.id} takes ${allowed.join(" | ")}, not "${status}".${hint}`);
     }
-    const row = findRow(ledger, parsed.id);
+    const row = ledger.byId.get(parsed.id);
     if (!row) fail(`set-status: no row ${parsed.id} in ${ref.relativeDir}/progress.md; no statuses changed.`);
-    const backwards = rank(parsed.table, status) < rank(parsed.table, row.status);
+    if (rollUps.has(parsed.id)) {
+      fail(
+        `set-status: ${parsed.id} is a roll-up over ${L.splitChildrenOf(ledger.scope, parsed.id).map((c) => c.id).join(", ")}. ` +
+        "Its status is derived from its children and committed with the child that closes it; " +
+        "flip the child instead. Nothing was written.",
+      );
+    }
+    const backwards = L.rank(parsed.table, status) < L.rank(parsed.table, row.status);
     if (backwards && !entry.reopen) {
       fail(
         `set-status: ${parsed.id} would move backwards (${row.status} → ${status}) without --reopen. ` +
         "A reopened row is a deviation the human must see; pass --reopen and report it.",
       );
     }
-    if (parsed.table === "S" && parsed.sub === 0 && status === "done") {
-      const openSubs = ledger.rows.filter(
-        (r) => r.parsed.table === "S" && r.parsed.number === parsed.number &&
-          r.parsed.letters === parsed.letters && r.parsed.sub > 0 && r.status !== "done",
-      );
-      if (openSubs.length) {
-        fail(`set-status: ${parsed.id} has sub-rows that are not done (${openSubs.map((r) => r.id).join(", ")}); a parent flips only when its split is complete.`);
-      }
-    }
     plan.push({ row, parsed, status, reopen: entry.reopen, was: row.status });
+  }
+
+  // `needs-human` is a terminal handoff (D1), not a mid-build escape hatch for
+  // a missing test, unavailable tooling, or a failed check.
+  const needsHuman = plan.filter((p) => p.status === "needs-human");
+  if (needsHuman.length) {
+    const openScope = ledger.scope.filter((r) => !rollUps.has(r.id) && r.status !== "done");
+    if (openScope.length) {
+      fail(
+        `set-status: needs-human is a terminal handoff, but ${openScope.map((r) => r.id).join(", ")} ` +
+        "is still open. Finish the build first; a criterion you cannot prove yet stays pending.",
+      );
+    }
+    const pendingRework = ledger.rework.filter((r) => r.status === "pending");
+    if (pendingRework.length) {
+      fail(
+        `set-status: needs-human is refused while ${pendingRework.map((r) => r.id).join(", ")} ` +
+        "is still pending. Resolve the review findings first.",
+      );
+    }
+    const reason = readContractText(args.reasonFile, "set-status --reason-file");
+    for (const step of needsHuman) setContract(ledger, step.row.id, { attributes: { reason } });
   }
 
   const changed = [];
   for (const step of plan) {
     if (step.was.toLowerCase() === step.status) continue;
-    ledger.lines[step.row.line] = formatRow(step.row.id, step.row.label, step.status);
     step.row.status = step.status;
     changed.push(step);
   }
+  const promoted = refreshRollUps(ledger);
 
-  // A parent whose split just completed is done by definition — the sub-rows
-  // are a partition of it, so leaving it open would misreport the phase.
-  const promoted = [];
-  for (const step of plan) {
-    if (step.parsed.table !== "S" || step.parsed.sub === 0 || step.status !== "done") continue;
-    const parentId = `S${step.parsed.number}${step.parsed.letters}`;
-    const parent = findRow(ledger, parentId);
-    if (!parent || parent.status === "done") continue;
-    const siblings = ledger.rows.filter(
-      (r) => r.parsed.table === "S" && r.parsed.number === step.parsed.number &&
-        r.parsed.letters === step.parsed.letters && r.parsed.sub > 0,
-    );
-    if (siblings.every((r) => r.status === "done")) {
-      ledger.lines[parent.line] = formatRow(parent.id, parent.label, "done");
-      parent.status = "done";
-      promoted.push({ id: parent.id });
-    }
-  }
+  if (changed.length || promoted.length || needsHuman.length) save(file, ledger);
 
-  if (changed.length || promoted.length) fs.writeFileSync(file, ledger.lines.join("\n"));
-
-  process.stdout.write(
+  out(
     `[mano build] set-status → ${changed.length} row(s) set` +
     (plan.length - changed.length ? `, ${plan.length - changed.length} unchanged` : "") + "\n",
   );
   for (const step of plan) {
-    if (step.was.toLowerCase() === step.status) process.stdout.write(`  ~ ${step.row.id} (already '${step.status}', left as-is)\n`);
-    else process.stdout.write(`  ${step.reopen ? "!" : "+"} ${step.row.id} (${step.was} → ${step.status})${step.reopen ? " [reopened — report this]" : ""}\n`);
+    if (step.was.toLowerCase() === step.status) out(`  ~ ${step.row.id} (already '${step.status}', left as-is)\n`);
+    else out(`  ${step.reopen ? "!" : "+"} ${step.row.id} (${step.was} → ${step.status})${step.reopen ? " [reopened — report this]" : ""}\n`);
   }
-  for (const p of promoted) process.stdout.write(`  + ${p.id} (→ done, its split is complete)\n`);
-}
-
-// ---- shared insert --------------------------------------------------------
-
-// Insert a row in address order inside the table its prefix names.
-function insertRow(ledger, parsed, label, status) {
-  const table = parsed.table;
-  const siblings = ledger.rows.filter((r) => r.parsed.table === table);
-  let at;
-  if (siblings.length) {
-    const after = siblings.find((r) => keyLess(parsed, r.parsed));
-    at = after ? after.line : siblings[siblings.length - 1].line + 1;
-  } else {
-    const header = table === "S" ? SCOPE_HEADER : EXIT_HEADER;
-    const idx = ledger.lines.findIndex((l) => l.trim() === header);
-    if (idx === -1) return false;
-    at = idx + 2;
-  }
-  ledger.lines.splice(at, 0, formatRow(parsed.id, label, status));
-  for (const r of ledger.rows) if (r.line >= at) r.line++;
-  ledger.rows.push({ line: at, parsed, id: parsed.id, label, status });
-  ledger.rows.sort((a, b) => a.line - b.line);
-  return true;
+  for (const p of promoted) out(`  = ${p.id} (${p.was} → ${p.now}, derived from its children)\n`);
 }
 
 // ---- split ----------------------------------------------------------------
 
 function cmdSplit(args) {
-  const ref = configuredPhase(args);
-  if (args.entries.length !== 1) fail("split needs exactly one --row S<n>.");
-  const parsed = parseRowId(args.entries[0].row);
-  if (!parsed || parsed.table !== "S" || parsed.sub !== 0) {
-    fail(`split: "${args.entries[0].row}" is not a scope row to split (S2, S2a). Exit Criteria are the human's leaves and are never split.`);
+  refuseInlineText(args);
+  const ref = resolveRef(args);
+  if (args.entries.length !== 1) fail("split needs exactly one --row <id>.");
+  const parsed = L.parseRowId(args.entries[0].row);
+  if (!parsed || parsed.table !== "S") {
+    fail(
+      `split: "${args.entries[0].row}" is not a scope row to split (S2, S2a, S2a+1). ` +
+      "Exit Criteria are the human's leaves and are never split.",
+    );
   }
-  if (args.parts.length === 0) fail("split needs at least one --part \"...\".");
+  if (parsed.sub !== 0) fail("split: a split is decomposed further by splitting its own row, not by addressing a sub-row.");
+  if (args.partFiles.length === 0) fail('split needs at least one --part-file <path>.');
 
-  const file = progressPath(args.root, ref);
-  const ledger = loadLedger(file);
-  if (!ledger) fail(`split: no ledger at ${ref.relativeDir}/progress.md.`);
-  const parent = findRow(ledger, parsed.id);
+  const { file, ledger } = loadLedger(args, ref);
+  const parent = ledger.byId.get(parsed.id);
   if (!parent) fail(`split: no row ${parsed.id} in ${ref.relativeDir}/progress.md.`);
   if (parent.status !== "doing") {
     fail(
@@ -576,87 +558,219 @@ function cmdSplit(args) {
     );
   }
 
-  const existing = ledger.rows.filter(
-    (r) => r.parsed.table === "S" && r.parsed.number === parsed.number &&
-      r.parsed.letters === parsed.letters && r.parsed.sub > 0,
-  );
+  const existing = L.splitChildrenOf(ledger.scope, parsed.id);
   let next = existing.length ? Math.max(...existing.map((r) => r.parsed.sub)) + 1 : 1;
+  const texts = args.partFiles.map((f, i) => readContractText(f, `split --part-file[${i + 1}]`));
+
   const added = [];
-  for (let i = 0; i < args.parts.length; i++) {
-    const text = String(args.parts[i]).trim();
-    if (!text) fail("split: a --part cannot be empty.");
+  for (let i = 0; i < texts.length; i++) {
     // The first part of a first split is the one already finished — a split is
     // legitimate only after a part is complete, so the ledger records that.
     const status = existing.length === 0 && i === 0 ? "done" : "pending";
-    const sub = parseRowId(`S${parsed.number}${parsed.letters}.${next++}`);
-    insertRow(ledger, sub, text, status);
-    added.push({ id: sub.id, text, status });
+    const sub = L.parseRowId(`${parsed.id}.${next++}`);
+    const row = { id: sub.id, parsed: sub, label: L.deriveLabel(texts[i]), status };
+    ledger.scope.push(row);
+    ledger.byId.set(row.id, row);
+    setContract(ledger, row.id, { text: texts[i] });
+    added.push(row);
   }
+  const promoted = refreshRollUps(ledger);
+  save(file, ledger);
 
-  fs.writeFileSync(file, ledger.lines.join("\n"));
-  process.stdout.write(`[mano build] split → ${parsed.id} into ${added.length} sub-row(s)\n`);
-  for (const a of added) process.stdout.write(`  + ${a.id.padEnd(6)} ${a.status.padEnd(7)} ${a.text}\n`);
-  process.stdout.write("  Sub-rows are the only ledger text build composes — show them to the human before writing more code.\n");
+  out(`[mano build] split → ${parsed.id} into ${added.length} sub-row(s)\n`);
+  for (const a of added) out(`  + ${a.id.padEnd(8)} ${a.status.padEnd(7)} ${a.label}\n`);
+  for (const p of promoted) out(`  = ${p.id} (${p.was} → ${p.now}, derived from its children)\n`);
+  out("  Sub-rows are the only ledger text build composes — show them to the human before writing more code.\n");
 }
 
 // ---- add-row --------------------------------------------------------------
 
 function cmdAddRow(args) {
-  const ref = configuredPhase(args);
-  if (args.entries.length !== 1) fail("add-row needs exactly one --row <id>.");
-  const parsed = parseRowId(args.entries[0].row);
-  if (!parsed) fail(`add-row: "${args.entries[0].row}" is not a row address (S2a, E2e).`);
-  if (parsed.sub !== 0) fail("add-row: dot-numbered sub-rows come from split, not add-row.");
-  if (!parsed.letters) {
+  refuseInlineText(args);
+  const ref = resolveRef(args);
+  if (!args.parent) {
+    fail("add-row needs --parent <id> — an existing normal row the correction hangs off.");
+  }
+  const parent = L.parseRowId(args.parent);
+  if (!parent || parent.table !== "S") {
+    fail(`add-row: "${args.parent}" is not a scope row address (S2, S2a).`);
+  }
+  if (parent.kind !== "normal") {
     fail(
-      `add-row: ${parsed.id} has no letter. A correction is a lettered row under an item the brief already contains ` +
-      "(S2a, E2e); a new top-level item is new scope and goes through mano start.",
+      `add-row: ${parent.id} is itself a ${parent.kind}. A correction hangs off the brief item it ` +
+      "corrects, never off another correction or a split — a correction of a correction has no " +
+      "contract to bound it. Correct the brief item instead.",
     );
   }
-  if (!args.text || !String(args.text).trim()) fail("add-row needs --text \"...\" — the user's own words, not a paraphrase.");
-
-  const file = progressPath(args.root, ref);
-  const ledger = loadLedger(file);
-  if (!ledger) fail(`add-row: no ledger at ${ref.relativeDir}/progress.md.`);
-  if (findRow(ledger, parsed.id)) fail(`add-row: ${parsed.id} already exists; row text is immutable.`);
-
-  const family = ledger.rows.filter((r) => r.parsed.table === parsed.table && r.parsed.number === parsed.number);
-  if (family.length === 0) {
+  if (!args.exit) {
     fail(
-      `add-row: nothing in the ledger is numbered ${parsed.table}${parsed.number}, so ${parsed.id} would be new scope, ` +
-      "not a correction. Route it to mano start (amend the brief) or the backlog.",
+      "add-row needs --exit <E-id> — the Exit Criterion this correction changes. Without it the " +
+      "phase can close with the correction built and its evidence never asked for.",
     );
   }
 
-  const status = "pending";
-  insertRow(ledger, parsed, String(args.text).trim(), status);
-  fs.writeFileSync(file, ledger.lines.join("\n"));
-  process.stdout.write(`[mano build] add-row → 1 written\n  + ${parsed.id.padEnd(5)} ${status.padEnd(7)} ${String(args.text).trim()}\n`);
-  process.stdout.write("  A correction the brief did not authorise — run the gap check against it and show it to the human before code.\n");
+  const { file, ledger } = loadLedger(args, ref);
+  const parentRow = ledger.byId.get(parent.id);
+  if (!parentRow) {
+    fail(
+      `add-row: nothing in the ledger is addressed ${parent.id}, so a correction under it would be ` +
+      "new scope, not a correction. Route it to mano start (amend the brief) or the backlog.",
+    );
+  }
+  const exitParsed = L.parseRowId(args.exit);
+  if (!exitParsed || exitParsed.table !== "E") fail(`add-row: "${args.exit}" is not an Exit Criterion address.`);
+  const exitRow = ledger.byId.get(exitParsed.id);
+  if (!exitRow) fail(`add-row: no Exit Criterion ${exitParsed.id} in ${ref.relativeDir}/progress.md.`);
+
+  const text = readContractText(args.textFiles[0], "add-row --text-file");
+
+  // Callers never choose a correction number: allocating it here is what makes
+  // a `+1+1` chain unrepresentable.
+  const siblings = L.correctionChildrenOf(ledger.scope, parent.id);
+  const nextPlus = siblings.length ? Math.max(...siblings.map((r) => r.parsed.plus)) + 1 : 1;
+  const parsed = L.parseRowId(`${parent.id}+${nextPlus}`);
+
+  let affects = exitParsed.id;
+  let newExit = null;
+  if (args.exitTextFile) {
+    // New wording for the promise this correction changes: a correction leaf
+    // under the criterion it supersedes, so the original stays readable.
+    const exitText = readContractText(args.exitTextFile, "add-row --exit-text-file");
+    const exitSiblings = L.correctionChildrenOf(ledger.exit, exitParsed.id);
+    const nextExitPlus = exitSiblings.length ? Math.max(...exitSiblings.map((r) => r.parsed.plus)) + 1 : 1;
+    const exitId = L.parseRowId(`${exitParsed.id}+${nextExitPlus}`);
+    newExit = { id: exitId.id, parsed: exitId, label: L.deriveLabel(exitText), status: "pending" };
+    ledger.exit.push(newExit);
+    ledger.byId.set(newExit.id, newExit);
+    setContract(ledger, newExit.id, { text: exitText });
+    affects = newExit.id;
+  }
+
+  const row = { id: parsed.id, parsed, label: L.deriveLabel(text), status: "pending" };
+  ledger.scope.push(row);
+  ledger.byId.set(row.id, row);
+  setContract(ledger, row.id, { attributes: { affects }, text });
+  const promoted = refreshRollUps(ledger);
+  save(file, ledger);
+
+  out(`[mano build] add-row → 1 written\n  + ${row.id.padEnd(8)} pending  ${row.label}\n`);
+  out(`    affects ${affects}\n`);
+  if (newExit) out(`  + ${newExit.id.padEnd(8)} pending  ${newExit.label}\n`);
+  for (const p of promoted) out(`  = ${p.id} (${p.was} → ${p.now}, derived from its children)\n`);
+  out("  A correction the brief did not authorise — run the gap check against it and show it to the human before code.\n");
+}
+
+// ---- rework ---------------------------------------------------------------
+
+function cmdRequestRework(args) {
+  refuseInlineText(args);
+  const ref = resolveRef(args);
+  if (args.textFiles.length === 0) fail("request-rework needs at least one --text-file <path>.");
+  const { file, ledger } = loadLedger(args, ref);
+
+  const texts = args.textFiles.map((f, i) => readContractText(f, `request-rework --text-file[${i + 1}]`));
+  let next = ledger.rework.length ? Math.max(...ledger.rework.map((r) => r.number)) + 1 : 1;
+  const added = [];
+  for (const text of texts) {
+    const event = { id: `R${next}`, number: next, label: L.deriveLabel(text), status: "pending" };
+    next++;
+    ledger.rework.push(event);
+    setContract(ledger, event.id, { text });
+    added.push(event);
+  }
+  save(file, ledger);
+
+  out(`[mano build] request-rework → ${added.length} event(s) recorded\n`);
+  for (const a of added) out(`  + ${a.id.padEnd(4)} pending  ${a.label}\n`);
+  out("  Confirmed findings are durable state: they survive session loss and route to mano build.\n");
+}
+
+function cmdResolveRework(args) {
+  refuseInlineText(args);
+  const ref = resolveRef(args);
+  const parsed = L.parseReworkId(args.id);
+  if (!parsed) fail('resolve-rework needs --id R<n> (R1, R2, ...).');
+  const status = String(args.status || "").trim().toLowerCase();
+  if (!["resolved", "dismissed"].includes(status)) {
+    fail('resolve-rework needs --status resolved|dismissed.');
+  }
+  const { file, ledger } = loadLedger(args, ref);
+  const event = ledger.rework.find((r) => r.id === parsed.id);
+  if (!event) fail(`resolve-rework: no event ${parsed.id} in ${ref.relativeDir}/progress.md.`);
+  if (event.status !== "pending") {
+    fail(`resolve-rework: ${parsed.id} is already '${event.status}'; nothing was written.`);
+  }
+
+  if (status === "dismissed") {
+    // Dismissal discards a finding a human confirmed, so it carries that
+    // human's exact authorisation and never a summary of it.
+    const reason = readContractText(args.reasonFile, "resolve-rework --reason-file");
+    setContract(ledger, event.id, { attributes: { "dismissed-reason": reason } });
+  }
+  event.status = status;
+  save(file, ledger);
+  out(`[mano build] resolve-rework → ${event.id} (pending → ${status})\n`);
+}
+
+// ---- sign-off -------------------------------------------------------------
+
+function cmdSignOff(args) {
+  const ref = resolveRef(args);
+  const { file, ledger } = loadLedger(args, ref);
+  const pendingRework = ledger.rework.filter((r) => r.status === "pending");
+  if (pendingRework.length) {
+    fail(
+      `sign-off: ${pendingRework.map((r) => r.id).join(", ")} is still pending. ` +
+      "Review does not close while a confirmed finding is open; nothing was written.",
+    );
+  }
+  const stamp = new Date().toISOString().slice(0, 10);
+  const provenance = `human sign-off at review, ${stamp}`;
+  const flipped = [];
+  const rollUps = L.rollUpIds(ledger.exit);
+  for (const row of ledger.exit) {
+    if (rollUps.has(row.id)) continue;
+    if (row.status === "met") continue;
+    flipped.push({ id: row.id, was: row.status });
+    row.status = "met";
+    // The ledger records *who* proved it. "Built is not proven" survives more
+    // honestly as attributed evidence than as a status nobody owns.
+    setContract(ledger, row.id, { attributes: { provenance } });
+  }
+  if (flipped.length) save(file, ledger);
+  out(`[mano build] sign-off → ${flipped.length} exit criterion row(s) met by human attestation\n`);
+  for (const f of flipped) out(`  + ${f.id.padEnd(8)} (${f.was} → met) ${provenance}\n`);
+  if (!flipped.length) out("  Every criterion was already met; nothing to attest.\n");
 }
 
 // ---- main -----------------------------------------------------------------
 
+const COMMANDS = {
+  "init": cmdInit,
+  "set-status": cmdSetStatus,
+  "split": cmdSplit,
+  "add-row": cmdAddRow,
+  "request-rework": cmdRequestRework,
+  "resolve-rework": cmdResolveRework,
+  "sign-off": cmdSignOff,
+};
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || !args.command) {
-    process.stdout.write(HELP + "\n");
+    out(HELP + "\n");
     process.exit(args.help ? 0 : 1);
   }
-  if (args.command === "init") cmdInit(args);
-  else if (args.command === "set-status") cmdSetStatus(args);
-  else if (args.command === "split") cmdSplit(args);
-  else if (args.command === "add-row") cmdAddRow(args);
-  else fail(`unknown command "${args.command}". Use init, set-status, split, or add-row (--help for usage).`);
+  const run = COMMANDS[args.command];
+  if (!run) {
+    fail(`unknown command "${args.command}". Use ${Object.keys(COMMANDS).join(", ")} (--help for usage).`);
+  }
+  run(args);
 }
 
 if (require.main === module) main();
 
 module.exports = {
-  SCOPE_HEADER, SCOPE_SEPARATOR, EXIT_HEADER, EXIT_SEPARATOR,
-  SCOPE_STATUSES, EXIT_STATUSES, ROW_ID,
-  parseArgs, parseRowId, rowKey, keyLess, cell, formatRow, rowCells, rowIdOf,
-  sectionLines, listItems, tree, boldLead, letterFor,
-  parseScope, parseExitCriteria, projectName, renderLedger, loadLedger,
-  progressPath, briefPath, main,
+  parseArgs, resolveRef, progressPath, briefPath, storiesPath,
+  refreshRollUps, setContract, save, main,
 };

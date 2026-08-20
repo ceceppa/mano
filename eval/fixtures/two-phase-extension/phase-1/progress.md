@@ -1,5 +1,8 @@
 # Progress — Signal Digest — Phase 1
 
+<!-- mano-progress: v2 -->
+<!-- contract: 99eba7ad36666f39 -->
+
 ## Scope
 | # | What | Status |
 |---|------|--------|

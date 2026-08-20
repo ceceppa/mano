@@ -243,35 +243,91 @@ test("unrecognised hook modes fall back to suggest", () => {
   }
 });
 
-test("state reads a build ledger's two tables and the next non-done scope row", () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-progress-"));
-  const ledger = path.join(root, "progress.md");
-  fs.writeFileSync(ledger, `# Progress — Demo — Phase 1
+const V2 = `# Progress — Demo — Phase 1
+
+<!-- mano-progress: v2 -->
+<!-- contract: 0123456789abcdef -->
 
 ## Scope
+
 | # | What | Status |
 |---|------|--------|
 | S1 | Store | done |
 | S2 | Runner | doing |
 | S2.1 | wiring | done |
+| S2.2 | runner loop | pending |
 | S3 | Tests | pending |
 
 ## Exit Criteria
+
 | # | Criterion | Status |
 |---|-----------|--------|
 | E1a | Fresh start: a confirmation is shown | met |
 | E2a | Bad id: nothing changes | pending |
-| Notes | ignored | met |
-`);
+
+## Row Contracts
+
+### S2.1
+\`\`\`text
+wiring
+\`\`\`
+
+### S2.2
+\`\`\`text
+runner loop
+\`\`\`
+`;
+
+test("state reads a valid ledger's leaves and resumes at the deepest open one", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-progress-"));
+  const ledger = path.join(root, "progress.md");
+  fs.writeFileSync(ledger, V2);
+
   const progress = state.readProgress(ledger);
+  assert.equal(progress.status, "present");
+  // S2 is a roll-up over its split parts, so it is not a leaf and not counted.
   assert.equal(progress.scope.total, 4);
   assert.equal(progress.scope.closed, 2);
-  assert.equal(progress.exit.total, 2, "a prose row is not a criterion");
+  assert.equal(progress.exit.total, 2);
   assert.equal(progress.exit.closed, 1);
-  assert.equal(progress.next.id, "S2");
+  // B2: file order returns the `doing` parent S2; the deepest open leaf is S2.2.
+  assert.equal(progress.next.id, "S2.2");
   assert.equal(progress.allDone, false);
   assert.equal(progress.allMet, false);
-  assert.equal(state.readProgress(path.join(root, "absent.md")), null);
+});
+
+test("a ledger that does not exist is missing, and one that does not parse is invalid", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-progress-status-"));
+  assert.equal(state.readProgress(path.join(root, "absent.md")).status, "missing");
+
+  // B4: each of these used to read as *no ledger*, which routed build to create
+  // one over the top and skipped the dual-ledger refusal entirely.
+  const cases = {
+    empty: "",
+    versionless: V2.replace("<!-- mano-progress: v2 -->\n", ""),
+    "one table": V2.slice(0, V2.indexOf("## Exit Criteria")),
+    "duplicate row": V2.replace("| S3 | Tests | pending |", "| S1 | Tests | pending |"),
+    "invalid status": V2.replace("| S3 | Tests | pending |", "| S3 | Tests | met |"),
+    "orphan split": V2.replace("| S3 | Tests | pending |", "| S9.1 | orphan | pending |"),
+    malformed: "not a ledger at all\n",
+  };
+  for (const [name, text] of Object.entries(cases)) {
+    const file = path.join(root, `${name.replace(/\s/g, "-")}.md`);
+    fs.writeFileSync(file, text);
+    const read = state.readProgress(file);
+    assert.equal(read.status, "invalid", `${name} should be invalid`);
+    assert.ok(read.errors.length > 0, `${name} should say why`);
+  }
+});
+
+test("a brief edit after the ledger was created invalidates it", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-state-contract-"));
+  const ledger = path.join(root, "progress.md");
+  fs.writeFileSync(ledger, V2);
+  const brief = "# Phase Brief — Demo — Phase 1\n\n## Phase Goal\n\nSomething else entirely.\n";
+  const read = state.readProgress(ledger, brief);
+  assert.equal(read.status, "invalid");
+  assert.match(read.errors.join(" "), /brief changed/);
 });
 
 test("state refuses a phase that holds both a stories index and a build ledger", () => {
