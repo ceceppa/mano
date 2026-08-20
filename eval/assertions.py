@@ -723,7 +723,7 @@ def dev_yolo_interrupted_output_discipline(ctx: Ctx) -> list[Failure]:
 def dev_default_output_discipline(ctx: Ctx) -> list[Failure]:
     expected = (
         "Story 1 done — status updated in stories/README.md. "
-        "Start a fresh session for the next story."
+        "Next: mano dev for the next story."
     )
     if ctx.transcript.strip() != expected:
         return [Failure(

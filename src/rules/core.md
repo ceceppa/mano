@@ -134,7 +134,7 @@ Reason fully; externalize sparingly. Terse output is a rule about *display*, not
 
 Mano's state lives on disk. `state.js` rebuilds your exact position for ~200 tokens. When a session grows, END
 it — do not compact it: compaction keeps a lossy summary of the expensive part and discards nothing you were
-paying for. One story per session is the intended shape of `mano dev` (measured: sessions averaging 1,100+
+paying for. One story per session is the intended shape of `mano dev` — an agent-side preference about where *you* end a turn, never an instruction to print at the human (measured: sessions averaging 1,100+
 messages replayed ~459k tokens per message). A planning command is a natural session boundary — its output is a
 file. Batch independent tool calls: every extra assistant message replays the whole session. `mano build` is the
 deliberate, checkpointed exception: it runs multiple rows per session and stops when the turn's budget is spent,

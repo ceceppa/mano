@@ -58,7 +58,7 @@ A row whose split parts exist is a **roll-up**: its status is derived from its p
 
 **2r. Open review findings come first.** When the projection reports `REWORK: [n] pending`, the ledger routes here even if every row was already complete. Process the **first pending event**, in order, before any other row — see **Review findings (rework)**.
 
-**3. Stop when this turn's output budget is spent.** Report from the ledger (see **Chat output**) and stop. **Resume in a fresh session**, not by continuing this one: a fresh session restarts residency and reads back the exact position for a few hundred tokens, while continuing carries every message you already paid for. A resumed run starts at flow step 0 and picks up the row the projection names; it does not re-derive completed rows.
+**3. Stop at a row boundary, never mid-row.** When the turn cannot hold another pass, report from the ledger (see **Chat output**) and stop *between* rows, with every status written and every claim proven. A run that trails off inside a row leaves work the ledger cannot describe, which is the one state a resume cannot recover from. Resuming costs a projection read either way: a resumed run starts at flow step 0 and picks up the row the projection names; it does not re-derive completed rows. **Where the human resumes — this session or a new one — is their call, not yours to instruct.**
 
 **4. Terminal — every Scope leaf `done` and every Exit leaf `met` or `needs-human`.** Do not report the phase built on the strength of the statuses alone: run the **Terminal evidence sweep** first, then output one aggregate line and stop. The phase is **built, not closed**: `mano review` is mandatory and unchanged. Do not scope, plan, or start another phase.
 
@@ -400,7 +400,7 @@ node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_I
 
 `_mano/rules/implement.md` → **Implementation Output Discipline** applies in full. Build's own shape:
 
-**Mid-run stop (budget spent):** one line naming what is left, from the ledger — `[mano build]: [PHASE_ID] — S1, S2 done. 4/7 exit criteria met. Next: S3. Start a fresh session to continue.` No recap, no file list, no "AC met" checklist, no narrative.
+**Mid-run stop (row boundary):** one line naming what is left, from the ledger — `[mano build]: [PHASE_ID] — S1, S2 done. 4/7 exit criteria met. Next: mano build — continues at S3.` `Next:` names the command, as it does everywhere else; never instruct the human to start a fresh session or manage their context. No recap, no file list, no "AC met" checklist, no narrative.
 
 **Terminal:** one aggregate line, and only after the **Terminal evidence sweep** passes: `[mano build]: [PHASE_ID] built — all scope rows done, all exit criteria met in [PHASE_DIR]/progress.md. Run mano review to close the phase.` When the sweep left any leaf `needs-human`, say so in the same line — `… all scope rows done, 6 exit criteria met, 1 needs human check in [PHASE_DIR]/progress.md.` — without listing them; review shows them.
 
