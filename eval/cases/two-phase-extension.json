@@ -1,0 +1,23 @@
+{
+  "name": "two-phase-extension",
+  "description": "Phase 2 extends a finished Phase 1: five ordered fresh sessions run the phase-2 chain (spec, rules, ux, ui, build) in one retained project. Each cumulative artifact must be edited rather than re-emitted, Phase 1's behaviour and untouched regions must survive byte-identically, the active phase must not drift across the session boundaries, and no step may open Phase 1's own non-cumulative brief.",
+  "fixture": "two-phase-extension",
+  "phase": 2,
+  "steps": [
+    { "prompt": "mano spec", "session": "fresh" },
+    { "prompt": "mano rules", "session": "fresh" },
+    { "prompt": "mano ux", "session": "fresh" },
+    { "prompt": "mano ui. The existing visual direction is approved — extend the design artifacts for this phase now, without another preference checkpoint.", "session": "fresh" },
+    { "prompt": "mano build", "session": "fresh" }
+  ],
+  "assertions": [
+    "two_phase_one_behaviour_survives",
+    "two_phase_extension_behaviour_works",
+    "two_phase_source_untouched_regions_preserved",
+    "two_phase_artifacts_extended_not_reemitted",
+    "two_phase_no_duplicated_or_reordered_sections",
+    "two_phase_identity_and_ledger_held",
+    "two_phase_did_not_read_other_phase_brief",
+    "two_phase_each_step_wrote_only_its_own_artifact"
+  ]
+}

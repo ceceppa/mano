@@ -1,0 +1,9 @@
+{
+  "name": "signal-digest",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/digest/index.js",
+  "scripts": {
+    "test": "node --test spec/*.spec.js"
+  }
+}
