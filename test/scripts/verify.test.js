@@ -73,3 +73,60 @@ test("missing command is a usage error", () => {
   assert.strictEqual(result.status, 2);
   assert.match(result.stderr, /usage/);
 });
+
+// ---- V1: the four repairs -------------------------------------------------
+
+test("both the head and the tail sentinel survive the character cap", () => {
+  // `joined.slice(0, CHAR_CAP)` amputated exactly the tail the head/tail
+  // excerpt had just been built to preserve — so a failure whose cause prints
+  // last (the summary, the stack, the assertion) lost the only useful part.
+  const script = [
+    "console.log('HEAD-SENTINEL');",
+    "for (let i = 0; i < 400; i++) console.log('filler line ' + i + ' ' + 'x'.repeat(60));",
+    "console.log('TAIL-SENTINEL');",
+    "process.exit(1);",
+  ].join("");
+  const result = run(["--", "node", "-e", script]);
+  assert.strictEqual(result.status, 1);
+  assert.ok(result.stdout.length < 2600, `excerpt was ${result.stdout.length} chars`);
+  assert.match(result.stdout, /HEAD-SENTINEL/);
+  assert.match(result.stdout, /TAIL-SENTINEL/);
+});
+
+test("a missing executable reports the spawn error, not a blank excerpt", () => {
+  // status is null and stdout/stderr are undefined in exactly this case, so it
+  // used to print `FAIL (exit 1)` over nothing at all.
+  const result = run(["--", "definitely-not-a-real-command-xyz", "--flag"]);
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stdout, /^FAIL \(did not run\):/);
+  assert.match(result.stdout, /ENOENT/);
+  assert.doesNotMatch(result.stdout, /FAIL \(exit 1\)/);
+});
+
+test("a signalled process reports its signal", () => {
+  const result = run(["--", "node", "-e", "process.kill(process.pid, 'SIGKILL')"]);
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stdout, /^FAIL \(killed by SIGKILL\):/);
+});
+
+test("an empty argument survives to the command and to the display", () => {
+  // `cmd --filter ""` means something different from `cmd --filter`; dropping
+  // the value silently changed the command that ran.
+  const { parseArgs } = require("../../src/scripts/verify.js");
+  assert.deepStrictEqual(parseArgs(["--", "node", "-e", "x", ""]).argv, ["node", "-e", "x", ""]);
+  assert.match(parseArgs(["--", "cmd", "--filter", ""]).display, /--filter ""/);
+
+  const result = run(["--", "node", "-e", "process.exit(process.argv[1] === '' ? 0 : 3)", ""]);
+  assert.strictEqual(result.status, 0, "the empty argument reached the child");
+});
+
+test("the excerpt labels each stream instead of claiming an interleaving", () => {
+  const result = run([
+    "--", "node", "-e",
+    "console.log('on stdout'); console.error('on stderr'); process.exit(1)",
+  ]);
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stdout, /on stdout/);
+  assert.match(result.stdout, /-- stderr --/);
+  assert.match(result.stdout, /on stderr/);
+});

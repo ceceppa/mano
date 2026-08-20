@@ -42,7 +42,11 @@ def parse_progress_rows(text: str) -> list[tuple[str, str, str]]:
             cells.pop(0)
         while cells and cells[-1] == "":
             cells.pop()
-        if len(cells) < 3 or not re.fullmatch(r"[SE]\d+[a-z]*(?:\.\d+)?", cells[0]):
+        # The full row grammar `ledger.js` owns: S2, S2a, S2+1, S2.1, S2a+1.1,
+        # E2a, E2a+1, plus R1 rework events.
+        if len(cells) < 3 or not re.fullmatch(
+            r"(?:[SE]\d+[a-z]*(?:\+\d+)?(?:\.\d+)?|R\d+)", cells[0]
+        ):
             continue
         rows.append((cells[0], cells[1], cells[-1].lower()))
     return rows
