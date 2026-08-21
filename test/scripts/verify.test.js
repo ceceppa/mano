@@ -10,7 +10,7 @@ const path = require("node:path");
 const SCRIPT = path.resolve(__dirname, "..", "..", "src", "scripts", "verify.js");
 
 function run(args, cwd) {
-  return spawnSync("node", [SCRIPT, ...args], { encoding: "utf8", cwd });
+  return spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8", cwd });
 }
 
 test("passing command prints one PASS line and exits 0", () => {
