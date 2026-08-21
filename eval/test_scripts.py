@@ -793,6 +793,25 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("rule-gap → mano rules", stopped.stdout)
         self.assertNotIn("SCOPE INPUT", stopped.stdout)
 
+    def test_open_gaps_stay_visible_while_the_backlog_is_scopeable(self):
+        # A scopeable backlog wins the verdict, so the gap routes never reach the
+        # action text — and a stated directive homed as a gap item would be lost
+        # exactly where it was homed to survive. OPEN_GAPS carries them anyway.
+        self.backlog.write_text(MIXED_BACKLOG)
+        scoped = self.run_state("--scope")
+        self.assertEqual(scoped.returncode, 0, scoped.stderr)
+        self.assertIn("DECISION: PROCEED", scoped.stdout)
+        self.assertIn("OPEN_GAPS: 1 spec-gap → mano spec; 1 rule-gap → mano rules",
+                      scoped.stdout)
+
+    def test_open_gaps_line_is_omitted_when_no_gap_is_open(self):
+        no_gaps = MIXED_BACKLOG.replace(OPEN_SPEC_BLOCK, "").replace(OPEN_RULE_BLOCK, "")
+        self.backlog.write_text(no_gaps)
+        scoped = self.run_state("--scope")
+        self.assertEqual(scoped.returncode, 0, scoped.stderr)
+        self.assertIn("DECISION: PROCEED", scoped.stdout)
+        self.assertNotIn("OPEN_GAPS", scoped.stdout)
+
     def test_resolve_gap_changes_only_the_exact_target(self):
         self.backlog.write_text(MIXED_BACKLOG)
         before = self.backlog.read_text()

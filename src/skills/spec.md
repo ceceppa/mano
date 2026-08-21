@@ -81,6 +81,10 @@ When product principles appear in the phase brief, translate only the ones with 
 
 **Stated Technical Preferences block.** The phase brief may carry a `## Stated Technical Preferences` block — verbatim technical directives the user stated in the source ("Use Next.js", "Use a SQL database"), passed through by `mano start` without evaluation. This is the only durable channel for those directives across a context reset; treat it as authoritative user intent, not optional flavour. `mano spec` owns the technical decision and **may** override a stated preference when the brief's product constraints make it the wrong call (e.g. an accountless real-time link-shared app pulling toward a BaaS over the stated SQL+Next.js). But **decision authority is not silent-override authority** — see the mandatory override-flag rule below. If the block is absent, proceed normally; absence means none were stated, not that none matter.
 
+<!-- mano-rule: id=stated-directive-homing; incident=unhomed-stated-directive-dropped-at-import; model=sonnet; date=2026-08-21; eval=import-unhomed-directive -->
+The same directives can also arrive as projected `spec-gap` items — intake homes a stated directive as its own item when no feature item owned it (runtime and version constraints, module system, storage, package manager). Treat those exactly as you treat this block: authoritative user intent, same override-flag duty. Resolve such an item only once the written spec actually **adopts** the directive or **explicitly overrides** it with the reason recorded — a spec that neither adopts nor names it has not addressed the gap.
+<!-- /mano-rule: stated-directive-homing -->
+
 ## Weight gating
 
 A full tech spec is strongly recommended when any of these are true:

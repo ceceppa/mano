@@ -64,6 +64,10 @@ If `project-rules.md` already exists:
 
 Make specific implementation-convention decisions instead of asking the user. Do not pick libraries or frameworks — those belong to `mano spec`.
 
+<!-- mano-rule: id=stated-directive-homing; incident=unhomed-stated-directive-dropped-at-import; model=sonnet; date=2026-08-21; eval=import-unhomed-directive -->
+**A projected `rule-gap` item may carry a stated directive, not an open question** — a folder structure, a file-naming scheme, or a test layout the user themselves specified, routed here because no feature item owned it. That is authoritative user intent: adopt it as written. Overriding it is allowed when the phase's constraints make it wrong, but never silently — quote the directive and give the reason in the completion log, the same override-flag duty `mano spec` carries for the brief's `## Stated Technical Preferences`. "Decide instead of asking" above governs conventions the source left open; it does not license replacing one the source already fixed. Resolve the item only once `project-rules.md` adopts or explicitly overrides it.
+<!-- /mano-rule: stated-directive-homing -->
+
 ## Rules vs Tech Spec boundary
 
 `project-rules.md` answers: *"How should contributors consistently apply the project's decisions?"*

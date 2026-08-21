@@ -368,6 +368,10 @@ Each phase brief carries everything needed to understand the phase. No external 
 - **Acknowledged risks** — concise list of what could still go wrong in this phase.
 - **Stated Technical Preferences** — *pass-through appendix, not part of the phase narrative.* Include **only** if the source input explicitly stated a stack, framework, storage, auth, or other technical directive. Transcribe each **strictly verbatim** — copy the source sentence character-for-character inside quotes, one per line. Do not paraphrase, evaluate, rank, expand, condense, re-tense, or "tidy" — meaning-preserving normalisation is still a violation here (e.g. turning *"Authentication can be deferred if the first phase uses shareable trip links instead of accounts"* into *"Authentication deferred — shareable trip links instead of accounts"* is wrong; quote the original sentence unchanged). If the source states it in prose, lift the exact clause. `mano start` is a courier here, not an editor or decision-maker (see **Boundaries** B1 pass-through clause). Head the block with: *"Verbatim from the source; not scoped or decided by `mano start`. `mano spec` evaluates these and must flag any override."* Omit the entire section if the source stated no technical preference — never invent one to fill it. This block is the single durable channel for stated tech directives across a context reset; its absence is why a blank-context `mano spec` would otherwise never see them. The B1 implementation-token prohibition below does **not** apply to this block — it is a quoted record of what the user said, explicitly exempted, not `mano start` introducing tech tokens.
 
+  <!-- mano-rule: id=stated-directive-homing; incident=unhomed-stated-directive-dropped-at-import; model=sonnet; date=2026-08-21; eval=import-unhomed-directive -->
+  A directive that outlives this phase — folder structure, file naming, where tests live, a runtime or version constraint — **also** gets its own backlog item, typed `spec-gap` or `rule-gap` per **B1 → Every stated directive gets a home** in `_mano/rules/intake.md`. This block is per-phase and disappears with it; the item is durable and routes the human to the artifact that will own the decision. Recording it in both places is correct, not duplication.
+  <!-- /mano-rule: stated-directive-homing -->
+
 ### Hard constraint
 
 The brief must describe one independently verifiable outcome. That outcome may cross technical layers when the smallest complete slice needs them. Target roughly 250-500 words. If the brief needs long prose or a large scope list to make sense, the phase is too broad.
@@ -425,8 +429,8 @@ Rules:
 - `feature` — new capability
 - `tech-debt` — code quality, refactoring, infrastructure cleanup
 - `test` — missing test coverage, test improvements
-- `spec-gap` — missing or unclear information in the tech spec (`mano spec` resolves during `mano spec`)
-- `rule-gap` — missing or unclear project rule (`mano rules` resolves during `mano rules`)
+- `spec-gap` — missing or unclear information in the tech spec, **or** a stated technical directive the spec must still adopt (`mano spec` resolves during `mano spec`)
+- `rule-gap` — missing or unclear project rule, **or** a stated convention the rules must still adopt (`mano rules` resolves during `mano rules`)
 
 **Max 5 lines per item** (excluding the title). Context can be multiline. If it needs more detail, it gets that when it enters a phase.
 
@@ -512,6 +516,7 @@ The test is whether the convention constrains **how future work is written** rat
      - The phase introduces a **new internal model, algorithm, or representation** the spec doesn't yet describe (a conflict-resolution model, a state machine, a scheduling scheme) — "internal, not an external API" does not make it spec-free.
      - The brief's own **Acknowledged Risks or Assumption Log names an unresolved technical question** ("what counts as a duplicate record", "where does X state live"). A technical question the brief admits is open is a spec-gap by definition — do not recommend skipping spec while the brief itself flags one. Scan those sections before defaulting to `mano stories`.
    - Never lists `mano spec` with a hedge like "if technical decisions feel fuzzy" — either the phase needs a spec (new technical territory) or it doesn't (incremental on existing tech).
+   - **When the projection printed `OPEN_GAPS:`, keep those routes visible.** They are backlog items no phase can absorb — `state.js --scope` excludes them by design — so this block is where the human hears about them at all. Name `mano spec` for open `spec-gap` items and `mano rules` for open `rule-gap` items, with the count. Do not open the backlog to read them, do not describe their contents, and do not let them displace the recommended action: they are an additional line, not a competing recommendation.
 
 Use the canonical execution-log format. List only useful actions whose artifacts are missing or need refinement; put the recommended action first, but keep other genuinely valid options visible:
 

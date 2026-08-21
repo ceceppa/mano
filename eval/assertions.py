@@ -832,6 +832,56 @@ def stated_tech_preference_preserved(ctx: Ctx) -> list[Failure]:
     return []
 
 
+# --- B1 homing: directives no feature item owns -------------------------------
+# A project-wide technical directive (runtime version, folder structure) belongs
+# to every backlog item and therefore to none. Intake must give it its own item,
+# typed by the artifact that will own the decision, or it is silently dropped.
+
+STRUCTURE_TOKENS = ("src", "test", "store.js", "cli.js", "store.test.js")
+
+
+def _backlog_blocks(ctx: Ctx) -> list[tuple[str, str, str]]:
+    """(title, lowercased Type, whole block text) for every backlog item."""
+    blocks = []
+    for chunk in (ctx.backlog() or "").split("\n### ")[1:]:
+        block = "### " + chunk
+        title = chunk.split("\n", 1)[0].strip()
+        m = re.search(r"\*\*Type:\*\*\s*([\w-]+)", block)
+        blocks.append((title, m.group(1).lower() if m else "", block))
+    return blocks
+
+
+def unhomed_runtime_directive_homed_as_spec_gap(ctx: Ctx) -> list[Failure]:
+    name = "unhomed_runtime_directive_homed_as_spec_gap"
+    gaps = [b for _, kind, b in _backlog_blocks(ctx) if kind == "spec-gap"]
+    if not gaps:
+        return [Failure(name, "no spec-gap item written — the PRD's stated runtime "
+                              "constraint has no home and reaches mano spec nowhere")]
+    for block in gaps:
+        low = block.lower()
+        if "node.js" in low and "v20" in low:
+            return []
+    return [Failure(name, "a spec-gap item exists but none carries the stated runtime "
+                          "constraint (Node.js v20 or newer)")]
+
+
+def unhomed_structure_directive_homed_as_rule_gap(ctx: Ctx) -> list[Failure]:
+    name = "unhomed_structure_directive_homed_as_rule_gap"
+    gaps = [b for _, kind, b in _backlog_blocks(ctx) if kind == "rule-gap"]
+    if not gaps:
+        return [Failure(name, "no rule-gap item written — the PRD's Project directory "
+                              "structure has no home and reaches mano rules nowhere")]
+    closest = None
+    for block in gaps:
+        missing = [tok for tok in STRUCTURE_TOKENS if tok not in block]
+        if not missing:
+            return []
+        if closest is None or len(missing) < len(closest):
+            closest = missing
+    return [Failure(name, "a rule-gap item exists but none carries the stated file "
+                          f"layout; the closest is missing {closest}")]
+
+
 # --- post-hook finding triage -------------------------------------------------
 
 HOOK_TRIAGE_FILES = ("phase-brief.md", "tech-spec.md", "project-rules.md")
@@ -3785,6 +3835,11 @@ REGISTRY = {
     "import_wrote_only_backlog": import_wrote_only_backlog,
     "backlog_covers_document_features": backlog_covers_document_features,
     "stated_tech_preference_preserved": stated_tech_preference_preserved,
+    # B1 homing: directives no feature item owns
+    "unhomed_runtime_directive_homed_as_spec_gap":
+        unhomed_runtime_directive_homed_as_spec_gap,
+    "unhomed_structure_directive_homed_as_rule_gap":
+        unhomed_structure_directive_homed_as_rule_gap,
     # post-hook finding triage
     "hook_triage_no_approval_left_artifacts_unchanged":
         hook_triage_no_approval_left_artifacts_unchanged,
