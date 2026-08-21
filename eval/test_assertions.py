@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -93,6 +94,118 @@ class ProjectRuleCoverageAssertionTests(unittest.TestCase):
         failures = self._run(source_deferred)
         self.assertEqual(len(failures), 1)
         self.assertIn("source documentation is not deferred", failures[0].detail)
+
+
+HOMED_BACKLOG = """# Backlog
+
+## Items
+
+### Record an expense
+- **Type:** feature
+- **Source:** product-brief.md
+- **Context:**
+  Amount, category, optional note; stamped with the current date.
+- **Status:** backlog
+
+### Stated: minimum runtime
+- **Type:** spec-gap
+- **Source:** product-brief.md
+- **Context:**
+  Stated directive (verbatim): "**Runtime:** Node.js (v20 or newer)."
+  No feature item owns this; the tech spec does.
+- **Status:** backlog
+
+### Stated: project directory structure
+- **Type:** rule-gap
+- **Source:** product-brief.md
+- **Context:**
+  Stated directive, from "Project directory structure": src/store.js, src/cli.js, test/store.test.js.
+  No feature item owns this; project rules do.
+- **Status:** backlog
+"""
+
+
+class B1DirectiveHomingAssertionTests(unittest.TestCase):
+    def _ctx(self, stack, backlog: str) -> assertions.Ctx:
+        raw = stack.enter_context(
+            tempfile.TemporaryDirectory(prefix="mano-homing-test-")
+        )
+        output = Path(raw) / "_mano_output"
+        output.mkdir(parents=True)
+        (output / "backlog.md").write_text(backlog, encoding="utf-8")
+        return assertions.Ctx(output, phase=None)
+
+    def _run(self, fn, backlog: str):
+        with contextlib.ExitStack() as stack:
+            return fn(self._ctx(stack, backlog))
+
+    def test_accepts_both_directives_homed_as_gap_items(self):
+        self.assertEqual(
+            self._run(
+                assertions.unhomed_runtime_directive_homed_as_spec_gap,
+                HOMED_BACKLOG,
+            ),
+            [],
+        )
+        self.assertEqual(
+            self._run(
+                assertions.unhomed_structure_directive_homed_as_rule_gap,
+                HOMED_BACKLOG,
+            ),
+            [],
+        )
+
+    def test_rejects_a_backlog_with_no_gap_items(self):
+        dropped = HOMED_BACKLOG.split("### Stated: minimum runtime")[0]
+        runtime = self._run(
+            assertions.unhomed_runtime_directive_homed_as_spec_gap, dropped
+        )
+        structure = self._run(
+            assertions.unhomed_structure_directive_homed_as_rule_gap, dropped
+        )
+        self.assertEqual(len(runtime), 1)
+        self.assertIn("no spec-gap item written", runtime[0].detail)
+        self.assertEqual(len(structure), 1)
+        self.assertIn("no rule-gap item written", structure[0].detail)
+
+    def test_rejects_a_gap_item_that_dropped_the_stated_values(self):
+        summarised = HOMED_BACKLOG.replace(
+            "  Stated directive, from \"Project directory structure\": "
+            "src/store.js, src/cli.js, test/store.test.js.",
+            "  The document states a project directory structure.",
+        )
+        failures = self._run(
+            assertions.unhomed_structure_directive_homed_as_rule_gap, summarised
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("none carries the stated file layout", failures[0].detail)
+
+    def test_rejects_a_spec_gap_item_that_is_about_something_else(self):
+        # A spec-gap item exists, but the runtime directive still went nowhere —
+        # the count is not the contract, carrying the stated value is.
+        other = HOMED_BACKLOG.replace(
+            '  Stated directive (verbatim): "**Runtime:** Node.js (v20 or newer)."\n'
+            "  No feature item owns this; the tech spec does.",
+            "  How expenses are stored on disk is not stated.",
+        )
+        failures = self._run(
+            assertions.unhomed_runtime_directive_homed_as_spec_gap, other
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("none carries the stated runtime constraint", failures[0].detail)
+
+    def test_rejects_the_runtime_directive_homed_under_the_wrong_type(self):
+        # Routed to mano rules instead of mano spec: no spec-gap item survives,
+        # so the tech spec never sees the constraint.
+        misrouted = HOMED_BACKLOG.replace(
+            "### Stated: minimum runtime\n- **Type:** spec-gap",
+            "### Stated: minimum runtime\n- **Type:** rule-gap",
+        )
+        failures = self._run(
+            assertions.unhomed_runtime_directive_homed_as_spec_gap, misrouted
+        )
+        self.assertEqual(len(failures), 1)
+        self.assertIn("no spec-gap item written", failures[0].detail)
 
 
 if __name__ == "__main__":

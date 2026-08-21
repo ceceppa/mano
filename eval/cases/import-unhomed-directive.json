@@ -1,0 +1,16 @@
+{
+  "name": "import-unhomed-directive",
+  "description": "mano import homes the stated technical directives no feature item owns. The PRD's runtime constraint must land as a spec-gap item and its Project directory structure block as a rule-gap item, each carrying the source values. Regression for directives dropped at import because nothing hosted them, leaving the implementer to invent its own file layout.",
+  "fixture": "import-unhomed-directive",
+  "fixture_mode": "document",
+  "prompt": "mano import product-brief.md",
+  "assertions": [
+    "backlog_was_written",
+    "backlog_has_items",
+    "all_items_status_backlog",
+    "no_phase_brief_written",
+    "import_wrote_only_backlog",
+    "unhomed_runtime_directive_homed_as_spec_gap",
+    "unhomed_structure_directive_homed_as_rule_gap"
+  ]
+}

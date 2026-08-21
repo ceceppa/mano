@@ -1068,6 +1068,14 @@ function renderDecision(s) {
     L.push(`IN_PHASE_STATUS: ${s.targetInPhaseStatus}`);
     L.push(`REVIEW_HEADING_PREFIX: ${s.targetReviewHeading}`);
   }
+  // Gap items never enter scope selection, so a phase-scopeable backlog hides
+  // them from the human entirely — including a stated directive intake homed
+  // here precisely so it would not be lost. Surfacing the routes costs one
+  // line and never changes the decision.
+  const openGapRoutes = [];
+  if (s.gaps && s.gaps["spec-gap"] > 0) openGapRoutes.push(`${s.gaps["spec-gap"]} spec-gap → mano spec`);
+  if (s.gaps && s.gaps["rule-gap"] > 0) openGapRoutes.push(`${s.gaps["rule-gap"]} rule-gap → mano rules`);
+  if (openGapRoutes.length) L.push(`OPEN_GAPS: ${openGapRoutes.join("; ")}`);
   L.push(s.action);
   return L.join("\n");
 }
