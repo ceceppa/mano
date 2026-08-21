@@ -1,0 +1,12 @@
+{
+  "_readme": [
+    "Incident rules allowed to ship with `eval=pending` — the explicit, temporary",
+    "exception the ship guard requires. A marker's whole promise is that the rule",
+    "can be probed for retirement; `pending` suspends that promise, so it is",
+    "recorded here with a reason and an owner rather than left invisible in a",
+    "marker nobody reads.",
+    "An entry whose rule no longer uses `pending` fails the run: the debt was paid",
+    "and the entry must be deleted, not edited. A release ships with this empty."
+  ],
+  "rules": {}
+}

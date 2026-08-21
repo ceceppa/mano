@@ -1,0 +1,12 @@
+{
+  "name": "stories-acceptance-polarity",
+  "description": "The same contradiction on the stories path: an Exit Criterion promises recovery while the canonical spec says the device stays locked and recovery is not wired. `mano stories` must route to `mano spec` rather than write an acceptance criterion that inverts the promise to match the artifact — the exact incident behind `exit-criterion-tested-in-reverse`.",
+  "fixture": "acceptance-polarity",
+  "phase": 1,
+  "prompt": "mano stories",
+  "assertions": [
+    "stories_polarity_wrote_nothing",
+    "polarity_conflict_quoted_both_sides",
+    "stories_polarity_routed_to_spec"
+  ]
+}

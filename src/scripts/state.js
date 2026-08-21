@@ -120,7 +120,9 @@ Usage:
                 of work, computed fresh from disk — the next pending story (its
                 # and file path) plus the ordered story list, or, when the phase
                 has a progress.md ledger, its next non-done Scope row plus both
-                ledger tables
+                ledger tables. On the build path it also reports the optional
+                artifact inventory (ARTIFACTS) and any pending review findings
+                (REWORK), before the ledger exists as well as after
   --ui          for mano ui: report the current phase brief and phase-local
                 design preview paths without exposing backlog content or
                 scanning phase folders in the prompt
@@ -1430,6 +1432,12 @@ function renderNext(s) {
     L.push(`BRIEF: ${s.phaseDir}/phase-brief.md`);
     L.push(`PROGRESS: ${s.phaseDir}/progress.md`);
     L.push("PROGRESS_STATUS: missing");
+    // B7 again, on the branch that matters most: this is the projection
+    // `mano build` reads on its FIRST run, when pre-flight 0b has to open every
+    // present artifact and nothing has been written yet. Reporting the
+    // inventory only once a ledger exists gives build the list one run too
+    // late.
+    L.push(artifactsLine(s.artifacts));
     return L.join("\n");
   }
 

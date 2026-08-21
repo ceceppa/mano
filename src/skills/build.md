@@ -113,11 +113,11 @@ Then report what you read:
 
 **0c. Readiness.** For each Phase Scope item involving mechanics, workflows, APIs, or stateful behaviour, verify: what data or entity does it operate on? what starts the behaviour? what state changes? what condition proves it worked? what default fixture, seed data, or example input is needed? If an item depends on missing domain structure, that is a gap — route it to `mano spec`; do not build around it with an invented model.
 
-**0c.0 Spec-owned defaults and initial state — hard gate.** When an Exit Criterion or Phase Scope item depends on a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, verify the canonical tech spec names its owning field/config/constant and gives its exact value or required relationship. A brief may say “small healed area” or “enough room”; if code must turn that into a number, it is a technical decision, not story setup.
+**0c.0 Spec-owned defaults and initial state — hard gate.** `_mano/rules/implement.md` → **Before writing code — the gap gates** gate 6.2, applied here against the **whole brief** instead of one unit: every Exit Criterion and Phase Scope item that depends on a behaviour-driving default needs that default owned and valued in the canonical tech spec.
 
 If that owner or value is missing, **write no ledger**. Report `⚠️ Build readiness gap: spec-owned default missing`, name the affected exit path and field that needs defining, and route to `mano spec`. Do not offer a build-owned default, a `TODO` in the code, or options to continue with a temporary value. Build may implement an already-decided default; it never chooses one.
 
-**0c.1 Player choice interaction — hard gate.** When a player can choose among two or more simultaneously available tools, buildables, abilities, modes, rewards, or other alternatives, verify `_mano_output/ux-flow.md` defines the choice as a player path. It must cover what makes each option available, how the player enters or invokes the choice, how they select or change the active option, how the active choice is communicated, and what happens when an option is locked, unavailable, or the player cancels. The choice may be in-world or minimal; it is still UX.
+**0c.1 Player choice interaction — hard gate.** Gate 6.3 from the same shared contract, applied against the whole brief: wherever the phase lets a player choose among two or more simultaneously available alternatives, `_mano_output/ux-flow.md` must define that choice as a player path — availability, how it is invoked, how the active option is selected and shown, and the locked/unavailable/cancel case. In-world or minimal presentation is still UX.
 
 If that flow is absent or leaves any of those decisions to implementation, **write no ledger**. Report `⚠️ Build readiness gap: player choice interaction missing`, name the affected phase path and missing UX behaviour, and route to `mano ux`. Do not propose a hotkey, picker, cycling scheme, default active item, HUD treatment, or other build-owned interaction. The general artifact-gap options do not waive this gate; only a completed UX flow or an explicit human decision to skip `mano ux` can do so.
 
@@ -135,7 +135,9 @@ Apply this only to that consumer-visible or independently-owned boundary, not a 
 
 If any behavior-driving interface field needed by a scope item is absent or has two materially different readings, **write no ledger**. Report one `⚠️ Build readiness gap` naming every missing field and route to `mano spec`. The general gap-check options to continue with a temporary note or partial guidance do not waive this gate; an implementer cannot safely invent a shared/public contract row by row.
 
+<!-- mano-rule: id=build-promise-polarity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=build-acceptance-polarity -->
 **0c.3 Phase-promise polarity — hard gate.** Map every `Phase Goal` outcome and every `Exit Criteria` leaf to the Phase Scope item that will satisfy it and the supporting artifact decisions it needs. Read those decisions for meaning, not keyword presence. If any artifact states the opposite outcome or preserves a stale deferral (`recoverable` vs `stays locked`, `available` vs `unavailable`, `implemented` vs `not wired`, success vs required failure), **write no ledger**. Report one `⚠️ Build readiness gap: supporting artifact contradicts phase promise`, quote both statements, and route to the artifact's owning skill—normally `mano spec` for technical/data/gate contradictions.
+<!-- /mano-rule: build-promise-polarity -->
 
 **0d. Artifact gap check.** For each Phase Scope item, check whether it depends on a visual, interaction, accessibility, technical, data, API, constant, shared measurement, or rule detail that is not defined by the artifacts read this run. This is a warning/decision point, not a default blocker; the hard gates in 0c.0–0c.3 remain non-continuable.
 
@@ -174,13 +176,13 @@ If sufficient guidance exists, do not warn — read that section when you reach 
 
 `_mano_output/design-brief.md §EmptyState` for the visual spec, and the Colour Constants rule in `_mano_output/project-rules.md` for how to express it in code.
 
-<!-- mano-rule: id=project-rule-story-coverage; incident=applicable-documentation-rule-omitted; model=not-recorded; date=2026-07-31; eval=stories-project-rule-coverage -->
+<!-- mano-rule: id=build-project-rule-coverage; incident=applicable-documentation-rule-omitted; model=not-recorded; date=2026-07-31; eval=build-project-rule-coverage -->
 A conflict between an applicable project rule and the phase scope is not a continuable artifact gap. Stop and apply gate 6.4; options 2 and 3 do not waive an existing rule.
-<!-- /mano-rule: project-rule-story-coverage -->
+<!-- /mano-rule: build-project-rule-coverage -->
 
 **0e. Reachability.** For each Phase Scope item involving interactive behaviour, screens, endpoints, or any user-triggered action, name the surface it lives on, the action that invokes it, and how the user reaches that surface. Wiring that no item covers is a gap, not something to add silently — an unreachable feature passes its own check and ships as nothing the user can use.
 
-<!-- mano-rule: id=project-rule-story-coverage; incident=applicable-documentation-rule-omitted; model=not-recorded; date=2026-07-31; eval=stories-project-rule-coverage -->
+<!-- mano-rule: id=build-project-rule-coverage; incident=applicable-documentation-rule-omitted; model=not-recorded; date=2026-07-31; eval=build-project-rule-coverage -->
 **0g. Project-rule coverage.** Before the ledger exists and before writing code:
 
 1. For every rule-level section in `project-rules.md` (normally each `##` rule, not its `What` / `Why` / `Pattern` parts), mark it internally as `not applicable` with a concrete reason, or `applicable` to one or more Scope rows. Decompose every normative obligation in `What` plus any explicit `must`, `required`, or `never` elsewhere: each bullet, required channel, `both`, and joined obligation needs its own mapping. Treat rationale and examples as interpretive context, not separate obligations. A single general pointer does not cover a compound rule.
@@ -189,7 +191,7 @@ A conflict between an applicable project rule and the phase scope is not a conti
 4. If any applicable obligation has no Scope leaf that can honour it, stop with no ledger written and report it — that is a gap in the brief, not something build fills in. If mapping exposes a phase-scope conflict, apply gate 6.4.
 
 Do not write the ledger, and do not write code, until the map has no unmapped applicable obligations. Report the mapping only when it exposed a conflict or caused a row to be added; a clean map needs no narration.
-<!-- /mano-rule: project-rule-story-coverage -->
+<!-- /mano-rule: build-project-rule-coverage -->
 
 **0f. Prove the chain: `Phase Goal` outcome → Scope leaves → Exit leaves.** The last pre-flight step, and the one that decides whether the brief can be built at all. For **every distinct outcome the `Phase Goal` promises**, name the one or more `## Phase Scope` items that will ship it and the one or more `## Exit Criteria` leaves that will prove it. Then close the loop both ways:
 

@@ -2,6 +2,7 @@
 name: mano-rules
 description: Use to define or update project rules, coding standards, components, and architectural patterns.
 requires: [core, artifact]
+requires-in-auto: [auto]
 ---
 
 # `mano rules` — Project Rules Advisor

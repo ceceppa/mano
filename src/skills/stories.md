@@ -2,6 +2,7 @@
 name: mano-stories
 description: Use to break down a phase brief and any available supporting context into implementable, developer-ready user stories with acceptance criteria.
 requires: [core, artifact, backlog]
+requires-in-auto: [auto]
 ---
 
 # `mano stories` — Stories Skill
@@ -355,7 +356,7 @@ If any behavior-driving interface field needed by the story is absent or has two
 Before accepting a `Not this story` boundary, compare it with the phase goal, Exit Criteria, and the rest of the story chain. It may defer an adjacent use case; it may not contradict a promised path or prohibit the shared contract surface another story needs to satisfy the phase. Resolve the story split, or route an unresolved contract choice to `mano spec`.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=stories-acceptance-polarity -->
 **0c.3 Phase-promise polarity — hard gate.** Map every `Phase Goal` outcome and every `Exit Criteria` action/result—including each nested bullet—to its prospective `Done when` owner and the supporting artifact decisions it needs. Read those decisions for meaning, not keyword presence. If any artifact states the opposite outcome or preserves a stale deferral (`recoverable` vs `stays locked`, `available` vs `unavailable`, `implemented` vs `not wired`, success vs required failure), **write no new story files**. Report one `⚠️ Story readiness gap: supporting artifact contradicts phase promise`, quote both statements, and route to the artifact's owning skill—normally `mano spec` for technical/data/gate contradictions.
 
 Do not disguise the conflict with wording such as “existing behaviour, now reachable” unless the cited artifact actually defines every prerequisite that makes the route reachable. An AC appearing in a story is coverage, not readiness; its implementation reference must point to a compatible contract rather than an opposing one.
@@ -574,7 +575,7 @@ Next:
 Never select items yourself, never assign more than the user named, and never assign to a phase that does not already exist with approved scope. Adding to an open phase is the human's call, made in the message that names the item.
 <!-- /mano-rule: mid-phase-addition-owner -->
 
-<!-- mano-rule: id=post-stories-hook-findings-triage; incident=post-stories-hook-findings; model=not-recorded; date=2026-05-29; eval=pending -->
+<!-- mano-rule: id=post-stories-hook-findings-triage; incident=post-stories-hook-findings; model=not-recorded; date=2026-05-29; eval=hook-triage-stories-no-approval -->
 ## Addressing post-stories hook findings
 
 When the post-stories hook runs and the reviewer prints findings in chat, `mano stories` does **not** silently update stories. The reviewer is diagnostic; the user owns every change.

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    width="1080"
-   height="1420"
+   height="1520"
    aria-labelledby="mano-title mano-description"
-   viewBox="0 0 1080 1420"
+   viewBox="0 0 1080 1520"
    version="1.1"
    id="svg44"
    sodipodi:docname="mano.svg"
@@ -36,12 +36,12 @@
      inkscape:window-maximized="0"
      inkscape:current-layer="svg44" />
   <title
-     id="title1">Mano phase-driven learning loop</title>
+     id="mano-title">Mano phase-driven learning loop</title>
   <desc
-     id="desc1">A living backlog is updated through import, start, review, and direct human edits before feeding one approved small phase. Needed planning artifacts can be created, reused, or brought in from elsewhere. Auto mode is optional; when enabled, it starts after approval, runs the needed planning skills, pauses for human decisions, and stops after the build. The human uses and reviews the result, and learning updates the backlog. Post-hooks add specialist checks and project automation. Optional owner mode supports parallel phase work over a shared backlog. Optional Tracks keep parallel experiments grouped across imports, phases, and review.</desc>
+     id="mano-description">A living backlog is updated through import, start, review, and direct human edits, and feeds one approved small phase. Only the planning artifacts that phase needs are added; each can be created, reused, or brought in from elsewhere. Implementation then forks into two ways in, and a phase uses one: mano stories writes a stories ledger that mano dev implements one story at a time, or mano build works straight from the approved brief scope through a progress.md ledger of scope and exit-criteria rows. Whichever ledger the phase already has decides the route. A mid-phase change stays on that path: it reopens a row, adds one in the human’s own words, or is deferred to the backlog. Work is checkpointed, so a fresh session resumes from the ledger. Auto mode is optional; when enabled it starts after the human approves the scope, runs the needed planning skills, pauses for every human decision, and stops before review. The human then uses the result and runs mano review, which is mandatory and closes the phase; learning updates the backlog. Post-hooks add specialist checks and project automation. Optional owner mode supports parallel phase work over a shared backlog, and optional tracks keep parallel experiments grouped across imports, phases, and review.</desc>
   <path
      fill="#faf5ee"
-     d="M0 0h1080v1420H0Z"
+     d="M0 0h1080v1520H0Z"
      style="stroke-width:1.0256"
      id="path1" />
   <rect
@@ -374,7 +374,7 @@
      id="path21" />
   <rect
      width="400"
-     height="104"
+     height="186"
      x="608"
      y="836"
      fill="#fffdf8"
@@ -384,51 +384,164 @@
      id="rect21" />
   <text
      x="636"
-     y="882"
+     y="880"
      fill="#221f1d"
      font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
      font-size="24"
      font-weight="800"
      letter-spacing=".2"
      style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-family:Inter;-inkscape-font-specification:&quot;Inter Bold&quot;"
-     id="text21">STORIES → BUILD</text>
+     id="text21">IMPLEMENT</text>
   <text
      x="636"
-     y="910"
+     y="906"
      fill="#6f6660"
      font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-     font-size="16"
+     font-size="15"
      font-weight="500"
      style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-family:Inter;-inkscape-font-specification:&quot;Inter Medium&quot;;fill:#4c4641;fill-opacity:1"
-     id="text22">Bounded, testable work</text>
+     id="text22">Two ways in — the ledger decides which</text>
+  <rect
+     width="117"
+     height="34"
+     x="636"
+     y="922"
+     fill="#23201e"
+     rx="17"
+     id="rectA1" />
+  <text
+     x="694.5"
+     y="944.5"
+     fill="#faf5ee"
+     font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+     font-size="13.5"
+     font-weight="700"
+     text-anchor="middle"
+     id="textA1">mano stories</text>
+  <text
+     x="759"
+     y="944.5"
+     fill="#8a817b"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15"
+     font-weight="700"
+     id="textA2">→</text>
+  <rect
+     width="85"
+     height="34"
+     x="777"
+     y="922"
+     fill="#f4f2fd"
+     stroke="#40359f"
+     stroke-width="1.6"
+     rx="17"
+     id="rectA3" />
+  <text
+     x="819.5"
+     y="944.5"
+     fill="#40359f"
+     font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+     font-size="13.5"
+     font-weight="700"
+     text-anchor="middle"
+     id="textA3">stories/</text>
+  <text
+     x="868"
+     y="944.5"
+     fill="#8a817b"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15"
+     font-weight="700"
+     id="textA4">→</text>
+  <rect
+     width="85"
+     height="34"
+     x="886"
+     y="922"
+     fill="#23201e"
+     rx="17"
+     id="rectA5" />
+  <text
+     x="928.5"
+     y="944.5"
+     fill="#faf5ee"
+     font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+     font-size="13.5"
+     font-weight="700"
+     text-anchor="middle"
+     id="textA5">mano dev</text>
+  <rect
+     width="101"
+     height="34"
+     x="636"
+     y="968"
+     fill="#23201e"
+     rx="17"
+     id="rectB1" />
+  <text
+     x="686.5"
+     y="990.5"
+     fill="#faf5ee"
+     font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+     font-size="13.5"
+     font-weight="700"
+     text-anchor="middle"
+     id="textB1">mano build</text>
+  <text
+     x="743"
+     y="990.5"
+     fill="#8a817b"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="15"
+     font-weight="700"
+     id="textB2">→</text>
+  <rect
+     width="109"
+     height="34"
+     x="761"
+     y="968"
+     fill="#f4f2fd"
+     stroke="#40359f"
+     stroke-width="1.6"
+     rx="17"
+     id="rectB3" />
+  <text
+     x="815.5"
+     y="990.5"
+     fill="#40359f"
+     font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+     font-size="13.5"
+     font-weight="700"
+     text-anchor="middle"
+     id="textB3">progress.md</text>
   <path
      fill="none"
      stroke="#221f1d"
      stroke-width="4.5"
-     d="M808 940v16q0 16-16 16H566"
+     d="M808 1022v16q0 16-16 16H566"
      id="path22" />
   <path
      fill="#221f1d"
-     d="m552 972 14-9v18z"
+     d="m552 1054 14-9v18z"
      id="path23" />
   <rect
-     width="218"
+     width="250"
      height="28"
-     x="570"
-     y="941"
+     x="600"
+     y="1023"
      fill="#e4e0f9"
      rx="14"
      id="rect23" />
   <text
-     x="679"
-     y="961.5"
+     x="725"
+     y="1043.5"
      fill="#40359f"
      font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
      font-size="12.5"
      font-weight="800"
      letter-spacing=".4"
      text-anchor="middle"
-     id="text23">AUTO MODE STOPS AFTER BUILD</text>
+     id="text23">AUTO MODE STOPS BEFORE REVIEW</text>
   <rect
      width="456"
      height="190"
@@ -452,6 +565,24 @@
    fill="#d45a2e"
    style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-family:Inter;-inkscape-font-specification:&quot;Inter Bold&quot;;fill:#87381c;fill-opacity:1"
    id="tspan24">USE IT</tspan> → REVIEW</text>
+  <rect
+     width="104"
+     height="26"
+     x="386"
+     y="913"
+     fill="#f9decc"
+     rx="13"
+     id="rect24b" />
+  <text
+     x="438"
+     y="931"
+     fill="#87381c"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="12.5"
+     font-weight="800"
+     letter-spacing=".4"
+     text-anchor="middle"
+     id="text24b">REQUIRED</text>
   <text
      x="100"
      y="967"
@@ -550,7 +681,7 @@
        width="456"
        height="44"
        x="72"
-       y="1080"
+       y="1100"
        fill="#f4f2fd"
        stroke="#40359f"
        stroke-width="1.5"
@@ -558,7 +689,7 @@
        id="rect30" />
     <text
        x="92"
-       y="1098"
+       y="1118"
        fill="#40359f"
        font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
        font-size="13.5"
@@ -567,7 +698,7 @@
        id="text31">AUTO MODE — OPTIONAL</text>
     <text
        x="92"
-       y="1116"
+       y="1136"
        fill="#4c4641"
        font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
        font-size="12"
@@ -577,7 +708,7 @@
        width="400"
        height="44"
        x="608"
-       y="1080"
+       y="1100"
        fill="#f4f2fd"
        stroke="#40359f"
        stroke-width="1.5"
@@ -585,7 +716,7 @@
        id="rect32" />
     <text
        x="628"
-       y="1107"
+       y="1127"
        fill="#40359f"
        font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
        font-size="13"
@@ -594,7 +725,7 @@
        id="text33">POST-HOOKS</text>
     <text
        x="724"
-       y="1107"
+       y="1127"
        fill="#4c4641"
        font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
        font-size="13"
@@ -605,16 +736,70 @@
      transform="translate(0 40)"
      id="g43">
     <rect
+     width="456"
+     height="44"
+     x="72"
+     y="1160"
+     fill="#f4f2fd"
+     stroke="#40359f"
+     stroke-width="1.6"
+     rx="15"
+     id="rect33b" />
+  <text
+     x="92"
+     y="1178"
+     fill="#40359f"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="13"
+     font-weight="800"
+     letter-spacing=".25"
+     id="text33b">MID-PHASE CHANGE</text>
+  <text
+     x="92"
+     y="1196"
+     fill="#4c4641"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="13"
+     font-weight="600"
+     id="text33c">Reopen a row • add one in your words • defer to backlog</text>
+  <rect
+     width="400"
+     height="44"
+     x="608"
+     y="1160"
+     fill="#f4f2fd"
+     stroke="#40359f"
+     stroke-width="1.6"
+     rx="15"
+     id="rect33d" />
+  <text
+     x="628"
+     y="1187"
+     fill="#40359f"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="13"
+     font-weight="800"
+     letter-spacing=".25"
+     id="text33e">FRESH SESSION</text>
+  <text
+     x="742"
+     y="1187"
+     fill="#4c4641"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="13"
+     font-weight="600"
+     id="text33f">Checkpointed — the ledger resumes you</text>
+  <rect
        width="936"
        height="166"
        x="72"
-       y="1140"
+       y="1240"
        fill="#23201e"
        rx="28"
        id="rect34" />
     <text
        x="104"
-       y="1188"
+       y="1288"
        fill="#faf5ee"
        font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
        font-size="24"
@@ -623,14 +808,14 @@
        style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-family:Inter;-inkscape-font-specification:&quot;Inter Bold&quot;"
        id="text35"><tspan
          x="104"
-         y="1188"
+         y="1288"
          id="tspan34">OWNER MODE:</tspan><tspan
          x="104"
-         y="1218"
+         y="1318"
          id="tspan35">PARALLEL PHASE TRACKS</tspan></text>
     <text
        x="104"
-       y="1254"
+       y="1354"
        fill="#b5aba1"
        font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
        font-size="15"
@@ -639,7 +824,7 @@
        id="text36">Shared backlog • Independent phase tracks</text>
     <text
        x="104"
-       y="1278"
+       y="1378"
        fill="#b5aba1"
        font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
        font-size="15"
@@ -649,41 +834,41 @@
     <path
        stroke="#e8dfd4"
        stroke-width="3"
-       d="M620 1226h158"
+       d="M620 1326h158"
        id="path37" />
     <path
        fill="none"
        stroke="#b0a8f7"
        stroke-width="3"
-       d="M656 1226c24 0 26-34 50-34h72"
+       d="M656 1326c24 0 26-34 50-34h72"
        id="path38" />
     <path
        fill="none"
        stroke="#5fc7bb"
        stroke-width="3"
-       d="M696 1226c24 0 26 34 50 34h32"
+       d="M696 1326c24 0 26 34 50 34h32"
        id="path39" />
     <circle
        cx="656"
-       cy="1226"
+       cy="1326"
        r="6"
        fill="#e8dfd4"
        id="circle39" />
     <circle
        cx="696"
-       cy="1226"
+       cy="1326"
        r="6"
        fill="#e8dfd4"
        id="circle40" />
     <circle
        cx="778"
-       cy="1192"
+       cy="1292"
        r="6"
        fill="#b0a8f7"
        id="circle41" />
     <text
        x="792"
-       y="1197"
+       y="1297"
        fill="#b0a8f7"
        font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace"
        font-size="14"
@@ -692,13 +877,13 @@
        id="text41">alice-phase-N</text>
     <circle
        cx="778"
-       cy="1226"
+       cy="1326"
        r="6"
        fill="#e8dfd4"
        id="circle42" />
     <text
        x="792"
-       y="1231"
+       y="1331"
        fill="#e8dfd4"
        font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace"
        font-size="14"
@@ -707,13 +892,13 @@
        id="text42">phase-N</text>
     <circle
        cx="778"
-       cy="1260"
+       cy="1360"
        r="6"
        fill="#5fc7bb"
        id="circle43" />
     <text
        x="792"
-       y="1265"
+       y="1365"
        fill="#5fc7bb"
        font-family="Inconsolata, ui-monospace, 'SF Mono', Menlo, monospace"
        font-size="14"
@@ -723,7 +908,7 @@
   </g>
   <text
      x="71.472"
-     y="1391"
+     y="1491"
      fill="#4c4641"
      font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
      font-size="16"

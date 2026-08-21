@@ -2,6 +2,7 @@
 name: mano-import
 description: Use to turn an existing PRD, spec, or product document into a Mano backlog. Decomposes the document into backlog items, then stops.
 requires: [core, artifact, intake, backlog]
+requires-in-auto: [auto]
 ---
 
 # `mano import` — Document Intake Skill

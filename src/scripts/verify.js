@@ -170,10 +170,40 @@ function streams(result) {
   return stdout;
 }
 
+const USAGE = `mano verify — run a verification command and filter its output at the source
+
+Usage:
+  node verify.js -- <command ...>
+
+  node verify.js -- npm test              spawned directly; argv is preserved,
+                                          including empty arguments
+  node verify.js -- "npm test 2>&1 | x"   a single argument runs through the
+                                          shell, so pipes and redirects work
+
+  exit 0   prints \`PASS: <command>\` and nothing else
+  exit n   prints \`FAIL (exit n): <command>\` plus a trimmed excerpt — first 40
+           and last 20 lines, consecutive duplicates collapsed, capped at 2,000
+           characters with both ends kept — then exits with the command's code
+
+A command that never ran is not a command that failed: a missing executable or
+a signalled process is reported by name, not as a bare exit 1.
+
+Optional per-project sharpening: a \`## Verification\` block in
+_mano_output/tech-spec.md may declare \`failure-pattern: <regex>\`; matching lines
+lead the excerpt.
+`;
+
 function main() {
-  const { argv, display } = parseArgs(process.argv.slice(2));
+  const raw = process.argv.slice(2);
+  // `--help` before `--` is the flag; after `--` it is part of the command.
+  const beforeSeparator = raw.slice(0, raw.indexOf("--") === -1 ? raw.length : raw.indexOf("--"));
+  if (beforeSeparator.some((a) => a === "--help" || a === "-h")) {
+    process.stdout.write(USAGE);
+    process.exit(0);
+  }
+  const { argv, display } = parseArgs(raw);
   if (!display) {
-    process.stderr.write("usage: node verify.js -- <command ...>\n");
+    process.stderr.write("usage: node verify.js -- <command ...>   (--help for detail)\n");
     process.exit(2);
   }
   const options = { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 };

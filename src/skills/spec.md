@@ -2,6 +2,7 @@
 name: mano-spec
 description: Use to translate a phase brief into a technical specification. Makes concrete decisions on libraries, data models, and API contracts.
 requires: [core, artifact]
+requires-in-auto: [auto]
 ---
 
 # `mano spec` — Spec Skill
@@ -43,11 +44,11 @@ Do not conclude "consistent, no updates needed" until all four checks and the Ph
 8. If spec doesn't exist yet, generate from scratch using the projected current-phase items and gaps as requirements for the initial artifact.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+<!-- mano-rule: id=spec-promise-consistency; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=spec-acceptance-polarity -->
 **Phase-promise consistency — hard gate.** Build a small requirement ledger from the current phase's `Phase Goal` and every `Exit Criteria` action/result, including nested bullets. For each promised result, identify the data, state transition, gate, and public/user route that make it possible in the current-state spec. Then search the whole spec for its opposite or a stale deferral—for example, the brief says a pending item becomes recoverable while another spec paragraph says it remains locked, unavailable, unwired, deferred, or returns failure. A positive statement in one section never cancels a negative statement elsewhere.
 
 When the current phase deliberately advances something an earlier phase left locked or unimplemented, replace the stale decision in place and define the newly required transition/prerequisites. Do not preserve the earlier limitation as current truth merely because it already exists in the spec. If the two outcomes reflect a real unresolved product decision, stop before writing and raise `❓ Decide:` with the conflicting brief promise and spec statement. Do not confirm or log the spec as complete while any ledger row has no enabling decision or has an opposing decision elsewhere.
-<!-- /mano-rule: phase-acceptance-integrity -->
+<!-- /mano-rule: spec-promise-consistency -->
 
 This same command is also how sync-back works after real project setup. Rerun `mano spec` when:
 - the project was just initialized and now has a real lockfile

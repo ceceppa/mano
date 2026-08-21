@@ -1372,6 +1372,34 @@ class GapSkillContractTests(unittest.TestCase):
         self.assertIn("Do not open `_mano_output/backlog.md`", rules)
 
 
+class BuildPreLedgerProjectionTests(unittest.TestCase):
+    """B7: the artifact inventory has to arrive before the ledger does."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        phase = self.root / "_mano_output" / "phase-1"
+        phase.mkdir(parents=True)
+        (phase / "phase-brief.md").write_text("# Phase Brief\n\n## Phase Goal\n\nShip it.\n")
+        (self.root / "_mano_output" / "tech-spec.md").write_text("# Tech Spec\n")
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_next_reports_artifacts_before_any_ledger_exists(self):
+        """`mano build`'s first run reads this projection and its pre-flight 0b
+        opens every artifact reported `present`. Reporting the inventory only
+        once `progress.md` exists hands build the list one run too late."""
+        result = subprocess.run(
+            ["node", str(STATE_SCRIPT), "--next", str(self.root)],
+            cwd=self.root, text=True, capture_output=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("PROGRESS_STATUS: missing", result.stdout)
+        self.assertIn("ARTIFACTS: tech-spec=present", result.stdout)
+        self.assertIn("ux-flow=absent", result.stdout)
+
+
 class AutoModeContractTests(unittest.TestCase):
     def test_scope_approval_tokens_are_synonyms_and_arm_the_displayed_chain(self):
         start = (REPO_ROOT / "src" / "skills" / "start.md").read_text()
@@ -1430,12 +1458,14 @@ class AutoModeContractTests(unittest.TestCase):
 
     def test_auto_pause_preserves_chain_and_yolo_can_close_it(self):
         workflow = (REPO_ROOT / "src" / "workflow.md").read_text()
-        core = (REPO_ROOT / "src" / "rules" / "core.md").read_text()
+        # The chain rules moved out of core.md into a fragment loaded only under
+        # `MODE: auto`; core.md keeps the pointer, not the rules.
+        auto = (REPO_ROOT / "src" / "rules" / "auto.md").read_text()
         dev = (REPO_ROOT / "src" / "skills" / "dev.md").read_text()
 
-        self.assertIn("- Remaining:", core)
+        self.assertIn("- Remaining:", auto)
         self.assertIn("approved run plan", workflow)
-        self.assertIn("refresh the state projection", core)
+        self.assertIn("refresh the state projection", auto)
         self.assertIn("Auto-chain exception", dev)
         self.assertIn("required `[mano auto]` closing block", dev)
 
