@@ -43,9 +43,11 @@ class FluentChainContractTests(unittest.TestCase):
     def test_dev_checks_phase_contract_before_final_story(self) -> None:
         dev = _read("src/skills/dev.md")
         self.assertIn("**Final-story phase-contract gate.**", dev)
+        # The gate runs before the shared pre-reads, which now start at the
+        # pointer into _mano/rules/implement.md.
         self.assertLess(
             dev.index("**Final-story phase-contract gate.**"),
-            dev.index("7. If the story is bootstrap"),
+            dev.index("6.2–10. **The gap gates, pre-reads, and verification are in"),
         )
         self.assertIn("same user/caller route and breadth", dev)
         self.assertIn("In YOLO mode", dev)
@@ -53,11 +55,29 @@ class FluentChainContractTests(unittest.TestCase):
 
     def test_review_cannot_close_unowned_phase_contract(self) -> None:
         text = _read("src/skills/review.md")
-        self.assertIn("**Phase-contract safety net.**", text)
+        self.assertIn("**Phase-contract safety net — stories path only.**", text)
         self.assertIn("before asking for feedback or closing the phase", text)
         self.assertIn("exact cited canonical spec section", text)
         self.assertIn("closes the chain through each named returned type", text)
         self.assertIn("do not let `close it` waive this gate", text)
+
+    def test_the_story_safety_nets_are_scoped_to_the_stories_path(self) -> None:
+        # B6: review branched on PROGRESS_STATUS and then still asked for "the
+        # story's Implementation Reference" and routed gaps through mano stories
+        # / mano dev — which on a build-path phase creates the second ledger the
+        # projection refuses.
+        text = _read("src/skills/review.md")
+        self.assertIn("**Artifact-polarity safety net — stories path only.**", text)
+        self.assertIn(
+            "Review never asks for an `Implementation Reference`, never opens a story file, "
+            "and never routes to `mano stories` or `mano dev`",
+            text,
+        )
+        self.assertIn(
+            "**Review's only sanctioned `progress.js` surfaces are `request-rework`, "
+            "`resolve-rework`, and `sign-off`.**",
+            text,
+        )
 
 
 if __name__ == "__main__":

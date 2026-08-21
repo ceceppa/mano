@@ -13,12 +13,21 @@ def _read(relative: str) -> str:
 
 class PhaseScopeContractTests(unittest.TestCase):
     def test_dev_stops_instead_of_hiding_a_scope_expansion(self) -> None:
-        dev = _read("src/skills/dev.md")
+        dev = _read("src/skills/dev.md") + _read("src/rules/implement.md")
 
         self.assertIn("6.4 **Phase-scope conflict.**", dev)
         self.assertIn("Do not treat “do it anyway” as permission to leave the brief stale", dev)
-        self.assertIn("amend the phase brief to include it", dev)
         self.assertIn("This gate applies in default, YOLO, and auto mode", dev)
+
+    def test_the_scope_conflict_route_cannot_loop_back_to_start(self) -> None:
+        # B5: the old advice was "amend the brief, then re-run stories/build".
+        # With a ledger present `mano start` refuses, so that route sent the user
+        # in a circle. The gate now branches on whether a ledger exists.
+        implement = _read("src/rules/implement.md")
+        self.assertNotIn("amend the phase brief to include it, then rerun `mano stories`", implement)
+        self.assertIn("**A ledger exists**", implement)
+        self.assertIn("**No ledger yet**", implement)
+        self.assertIn("Do **not** send the human to `mano start` from here", implement)
 
     def test_clear_user_direction_is_limited_to_current_phase_scope(self) -> None:
         dev = _read("src/skills/dev.md")

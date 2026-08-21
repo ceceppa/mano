@@ -1,0 +1,10 @@
+{
+  "name": "start-amend-with-ledger",
+  "description": "B5: a phase whose brief a ledger already addresses cannot be amended, and the refusal must not route back through mano stories into a loop.",
+  "fixture": "start-amend-with-ledger",
+  "phase": 1,
+  "prompt": "mano start \"also add a release stage that composes on top of the feature stage\"",
+  "assertions": [
+    "start_amend_refused_with_ledger"
+  ]
+}

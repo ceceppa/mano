@@ -1,0 +1,10 @@
+{
+  "name": "build-arg-distinct-outcome",
+  "description": "Invocation case B — an argument naming an outcome the phase does not contain adds no row and no code. It is offered to the backlog, not routed to `mano start`: with a ledger present start refuses, and that is the loop the correction routing exists to close.",
+  "fixture": "build-stage-chain",
+  "phase": 1,
+  "prompt": "mano-build \"add dark mode\"",
+  "assertions": [
+    "build_refused_free_text_scope"
+  ]
+}

@@ -18,7 +18,10 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - `mano rules` maps to `_mano/skills/rules.md`.
    - `mano ui` maps to `_mano/skills/ui.md`.
    - `mano stories` maps to `_mano/skills/stories.md`.
+   - `mano dev` maps to `_mano/skills/dev.md`.
+   - `mano build` maps to `_mano/skills/build.md`.
    - `mano review` maps to `_mano/skills/review.md`.
+   - **Preserve a literal trailing modifier or argument.** `mano dev yolo` invokes `mano-dev` with `yolo` intact; `mano build "the picker keeps the old value"` invokes `mano-build` with that exact text intact — it is a mid-phase correction the skill classifies itself, and its wording is the human's contract. Never fold a modifier into a skill name, never paraphrase an argument, and never silently drop one.
    - Read `_mano/workflow.md` only for the bare `mano`, `mano help`, `mano status`, and `mano continue` commands — it is the dispatcher, not per-command context.
    - Execute the logic exactly as described in the skill file.
 
@@ -36,7 +39,7 @@ The framework relies on modular skill prompts located in the `_mano/skills/` dir
    - Only write code when explicitly instructed outside of a `mano [action]` context.
 
    <!-- mano-rule: id=dev-yolo-batch; incident=explicit-yolo-stopped-after-one-story; model=codex; date=2026-08-03; eval=dev-yolo-batch,dev-yolo-blocker,dev-default-single -->
-   - **Implementation exception:** `mano dev` maps to `_mano/skills/dev.md`, the complete authoritative implementation contract; it is the one Mano action allowed to write application code. Preserve a literal trailing modifier: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with `yolo` intact, enabling the ordered batch mode defined in that contract. The planning-only refusal still applies to every other Mano action.
+   - **Implementation exception:** `mano dev` and `mano build` are the two Mano actions allowed to write application code. Their complete authoritative contracts are `_mano/skills/dev.md` and `_mano/skills/build.md`, each plus the shared `_mano/rules/implement.md`. `mano dev` implements one story from `stories/README.md`; `mano build` works the Scope rows of `PHASE_DIR/progress.md` straight from the phase brief. A phase uses one path, never both. Preserve a literal trailing modifier: `mano dev yolo` and `mano-dev yolo` both invoke `mano-dev` with `yolo` intact, enabling the ordered batch mode defined in that contract. The planning-only refusal still applies to every other Mano action.
    <!-- /mano-rule: dev-yolo-batch -->
 
 5. **Runtime Layout:**

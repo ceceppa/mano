@@ -3,3 +3,10 @@ mano.png
 .claude
 __pycache__
 docs
+
+# Working plan documents: authored locally, not part of the package.
+plan*.md
+
+# Eval manifests: ad-hoc runs are local noise; a recorded baseline is committed.
+eval/results/*.json
+!eval/results/baseline-*.json

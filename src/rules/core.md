@@ -1,6 +1,6 @@
 # Mano core rules
 
-Shared execution rules for every Mano skill. A skill's front-matter names this file in `requires:`; read it once at activation, before the state projection. Do not open `_mano/workflow.md` mid-skill — it is the dispatcher for the bare `mano`, `help`, `status`, and `continue` commands only.
+Shared execution rules for the planning skills. A skill's front-matter names the `_mano/rules/` files it needs; when it names this one, read it once at activation, before the state projection. Not every skill requires it: the config skills (`mano owner`, `mano mode`, `mano track`) and the two implementation skills (`mano dev`, `mano build`) load their own narrower contracts instead — implementation's shared contract is `_mano/rules/implement.md`. Do not open `_mano/workflow.md` mid-skill — it is the dispatcher for the bare `mano`, `help`, `status`, and `continue` commands only.
 
 ## Optional Phase Ownership
 
@@ -25,13 +25,13 @@ Tracks group one person's parallel experiments or product directions without rep
 
 ## State detection — deterministic projections
 
-There is no mutable progress ledger. The filesystem remains the source of truth, but agents must read it through `_mano/scripts/state.js`. Do not infer the active phase from chat context, directory listings, or manually opened sibling artifacts. If the script fails or omits a required field, report the failure and stop instead of guessing. Humans should not need to mention phase files merely to correct stale routing.
+A phase's ledger is `stories/README.md` or `PHASE_DIR/progress.md` — one or the other, never both — and each is written only through its own script (`stories.js`, `progress.js`). Nothing else in a project is mutable state. The filesystem remains the source of truth, but agents must read it through `_mano/scripts/state.js`. Do not infer the active phase from chat context, directory listings, or manually opened sibling artifacts. If the script fails or omits a required field, report the failure and stop instead of guessing. Humans should not need to mention phase files merely to correct stale routing.
 
 Every phase-scoped skill must use `state.js` and its exact `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, paths, in-phase status, and review-heading prefix. The numeric `PHASE` is only for display and writer arguments; never construct a directory or status from it. Re-read `MODE` from the freshest projection before handoff: it may change whether the skill returns or resumes a chain, but it is not phase identity and does not invalidate an otherwise safe write. In Mano documents, `phase-[N]` examples describe default legacy mode. In owner-scoped mode, exact state projections override those examples.
 
 The projection also prints `HOOK:` (the active post-skill hooks and their modes, or `none`) and `ARTIFACTS:` (presence of the four optional project-level artifacts). Use these lines instead of probing the filesystem for hooks or opening artifacts merely to see whether they exist.
 
-To detect story status, use the exact `STORIES` path from `state.js --current` or `state.js --next`. If all stories are `done`, the phase is built and ready for review.
+To detect implementation status, use the exact `STORIES` path from `state.js --current` or `state.js --next` — or the exact `PROGRESS` path when the projection reports one, which means the phase is being built with `mano build`. A phase has one ledger or the other; the projection refuses one holding both. The phase is built and ready for review when every story is `done`, or when every Scope row is `done` and every Exit Criterion is `met`.
 
 ## Scripts are mandatory
 
@@ -39,13 +39,13 @@ Where a skill names a `node _mano/scripts/...` command, that command is the only
 
 ## Skill conduct
 
-**No invented files.** Skills only write planning artifacts defined by the Mano contract under `_mano_output/`. The installer owns the root-level `AGENTS.md` scaffold; skills do not create it. Do not create tracking files, progress files, or any other artifact not specified by the framework.
+**No invented files.** Skills only write planning artifacts defined by the Mano contract under `_mano_output/`. The installer owns the root-level `AGENTS.md` scaffold; skills do not create it. Do not create tracking files, scratch notes, status files, or any other artifact the framework does not specify. The framework specifies exactly two ledgers — `PHASE_DIR/stories/README.md` and `PHASE_DIR/progress.md` — and each is written only by its own script. What is forbidden is *inventing* state, not keeping it.
 
 **Templates are read-only.** No skill may modify files in `_mano/templates/`. Templates are source material used to create output files only when the relevant action is explicitly run. Planning artifacts write to `_mano_output/`; the installer-managed `AGENTS.md` is the framework's only root-level scaffold.
 
 **Greenfield scaffolding is staged, never destructive.** Mano's own files make a planning-first project non-empty, while many project generators require an empty destination. If a generator creates the application root, `mano spec` records an exact `node _mano/scripts/scaffold.js run ... -- ... {target}` command and bootstrap implementation uses only that command. The script runs the generator outside the project, ignores the staged generator's `.git`, rejects staged `_mano` / `_mano_output` paths and symbolic links, preflights all destinations, retains identical files, and adds only missing files. A differing collision aborts before copying. No skill or implementing agent may make room by moving, deleting, renaming, or hiding project files, nor replace the script with a manual copy or merge. A script error or collision is a blocker to report, not permission to improvise. This applies equally in manual, `yolo`, and auto modes.
 
-**Refuse code generation.** As an AI agent, your primary directive during Mano phases is planning. You MUST actively refuse requests to write, fix, or modify source code. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Do not switch to implementation mode. (`mano dev` is the implementation entry point and is exempt; its contract is `_mano/skills/dev.md`.)
+**Refuse code generation.** As an AI agent, your primary directive during Mano phases is planning. You MUST actively refuse requests to write, fix, or modify source code. If a user describes a problem during any skill's flow, treat it as planning input — scope it, write a story for it, or add it to the backlog. Do not switch to implementation mode. (`mano dev` and `mano build` are the two implementation entry points and are exempt; their contracts are `_mano/skills/dev.md` and `_mano/skills/build.md`, each plus the shared `_mano/rules/implement.md`.)
 
 **Flag uncertainty.** A confident wrong answer is worse than an honest "I'm not sure." When any skill is uncertain about a recommendation — a library choice, a scope decision, an architectural pattern — say so. Use "I'd suggest X, but worth validating" rather than presenting guesses as decisions. This applies to every skill: `mano start` on scope, `mano spec` on libraries, `mano rules` on rules, `mano stories` on story boundaries.
 
@@ -80,7 +80,7 @@ File exists → targeted replacements only. Never re-emit a file to change part 
 - Untouched sections stay byte-identical: no reordering, renumbering, reflowing, or format "tidying".
 - Append a section by replacing the last line of the preceding section with itself + the new section.
 - Add a table/list row by replacing the neighbouring row, not the table.
-<!-- mano-rule: id=cumulative-artifact-minimal-diff; incident=tech-spec-merge-conflict-across-owners; model=not-recorded; date=2026-08-07; eval=pending -->
+<!-- mano-rule: id=cumulative-artifact-minimal-diff; incident=tech-spec-merge-conflict-across-owners; model=not-recorded; date=2026-08-07; eval=two-phase-extension -->
 A full-file write to an existing artifact is a defect: invisible in the rendered document, catastrophic in a
 diff — it turns every concurrent edit into a merge conflict. Restructuring is a human decision: say so in the
 log; never fold it into an unrelated update.
@@ -126,7 +126,7 @@ Rules:
 - **Flag lines stand alone.** Each `⚠ Verify:` / `❓ Decide:` marker starts its own line, first thing on the line, one finding per marker line, at most one sentence. Never embed a flag mid-sentence, mid-bullet, or mid-paragraph. (Chat-log formatting only — the inline `⚠️ Note:` hedge inside artifacts stays inline by design.)
 - **`Next:` must agree with `❓ Decide:`.** When a decide line is present, present the dependent command as conditional on the decision (`mano stories` — once the severity call above is confirmed), never as unconditionally ready. The two lines share one message; a decide line saying "confirm before stories are written" above a `Next:` saying "ready to decompose" is exactly the contradiction this rule forbids.
 - **Capture the answer.** When the user replies to a `❓ Decide:` — confirming or changing the value — apply it: update the owning artifact in place (the provisional value becomes a stated decision; drop the "guess"/provisional hedging) and report a one-line changelog. A decision that lives only in chat is not captured; the artifact is the record. In manual mode that changelog is the response. In an armed auto chain it is a mid-chain log: refresh `MODE`, then resume the recorded `Remaining:` actions in the same turn when the mode is still `auto`.
-- `Next:` keeps the existing next-action options; it is not boilerplate and stays. **One exception:** in auto mode, an action that is handing off to the next action in the chain omits `Next:` entirely — see **Auto-chain execution** below. Nobody is choosing a next command mid-chain, and printing options there produces a log that offers a choice and continues past it in the same breath. `Next:` still appears on the action that ends the chain.
+- `Next:` keeps the existing next-action options; it is not boilerplate and stays. **One exception:** in auto mode, an action that is handing off to the next action in the chain omits `Next:` entirely — see `_mano/rules/auto.md` → **Continuing is an action, not an announcement**. Nobody is choosing a next command mid-chain, and printing options there produces a log that offers a choice and continues past it in the same breath. `Next:` still appears on the action that ends the chain.
 
 Reason fully; externalize sparingly. Terse output is a rule about *display*, not *cognition*. Judgment-heavy skills (scoping, story decomposition, spec, rules, review) must still do the deliberation their contract requires — specificity, branching-flow, exhaustiveness, anti-rationalization gates. Do not shortcut that thinking to save chat volume; under-reasoning a planning decision is far more expensive than over-explaining one, because the bad decision propagates into every downstream artifact. The discipline is: do the reasoning internally, let the artifact carry the conclusions (each artifact is self-contained by design), and put only the changelog, flags, and genuine unresolved questions in chat. Do not narrate the deliberation itself. Mechanical steps (status updates, file writes, hook checks) carry no judgment worth narrating — just act and report.
 
@@ -137,63 +137,13 @@ it — do not compact it: compaction keeps a lossy summary of the expensive part
 paying for. One story per session is the intended shape of `mano dev` (measured: sessions averaging 1,100+
 messages replayed ~459k tokens per message). A planning command is a natural session boundary — its output is a
 file. Batch independent tool calls: every extra assistant message replays the whole session. `mano build` is the
-deliberate, checkpointed exception when it exists.
+deliberate, checkpointed exception: it runs multiple rows per session and stops when the turn's budget is spent,
+because its ledger makes the next session's resume cost a projection read.
 
 ## Auto-chain execution
 
-These are the rules a skill applies while an armed auto chain is running. The narrative contract — what auto mode is, how a chain is armed and edited — is `_mano/workflow.md` → **Run Mode: manual and auto**.
+The rules a skill applies **while an armed auto chain is running** — the pause rule, continuing-is-an-action, and the closing block — live in `_mano/rules/auto.md`.
 
-### The pause rule
+**Read that file when, and only when, the state projection reports `MODE: auto`.** Read it right after the projection, before the chain's first action. In `manual` it is never opened: a manual run hands back after every command, so none of those rules can apply, and carrying them on the common path is resident context that buys nothing. Re-read `MODE` from the freshest projection at every handoff rather than caching it from the start of the run — the mode can change mid-run, and the file follows the mode.
 
-**Auto mode pauses whenever the human's answer is required, and never answers on their behalf.** This is the whole safety model: the mode removes typing, not decisions. Pause and hand back on any of these, then resume the chain from where it stopped once the user replies:
-
-- a `❓ Decide:` line — already defined as "confirm or change before the next command runs" (see the canonical execution-log format), which makes it exactly this signal
-- any clarifying question a skill would ask in manual mode
-- **a genuine fork in the next action** — when the "Single obvious next action gates" (`_mano/workflow.md`) say *do not auto-run*, that ambiguity is a question. Ask which branch; never pick the first option or the shortest path
-- hook findings that need triage (see `_mano/rules/hooks.md`)
-- a hard gate or refusal — `DECISION: STOP`, a pre-review gate, a missing required artifact, a surfaced cross-artifact conflict
-- any script failure, per **Scripts are mandatory**
-
-A `⚠ Verify:` is advisory by definition and does **not** pause the chain. Collect them instead (below).
-
-**Every pause is named.** When one of the conditions above fires, say which one, in the closing block. A chain that hands back without naming a pause condition is a bug, not a pause — the two look identical to the user, and only the named version tells them whether to answer something or re-run the command.
-
-The pause block must also preserve the ordered `Remaining:` actions. When the user answers, apply and persist that answer, refresh the state projection, then continue those remaining actions in the same turn. The answer's one-line changelog is a mid-chain action log, not a reason to stop. If the refreshed `MODE` is `manual`, or the user says stop, apply any requested answer but hand back instead of resuming; mode is read from state at every handoff, never cached from the start of the run.
-
-Two things that are **not** pause conditions, because they are the most tempting places to stop:
-
-- **A `Next:` block listing more than one action.** Several *listed* options is the ordinary shape of a log, not a fork. It is a fork only when the "Single obvious next action gates" genuinely cannot resolve which comes first. An option that is explicitly conditional on another (`mano stories` — *once visual direction is settled*) is resolved, not ambiguous: run the one it depends on.
-- **Finishing an action successfully.** Completion is the trigger to continue, not to hand back.
-
-### Continuing is an action, not an announcement
-
-**To continue the chain, invoke the next action in the same turn. Never end a turn with a statement of intent.** A line like "Continuing the auto-mode chain — running `mano ui` next" followed by the turn ending is the chain silently stopping while claiming the opposite: the user is left holding a promise instead of a result, and no pause condition fired to explain it.
-
-- ❌ finished log → `Next:` options → "Continuing — running `mano ui` next." → *turn ends*
-- ✅ finished log → `mano ui` runs → its log → … → closing block when the chain stops
-
-If you have written words describing what you are about to run, you have not run it. Either invoke it now, or name the pause condition (**The pause rule**) that stopped you. There is no third state where the chain is notionally continuing but nothing is executing.
-
-**Between actions there is no `Next:` block and no transition line.** This is the one place a skill's canonical execution log is trimmed: `Next:` exists to tell a human which command to type, and mid-chain nobody is typing one. Offering options *and* claiming to continue is the contradiction that produces the failure above. `Next:` returns in the closing block, once the chain has actually stopped.
-
-### What the chain prints
-
-Each action still prints its own canonical execution log as it completes — the chain is not a silent batch, and the logs are the audit trail. When the chain stops, add one closing block that turns the run into the user's review agenda:
-
-```text
-[mano auto]: phase-[N] — [first] → … → [last]
-- Ran: [actions, in order]
-- Stopped: [completed implementation | waiting on the question below]
-- Remaining: [ordered actions still approved for this run — omit only when none]
-⚠ Verify: [every advisory flag collected across the run, one per line — omit if none]
-
-[Hook findings triage, or the pending question, if that is why it stopped]
-
-Next:
-- [when implementation completed] `mano review` — when you have checked the result
-- [when paused] Reply to the named question — the recorded remaining chain resumes automatically
-```
-
-Collecting the `⚠ Verify:` lines here matters: in manual mode the user sees each one as it appears, and in auto mode they would otherwise scroll back for them. This block is the thing they read before reviewing.
-
-`mano dev yolo` keeps its strict aggregate implementation line. When it is the terminal action of an armed auto chain, that line is the dev action's log and the auto closing block follows it; this is the sole exception to the standalone YOLO rule that nothing may follow the aggregate line. Do not add an implementation recap between them.
+`mano review` is the exception in both directions: it is always human-run and outside the chain, so it never loads the fragment even under `MODE: auto`. The narrative contract — what auto mode is, how a chain is armed and edited — is `_mano/workflow.md` → **Run Mode: manual and auto**.

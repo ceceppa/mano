@@ -31,11 +31,14 @@ class PhaseAcceptanceIntegrityTests(unittest.TestCase):
         self.assertIn("An AC appearing in a story is coverage, not readiness", stories)
 
     def test_dev_cannot_mark_done_when_evidence_asserts_the_inverse(self) -> None:
+        implement = _read("src/rules/implement.md")
         dev = _read("src/skills/dev.md")
 
-        gate = dev.index("10.1 **Acceptance-evidence gate")
-        status_write = dev.index("11. After implementing, mark the story `done`")
-        self.assertLess(gate, status_write)
+        # The gate is in the shared contract; dev's status write cites it as
+        # the thing that must have passed first.
+        self.assertIn("10.1 **Acceptance-evidence gate", implement)
+        self.assertIn("the acceptance-evidence gate (10.1) has passed", dev)
+        dev = dev + implement
         self.assertIn("A passing suite is not enough", dev)
         self.assertIn("states the opposite outcome", dev)
         self.assertIn("leave the row pending", dev)
@@ -50,16 +53,34 @@ class PhaseAcceptanceIntegrityTests(unittest.TestCase):
         self.assertIn("stop before asking for feedback or closing the phase", review)
         self.assertIn("Do not inspect source/tests, accept `close it`", review)
 
-    def test_incident_rule_is_present_on_all_three_prevention_layers(self) -> None:
-        surfaces = (
-            "src/skills/spec.md",
-            "src/skills/stories.md",
-            "src/skills/dev.md",
-            "src/skills/review.md",
-        )
-        for relative in surfaces:
+    def test_build_refuses_a_brief_its_artifacts_contradict(self) -> None:
+        build = _read("src/skills/build.md")
+
+        self.assertIn("0c.3 Phase-promise polarity — hard gate", build)
+        self.assertIn("supporting artifact contradicts phase promise", build)
+        self.assertIn("`recoverable` vs `stays locked`", build)
+        self.assertIn("**write no ledger**", build)
+
+    def test_every_prevention_layer_carries_its_own_provenance(self) -> None:
+        """One incident, five surfaces — and each surface's marker names a case
+        that actually loads it. A build gate pointing at a stories case is a
+        marker that cannot be probed: the case never reads the file the probe
+        strips (plan6-6 §6.2).
+        """
+        surfaces = {
+            "src/skills/spec.md": ("spec-promise-consistency", "spec-acceptance-polarity"),
+            "src/skills/stories.md": ("phase-acceptance-integrity", "stories-acceptance-polarity"),
+            "src/skills/review.md": ("phase-acceptance-integrity", "stories-acceptance-polarity"),
+            "src/rules/implement.md": ("acceptance-evidence-polarity", "dev-acceptance-polarity"),
+            "src/skills/build.md": ("build-promise-polarity", "build-acceptance-polarity"),
+        }
+        for relative, (rule_id, case) in surfaces.items():
             with self.subTest(relative=relative):
-                self.assertIn("id=phase-acceptance-integrity;", _read(relative))
+                text = _read(relative)
+                self.assertIn(f"id={rule_id};", text)
+                self.assertIn(f"eval={case}", text)
+                self.assertIn("incident=exit-criterion-tested-in-reverse", text)
+                self.assertTrue((REPO_ROOT / "eval" / "cases" / f"{case}.json").is_file())
 
 
 if __name__ == "__main__":

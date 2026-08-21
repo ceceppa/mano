@@ -1,0 +1,14 @@
+{
+  "name": "build-resume",
+  "description": "A fresh session resumes at the first non-done ledger row, builds the rest of the brief, and never composes ledger text of its own. The brief's scope is flat, so its rows stay flat — a flat brief is never migrated into categories.",
+  "fixture": "build-stage-chain",
+  "phase": 1,
+  "prompt": "mano-build",
+  "assertions": [
+    "build_completed_the_phase",
+    "build_did_not_rebuild_done_row",
+    "build_ledger_rows_are_the_briefs",
+    "build_flat_rows_stayed_flat",
+    "build_wrote_no_story_files"
+  ]
+}

@@ -2,6 +2,7 @@
 name: mano-import
 description: Use to turn an existing PRD, spec, or product document into a Mano backlog. Decomposes the document into backlog items, then stops.
 requires: [core, artifact, intake, backlog]
+requires-in-auto: [auto]
 ---
 
 # `mano import` — Document Intake Skill
@@ -95,6 +96,10 @@ If the document clearly states durable product values (product feel, interaction
 
 Decompose the entire document into backlog items. Every feature, requirement, non-functional criterion, and success criterion. Preserve specific detail from the source — including any stated technical preference, transcribed verbatim into the relevant item's context per B1 (pass-through, not silence). When `TRACK:` is not `none`, include that exact value as `track` on every imported item; Source remains the document name.
 
+<!-- mano-rule: id=stated-directive-homing; incident=unhomed-stated-directive-dropped-at-import; model=sonnet; date=2026-08-21; eval=import-unhomed-directive -->
+**Home the directives no feature item owns.** A document's project-wide technical directives — a runtime or version constraint, a module system, a folder structure, a file-naming scheme, where tests live — belong to every item and therefore to none, which is exactly how they vanish between the document and the first line of code. Sweep the document for them *before* you write, and give each its own item rather than dropping it for lack of a host: `spec-gap` when `tech-spec.md` will own the decision, `rule-gap` when `project-rules.md` will. Title it after the directive (`Stated: project directory structure`), carry the directive verbatim in the context, and leave `Status: backlog` — `mano spec` and `mano rules` see it through their own projections, and `state.js` routes the human to them. The type is a routing address; `mano import` still decides nothing. Full rule and the block/budget case: **B1 → Every stated directive gets a home** in `_mano/rules/intake.md`.
+<!-- /mano-rule: stated-directive-homing -->
+
 Write all items to `_mano_output/backlog.md` with `Status: backlog` through the deterministic writer. Produce a JSON array of `{ "title", "type", "context", "source", "track"? }` objects, write it to a temporary file such as `_mano_output/.import.json`, then run:
 
 ```text
@@ -115,7 +120,7 @@ Delete the temporary file after the writer succeeds. The writer owns the item sh
 - **Status:** backlog
 ```
 
-`Type` values: `bug` (broken), `refinement` (works but could be better), `feature` (new capability), `tech-debt` (refactoring/infra), `test` (missing coverage), `spec-gap` (unclear tech spec), `rule-gap` (unclear project rule). For a document import, most items are `feature`. `Type`, `Context`, and `Status` are required. `Source` is optional provenance — since every item here comes from the document, set it to the document's name (e.g. `product-brief.md`). Max 5 lines of context per item.
+`Type` values: `bug` (broken), `refinement` (works but could be better), `feature` (new capability), `tech-debt` (refactoring/infra), `test` (missing coverage), `spec-gap` (the tech spec must still resolve or adopt this), `rule-gap` (project rules must still resolve or adopt this). For a document import, most items are `feature`. `Type`, `Context`, and `Status` are required. `Source` is optional provenance — since every item here comes from the document, set it to the document's name (e.g. `product-brief.md`). Max 5 lines of context per item.
 
 Preserve the required file structure in this order: `# Backlog`, then optional `## Core Product Principles`, then `## Items`, then the item blocks. The writer creates or extends that structure and skips duplicate titles. `mano start` reads these items later; going through the writer is what guarantees the field names it parses.
 
@@ -127,6 +132,7 @@ The backlog is the deliverable. Do not scope a phase, draft a brief, or suggest 
 [mano import]: mano import — _mano_output/backlog.md
 - [N] items decomposed from [document name]
 - Core Product Principles captured: [yes / none found]
+- Stated directives homed: [N spec-gap → mano spec, N rule-gap → mano rules / none stated]
 ⚠ Verify: [any assumption or unresolved ambiguity worth checking — omit if none]
 
 [Optional hook block if active]
@@ -148,6 +154,7 @@ This list is the negative restatement of rules defined in full elsewhere. Where 
 - Do not ask about tech, persistence, or implementation, or re-open closed scope — see **Intake Boundaries B1 and B2** in `_mano/rules/intake.md`.
 - Do not ask scope-sizing or phase-selection questions, including ones disguised as contradictions or yes/no confirmations — see **B3**.
 - Do not decide, evaluate, or act on a stated technical preference — transcribe it verbatim into the item context and leave the decision to `mano spec` (see **B1**, pass-through).
+- Do not drop a stated directive because no feature item hosts it. Home it as its own `spec-gap` / `rule-gap` item (see **B1**, every stated directive gets a home).
 - Do not create optional project-rule, technical, UX, or UI design artifacts.
 - Do not remove or replace existing backlog items. Only append, or merge with explicit user confirmation when a backlog already exists.
 - Do not write or fix code. `mano import` is a planner.

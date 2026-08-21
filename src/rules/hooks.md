@@ -18,11 +18,31 @@ A hook with no `## Mode` section is `suggest`. That keeps every hook written bef
 
 The split is *judgement vs mechanism*, not *safe vs unsafe*. In manual or unarmed runs a `suggest` hook asks first because a specialist opinion arriving unrequested changes what the human thinks before they have formed their own view. A `check` hook does not ask: the checklist is the user's own pre-written review, so the ask-first rationale does not apply — the file is the authorization, like `command`. A `command` hook syncs a tracker, regenerates an index, or notifies a system — deterministic work with no opinion in it.
 
+## `## Inputs` — what the hook is allowed to look at
+
+Every hook may declare an `## Inputs` list. It is not decoration: it is the hook's **reading scope**, and what happens to it depends on the mode.
+
+- **`check`** — read exactly those paths yourself, before applying the checklist, and read nothing else for it. A path written as a projection field (`BRIEF`, `PHASE_DIR`, `STORIES`, `PROGRESS`, `PREVIEW`) resolves from the state projection you already ran; never construct one by hand or substitute a different phase's file. An input marked *if it exists* / *when a phase exists* is skipped silently when absent. An input **not** so marked that is missing is a malformed hook: say so in one line and apply only the checks that do not depend on it.
+- **`suggest`** — you are not reading them; the external skill or command in `## Run` is. State the list when you invoke it, so the reviewer's scope is the one the hook author chose rather than whatever it decides to open:
+
+  ```text
+  Allow the review skill to read: [the exact resolved paths from ## Inputs]
+  ```
+
+- **`command`** — inert. The command reads whatever it reads; Mano does not inspect or bound it.
+
+Two boundaries hold in every mode:
+
+- **Inputs never widen what may be written.** They decide what the check may *look at*; the per-skill application boundaries in **Post-Hook Findings Triage** still decide what any finding may *change*.
+- **A `check` hook may not out-read its own skill.** Mano applies a check hook itself, so its inputs inherit that skill's own read boundary — `mano review`'s no-investigation gate is the sharp case: a `check` hook on review may not list source files, tests, or build output. That reading is legitimate only through a `suggest` hook, where an external reviewer does it. If an active check hook lists something its skill may not read, report the conflict and skip that input; do not read it, and do not silently drop the whole hook.
+
 ## Check hooks
 
 The hook body is a checklist. Apply it yourself, automatically, in both modes, right after the skill's artifacts are written and before the final execution log. No confirmation. Report the run in one line of the execution log. Findings — checklist items the artifacts fail — go through **Post-Hook Findings Triage** below, exactly like suggest findings: numbered approval before any edit; in an armed auto chain, findings pause the chain. No findings means continue.
 
 A `suggest` hook whose `## Run` (or legacy command placeholder) is blank is **not** unconfigured — surface it as usual and, if its body reads as a checklist, offer to apply it as a check. Never silently skip an active hook because a command line is empty.
+
+The shipped `.example.md` checklists are commented out on purpose: the checks are the user's, and a hook is only worth running when someone chose its items. An active check hook whose checklist is empty or entirely commented out therefore has nothing to apply — report that in one line of the execution log and continue. **Never invent checklist items**, and never fall back to the example text: applying checks nobody chose is exactly the imposed opinion the mode exists to avoid.
 
 ## Command hooks
 

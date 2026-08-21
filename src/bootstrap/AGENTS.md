@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This project uses **Mano** for planning. Mano is a structured thinking tool — it produces planning artifacts, not code.
+This project uses **Mano** for planning. Mano is a structured thinking tool: almost every command produces planning artifacts rather than code. The two exceptions are deliberate — `mano dev` and `mano build` implement what the planning already decided.
 
 ## For coding agents
 
@@ -24,14 +24,15 @@ Examples:
 - `mano rules` → read `_mano/skills/rules.md` and follow that flow
 - `mano stories` → read `_mano/skills/stories.md` and follow that flow
 - `mano review` → read `_mano/skills/review.md` and follow that flow
-- `mano dev` → implement the next pending story; read `_mano/skills/dev.md` and follow the complete contract in that file
+- `mano dev` → implement the next pending story; read `_mano/skills/dev.md` plus `_mano/rules/implement.md` and follow the complete contract in those files
+- `mano build` → build the active phase straight from its brief, with no story files; read `_mano/skills/build.md` plus `_mano/rules/implement.md` and follow the complete contract in those files
 - `mano continue` → read `_mano/workflow.md` and determine the next useful Mano action
 - `mano mode [auto|manual]` → read `_mano/skills/mode.md`; show or set whether finished actions chain automatically
 - `mano track [name]` → read `_mano/skills/track.md`; show, set, or clear the optional local experiment/work track
 
-Note: `mano dev` is the one Mano command that produces code. Every other command above is planning only. `mano dev`'s full contract lives in `_mano/skills/dev.md`.
+Note: `mano dev` and `mano build` are the two Mano commands that produce code. Every other command above is planning only. Their contracts live in `_mano/skills/dev.md` and `_mano/skills/build.md`, both of which require the shared `_mano/rules/implement.md`. A phase uses one of the two, never both: `mano dev` implements stories from `stories/README.md`, `mano build` works the Scope rows of `PHASE_DIR/progress.md`.
 
-**Run mode.** Every `state.js` projection prints `MODE: manual|auto`. In `manual` (the default) each command hands back when it finishes. In `auto`, after the human has approved a phase scope, each finished action runs the next one automatically through to `mano dev yolo` — but it pauses for **any** question (a `❓ Decide:`, a clarifying question, an ambiguous next action, hook findings, a gate or blocker) and **never runs `mano review` or scopes a new phase**. Auto mode changes who types the next command; it never changes what a skill may write or which decisions are the human's. The narrative contract is `_mano/workflow.md` → **Run Mode: manual and auto**; the mid-chain execution rules are `_mano/rules/core.md` → **Auto-chain execution**.
+**Run mode.** Every `state.js` projection prints `MODE: manual|auto`. In `manual` (the default) each command hands back when it finishes. In `auto`, after the human has approved a phase scope, each finished action runs the next one automatically through to `mano build` (or `mano dev yolo` when the phase already has a stories index) — but it pauses for **any** question (a `❓ Decide:`, a clarifying question, an ambiguous next action, hook findings, a gate or blocker) and **never runs `mano review` or scopes a new phase**. Auto mode changes who types the next command; it never changes what a skill may write or which decisions are the human's. The narrative contract is `_mano/workflow.md` → **Run Mode: manual and auto**; the mid-chain execution rules are `_mano/rules/auto.md`, loaded only when the projection reports `MODE: auto`.
 
 **Continuing the chain means invoking the next action in the same turn — never announcing it.** Ending a turn on "Continuing — running `mano ui` next" stops the chain while claiming to continue it. Mid-chain, omit the `Next:` block (nobody is typing a command); it returns only in the closing block, on the action that actually ends the chain. Every hand-back names its pause condition; a chain that stops without naming one is a bug.
 
@@ -45,11 +46,35 @@ Only use external/platform skills when the user explicitly invokes them or an ac
 
 ### Implementing a story
 
-`mano dev` implements the next pending story. Its full contract is `_mano/skills/dev.md`.
-**Read that file completely before writing any code for a Mano story** — including when the user asks in plain
-words. Do not implement from a story file alone. Two rules apply even before you read it:
+`mano dev` implements the next pending story. Its full contract is `_mano/skills/dev.md`, plus the shared
+`_mano/rules/implement.md`.
+**Read those files completely before writing any code for a Mano story** — including when the user asks in plain
+words. Do not implement from a story file alone. Two rules apply even before you read them:
 - The index `Status` column is the only done-signal — a story's number, letter, or title grants no exemption.
 - `Not this story` is a hard boundary — implement none of it, whatever the chosen type or library default implies.
+
+### Building a phase
+
+`mano build` is the other implementation path: no story files, the brief's own numbered `## Phase Scope` items
+are the units, and `PHASE_DIR/progress.md` is the ledger. Its full contract is `_mano/skills/build.md`, plus the
+same `_mano/rules/implement.md`. Three rules apply even before you read them:
+- The ledger is written only by `_mano/scripts/progress.js` — never by hand, and never with rows you composed.
+- `Not this phase` in the brief is a hard boundary. Once the ledger exists the brief is frozen: an in-goal
+  correction is a row inside `mano build`, a distinct outcome goes to the backlog or the next phase, and
+  neither goes back through `mano start`.
+- `mano build "[what changed]"` is a mid-phase correction, not new scope, and only a phase that already has a
+  valid ledger accepts one. The exact wording is the human's — never paraphrase it.
+
+### Which implementation entry
+
+Decide by **validated state, then mode** — never by which path is more familiar:
+- either ledger invalid, or a phase holding both → refuse and report;
+- a pending rework event, an open Scope row, or an unresolved deviation → `mano build`;
+- an incomplete stories ledger → `mano dev`; a complete one → `mano review`;
+- a `progress.md` with every Scope leaf `done` and every Exit leaf `met` or `needs-human` → `mano review`;
+- no ledger at all → the mode decides: `auto` ends at `mano build`, `manual` offers `mano stories` first and
+  `mano build` second.
+The narrative contract is `_mano/workflow.md` → **Implementation entry**.
 
 ### Completed stories are immutable
 
@@ -63,8 +88,8 @@ documents — those update in place.
 
 - Modify files in `_mano/` or `_mano/templates/` — these are framework files.
 - Interpret `mano` commands (e.g. `mano start`, `mano review`) as implementation instructions — these are planning commands. Execute the relevant planning flow instead.
-- Create extra tracking files — Mano does not use a dedicated phase-state file. Determine state through `_mano/scripts/state.js`, which applies the optional local owner configuration and returns exact paths.
-- Auto-advance phases. A completed phase (all stories `done`) never triggers planning or implementing the next one. Stop and let the user decide; never run `mano start`/`mano stories` on your own initiative.
+- Create extra tracking files — the framework specifies exactly two ledgers, `PHASE_DIR/stories/README.md` and `PHASE_DIR/progress.md`, each written only by its own script. There is no third state file to invent. Determine state through `_mano/scripts/state.js`, which applies the optional local owner configuration and returns exact paths.
+- Auto-advance phases. A completed phase (every story `done`, or every ledger row `done` and every exit criterion `met`) never triggers planning or implementing the next one. Stop and let the user decide; never run `mano start`/`mano stories` on your own initiative.
 
 ## Project structure
 
@@ -72,7 +97,7 @@ documents — those update in place.
 _mano/                    ← Mano framework (do not modify during implementation)
 ├── skills/               ← Mano skill prompts
 ├── rules/                ← shared rule fragments; skills name the ones they require
-├── scripts/              ← state.js (read-only state projection), backlog.js / stories.js (index writers), verify.js (verification output filter)
+├── scripts/              ← state.js (read-only state projection), backlog.js / stories.js / progress.js (ledger writers), verify.js (verification output filter)
 ├── hooks/                ← optional post-skill hooks
 └── templates/            ← Mano templates
 _mano_output/             ← Planning artifacts
@@ -86,7 +111,8 @@ _mano_output/             ← Planning artifacts
 └── [owner]-phase-[N]/    ← Optional owner-scoped per-phase work
     ├── phase-brief.md    ← Phase scope and goals
     ├── design-preview.html ← Non-canonical UI snapshot for this phase
-    └── stories/          ← Implementation stories (start here)
+    ├── progress.md       ← `mano build` ledger: scope rows + exit criteria
+    └── stories/          ← Implementation stories (the other ledger; start here on that path)
 ```
 
 ## Context Discipline

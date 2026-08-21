@@ -8,7 +8,7 @@ const path = require("node:path");
 const SCRIPT = path.resolve(__dirname, "..", "eval", "check-refs.js");
 
 test("every cross-file section pointer in src/ resolves", () => {
-  const result = spawnSync("node", [SCRIPT], { encoding: "utf8" });
+  const result = spawnSync(process.execPath, [SCRIPT], { encoding: "utf8" });
   assert.strictEqual(
     result.status,
     0,

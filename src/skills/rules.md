@@ -2,6 +2,7 @@
 name: mano-rules
 description: Use to define or update project rules, coding standards, components, and architectural patterns.
 requires: [core, artifact]
+requires-in-auto: [auto]
 ---
 
 # `mano rules` — Project Rules Advisor
@@ -26,7 +27,7 @@ On activation:
 3. Read `_mano_output/tech-spec.md` if it exists. If it doesn't, warn the user that the rules will be higher-level and offer to proceed from the phase brief or run `mano spec` first.
 4. Read `_mano_output/ux-flow.md` and `_mano_output/design-brief.md` if they exist.
 5. Read `_mano_output/project-rules.md` if it exists.
-6. Read the exact projected `BRIEF` path if `state.js --current` reports it present.
+6. **Read the exact projected `BRIEF` path** whenever `state.js --current` reports a phase. The brief is what the rules are being written *for*: it carries the phase's scope, its product principles, and the work about to be implemented, and a session that starts at `mano rules` has no other way to know any of it. Only a gap-only run (`STATUS: NO_PHASE`) proceeds without it.
 
 Do not read the project `README.md` or source files to discover additional context. The listed planning artifacts, projected gaps, and literal context supplied by the user are the activation boundary.
 
@@ -62,6 +63,10 @@ If `project-rules.md` already exists:
 - Preserve any existing `Accessibility level:` line.
 
 Make specific implementation-convention decisions instead of asking the user. Do not pick libraries or frameworks — those belong to `mano spec`.
+
+<!-- mano-rule: id=stated-directive-homing; incident=unhomed-stated-directive-dropped-at-import; model=sonnet; date=2026-08-21; eval=import-unhomed-directive -->
+**A projected `rule-gap` item may carry a stated directive, not an open question** — a folder structure, a file-naming scheme, or a test layout the user themselves specified, routed here because no feature item owned it. That is authoritative user intent: adopt it as written. Overriding it is allowed when the phase's constraints make it wrong, but never silently — quote the directive and give the reason in the completion log, the same override-flag duty `mano spec` carries for the brief's `## Stated Technical Preferences`. "Decide instead of asking" above governs conventions the source left open; it does not license replacing one the source already fixed. Resolve the item only once `project-rules.md` adopts or explicitly overrides it.
+<!-- /mano-rule: stated-directive-homing -->
 
 ## Rules vs Tech Spec boundary
 
@@ -298,10 +303,13 @@ Next:
 
 Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano spec` — if technical decisions, API contracts, data models, dependencies, persistence, or platform constraints need defining or updating
-- `mano stories` — if the phase is technically clear enough to break into implementable work
+- `mano stories` — if the phase is technically clear enough to break into implementable work, and you want story files a small-context implementer works one at a time
+- `mano build` — if the phase is technically clear enough to break into implementable work, and you want it built straight from the brief with no story files
 - `mano ux` — if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase. For player-facing games, this includes world interaction, placement/selection, progression or unlock actions, available-versus-locked states, and feedback for unmet conditions; a minimal or in-world presentation is still a flow.
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
 - `mano continue` — only if it adds value and there may be a single obvious next step
+
+**Show both implementation paths in `manual`, and only `mano build` in `auto`.** `_mano/rules/artifact.md` → **Next-step suggestion rule** owns this: at the no-ledger planning stage the mode decides, so read `MODE:` from the projection rather than defaulting to whichever path the examples use most.
 
 ## Forbidden
 

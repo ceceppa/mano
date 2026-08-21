@@ -2,6 +2,7 @@
 name: mano-stories
 description: Use to break down a phase brief and any available supporting context into implementable, developer-ready user stories with acceptance criteria.
 requires: [core, artifact, backlog]
+requires-in-auto: [auto]
 ---
 
 # `mano stories` — Stories Skill
@@ -23,6 +24,8 @@ Read this file plus `_mano/rules/core.md`, `_mano/rules/artifact.md`, and `_mano
 Read every input fresh from disk — even if it already appears in the conversation context. Artifacts may have been edited earlier this same session (e.g. a spec extended then a decision backported); the filesystem is the source of truth, a context snapshot is not.
 
 First run `node _mano/scripts/state.js --current`. It is the only phase-directory discovery for this skill. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `STORIES`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Record the exact values and never construct `phase-N` from `PHASE`. Owner-scoped routing is opt-in; legacy projects still project `phase-N`.
+
+**`PROGRESS_STATUS: present` → stop.** That phase is being built with `mano build`, whose ledger is `PHASE_DIR/progress.md`. A phase has one ledger: writing a stories index beside that one creates a state every projection afterwards refuses, so decomposing into stories is not available here. Say so in one line and route the request: work already in the brief is `mano build`; a correction mid-build is typed to `mano build` itself; work the brief does not contain goes to the backlog or the next phase. **Do not route to `mano start` from here** — a phase with a ledger cannot have its brief amended, `mano start` will refuse, and sending the user there closes a loop straight back to this line. Write nothing.
 
 **Discard prior chat intent.** If the conversation before this command was about implementing, debugging, or modifying code, that context does not carry over. `mano stories` is a planning turn only. Treat the chat as if it were empty for the purpose of deciding what to do — your job this turn is to produce story files and nothing else. Do not "also" implement, "also" fix the bug under discussion, or "also" touch source code.
 
@@ -353,7 +356,7 @@ If any behavior-driving interface field needed by the story is absent or has two
 Before accepting a `Not this story` boundary, compare it with the phase goal, Exit Criteria, and the rest of the story chain. It may defer an adjacent use case; it may not contradict a promised path or prohibit the shared contract surface another story needs to satisfy the phase. Resolve the story split, or route an unresolved contract choice to `mano spec`.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=stories-acceptance-polarity -->
 **0c.3 Phase-promise polarity — hard gate.** Map every `Phase Goal` outcome and every `Exit Criteria` action/result—including each nested bullet—to its prospective `Done when` owner and the supporting artifact decisions it needs. Read those decisions for meaning, not keyword presence. If any artifact states the opposite outcome or preserves a stale deferral (`recoverable` vs `stays locked`, `available` vs `unavailable`, `implemented` vs `not wired`, success vs required failure), **write no new story files**. Report one `⚠️ Story readiness gap: supporting artifact contradicts phase promise`, quote both statements, and route to the artifact's owning skill—normally `mano spec` for technical/data/gate contradictions.
 
 Do not disguise the conflict with wording such as “existing behaviour, now reachable” unless the cited artifact actually defines every prerequisite that makes the route reachable. An AC appearing in a story is coverage, not readiness; its implementation reference must point to a compatible contract rather than an opposing one.
@@ -572,7 +575,7 @@ Next:
 Never select items yourself, never assign more than the user named, and never assign to a phase that does not already exist with approved scope. Adding to an open phase is the human's call, made in the message that names the item.
 <!-- /mano-rule: mid-phase-addition-owner -->
 
-<!-- mano-rule: id=post-stories-hook-findings-triage; incident=post-stories-hook-findings; model=not-recorded; date=2026-05-29; eval=pending -->
+<!-- mano-rule: id=post-stories-hook-findings-triage; incident=post-stories-hook-findings; model=not-recorded; date=2026-05-29; eval=hook-triage-stories-no-approval -->
 ## Addressing post-stories hook findings
 
 When the post-stories hook runs and the reviewer prints findings in chat, `mano stories` does **not** silently update stories. The reviewer is diagnostic; the user owns every change.

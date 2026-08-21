@@ -2,6 +2,7 @@
 name: mano-spec
 description: Use to translate a phase brief into a technical specification. Makes concrete decisions on libraries, data models, and API contracts.
 requires: [core, artifact]
+requires-in-auto: [auto]
 ---
 
 # `mano spec` — Spec Skill
@@ -43,11 +44,11 @@ Do not conclude "consistent, no updates needed" until all four checks and the Ph
 8. If spec doesn't exist yet, generate from scratch using the projected current-phase items and gaps as requirements for the initial artifact.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+<!-- mano-rule: id=spec-promise-consistency; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=spec-acceptance-polarity -->
 **Phase-promise consistency — hard gate.** Build a small requirement ledger from the current phase's `Phase Goal` and every `Exit Criteria` action/result, including nested bullets. For each promised result, identify the data, state transition, gate, and public/user route that make it possible in the current-state spec. Then search the whole spec for its opposite or a stale deferral—for example, the brief says a pending item becomes recoverable while another spec paragraph says it remains locked, unavailable, unwired, deferred, or returns failure. A positive statement in one section never cancels a negative statement elsewhere.
 
 When the current phase deliberately advances something an earlier phase left locked or unimplemented, replace the stale decision in place and define the newly required transition/prerequisites. Do not preserve the earlier limitation as current truth merely because it already exists in the spec. If the two outcomes reflect a real unresolved product decision, stop before writing and raise `❓ Decide:` with the conflicting brief promise and spec statement. Do not confirm or log the spec as complete while any ledger row has no enabling decision or has an opposing decision elsewhere.
-<!-- /mano-rule: phase-acceptance-integrity -->
+<!-- /mano-rule: spec-promise-consistency -->
 
 This same command is also how sync-back works after real project setup. Rerun `mano spec` when:
 - the project was just initialized and now has a real lockfile
@@ -79,6 +80,10 @@ Run one command per addressed item. Do not resolve a gap that was deferred, only
 When product principles appear in the phase brief, translate only the ones with technical impact into constraints (perceived performance, accessibility posture, offline behaviour, latency budgets, keyboard-first interaction, etc.). Do not restate product copy. If a principle has no technical impact for the current phase, ignore it.
 
 **Stated Technical Preferences block.** The phase brief may carry a `## Stated Technical Preferences` block — verbatim technical directives the user stated in the source ("Use Next.js", "Use a SQL database"), passed through by `mano start` without evaluation. This is the only durable channel for those directives across a context reset; treat it as authoritative user intent, not optional flavour. `mano spec` owns the technical decision and **may** override a stated preference when the brief's product constraints make it the wrong call (e.g. an accountless real-time link-shared app pulling toward a BaaS over the stated SQL+Next.js). But **decision authority is not silent-override authority** — see the mandatory override-flag rule below. If the block is absent, proceed normally; absence means none were stated, not that none matter.
+
+<!-- mano-rule: id=stated-directive-homing; incident=unhomed-stated-directive-dropped-at-import; model=sonnet; date=2026-08-21; eval=import-unhomed-directive -->
+The same directives can also arrive as projected `spec-gap` items — intake homes a stated directive as its own item when no feature item owned it (runtime and version constraints, module system, storage, package manager). Treat those exactly as you treat this block: authoritative user intent, same override-flag duty. Resolve such an item only once the written spec actually **adopts** the directive or **explicitly overrides** it with the reason recorded — a spec that neither adopts nor names it has not addressed the gap.
+<!-- /mano-rule: stated-directive-homing -->
 
 ## Weight gating
 
@@ -389,10 +394,13 @@ Next:
 
 Populate the canonical `Next:` block from the actions that are still missing or worth refining:
 - `mano rules` — if implementation conventions, file structure, error handling, validation, or framework patterns need codifying. When `project-rules.md` does not yet exist, state what it buys rather than just noting its absence: without it the first coding agent invents file layout and naming per-story, and later stories drift; `mano rules` pins these once so stories stay consistent. This is especially load-bearing for engines/frameworks with no enforced project layout.
-- `mano stories` — if the phase is technically clear enough to break into implementable work
+- `mano stories` — if the phase is technically clear enough to break into implementable work, and you want story files a small-context implementer works one at a time
+- `mano build` — if the phase is technically clear enough to break into implementable work, and you want it built straight from the brief with no story files
 - `mano ux` — if user-facing flows, frontend behaviour, interaction design, or product experience decisions are part of this phase. For player-facing games, this includes world interaction, placement/selection, progression or unlock actions, available-versus-locked states, and feedback for unmet conditions; a minimal or in-world presentation is still a flow.
 - `mano ui` — only if visual design, components, layout, or UI system decisions are part of this phase
 - `mano continue` — only if it adds value and there may be a single obvious next step
+
+**Show both implementation paths in `manual`, and only `mano build` in `auto`.** `_mano/rules/artifact.md` → **Next-step suggestion rule** owns this: at the no-ledger planning stage the mode decides, so read `MODE:` from the projection rather than defaulting to whichever path the examples use most.
 
 ## Forbidden
 

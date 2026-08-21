@@ -1,0 +1,14 @@
+{
+  "name": "start-amend-pre-ledger",
+  "description": "With no ledger addressing it, an explicit `mano start \"<change>\"` may revise the current phase's brief in place. Step 1 must show the complete proposed scope and write nothing; only the approval in step 2 writes it, and it creates no phase, no ledger, and no backlog movement. Uses two steps because a final-state check alone cannot tell a preview-then-write from a write-then-describe.",
+  "fixture": "start-amend-pre-ledger",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano start \"the phase should also ship a release stage that composes on top of the feature stage\"", "session": "fresh" },
+    { "prompt": "mano start — approved, write the revised brief exactly as you proposed it", "session": "continue" }
+  ],
+  "assertions": [
+    "start_amend_previewed_before_writing",
+    "start_amend_wrote_only_after_approval"
+  ]
+}

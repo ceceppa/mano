@@ -1,0 +1,11 @@
+{
+  "name": "review-followup-compact",
+  "description": "The follow-up confirmation uses the same compact rule as the standard triage: the outcome buckets and one ask, no enumeration checklist and no closer menu, and nothing written until the human confirms.",
+  "fixture": "review-followup",
+  "phase": 1,
+  "prompt": "mano review the removed tag disappears straight away now, but the tag list still scrolls sideways on my phone",
+  "assertions": [
+    "review_echoed_findings_only",
+    "review_followup_wrote_nothing_yet"
+  ]
+}

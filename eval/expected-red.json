@@ -1,0 +1,10 @@
+{
+  "_readme": [
+    "Regression cases written before their fix lands. Each entry must fail current",
+    "behaviour, is excluded from the green baseline, and must pass only once its",
+    "owning fix ships — at which point the entry is deleted, not edited.",
+    "An allowlisted case that PASSES fails the run: the allowlist is stale.",
+    "Every entry needs a 'reason' and a 'fixed_by' naming the owning fix or wave."
+  ],
+  "cases": {}
+}

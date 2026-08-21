@@ -45,7 +45,7 @@ class GameplayUxContractTests(unittest.TestCase):
     def test_ux_and_dev_capture_in_world_selection(self) -> None:
         ux = _read("src/skills/ux.md")
         template = _read("src/templates/ux-flow.md")
-        dev = _read("src/skills/dev.md")
+        dev = _read("src/skills/dev.md") + _read("src/rules/implement.md")
 
         self.assertIn("an in-world/HUD interaction is a flow", ux)
         self.assertIn("Do not leave a hardcoded active item", ux)

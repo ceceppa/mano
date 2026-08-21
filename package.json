@@ -1,14 +1,15 @@
 {
   "name": "mano-plan",
-  "version": "1.4.0",
-  "description": "Installer for Mano — a fast planning loop for AI-assisted development: plan in small phases and validate each assumption before it becomes code, with the human in control at every step.",
+  "version": "1.5.0",
+  "description": "Installer for Mano \u2014 a fast planning loop for AI-assisted development: plan in small phases and validate each assumption before it becomes code, with the human in control at every step.",
   "bin": {
     "mano-plan": "bin/mano-plan.js"
   },
   "scripts": {
     "test": "node --test && python3 -m unittest discover -s eval -p 'test_*.py'",
     "eval": "python3 eval/run.py",
-    "eval:rules": "python3 eval/run.py --list-rules"
+    "eval:rules": "python3 eval/run.py --list-rules",
+    "stacks": "node eval/stacks.js"
   },
   "type": "commonjs",
   "engines": {

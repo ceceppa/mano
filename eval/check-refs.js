@@ -16,7 +16,19 @@
  * or starts with it (case-insensitive) — "Writing artifacts" may point at
  * "Writing artifacts: create once, edit thereafter".
  *
- * Exit 0 when every pointer resolves; exit 1 with a listing otherwise.
+ * It also checks each skill's declared rule dependencies:
+ *
+ *   requires: [core, artifact, backlog]
+ *   requires-in-auto: [auto]
+ *
+ * `requires` is the unconditional stack — loaded on every run of that command.
+ * `requires-in-auto` is loaded only when the state projection reports
+ * `MODE: auto`, which is what keeps auto-only rules off the common manual path.
+ * Every named fragment must exist, no fragment may be declared twice, and a
+ * conditional fragment may never appear in the unconditional list — that last
+ * one is the whole point of the split and the easiest thing to undo by accident.
+ *
+ * Exit 0 when every pointer and dependency resolves; exit 1 with a listing.
  */
 
 const fs = require("node:fs");
@@ -81,9 +93,67 @@ function collectPointers(text) {
   return pointers;
 }
 
+// Fragments a skill may load only under a stated condition, and the projection
+// field that turns each one on.
+const CONDITIONAL_FRAGMENTS = { auto: "MODE: auto" };
+
+function frontMatterList(text, key) {
+  const m = new RegExp(`^${key}:\\s*\\[(.*?)\\]\\s*$`, "m").exec(text.slice(0, 600));
+  if (!m) return null;
+  return m[1]
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Every skill's declared rule stack resolves, and stays split by condition. */
+function checkRequires(failures) {
+  const skills = path.join(SRC, "skills");
+  for (const entry of fs.readdirSync(skills).sort()) {
+    if (!entry.endsWith(".md")) continue;
+    const file = path.join(skills, entry);
+    const rel = path.relative(REPO_ROOT, file);
+    const text = fs.readFileSync(file, "utf8");
+    const always = frontMatterList(text, "requires") || [];
+    const inAuto = frontMatterList(text, "requires-in-auto") || [];
+
+    for (const [label, names] of [["requires", always], ["requires-in-auto", inAuto]]) {
+      for (const name of names) {
+        if (!fs.existsSync(path.join(SRC, "rules", `${name}.md`))) {
+          failures.push(`${rel}: ${label} names missing rule fragment "${name}"`);
+        }
+      }
+      const seen = new Set();
+      for (const name of names) {
+        if (seen.has(name)) failures.push(`${rel}: ${label} lists "${name}" twice`);
+        seen.add(name);
+      }
+    }
+
+    for (const name of always) {
+      if (name in CONDITIONAL_FRAGMENTS) {
+        failures.push(
+          `${rel}: "${name}" is conditional (${CONDITIONAL_FRAGMENTS[name]}) and must not sit in the ` +
+            "unconditional requires list — that puts it back on the common path",
+        );
+      }
+    }
+    for (const name of inAuto) {
+      if (!(name in CONDITIONAL_FRAGMENTS)) {
+        failures.push(`${rel}: "${name}" is not a conditional fragment; declare it in requires`);
+      }
+      if (always.includes(name)) {
+        failures.push(`${rel}: "${name}" is declared both conditionally and unconditionally`);
+      }
+    }
+  }
+}
+
 function main() {
   const failures = [];
   const headingCache = new Map();
+
+  checkRequires(failures);
 
   for (const file of filesToScan()) {
     const text = fs.readFileSync(file, "utf8");
@@ -111,13 +181,13 @@ function main() {
   }
 
   if (failures.length) {
-    process.stderr.write("check-refs: unresolved section pointers:\n");
+    process.stderr.write("check-refs: unresolved references:\n");
     for (const f of failures) process.stderr.write(`  ${f}\n`);
     process.exit(1);
   }
-  process.stdout.write("check-refs: all section pointers resolve\n");
+  process.stdout.write("check-refs: all section pointers and rule dependencies resolve\n");
 }
 
 if (require.main === module) main();
 
-module.exports = { sourcePathFor, headings, collectPointers };
+module.exports = { sourcePathFor, headings, collectPointers, frontMatterList, CONDITIONAL_FRAGMENTS };

@@ -1,0 +1,11 @@
+{
+  "name": "build-scope-refusal-auto",
+  "description": "Invocation case B in auto — an armed chain removes typing, not decisions. A distinct outcome passed as an argument still adds no row, writes no code, and is offered to the backlog.",
+  "fixture": "build-stage-chain",
+  "phase": 1,
+  "run_mode": "auto",
+  "prompt": "mano-build \"also add a debug stage module that prints load timings\"",
+  "assertions": [
+    "build_no_row_appended"
+  ]
+}

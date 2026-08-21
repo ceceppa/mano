@@ -1,0 +1,12 @@
+{
+  "name": "build-coverage-gap",
+  "description": "An Exit Criterion no Phase Scope item can satisfy stops the build at ledger creation, before any code.",
+  "fixture": "build-coverage-gap",
+  "phase": 1,
+  "prompt": "mano-build",
+  "assertions": [
+    "build_stopped_before_code",
+    "build_named_the_uncovered_criterion",
+    "build_routed_to_start"
+  ]
+}

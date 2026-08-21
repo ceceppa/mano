@@ -1,0 +1,11 @@
+{
+  "name": "review-mixed-echo",
+  "description": "Mixed feedback echoes only what Mano classified — the findings about to be recorded and one ask. It does not read back the phase-check table, the validation result, or a menu of closers, and it writes nothing until the human confirms.",
+  "fixture": "review-open-phase",
+  "phase": 1,
+  "prompt": "mano review the tag stays on screen after I remove it until I reopen the note, and the tag index should really let me pin a tag to the top",
+  "assertions": [
+    "review_echoed_findings_only",
+    "review_triage_wrote_nothing_yet"
+  ]
+}

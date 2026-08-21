@@ -1,0 +1,18 @@
+{
+  "name": "build-auto-direct",
+  "description": "The case earlier plans omitted: import → start → approve, in auto, reaches `mano build` and writes no story files. Step 1 decomposes the document and stops; step 2 proposes the scope and the chain; step 3 approves both, and the armed chain runs the planning the phase needs and terminates at build — never at `mano review`.",
+  "fixture": "build-auto-direct",
+  "fixture_mode": "document",
+  "phase": 1,
+  "run_mode": "auto",
+  "steps": [
+    { "prompt": "mano import tag-index-brief.md", "session": "fresh" },
+    { "prompt": "mano start", "session": "fresh" },
+    { "prompt": "go", "session": "continue" }
+  ],
+  "assertions": [
+    "auto_reached_build_without_story_files",
+    "auto_chain_stopped_before_review",
+    "build_wrote_no_story_files"
+  ]
+}
