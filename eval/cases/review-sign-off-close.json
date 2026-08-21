@@ -1,0 +1,15 @@
+{
+  "name": "review-sign-off-close",
+  "description": "D10: `close it` is full human sign-off. It closes in that exchange, flips the pending and `needs-human` Exit leaves to `met` with recorded human provenance, accepts the assumptions the phase shipped on, and records the questions the human never answered as `unanswered at close` rather than as passed.",
+  "fixture": "review-open-phase",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano review", "session": "fresh" },
+    { "prompt": "close it", "session": "continue" }
+  ],
+  "assertions": [
+    "review_sign_off_recorded_human_provenance",
+    "review_recorded_unanswered_questions",
+    "review_one_exchange_close"
+  ]
+}

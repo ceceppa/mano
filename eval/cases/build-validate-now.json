@@ -1,0 +1,14 @@
+{
+  "name": "build-validate-now",
+  "description": "D6: the brief's `Try` guidance is shown twice on purpose. `mano build` prints it under `Validate now:` at the terminal handoff, and a fresh `mano review` prints it again beside the promise it tests — because chat delivery is not durable state and the review is usually a new session.",
+  "fixture": "build-validate-now",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano build", "session": "fresh" },
+    { "prompt": "mano review", "session": "fresh" }
+  ],
+  "assertions": [
+    "build_handoff_showed_validate_now",
+    "review_opening_repeats_the_try_guidance"
+  ]
+}

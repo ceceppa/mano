@@ -73,7 +73,7 @@ class PlainLanguageContractTests(unittest.TestCase):
 
         self.assertIn("I need these product decisions", import_skill)
         self.assertIn("I need these decisions before I draft Phase [N]", start)
-        self.assertIn("Did I put each outcome in the right section?", review)
+        self.assertIn('Anything in the wrong bucket? Otherwise "close it".', review)
         self.assertNotIn("Does this look right?", review)
 
     def test_stories_unpack_compound_acceptance_criteria(self) -> None:
@@ -117,14 +117,8 @@ class PlainLanguageContractTests(unittest.TestCase):
         self.assertNotIn("Check what the phase promised:", review)
         self.assertNotIn("Questions to consider:", review)
         self.assertNotIn("Try this:\n", review)
-        self.assertIn("One list, one ask.", review)
-        self.assertIn("*(assumption)*", review)
-        self.assertIn("*(decide)*", review)
-        self.assertIn(
-            "How did it go? Reply naturally — a clear all-good verdict closes the phase; "
-            "or say \"close it\" to close without validation.",
-            review,
-        )
+        self.assertIn("**One response, one ask, and the ask is that last line as written.**", review)
+        self.assertIn('What broke, what you\'d change, or "close it".', review)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,12 @@
+{
+  "name": "review-opening-shape",
+  "description": "The opening is one response and one ask: every Exit Criterion leaf visible at its own address, the `needs-human` leaf flagged with its `Try` guidance, every Validation Question on its own line at its stable `Q…` address, and each assumption as one compact bet line at its `A…` address. Shorter must not mean weaker.",
+  "fixture": "review-open-phase",
+  "phase": 1,
+  "prompt": "mano review",
+  "assertions": [
+    "review_opening_shape",
+    "review_opening_kept_every_promise",
+    "review_triage_wrote_nothing_yet"
+  ]
+}

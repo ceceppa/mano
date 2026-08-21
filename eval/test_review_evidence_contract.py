@@ -40,10 +40,9 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertIn("Omit this field when the human does not supply it", review)
         self.assertIn("Never grade validation", review)
         self.assertIn("`Validation` as `Result: Not tested`", review)
-        self.assertIn("Mark assumptions without a human verdict `inconclusive`", review)
         self.assertIn("**Whole-review verdict rule.**", review)
         self.assertIn("`all went as planned`", review)
-        self.assertIn('or say "close it" to close without validation.', review)
+        self.assertIn('What broke, what you\'d change, or "close it".', review)
 
     def test_positive_summary_close_preserves_the_human_verdict(self) -> None:
         review = _read("src/skills/review.md")
@@ -69,21 +68,26 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertNotIn("`Not recorded`", template)
         self.assertIn("### Decision", template)
         self.assertIn("### Phase checks", template)
+        self.assertIn("### Questions", template)
         self.assertIn("### Backlog changes", template)
         self.assertIn("**No release recap.**", review)
         self.assertIn("Record the decision as `Not assessed`", review)
 
-    def test_review_confirmation_exposes_assumptions_and_optional_context(self) -> None:
+    def test_review_confirmation_echoes_judgments_and_records_everything(self) -> None:
         review = _read("src/skills/review.md")
 
-        self.assertIn("Include every brief assumption", review)
-        self.assertIn("You may add where or how you checked it.", review)
-        self.assertIn('Say "close it" to record the review as shown.', review)
+        # The echo is short; the record is complete. Both halves are pinned so a
+        # future trim cannot take the second one with the first.
+        self.assertIn("**Echo the judgments, not the record.**", review)
+        self.assertIn("**The record is the complete one, even though the echo was short:**", review)
+        self.assertIn("every assumption at its `A…` address", review)
+        self.assertIn('Anything in the wrong bucket? Otherwise "close it".', review)
 
     def test_review_keeps_learning_questions_human_owned(self) -> None:
         review = _read("src/skills/review.md")
 
-        self.assertIn("each Validation-Plan question is an item tagged `*(decide)*`", review)
+        self.assertIn("**Every unresolved Validation Question gets its own `Open question` line.**", review)
+        self.assertIn("unanswered at close", review)
         self.assertIn("Do not infer a Decision choice", review)
         self.assertIn("Never infer a choice from completion or test success", review)
 
@@ -93,11 +97,10 @@ class ReviewValidationContractTests(unittest.TestCase):
 
         self.assertIn("every Exit Criterion", review)
         self.assertIn("Never omit an Exit Criterion", review)
-        self.assertIn("passed`, `failed`, or `not tested", review)
-        self.assertIn('"close it" records every unchecked promise as `not tested`', review)
-        self.assertIn("Always include every Phase check", review)
-        self.assertIn("If a legacy plan uses `Decision this informs`", review)
-        self.assertIn("| Phase promise | Result | What happened |", template)
+        self.assertIn("`passed`, `failed`, `not tested`, or `signed off`", review)
+        self.assertIn("add every Exit Criterion leaf to `Phase checks` at its `E…` address", review)
+        self.assertIn("A legacy plan that uses `Decision this informs`", review)
+        self.assertIn("| # | Phase promise | Result | What happened |", template)
 
     def test_public_docs_keep_feedback_optional_but_validation_honest(self) -> None:
         readme = _read("README.md")

@@ -1201,17 +1201,270 @@ def pending_review_gate_held(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+# --- wave 5: review as a short triage inbox ------------------------------------
+
+# The opening's contract, keyed to the `review-open-phase` fixture: four Exit
+# leaves at their brief addresses, two questions, two assumptions, and one leaf
+# the ledger marks `needs-human`.
+OPENING_EXIT_LEAVES = ("E1a", "E1b", "E2a", "E2b")
+OPENING_QUESTIONS = {
+    "Q1": "nesting",
+    "Q2": "phone",
+}
+OPENING_ASSUMPTIONS = {
+    "A1": "as they write",
+    "A2": "one line",
+}
+OPENING_NEEDS_HUMAN = "E2b"
+# Every alternative closer the opening used to offer. One ask means one ask.
+BANNED_CLOSERS = (
+    "Did I put each outcome in the right section",
+    "Tell me what to move or remove",
+    "You may add where or how you checked it",
+    'Say "close it" to record the review',
+    "How did it go?",
+    "Reply naturally",
+    "close without validation",
+)
+
+
+def _plain(ctx: Ctx) -> str:
+    return re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+
+
+def review_opening_shape(ctx: Ctx) -> list[Failure]:
+    """§5.3: one response, one ask, every Exit leaf separately visible.
+
+    The shape is checked on the response itself because the opening is chat and
+    nothing else records it.
+    """
+    assertion = "review_opening_shape"
+    text = _plain(ctx)
+    fails = []
+
+    for leaf in OPENING_EXIT_LEAVES:
+        # Its own line, at the brief's own address — not folded into a category.
+        if not re.search(rf"^\s*(?:\d+\.\s*)?{leaf}\b", text, re.MULTILINE):
+            fails.append(Failure(assertion, f"Exit leaf {leaf} is not separately visible in the opening"))
+
+    if not re.search(r"^\s*What broke, what you'd change, or \"close it\"\.\s*$", text, re.MULTILINE):
+        fails.append(Failure(assertion, "the opening does not end with the one sanctioned ask"))
+
+    for banned in BANNED_CLOSERS:
+        if banned.lower() in text.lower():
+            fails.append(Failure(assertion, f"opening offered an alternative closer: {banned!r}"))
+
+    # Recording mechanics are the model narrating the file back at the human.
+    for mechanic in ("not tested", "inconclusive", "*(assumption)*", "*(decide)*", "passed / failed"):
+        if mechanic.lower() in text.lower():
+            fails.append(Failure(assertion, f"opening printed recording mechanics: {mechanic!r}"))
+
+    if fails:
+        fails.append(Failure(assertion, f"opening was: {' '.join(text.strip().split())[-800:]!r}"))
+    return fails
+
+
+def review_opening_kept_every_promise(ctx: Ctx) -> list[Failure]:
+    """Shorter, not weaker: no question, assumption, or `Try` item disappears."""
+    assertion = "review_opening_kept_every_promise"
+    text = _plain(ctx)
+    fails = []
+
+    for qid, needle in OPENING_QUESTIONS.items():
+        if qid not in text or needle.lower() not in text.lower():
+            fails.append(Failure(assertion, f"Validation Question {qid} ({needle!r}) is missing from the opening"))
+    for aid, needle in OPENING_ASSUMPTIONS.items():
+        if aid not in text or needle.lower() not in text.lower():
+            fails.append(Failure(assertion, f"assumption {aid} ({needle!r}) is missing from the opening"))
+
+    # The needs-human leaf is flagged, and always carries its Try guidance —
+    # beside that leaf, not merely somewhere in the message.
+    lines = text.splitlines()
+    index = next((i for i, l in enumerate(lines) if OPENING_NEEDS_HUMAN in l), None)
+    if index is None:
+        fails.append(Failure(assertion, f"{OPENING_NEEDS_HUMAN} never appeared"))
+    else:
+        if "needs human" not in lines[index].lower():
+            fails.append(Failure(
+                assertion,
+                f"{OPENING_NEEDS_HUMAN} is not flagged as needing a human check: {lines[index].strip()!r}",
+            ))
+        following = " ".join(lines[index:index + 3]).lower()
+        if "try:" not in following or "phone" not in following:
+            fails.append(Failure(
+                assertion,
+                f"{OPENING_NEEDS_HUMAN} carries no Try guidance from the brief: {following.strip()[:160]!r}",
+            ))
+
+    if "busiest tags" not in text.lower():
+        fails.append(Failure(assertion, "the brief's first Try item was not shown beside its promise"))
+
+    if fails:
+        fails.append(Failure(assertion, f"opening was: {' '.join(text.strip().split())[-800:]!r}"))
+    return fails
+
+
+def review_sign_off_recorded_human_provenance(ctx: Ctx) -> list[Failure]:
+    """D10: `close it` is an attestation, and the ledger records who made it."""
+    assertion = "review_sign_off_recorded_human_provenance"
+    fails = []
+    progress = ctx.progress()
+    if progress is None:
+        return [Failure(assertion, "the ledger disappeared")]
+
+    statuses = {row_id: status for row_id, _, status in parse_progress_rows(progress)}
+    for leaf in OPENING_EXIT_LEAVES:
+        if statuses.get(leaf) != "met":
+            fails.append(Failure(assertion, f"{leaf} is {statuses.get(leaf)!r} after sign-off, not 'met'"))
+
+    contracts = parse_row_contracts(progress)
+    provenance = contracts.get(OPENING_NEEDS_HUMAN, {}).get("attributes", {}).get("provenance", "")
+    if "human sign-off at review" not in provenance:
+        fails.append(Failure(
+            assertion,
+            f"{OPENING_NEEDS_HUMAN} was flipped without recorded human provenance: {provenance!r}",
+        ))
+
+    # A leaf flipped with nobody's name on it is exactly the record D10 rejects.
+    if not (ctx.output_dir / "reviews.md").is_file():
+        fails.append(Failure(assertion, "the phase closed without a review entry"))
+    backlog = ctx.backlog() or ""
+    if "**Status:** in-phase-1" in backlog:
+        fails.append(Failure(assertion, "the close sweep did not resolve the in-phase backlog item"))
+    return fails
+
+
+def review_recorded_unanswered_questions(ctx: Ctx) -> list[Failure]:
+    """"Ship it" does not answer a question the human was asked."""
+    assertion = "review_recorded_unanswered_questions"
+    review = ctx.output_text("reviews.md")
+    if review is None:
+        return [Failure(assertion, "reviews.md was not written")]
+    fails = []
+
+    for qid in OPENING_QUESTIONS:
+        line = next((l for l in review.splitlines() if re.search(rf"\b{qid}\b", l)), None)
+        if line is None:
+            fails.append(Failure(assertion, f"{qid} is absent from the review record"))
+        elif "unanswered at close" not in line.lower():
+            fails.append(Failure(assertion, f"{qid} was not recorded as unanswered at close: {line.strip()!r}"))
+
+    for aid in OPENING_ASSUMPTIONS:
+        line = next((l for l in review.splitlines() if re.search(rf"\b{aid}\b", l)), None)
+        if line is None:
+            fails.append(Failure(assertion, f"assumption {aid} is absent from the review record"))
+        elif "inconclusive" in line.lower():
+            fails.append(Failure(
+                assertion,
+                f"{aid} was recorded inconclusive rather than accepted at sign-off: {line.strip()!r}",
+            ))
+    return fails
+
+
+def review_echoed_findings_only(ctx: Ctx) -> list[Failure]:
+    """§5.6: the echo carries what Mano classified, and one ask — nothing else."""
+    assertion = "review_echoed_findings_only"
+    text = _plain(ctx)
+    fails = []
+
+    # Which bucket a finding lands in is the human's to correct; that one was
+    # echoed at all is what this checks.
+    if not re.search(r"🐛|🔧|✨|📋|📏|❌|✅", text):
+        fails.append(Failure(assertion, "no finding was echoed for confirmation"))
+    if not re.search(r"Anything in the wrong bucket\?", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "the echo did not end with the one compact ask"))
+    for banned in BANNED_CLOSERS:
+        if banned.lower() in text.lower():
+            fails.append(Failure(assertion, f"the echo offered an alternative closer: {banned!r}"))
+
+    # The record is complete in STEP 3; the echo does not read it back.
+    if re.search(r"^\s*Phase checks\s*:?\s*$", text, re.MULTILINE | re.IGNORECASE):
+        fails.append(Failure(assertion, "the echo read back the phase-check table"))
+    if re.search(r"passed\s*/\s*failed\s*/\s*not tested", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "the echo printed the phase-check vocabulary"))
+
+    if fails:
+        fails.append(Failure(assertion, f"echo was: {' '.join(text.strip().split())[-800:]!r}"))
+    return fails
+
+
+def review_close_did_not_erase_the_finding(ctx: Ctx) -> list[Failure]:
+    """`close it` closes the phase; it is not permission to drop what broke."""
+    assertion = "review_close_did_not_erase_the_finding"
+    text = _plain(ctx)
+    fails = []
+
+    if "tag" not in text.lower() or not re.search(r"remove|reopen|linger|stays on screen", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "the finding was not echoed back at all"))
+
+    routed = re.search(r"rework|route|reopen|fix(ed|ing|\b)", text, re.IGNORECASE)
+    dismissed = re.search(r"dismiss|intended|by design|leave it|as-is|as is|not doing", text, re.IGNORECASE)
+    if not (routed and dismissed):
+        fails.append(Failure(
+            assertion,
+            "the close did not ask whether to route the finding to rework or dismiss it",
+        ))
+
+    # Never conclude a dismissal on the human's behalf.
+    progress = ctx.progress() or ""
+    contracts = parse_row_contracts(progress)
+    for row_id, contract in contracts.items():
+        if row_id.startswith("R") and "dismissed-reason" in contract.get("attributes", {}):
+            fails.append(Failure(assertion, f"{row_id} was dismissed without the human saying so"))
+
+    if fails:
+        fails.append(Failure(assertion, f"response was: {' '.join(text.strip().split())[-800:]!r}"))
+    return fails
+
+
+def review_followup_wrote_nothing_yet(ctx: Ctx) -> list[Failure]:
+    """The follow-up echo is a confirmation step: no addendum until it lands."""
+    assertion = "review_followup_wrote_nothing_yet"
+    fails = []
+    if (ctx.backlog() or "") != (ctx.fixture_text("backlog.md") or ""):
+        fails.append(Failure(assertion, "backlog.md changed before the user confirmed the follow-up triage"))
+    if (ctx.output_text("reviews.md") or "") != (ctx.fixture_text("reviews.md") or ""):
+        fails.append(Failure(assertion, "the review entry changed before the user confirmed the follow-up triage"))
+    return fails
+
+
+def build_handoff_showed_validate_now(ctx: Ctx) -> list[Failure]:
+    """D6: the terminal handoff carries the brief's own `Try` guidance."""
+    assertion = "build_handoff_showed_validate_now"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.step(1).final_response)
+    fails = []
+    if not re.search(r"Validate now:", text):
+        fails.append(Failure(assertion, "the build handoff printed no `Validate now:` block"))
+    if "paragraph" not in text.lower() or "editor" not in text.lower():
+        fails.append(Failure(assertion, "the brief's Try guidance was not the source of the block"))
+    if fails:
+        fails.append(Failure(assertion, f"handoff was: {' '.join(text.strip().split())[-600:]!r}"))
+    return fails
+
+
+def review_opening_repeats_the_try_guidance(ctx: Ctx) -> list[Failure]:
+    """...and the fresh review session prints it again beside the promise."""
+    assertion = "review_opening_repeats_the_try_guidance"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.step(2).final_response)
+    fails = []
+    if "Try:" not in text:
+        fails.append(Failure(assertion, "the review opening carried no `Try` guidance"))
+    if "paragraph" not in text.lower() or "editor" not in text.lower():
+        fails.append(Failure(assertion, "the brief's Try guidance is absent from the review opening"))
+    if "Q1" not in text:
+        fails.append(Failure(assertion, "the Validation Question lost its stable address"))
+    if fails:
+        fails.append(Failure(assertion, f"opening was: {' '.join(text.strip().split())[-600:]!r}"))
+    return fails
+
+
 def review_one_exchange_close(ctx: Ctx) -> list[Failure]:
     """A clear positive verdict closes in one exchange: no echo-back triage
     confirmation question may appear in the response."""
     assertion = "review_one_exchange_close"
     text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
     fails = []
-    for banned in (
-        "Did I put each outcome in the right section",
-        "Tell me what to move or remove",
-        'Say "close it" to record the review',
-    ):
+    for banned in BANNED_CLOSERS + ("Anything in the wrong bucket",):
         if banned.lower() in text.lower():
             fails.append(Failure(
                 assertion,
@@ -3336,6 +3589,16 @@ REGISTRY = {
     "start_hook_triage_offer_present": start_hook_triage_offer_present,
     "rules_hook_triage_offer_present": rules_hook_triage_offer_present,
     "selected_hook_finding_applied_only_in_spec": selected_hook_finding_applied_only_in_spec,
+    # review as a short triage inbox (wave 5)
+    "review_opening_shape": review_opening_shape,
+    "review_opening_kept_every_promise": review_opening_kept_every_promise,
+    "review_sign_off_recorded_human_provenance": review_sign_off_recorded_human_provenance,
+    "review_recorded_unanswered_questions": review_recorded_unanswered_questions,
+    "review_echoed_findings_only": review_echoed_findings_only,
+    "review_close_did_not_erase_the_finding": review_close_did_not_erase_the_finding,
+    "review_followup_wrote_nothing_yet": review_followup_wrote_nothing_yet,
+    "build_handoff_showed_validate_now": build_handoff_showed_validate_now,
+    "review_opening_repeats_the_try_guidance": review_opening_repeats_the_try_guidance,
     # review hard gate
     "pending_review_gate_held": pending_review_gate_held,
     # mano start: rules visibility

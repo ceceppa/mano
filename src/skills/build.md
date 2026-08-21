@@ -402,6 +402,8 @@ node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_I
 
 **Terminal:** one aggregate line, and only after the **Terminal evidence sweep** passes: `[mano build]: [PHASE_ID] built — all scope rows done, all exit criteria met in [PHASE_DIR]/progress.md. Run mano review to close the phase.` When the sweep left any leaf `needs-human`, say so in the same line — `… all scope rows done, 6 exit criteria met, 1 needs human check in [PHASE_DIR]/progress.md.` — without listing them; review shows them.
 
+The terminal line is followed by the **`Validate now:`** block — the brief's own `Try` guidance, copied compactly, once for the phase — exactly as `_mano/rules/implement.md` → **`Validate now:` — the one expansion of the terminal line** defines it. Omit the block when the brief has no `Try` bullets; never invent one, and never derive one from an Exit Criterion.
+
 **Deviation stop:** the named condition, the deviating text, and the question — nothing else. Then stop; do not continue into code while the question is open.
 
 Two suffixes are permitted, and only when one genuinely applies: a short note about a non-acceptance deviation that did not weaken verification, and a project-relevant decision worth preserving, offered for capture in the artifact that owns it. An unmet Exit Criterion is never a permitted suffix — gate 10.1 leaves the row open instead.

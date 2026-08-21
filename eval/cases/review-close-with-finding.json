@@ -1,0 +1,10 @@
+{
+  "name": "review-close-with-finding",
+  "description": "`close it` arriving with a negative finding closes the phase without erasing the finding: review asks whether to route it to rework or dismiss it in the human's own words, and never infers the dismissal itself.",
+  "fixture": "review-open-phase",
+  "phase": 1,
+  "prompt": "mano review the tag stays on screen after I remove it until I reopen the note, close it",
+  "assertions": [
+    "review_close_did_not_erase_the_finding"
+  ]
+}
