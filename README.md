@@ -215,6 +215,7 @@ Run a Mano action again when concrete new information affects its artifact. The 
 | **`mano build`** | Builds the active phase from its brief's own scope items, tracked in `progress.md` | `skills/build.md` |
 | **`mano dev [yolo]`** | Implements the next pending story, or the invocation-time pending set with explicit `yolo` | `skills/dev.md` |
 | *(shared)* | The implementation contract both code paths read: gap gates, acceptance evidence, Repair Mode, read budget, output discipline | `rules/implement.md` |
+| *(shared, `auto` only)* | The chain rules a planning skill applies while an armed auto run is in flight — loaded only when the state projection reports `MODE: auto`, never on a manual run | `rules/auto.md` |
 
 The user owns scope, priorities, and product tradeoffs. `mano spec` can recommend concrete technical defaults and `mano ui` can set a concrete visual direction, but both are always overridable.
 
@@ -223,6 +224,8 @@ The user owns scope, priorities, and product tradeoffs. `mano spec` can recommen
 Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) planning** system.
 
 You only pay the cognitive tax for what you are building *today*. The shortest complete phase is two commands plus the close: `mano start` to scope the work, `mano build` to build it from that brief, and `mano review` to close the phase. The story path adds one: `mano start` → `mano stories` to generate the tasks → `mano dev` per story (one turn each by default, or one explicit YOLO batch) → `mano review`. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
+
+When implementation finishes the phase, it hands you the brief's own `Validate now:` checks — the `Try` lines you wrote in the validation plan, not checks Mano invented — and `mano review` shows each one again beside the promise it tests, because that review is usually a new session where the earlier message is gone.
 
 The optional actions can be skipped; `mano review` cannot. Review is what closes a phase — it is the only action that moves that exact phase identity's backlog items from its in-phase status to `resolved`, and `mano start` will not scope the next phase in the selected namespace until the current one is closed that way. The log is deliberately a compact decision record: evidence, the human decision it informed, assumption outcomes, and resulting backlog changes. It is not a release recap or mandatory mini-postmortem.
 
@@ -477,6 +480,7 @@ Skills should load or request only the context needed for the current task.
 
 Prefer:
 - phase brief before full backlog
+- rules that only some runs need, in a fragment those runs load (`rules/auto.md` loads only under `MODE: auto`)
 - filtered `state.js --gaps` output instead of direct gap-related backlog access
 - relevant artifact sections before entire documents
 - explicit provided context before inferred project memory

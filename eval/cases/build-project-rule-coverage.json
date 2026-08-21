@@ -1,0 +1,12 @@
+{
+  "name": "build-project-rule-coverage",
+  "description": "The build path's own project-rule coverage gate (0g). A Documentation rule requires two channels for every public class — a source comment above the declaration and a Markdown page under docs/api/ — and neither is named in the brief. Build must map that obligation onto a Scope row and honour both channels, not build the formatter and leave the rule unmet. A green stories case proves nothing here: the unit of work is a Scope leaf, not a story.",
+  "fixture": "build-project-rule-coverage",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_ledger_rows_are_the_briefs",
+    "build_honoured_the_documentation_rule",
+    "build_wrote_no_story_files"
+  ]
+}

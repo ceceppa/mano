@@ -1,0 +1,12 @@
+{
+  "name": "hook-triage-stories-no-approval",
+  "description": "A just-run post-stories hook is diagnostic, not edit approval. The reviewer's findings are offered as a numbered triage list and nothing is written — least of all a story file, which is exactly what this hook reviews. A finding the tech spec owns is routed, not applied.",
+  "fixture": "hook-triage-stories",
+  "phase": 3,
+  "active_hook": "stories",
+  "prompt": "mano stories. Continue the previous interaction: the active post-stories hook has just run and reported two raw findings in chat. (1) story 1's acceptance criteria never state what the person sees while a retry is in flight. (2) tech-spec.md gives the retry delay no maximum and recommends an 8-second cap. No finding has been approved yet. Handle the hook output according to Mano; do not treat running the hook as approval.",
+  "assertions": [
+    "stories_hook_triage_left_artifacts_unchanged",
+    "stories_hook_triage_offer_present"
+  ]
+}

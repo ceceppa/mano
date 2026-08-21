@@ -2,6 +2,7 @@
 name: mano-ux
 description: Use to define UX flows, navigation, and user interactions for visual screens and player-facing in-world interactions.
 requires: [core, artifact]
+requires-in-auto: [auto]
 ---
 
 # `mano ux` — UX Flow Skill

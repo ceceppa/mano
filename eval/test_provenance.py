@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import tempfile
 import unittest
@@ -45,13 +46,23 @@ class ProvenanceTests(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            # +2 for mano build, which carries the same rule on its own path.
             len(rules["project-rule-story-coverage"].occurrences),
-            7,
+            5,
         )
         self.assertEqual(
             rules["project-rule-story-coverage"].evals,
             ("stories-project-rule-coverage",),
+        )
+        # `mano build` carries the same obligation on its own path, under its
+        # own id and its own case: the unit of work is a Scope leaf, not a
+        # story, so a green stories case proves nothing about it (plan6-6 §6.2).
+        self.assertEqual(
+            len(rules["build-project-rule-coverage"].occurrences),
+            2,
+        )
+        self.assertEqual(
+            rules["build-project-rule-coverage"].evals,
+            ("build-project-rule-coverage",),
         )
         self.assertEqual(
             len(rules["dev-yolo-batch"].occurrences),
@@ -77,6 +88,64 @@ class ProvenanceTests(unittest.TestCase):
             rules["public-interface-contract-readiness"].evals,
             ("spec-public-interface-completeness", "stories-public-interface-gap"),
         )
+
+    def test_no_rule_ships_with_an_unrecorded_pending_eval(self) -> None:
+        """The ship guard. `eval=pending` is allowed, but only as a recorded,
+        temporary exception with a reason and an owner — never as a silent
+        field in a marker nobody reads."""
+        provenance.check_pending(REPO_ROOT)
+
+    def test_the_pending_allowlist_is_empty_for_a_release(self) -> None:
+        allowlist = json.loads(
+            (REPO_ROOT / "eval" / "pending-evals.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            allowlist["rules"],
+            {},
+            "a release ships with no rule waiting on its eval; pay the debt or "
+            "record the exception deliberately and change this test with it",
+        )
+
+    def test_the_guard_rejects_an_unrecorded_pending_rule(self) -> None:
+        rules = provenance.discover_rules(REPO_ROOT)
+        victim = sorted(rules)[0]
+        rules[victim].evals = ("pending",)
+        with self.assertRaises(provenance.ProvenanceError) as caught:
+            provenance.check_pending(REPO_ROOT, rules)
+        self.assertIn("no recorded exception", str(caught.exception))
+
+    def test_the_guard_rejects_a_stale_exception(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "eval").mkdir()
+            (root / "eval" / "pending-evals.json").write_text(
+                json.dumps({"rules": {"long-since-fixed": {"reason": "x", "owner": "y"}}}),
+                encoding="utf-8",
+            )
+            with self.assertRaises(provenance.ProvenanceError) as caught:
+                provenance.check_pending(root, {})
+            self.assertIn("no longer pending", str(caught.exception))
+
+    def test_a_rule_in_a_conditional_fragment_needs_a_case_in_that_mode(self) -> None:
+        """`rules/auto.md` loads only under `MODE: auto`. A rule living there
+        whose cases all run in `manual` cannot be probed: stripping it changes
+        nothing those cases can see."""
+        provenance.check_conditional_coverage(REPO_ROOT)
+
+    def test_the_conditional_guard_catches_a_manual_only_case(self) -> None:
+        rules = provenance.discover_rules(REPO_ROOT)
+        victim = sorted(rules)[0]
+        rule = rules[victim]
+        rule.occurrences[0] = provenance.Occurrence(
+            REPO_ROOT / "src" / "rules" / "auto.md", 1, 0, 0
+        )
+        rule.evals = ("review-positive-summary",)  # a manual-mode case
+        with self.assertRaises(provenance.ProvenanceError) as caught:
+            provenance.check_conditional_coverage(REPO_ROOT, rules)
+        self.assertIn("the probe would never load it", str(caught.exception))
+
+    def test_conditional_fragments_come_from_the_skills_themselves(self) -> None:
+        self.assertEqual(provenance.conditional_fragments(REPO_ROOT), {"auto": "auto"})
 
     def test_default_install_contains_no_rule_markers(self) -> None:
         """P0.1 guard: installed files are marker-free (the rule bodies stay)."""

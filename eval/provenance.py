@@ -179,6 +179,116 @@ def discover_rules(root: Path, *, validate_cases: bool = True) -> dict[str, Rule
     return rules
 
 
+CONDITION_KEYS = {"requires-in-auto": "auto"}
+
+
+def conditional_fragments(root: Path) -> dict[str, str]:
+    """Rule fragments a skill loads only under a condition → the run mode.
+
+    Derived from the skills' own front matter rather than a second hard-coded
+    list, so adding a conditional fragment cannot forget to update this.
+    """
+    found: dict[str, str] = {}
+    for path in sorted((root / "src" / "skills").glob("*.md")):
+        head = path.read_text(encoding="utf-8")[:600]
+        for key, mode in CONDITION_KEYS.items():
+            match = re.search(rf"^{key}:\s*\[(.*?)\]\s*$", head, re.MULTILINE)
+            if not match:
+                continue
+            for name in (n.strip() for n in match.group(1).split(",")):
+                if name:
+                    found[name] = mode
+    return found
+
+
+def check_conditional_coverage(root: Path, rules: dict[str, "Rule"] | None = None) -> None:
+    """A rule inside a conditionally-loaded fragment needs a case in that mode.
+
+    `--probe-rule` strips a rule from a temp install and runs the cases the
+    marker names. If the rule lives in `rules/auto.md` and every named case runs
+    in `manual`, the probe never loads the file it just emptied: the cases pass
+    whether or not the rule exists, and the result reads as "safe to retire".
+    """
+    import json
+
+    rules = discover_rules(root) if rules is None else rules
+    conditional = conditional_fragments(root)
+    if not conditional:
+        return
+    modes: dict[str, str] = {}
+    for path in sorted((root / "eval" / "cases").glob("*.json")):
+        case = json.loads(path.read_text(encoding="utf-8"))
+        modes[case.get("name", path.stem)] = case.get("run_mode", "manual")
+
+    problems = []
+    for rule in rules.values():
+        fragments = {
+            path.stem
+            for path in (occurrence.path for occurrence in rule.occurrences)
+            if path.parent.name == "rules" and path.stem in conditional
+        }
+        if not fragments:
+            continue
+        needed = sorted({conditional[name] for name in fragments})
+        for eval_name in rule.evals:
+            if eval_name == "pending":
+                continue
+            if modes.get(eval_name, "manual") not in needed:
+                problems.append(
+                    f"rule {rule.id!r} lives in {sorted(fragments)} (loaded only under "
+                    f"{'/'.join(needed)}) but case {eval_name!r} runs in "
+                    f"{modes.get(eval_name, 'manual')!r}; the probe would never load it"
+                )
+    if problems:
+        raise ProvenanceError("\n".join(problems))
+
+
+PENDING_ALLOWLIST = "pending-evals.json"
+
+
+def check_pending(root: Path, rules: dict[str, "Rule"] | None = None) -> None:
+    """The ship guard: `eval=pending` needs a recorded, temporary exception.
+
+    A provenance marker's promise is that the rule can be probed for
+    retirement. `eval=pending` suspends that promise, and a suspension nobody
+    can see is how three rules quietly reached a release unprobed. So the
+    exception is explicit, carries a reason and an owner, and is visible in one
+    file — and a stale entry fails just as loudly as a missing one, the same
+    way `expected-red.json` treats a case that started passing.
+    """
+    rules = discover_rules(root) if rules is None else rules
+    path = root / "eval" / PENDING_ALLOWLIST
+    allowed: dict[str, dict] = {}
+    if path.is_file():
+        import json
+
+        allowed = json.loads(path.read_text(encoding="utf-8")).get("rules", {})
+
+    pending = {rule_id for rule_id, rule in rules.items() if "pending" in rule.evals}
+
+    problems = []
+    for rule_id in sorted(pending - set(allowed)):
+        first = rules[rule_id].occurrences[0]
+        problems.append(
+            f"{first.path}:{first.line}: rule {rule_id!r} ships with eval=pending and no "
+            f"recorded exception in eval/{PENDING_ALLOWLIST}"
+        )
+    for rule_id in sorted(set(allowed) - pending):
+        problems.append(
+            f"eval/{PENDING_ALLOWLIST}: {rule_id!r} is listed but no longer pending — "
+            "delete the entry rather than editing it"
+        )
+    for rule_id, entry in sorted(allowed.items()):
+        missing = [field for field in ("reason", "owner") if not str(entry.get(field, "")).strip()]
+        if missing:
+            problems.append(
+                f"eval/{PENDING_ALLOWLIST}: {rule_id!r} exception is missing {', '.join(missing)}"
+            )
+
+    if problems:
+        raise ProvenanceError("\n".join(problems))
+
+
 def _installed_files(project: Path) -> list[Path]:
     files: list[Path] = []
     mano = project / "_mano"

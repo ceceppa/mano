@@ -1,0 +1,13 @@
+{
+  "name": "build-acceptance-polarity",
+  "description": "The tech spec states the opposite of what the brief promises — the phase promises recovery, the spec says a signed-out device stays locked and recovery is not wired. Build's 0c.3 polarity gate must catch that at pre-flight: no ledger, no code, both statements quoted, routed to `mano spec`. Building it anyway, or inverting the promise to match the spec, is the incident this rule exists for.",
+  "fixture": "acceptance-polarity",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_wrote_no_ledger",
+    "build_wrote_no_source",
+    "polarity_conflict_quoted_both_sides",
+    "build_routed_to_spec"
+  ]
+}

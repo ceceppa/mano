@@ -108,7 +108,7 @@ Add the missing contract path with `mano stories "add coverage for [missing phas
 Do not inspect source or tests to decide whether the uncovered behavior happens to work, and do not let `close it` waive this gate. A review cannot honestly close scope that no story accepted.
 <!-- /mano-rule: public-interface-contract-readiness -->
 
-<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=stories-acceptance-polarity -->
 **Artifact-polarity safety net — stories path only.** Coverage alone is insufficient when an owning AC and its cited canonical artifact promise opposite outcomes. On the build path the equivalent check ran as build's own pre-flight gate 0c.3 and again in its terminal sweep, against the same fingerprinted brief. While doing the phase-contract mapping above, compare the meaning of each AC with the exact cited spec section: success versus failure, recoverable versus locked, available versus unavailable, wired versus explicitly unwired/deferred. If a cited section contains both outcomes, that is still a conflict; do not select the sentence that makes the story look complete.
 
 If any opposing statement exists, stop before asking for feedback or closing the phase. Quote the AC and opposing canonical statement, then route to `mano spec`; after it is resolved, route to `mano stories` for pending corrective coverage when the owning story is already `done`. Do not inspect source/tests, accept `close it`, or infer that implementation happened to follow the AC—the artifact contract is internally inconsistent and the review cannot close it.

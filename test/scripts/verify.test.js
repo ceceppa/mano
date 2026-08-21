@@ -74,6 +74,20 @@ test("missing command is a usage error", () => {
   assert.match(result.stderr, /usage/);
 });
 
+test("--help prints usage and exits 0", () => {
+  const result = run(["--help"]);
+  assert.strictEqual(result.status, 0);
+  assert.match(result.stdout, /Usage:/);
+  assert.match(result.stdout, /failure-pattern/);
+});
+
+test("--help after the separator is part of the command, not a flag", () => {
+  // `verify.js -- mytool --help` must run mytool, not print this script's usage.
+  const result = run(["--", "echo", "--help"]);
+  assert.strictEqual(result.status, 0);
+  assert.match(result.stdout, /^PASS: echo --help/);
+});
+
 // ---- V1: the four repairs -------------------------------------------------
 
 test("both the head and the tail sentinel survive the character cap", () => {

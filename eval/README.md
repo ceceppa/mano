@@ -42,12 +42,21 @@ allowlist as the single, explicit exception.
 Fast deterministic checks do not invoke a model:
 
 ```bash
-npm test
+npm test          # provenance, mappings, pointers, dependencies, scripts
+npm run stacks    # what each command loads, per mode
 ```
 
-This validates incident provenance, eval mappings, the rule-stripping path used
-by retirement probes, cross-file section pointers (`eval/check-refs.js` — every
-`` `file` → **Section** `` pointer in `src/` must resolve), and the scripts.
+`npm test` validates incident provenance, eval mappings, the rule-stripping path
+used by retirement probes, cross-file references (`eval/check-refs.js` — every
+`` `file` → **Section** `` pointer in `src/` must resolve, and every skill's
+`requires:` / `requires-in-auto:` fragment must exist and stay on the right side
+of its condition), and the scripts.
+
+`npm run stacks` prints each command's installed stack — its skill file plus the
+rule fragments its front matter declares — in `manual` and in `auto`. It is a
+*size* measurement, not a token measurement: a smaller stack is a necessary
+condition for a cheaper run, never proof of one. What a run costs is measured by
+`run.py` against a real CLI.
 
 Note on markers: production installs strip `<!-- mano-rule: -->` marker lines
 (the rule bodies stay). The harness therefore installs with
@@ -84,7 +93,27 @@ python3 eval/run.py --runner opencode \
 ```
 
 `--probe-rule` never edits the repository and refuses rules with
-`eval=pending`. `--without-rule` remains a low-level single-case/debug option;
+`eval=pending` — and `eval/pending-evals.json` is the reason there should be
+none: a rule may ship with `eval=pending` only as a recorded exception carrying
+a reason and an owner. An entry whose rule is no longer pending fails the run,
+the same way a passing `expected-red` case does. A release ships with that file
+empty.
+
+**A rule's case must load the file the probe strips.** `rules/auto.md` loads only
+under `MODE: auto`, so a rule living there needs a case with `"run_mode": "auto"`;
+`npm test` fails on one whose cases all run in `manual`, because stripping it
+would change nothing those cases can see. The conditional-fragment list is
+derived from the skills' own `requires-in-auto:` front matter, never from a
+second hard-coded copy.
+
+**The same applies across paths.** A build-path gate copied
+from the stories path needs its own id and its own build-path case: the two
+exercise different units of work, and a green stories case proves nothing about
+a Scope leaf. `exit-criterion-tested-in-reverse` is one incident on five
+surfaces and therefore five ids — `spec-promise-consistency`,
+`phase-acceptance-integrity` (stories and review), `acceptance-evidence-polarity`
+(the shared implementation contract), and `build-promise-polarity` — each with
+the case that actually reaches it. `--without-rule` remains a low-level single-case/debug option;
 its result is explicitly not complete retirement evidence. A passing complete
 probe is evidence to inspect and repeat, not an automatic deletion decision:
 model output can be noisy, every target model tier matters, and the human still
@@ -416,6 +445,30 @@ as a real quoted argument, because the channel is part of what is under test:
 `build-auto-direct` is the whole path in one case: `mano import` → `mano start`
 → approval, in auto, ending at `mano build` with no story file anywhere and no
 review entry.
+
+### Provenance-debt cases
+
+Every shipped incident rule names a case that actually loads it (§6.2). These
+are the ones that closed the three `eval=pending` markers, plus the build-path
+splits:
+
+| case | rule it maps to |
+|---|---|
+| `two-phase-extension` | `cumulative-artifact-minimal-diff` — a re-emitted artifact drops or paraphrases the Phase 1 lines the assertions anchor on |
+| `hook-triage-stories-no-approval` | `post-stories-hook-findings-triage` — the sibling of the spec/start/rules triage cases |
+| `stories-acceptance-polarity` | `phase-acceptance-integrity` (stories, review) |
+| `spec-acceptance-polarity` | `spec-promise-consistency` — spec resolves the contradiction in place or raises `❓ Decide:` |
+| `dev-acceptance-polarity` | `acceptance-evidence-polarity` — the shared implementation contract's gate 10.1 |
+| `build-acceptance-polarity` | `build-promise-polarity` — the same conflict caught at build pre-flight, before any ledger |
+| `build-project-rule-coverage` | `build-project-rule-coverage` — 0g on the build path, where the unit is a Scope leaf |
+
+`acceptance-polarity` is one fixture asked three different questions. Its brief
+promises that a signed-out device can be recovered; its tech spec says the
+device stays locked and recovery is **not wired**. `mano spec` must resolve or
+raise it, `mano stories` must refuse to write an AC either way, and `mano build`
+must stop at pre-flight with both statements quoted. The failure the incident is
+named for — inverting the promise to match the artifact so the suite goes green
+— looks like success on every one of those paths.
 
 ### Review cases
 

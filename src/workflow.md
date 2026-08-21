@@ -83,7 +83,7 @@ Mano runs in one of two modes, stored per repository clone in local Git config (
 
 **`auto` chains the actions the user would otherwise type.** It exists because a user who has stopped reading intermediate artifacts is already chaining by hand; the mode makes that explicit and bounded rather than pretending each hand-off is a review. It changes *who types the next command*. It changes nothing about what any skill produces, what it is allowed to write, or which decisions belong to the human.
 
-The rules a skill applies while a chain is running — the pause rule, continuing-is-an-action, and the closing block — are `_mano/rules/core.md` → **Auto-chain execution**. Hook behaviour inside a chain is `_mano/rules/hooks.md` → **Hooks in auto mode**.
+The rules a skill applies while a chain is running — the pause rule, continuing-is-an-action, and the closing block — are `_mano/rules/auto.md`, which a skill loads only when the projection reports `MODE: auto` and never in `manual`. Hook behaviour inside a chain is `_mano/rules/hooks.md` → **Hooks in auto mode**.
 
 ### Where auto mode starts and stops
 
@@ -252,7 +252,7 @@ Build mode: [PHASE_ID]
 - Status: At least one story is not done, so no planning action was auto-run.
 - Use `mano dev` to implement the next pending story.
 - Use `mano stories` only if you need to add or adjust planned work.
-- If the phase scope changed, amend the current phase brief first. Then rerun `mano stories` for the affected pending or corrective work.
+- If the phase scope changed, say it to `mano stories "[what changed]"` — with a ledger present the brief is frozen, so an in-goal change becomes a lettered follow-up story and a distinct outcome goes to the backlog or the next phase. `mano start` is closed here.
 - Use `mano review` after all stories in the phase are done.
 ```
 

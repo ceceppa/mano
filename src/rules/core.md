@@ -80,7 +80,7 @@ File exists → targeted replacements only. Never re-emit a file to change part 
 - Untouched sections stay byte-identical: no reordering, renumbering, reflowing, or format "tidying".
 - Append a section by replacing the last line of the preceding section with itself + the new section.
 - Add a table/list row by replacing the neighbouring row, not the table.
-<!-- mano-rule: id=cumulative-artifact-minimal-diff; incident=tech-spec-merge-conflict-across-owners; model=not-recorded; date=2026-08-07; eval=pending -->
+<!-- mano-rule: id=cumulative-artifact-minimal-diff; incident=tech-spec-merge-conflict-across-owners; model=not-recorded; date=2026-08-07; eval=two-phase-extension -->
 A full-file write to an existing artifact is a defect: invisible in the rendered document, catastrophic in a
 diff — it turns every concurrent edit into a merge conflict. Restructuring is a human decision: say so in the
 log; never fold it into an unrelated update.
@@ -126,7 +126,7 @@ Rules:
 - **Flag lines stand alone.** Each `⚠ Verify:` / `❓ Decide:` marker starts its own line, first thing on the line, one finding per marker line, at most one sentence. Never embed a flag mid-sentence, mid-bullet, or mid-paragraph. (Chat-log formatting only — the inline `⚠️ Note:` hedge inside artifacts stays inline by design.)
 - **`Next:` must agree with `❓ Decide:`.** When a decide line is present, present the dependent command as conditional on the decision (`mano stories` — once the severity call above is confirmed), never as unconditionally ready. The two lines share one message; a decide line saying "confirm before stories are written" above a `Next:` saying "ready to decompose" is exactly the contradiction this rule forbids.
 - **Capture the answer.** When the user replies to a `❓ Decide:` — confirming or changing the value — apply it: update the owning artifact in place (the provisional value becomes a stated decision; drop the "guess"/provisional hedging) and report a one-line changelog. A decision that lives only in chat is not captured; the artifact is the record. In manual mode that changelog is the response. In an armed auto chain it is a mid-chain log: refresh `MODE`, then resume the recorded `Remaining:` actions in the same turn when the mode is still `auto`.
-- `Next:` keeps the existing next-action options; it is not boilerplate and stays. **One exception:** in auto mode, an action that is handing off to the next action in the chain omits `Next:` entirely — see **Auto-chain execution** below. Nobody is choosing a next command mid-chain, and printing options there produces a log that offers a choice and continues past it in the same breath. `Next:` still appears on the action that ends the chain.
+- `Next:` keeps the existing next-action options; it is not boilerplate and stays. **One exception:** in auto mode, an action that is handing off to the next action in the chain omits `Next:` entirely — see `_mano/rules/auto.md` → **Continuing is an action, not an announcement**. Nobody is choosing a next command mid-chain, and printing options there produces a log that offers a choice and continues past it in the same breath. `Next:` still appears on the action that ends the chain.
 
 Reason fully; externalize sparingly. Terse output is a rule about *display*, not *cognition*. Judgment-heavy skills (scoping, story decomposition, spec, rules, review) must still do the deliberation their contract requires — specificity, branching-flow, exhaustiveness, anti-rationalization gates. Do not shortcut that thinking to save chat volume; under-reasoning a planning decision is far more expensive than over-explaining one, because the bad decision propagates into every downstream artifact. The discipline is: do the reasoning internally, let the artifact carry the conclusions (each artifact is self-contained by design), and put only the changelog, flags, and genuine unresolved questions in chat. Do not narrate the deliberation itself. Mechanical steps (status updates, file writes, hook checks) carry no judgment worth narrating — just act and report.
 
@@ -142,59 +142,8 @@ because its ledger makes the next session's resume cost a projection read.
 
 ## Auto-chain execution
 
-These are the rules a skill applies while an armed auto chain is running. The narrative contract — what auto mode is, how a chain is armed and edited — is `_mano/workflow.md` → **Run Mode: manual and auto**.
+The rules a skill applies **while an armed auto chain is running** — the pause rule, continuing-is-an-action, and the closing block — live in `_mano/rules/auto.md`.
 
-### The pause rule
+**Read that file when, and only when, the state projection reports `MODE: auto`.** Read it right after the projection, before the chain's first action. In `manual` it is never opened: a manual run hands back after every command, so none of those rules can apply, and carrying them on the common path is resident context that buys nothing. Re-read `MODE` from the freshest projection at every handoff rather than caching it from the start of the run — the mode can change mid-run, and the file follows the mode.
 
-**Auto mode pauses whenever the human's answer is required, and never answers on their behalf.** This is the whole safety model: the mode removes typing, not decisions. Pause and hand back on any of these, then resume the chain from where it stopped once the user replies:
-
-- a `❓ Decide:` line — already defined as "confirm or change before the next command runs" (see the canonical execution-log format), which makes it exactly this signal
-- any clarifying question a skill would ask in manual mode
-- **a genuine fork in the next action** — when the "Single obvious next action gates" (`_mano/workflow.md`) say *do not auto-run*, that ambiguity is a question. Ask which branch; never pick the first option or the shortest path
-- hook findings that need triage (see `_mano/rules/hooks.md`)
-- a hard gate or refusal — `DECISION: STOP`, a pre-review gate, a missing required artifact, a surfaced cross-artifact conflict
-- any script failure, per **Scripts are mandatory**
-
-A `⚠ Verify:` is advisory by definition and does **not** pause the chain. Collect them instead (below).
-
-**Every pause is named.** When one of the conditions above fires, say which one, in the closing block. A chain that hands back without naming a pause condition is a bug, not a pause — the two look identical to the user, and only the named version tells them whether to answer something or re-run the command.
-
-The pause block must also preserve the ordered `Remaining:` actions. When the user answers, apply and persist that answer, refresh the state projection, then continue those remaining actions in the same turn. The answer's one-line changelog is a mid-chain action log, not a reason to stop. If the refreshed `MODE` is `manual`, or the user says stop, apply any requested answer but hand back instead of resuming; mode is read from state at every handoff, never cached from the start of the run.
-
-Two things that are **not** pause conditions, because they are the most tempting places to stop:
-
-- **A `Next:` block listing more than one action.** Several *listed* options is the ordinary shape of a log, not a fork. It is a fork only when the "Single obvious next action gates" genuinely cannot resolve which comes first. An option that is explicitly conditional on another (`mano stories` — *once visual direction is settled*) is resolved, not ambiguous: run the one it depends on.
-- **Finishing an action successfully.** Completion is the trigger to continue, not to hand back.
-
-### Continuing is an action, not an announcement
-
-**To continue the chain, invoke the next action in the same turn. Never end a turn with a statement of intent.** A line like "Continuing the auto-mode chain — running `mano ui` next" followed by the turn ending is the chain silently stopping while claiming the opposite: the user is left holding a promise instead of a result, and no pause condition fired to explain it.
-
-- ❌ finished log → `Next:` options → "Continuing — running `mano ui` next." → *turn ends*
-- ✅ finished log → `mano ui` runs → its log → … → closing block when the chain stops
-
-If you have written words describing what you are about to run, you have not run it. Either invoke it now, or name the pause condition (**The pause rule**) that stopped you. There is no third state where the chain is notionally continuing but nothing is executing.
-
-**Between actions there is no `Next:` block and no transition line.** This is the one place a skill's canonical execution log is trimmed: `Next:` exists to tell a human which command to type, and mid-chain nobody is typing one. Offering options *and* claiming to continue is the contradiction that produces the failure above. `Next:` returns in the closing block, once the chain has actually stopped.
-
-### What the chain prints
-
-Each action still prints its own canonical execution log as it completes — the chain is not a silent batch, and the logs are the audit trail. When the chain stops, add one closing block that turns the run into the user's review agenda:
-
-```text
-[mano auto]: phase-[N] — [first] → … → [last]
-- Ran: [actions, in order]
-- Stopped: [completed implementation | waiting on the question below]
-- Remaining: [ordered actions still approved for this run — omit only when none]
-⚠ Verify: [every advisory flag collected across the run, one per line — omit if none]
-
-[Hook findings triage, or the pending question, if that is why it stopped]
-
-Next:
-- [when implementation completed] `mano review` — when you have checked the result
-- [when paused] Reply to the named question — the recorded remaining chain resumes automatically
-```
-
-Collecting the `⚠ Verify:` lines here matters: in manual mode the user sees each one as it appears, and in auto mode they would otherwise scroll back for them. This block is the thing they read before reviewing.
-
-`mano dev yolo` keeps its strict aggregate implementation line. When it is the terminal action of an armed auto chain, that line is the dev action's log and the auto closing block follows it; this is the sole exception to the standalone YOLO rule that nothing may follow the aggregate line. Do not add an implementation recap between them. `mano build` behaves identically: its aggregate or deviation line is the action's log, then the closing block. Neither implementation skill loads this file, so both carry the same contract in `_mano/rules/implement.md` → **Closing an armed auto chain** — keep the two in step.
+`mano review` is the exception in both directions: it is always human-run and outside the chain, so it never loads the fragment even under `MODE: auto`. The narrative contract — what auto mode is, how a chain is armed and edited — is `_mano/workflow.md` → **Run Mode: manual and auto**.

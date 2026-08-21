@@ -8,7 +8,8 @@
   "scripts": {
     "test": "node --test && python3 -m unittest discover -s eval -p 'test_*.py'",
     "eval": "python3 eval/run.py",
-    "eval:rules": "python3 eval/run.py --list-rules"
+    "eval:rules": "python3 eval/run.py --list-rules",
+    "stacks": "node eval/stacks.js"
   },
   "type": "commonjs",
   "engines": {

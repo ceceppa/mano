@@ -1,0 +1,11 @@
+{
+  "name": "spec-acceptance-polarity",
+  "description": "`mano spec`'s side of the same incident. The current spec says a signed-out device stays locked and recovery is not wired, while the phase it is writing for promises recovery. Spec must replace that stale decision in place and define the transition the phase needs, or stop with a `❓ Decide:` quoting both statements. What it may not do is leave the contradiction standing and report the spec complete.",
+  "fixture": "acceptance-polarity",
+  "phase": 1,
+  "prompt": "mano spec",
+  "assertions": [
+    "spec_resolved_or_raised_the_polarity_conflict",
+    "spec_preserved_the_canonical_window_value"
+  ]
+}

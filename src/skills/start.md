@@ -2,6 +2,7 @@
 name: mano-start
 description: Use when the user wants to start a new project or scope a new phase from a conversation or an existing backlog. Suggests phase scope and drafts the phase brief. To turn a PRD or document into a backlog first, use mano import.
 requires: [core, artifact, intake, backlog]
+requires-in-auto: [auto]
 ---
 
 # `mano start` — Intake Skill
@@ -227,7 +228,7 @@ In auto mode, replace option 1's description with `Approve this scope and run th
 
 Before proposing that line, decide whether this candidate scope requires `spec`, `ux`, `rules`, or `ui` from the projection's `ARTIFACTS:` line — it reports whether `tech-spec.md`, `ux-flow.md`, `project-rules.md`, and `design-brief.md` exist, so do not open any of them for this check. Never open the backlog, reviews, source, a prior phase folder, or another phase's preview either. An artifact that exists is only skipped when the candidate scope plainly adds nothing in its area; when its coverage of this phase is genuinely uncertain, include the action and let the human strike it in the approval reply.
 
-Propose only the actions the phase genuinely needs, applying `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** and `_mano/rules/core.md` → **Auto-chain execution** for the rest of the chain contract.
+Propose only the actions the phase genuinely needs, applying `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** and `_mano/rules/auto.md` for the rest of the chain contract.
 
 ### Step 7 — Validate, clarify, and draft brief
 

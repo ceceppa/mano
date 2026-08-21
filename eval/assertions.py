@@ -2850,6 +2850,209 @@ def review_persisted_findings_as_rework(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+# --- acceptance polarity: an artifact that contradicts the phase promise --------
+
+# The fixture's two sides. The phase promises recovery; the canonical spec says
+# the device stays locked and recovery is not wired. A skill that quotes only
+# one side has not surfaced a conflict — it has picked a winner.
+POLARITY_PROMISE = ("recover", "without entering a new code", "recovery offer")
+POLARITY_SPEC = ("stays locked", "not wired")
+
+
+def polarity_conflict_quoted_both_sides(ctx: Ctx) -> list[Failure]:
+    """Both statements reach the human, in the response, side by side.
+
+    Reporting "a spec gap" is not enough and reporting only the spec's version
+    is the incident itself: the phase promise is what the human approved, and
+    an artifact that contradicts it is the artifact's problem to fix.
+    """
+    assertion = "polarity_conflict_quoted_both_sides"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    fails = []
+
+    if not any(needle.lower() in text.lower() for needle in POLARITY_PROMISE):
+        fails.append(Failure(assertion, "the phase's promised outcome was never quoted"))
+    if not any(needle.lower() in text.lower() for needle in POLARITY_SPEC):
+        fails.append(Failure(assertion, "the contradicting spec statement was never quoted"))
+    if not re.search(r"contradict|opposite|conflict|says the opposite|not wired", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response never names the two as being in conflict"))
+
+    if fails:
+        compact = " ".join(text.strip().split())
+        fails.append(Failure(assertion, f"response ended: {compact[-700:]!r}"))
+    return fails
+
+
+def spec_resolved_or_raised_the_polarity_conflict(ctx: Ctx) -> list[Failure]:
+    """Two sanctioned outcomes, and one forbidden one.
+
+    Spec may replace the stale decision in place — the phase deliberately
+    advances what an earlier decision left locked — or stop with `❓ Decide:`
+    because the two outcomes are a real unresolved product decision. Leaving
+    the contradiction in the file and reporting the spec complete is the
+    incident: every downstream skill then reads an artifact that says both.
+    """
+    assertion = "spec_resolved_or_raised_the_polarity_conflict"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    spec = ctx.artifact_text("tech-spec.md")
+    if spec is None:
+        return [Failure(assertion, "tech-spec.md disappeared")]
+
+    original = ctx.fixture_text("tech-spec.md")
+    still_contradicts = bool(re.search(r"stays locked|not wired", spec, re.IGNORECASE))
+    raised = "❓" in text and re.search(r"decide", text, re.IGNORECASE) is not None
+
+    if spec == original:
+        # Untouched is only correct when the conflict was handed back.
+        if not raised:
+            return [Failure(
+                assertion,
+                "the spec was left contradicting the phase promise and no `❓ Decide:` was raised: "
+                f"{' '.join(text.strip().split())[-600:]!r}",
+            )]
+        return []
+
+    if still_contradicts and not raised:
+        return [Failure(
+            assertion,
+            "the spec was rewritten but still says the device stays locked / recovery is not wired",
+        )]
+    return []
+
+
+def spec_preserved_the_canonical_window_value(ctx: Ctx) -> list[Failure]:
+    """Resolving the conflict is a targeted replacement, not a re-emit: the
+    value nothing else defines, and the unrelated section, both survive."""
+    assertion = "spec_preserved_the_canonical_window_value"
+    spec = ctx.artifact_text("tech-spec.md") or ""
+    fails = []
+    if "SESSION_RECOVERY_WINDOW_MS" not in spec or "900000" not in spec:
+        fails.append(Failure(assertion, "the canonical recovery-window value was dropped or changed"))
+    if "## Storage" not in spec or "keyed by device id" not in spec:
+        fails.append(Failure(assertion, "the unrelated Storage section did not survive the edit"))
+    return fails
+
+
+def stories_polarity_wrote_nothing(ctx: Ctx) -> list[Failure]:
+    """No story may exist: an AC written against a contradicted promise is the
+    defect, whichever side it ends up asserting."""
+    assertion = "stories_polarity_wrote_nothing"
+    fails = list(_wrote_nothing(ctx, assertion))
+    if ctx.story_files():
+        fails.append(Failure(
+            assertion,
+            f"stories were written despite the contradiction: {[p.name for p in ctx.story_files()]}",
+        ))
+    return fails
+
+
+def stories_polarity_routed_to_spec(ctx: Ctx) -> list[Failure]:
+    """The artifact owns the contradiction, so the route is `mano spec` — never
+    `mano start` (the brief is what the human approved) and never `mano dev`."""
+    assertion = "stories_polarity_routed_to_spec"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    fails = []
+    if not re.search(r"mano\s+spec", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response does not route to `mano spec`"))
+    if re.search(r"mano\s+dev\b", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "the response routed to `mano dev` with the contract still contradicted"))
+    if fails:
+        compact = " ".join(text.strip().split())
+        fails.append(Failure(assertion, f"response ended: {compact[-500:]!r}"))
+    return fails
+
+
+def dev_polarity_left_the_story_pending(ctx: Ctx) -> list[Failure]:
+    """An AC whose own cited artifact promises the opposite outcome cannot be
+    satisfied, so the row stays open and the contradiction is reported.
+
+    The tempting failures are all "done": implement the spec's version and tick
+    the AC, invert the assertion so the suite is green, or record the opposing
+    behaviour as intentional. Each ships a phase whose ledger claims a promise
+    the product does not keep.
+    """
+    assertion = "dev_polarity_left_the_story_pending"
+    fails = []
+    readme = ctx.readme()
+    if readme is None:
+        return [Failure(assertion, "the stories index disappeared")]
+    statuses = _dev_story_statuses(readme)
+    if statuses.get("1") == "done":
+        fails.append(Failure(assertion, "story 1 was marked done with its AC contradicted by the cited spec"))
+
+    # The seeded module may not silently acquire the behaviour the spec forbids.
+    source = ctx.source_text("src/session.js") or ""
+    if re.search(r"\brecover\s*\(", source) and statuses.get("1") == "done":
+        fails.append(Failure(assertion, "recovery was implemented and closed against a spec that unwires it"))
+    return fails
+
+
+def build_honoured_the_documentation_rule(ctx: Ctx) -> list[Failure]:
+    """0g on the build path: a rule obligation the brief never mentions still
+    has to land, mapped onto a Scope row rather than dropped."""
+    assertion = "build_honoured_the_documentation_rule"
+    fails = []
+
+    page = ctx.source_text("docs/api/report-formatter.md")
+    if page is None:
+        fails.append(Failure(assertion, "the rule-required API page docs/api/report-formatter.md was never written"))
+    else:
+        checks = {
+            "overview": bool(re.search(r"overview|ReportFormatter\b", page, re.IGNORECASE)),
+            "example": bool(re.search(r"```|\bexample\b", page, re.IGNORECASE)),
+            "public method": "format" in page,
+        }
+        fails.extend(
+            Failure(assertion, f"the API page is missing its {label}")
+            for label, present in checks.items()
+            if not present
+        )
+
+    module = ctx.source_text("src/api/report-formatter.js")
+    if module is None:
+        fails.append(Failure(assertion, "src/api/report-formatter.js was never written"))
+    else:
+        # A documentation comment directly above the exported declaration.
+        declaration = re.search(r"^\s*(?:module\.exports\s*=\s*)?class\s+ReportFormatter\b", module, re.M)
+        if declaration is None:
+            fails.append(Failure(assertion, "no `class ReportFormatter` declaration in the module"))
+        else:
+            before = module[: declaration.start()].rstrip().splitlines()[-6:]
+            if not any(re.search(r"^\s*(?:/\*\*|\*|//)", line) for line in before):
+                fails.append(Failure(
+                    assertion,
+                    f"no documentation comment directly above the exported class: {before!r}",
+                ))
+
+    return fails
+
+
+# --- post-stories hook findings stay diagnostic --------------------------------
+
+def stories_hook_triage_left_artifacts_unchanged(ctx: Ctx) -> list[Failure]:
+    """A hook that ran is not a hook that was approved. Nothing may change —
+    least of all a story file, which is the artifact this hook reviews."""
+    assertion = "stories_hook_triage_left_artifacts_unchanged"
+    fails = _wrote_nothing(ctx, assertion)
+    # `_wrote_nothing` catches edits and deletions; a triage that "helpfully"
+    # adds a story would slip past it.
+    seeded = {_seeded_output_path(name, ctx.phase) for name in ctx.fixture_snapshot}
+    extras = sorted(ctx.output_files() - seeded)
+    if extras:
+        fails.append(Failure(assertion, f"unapproved findings produced new output: {extras}"))
+    return fails
+
+
+def stories_hook_triage_offer_present(ctx: Ctx) -> list[Failure]:
+    return _hook_triage_offer(
+        ctx,
+        "stories_hook_triage_offer_present",
+        "story",
+        "tech-spec.md",
+        "mano spec",
+    )
+
+
 def start_amend_previewed_before_writing(ctx: Ctx) -> list[Failure]:
     """The amendment shows the complete proposed scope and writes nothing.
 
@@ -3589,6 +3792,16 @@ REGISTRY = {
     "start_hook_triage_offer_present": start_hook_triage_offer_present,
     "rules_hook_triage_offer_present": rules_hook_triage_offer_present,
     "selected_hook_finding_applied_only_in_spec": selected_hook_finding_applied_only_in_spec,
+    # acceptance polarity and post-stories hook triage (wave 6 provenance debt)
+    "polarity_conflict_quoted_both_sides": polarity_conflict_quoted_both_sides,
+    "spec_resolved_or_raised_the_polarity_conflict": spec_resolved_or_raised_the_polarity_conflict,
+    "spec_preserved_the_canonical_window_value": spec_preserved_the_canonical_window_value,
+    "stories_polarity_wrote_nothing": stories_polarity_wrote_nothing,
+    "stories_polarity_routed_to_spec": stories_polarity_routed_to_spec,
+    "stories_hook_triage_left_artifacts_unchanged": stories_hook_triage_left_artifacts_unchanged,
+    "stories_hook_triage_offer_present": stories_hook_triage_offer_present,
+    "dev_polarity_left_the_story_pending": dev_polarity_left_the_story_pending,
+    "build_honoured_the_documentation_rule": build_honoured_the_documentation_rule,
     # review as a short triage inbox (wave 5)
     "review_opening_shape": review_opening_shape,
     "review_opening_kept_every_promise": review_opening_kept_every_promise,

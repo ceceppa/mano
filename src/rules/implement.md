@@ -46,11 +46,11 @@ This gate applies in default, YOLO, and auto mode.
 
 ## After implementing — the acceptance-evidence gate
 
-<!-- mano-rule: id=phase-acceptance-integrity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=pending -->
+<!-- mano-rule: id=acceptance-evidence-polarity; incident=exit-criterion-tested-in-reverse; model=codex; date=2026-08-13; eval=dev-acceptance-polarity -->
 10.1 **Acceptance-evidence gate — before status may become `done`.** After implementation and verification, reread the unit's complete acceptance criteria. For every one of them, identify concrete evidence from this turn that the stated outcome occurs through the stated route. A passing suite is not enough when no test/manual check exercises that AC. Any assertion, fixture expectation, comment, skipped test, or observed result that states the opposite outcome—success expected as failure, recoverable expected as locked, available expected as unavailable—is proof the unit is **not done**, even if the suite is green.
 
 When an AC cannot be satisfied because current code or a cited artifact deliberately preserves the opposite behaviour, stop before the status write, leave the row pending, and report the contradiction. Route a planning-contract contradiction to `mano spec`/`mano stories` as appropriate; do not rewrite the AC's meaning, invert the test, call the opposing behaviour intentional, or mark the unit done with a deviation. For an AC that is inherently visual or experiential, perform the narrow available manual/runtime check; if that cannot be run, report the unverified AC and leave the row pending.
-<!-- /mano-rule: phase-acceptance-integrity -->
+<!-- /mano-rule: acceptance-evidence-polarity -->
 
 ## Repair Mode
 
@@ -122,7 +122,7 @@ Next:
 
 That block, and the `Validate now:` block that may precede it, are the **only** permitted content after the aggregate line, and neither is an implementation summary: do not add a recap, a file list, or restated acceptance criteria between them. In `manual` mode there is no chain and no closing block — the aggregate line is the whole response. Re-read `MODE` from the freshest projection before deciding which applies.
 
-This contract is stated here, in full, on purpose. Both implementation skills declare themselves self-contained and forbid opening `_mano/workflow.md` or `_mano/rules/core.md` mid-skill, so a pointer into either would be an instruction they cannot follow. The planning skills' copy lives in `_mano/rules/core.md` → **Auto-chain execution**; the two must stay in step.
+This contract is stated here, in full, on purpose. Both implementation skills declare themselves self-contained and forbid opening `_mano/workflow.md` or `_mano/rules/core.md` mid-skill, so a pointer into either would be an instruction they cannot follow. The planning skills' copy lives in `_mano/rules/auto.md`; the two must stay in step.
 
 ## Implementation Output Discipline
 

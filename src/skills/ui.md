@@ -2,6 +2,7 @@
 name: mano-ui
 description: Use to establish or extend the visual language, CSS/theme choices, component guidelines, and HTML design preview.
 requires: [core, artifact]
+requires-in-auto: [auto]
 ---
 
 # `mano ui` — UI Skill
