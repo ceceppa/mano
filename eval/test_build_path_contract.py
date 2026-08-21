@@ -242,7 +242,11 @@ class ReviewLedgerSpecificTests(unittest.TestCase):
     def test_a_needs_human_leaf_passes_the_gate_and_reaches_the_human(self) -> None:
         review = _read("src/skills/review.md")
         self.assertIn("A `needs-human` leaf is **not** an open row.", review)
-        self.assertIn("**On the build path, show every `needs-human` leaf with its reason.**", review)
+        self.assertIn(
+            "**A leaf the ledger marks `needs-human` is flagged as such and always shows its `Try` line.**",
+            review,
+        )
+        self.assertIn("(needs human check — [the reason build recorded])", review)
 
 
 class TerminalSweepTests(unittest.TestCase):

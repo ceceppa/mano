@@ -63,9 +63,11 @@
 
 <!-- This plan captures learning. Exit Criteria still captures every promised result. -->
 
+<!-- Every question and every assumption carries a stable address — `Q1`, `Q2`, `A1` — in document order. `mano review` refers to them by that address instead of inventing display numbering that changes between sessions. A brief written before addresses existed keeps its wording: the same IDs are derived by document order, never written back. -->
+
 ### Questions
 
-- [One concrete question per bullet. Every question needs a matching test below.]
+- **Q1.** [One concrete question per bullet. Every question needs a matching test below.]
 
 ### Try
 
@@ -74,9 +76,9 @@
 
 ## Assumption Log
 
-| Assumption | Risk if wrong |
-|---|---|
-| | |
+| ID | Assumption | Risk if wrong |
+|---|---|---|
+| A1 | | |
 
 ## Acknowledged Risks
 

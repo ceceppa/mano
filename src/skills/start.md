@@ -171,7 +171,7 @@ Then proceed to Step 6.
 
 Work from the state script's `SCOPE INPUT` block (the phase-scopeable `Status: backlog` items, `## Core Product Principles`, and latest review) — it's already in context from activation, so don't reopen `backlog.md`, `reviews.md`, or the completed phase's folder. The projection has already removed `spec-gap` and `rule-gap` items. Estimate complexity of each remaining item based on its context.
 
-If the latest review records `Validation` as `Result: Not tested`, or uses the legacy `Evidence: none` form, and the candidate phase depends on that phase's inconclusive assumptions, surface one non-blocking line with the suggestion: `⚠ Previous [PHASE_ID] closed without validation; assumptions relevant to this scope remain inconclusive.` Do not block the new phase, manufacture a validation task, or repeat the warning when the candidate scope is unrelated. The human decides whether to validate later or continue knowingly.
+If the latest review records `Validation` as `Result: Not tested`, or uses the legacy `Evidence: none` form, and the candidate phase depends on an assumption that review left `accepted` or `inconclusive`, or on a question it recorded as `unanswered at close`, surface one non-blocking line with the suggestion: `⚠ Previous [PHASE_ID] closed without validation; [A2 / Q1 …] relevant to this scope was never answered.` Carry the review's own `A…` / `Q…` addresses so the human can find the entry. Do not block the new phase, manufacture a validation task, or repeat the warning when the candidate scope is unrelated. The human decides whether to validate later or continue knowingly.
 
 **Hard constraint: one independently verifiable outcome per phase.** A phase should deliver one cohesive capability or retire one meaningful risk that can be validated without work planned for a later phase. It may cross backend, frontend, storage, or other layers when that is the smallest complete slice; keep each layer to the minimum required for the outcome. Do not bundle unrelated outcomes simply because they share infrastructure. Treat internal prerequisites as part of the outcome rather than separate phase-scope items, while recording them explicitly in the phase brief and stories.
 
@@ -283,7 +283,7 @@ When the approved scope uses breadth words such as “any”, “all”, “ever
 
 **Validation-plan checkpoint.** Derive a lightweight plan for how the human can learn from the completed phase:
 
-- **Question** — one concrete choice the completed phase can help the human make.
+- **Question** — one concrete choice the completed phase can help the human make. Lead each bullet with its stable address: `- **Q1.** …`, `- **Q2.** …`, in document order.
 - **Try** — what the human will use, show, play, or measure.
 
 Use one question per bullet. Never join independent questions with “and whether”. The human may use the phase directly, show it to someone, observe a workflow, or measure a result. Do not require external users when self-use or an objective check fits.
@@ -356,9 +356,9 @@ Each phase brief carries everything needed to understand the phase. No external 
 
   If the sequence cannot be written without ambiguity, the phase scope is unclear or scattered across disconnected pieces. This is the script used to verify the phase at review time.
 
-- **Validation plan** — use `Questions` and `Try` lists. Put one idea in each bullet. The human owns every decision. Exit Criteria lists what must work. The Validation Plan says what the human wants to learn. Each Question must have a useful Try bullet. Each Try bullet must support a Question. Never use the plan as a substitute for any Exit Criterion. For a technical phase, the human may measure a result or observe an integration.
+- **Validation plan** — use `Questions` and `Try` lists. Put one idea in each bullet. Address each question `Q1`, `Q2`, … in document order and each Assumption Log row `A1`, `A2`, … in the table's first column. Those addresses are what `mano review` refers to weeks later, so they are written down rather than counted in the moment — and they are stable for the life of the phase: never renumber them, and never add addresses to a brief that already exists. The human owns every decision. Exit Criteria lists what must work. The Validation Plan says what the human wants to learn. Each Question must have a useful Try bullet. Each Try bullet must support a Question. Never use the plan as a substitute for any Exit Criterion. For a technical phase, the human may measure a result or observe an integration.
 
-- **Assumption log** — include only assumptions whose failure would materially change the phase. Zero is acceptable. Always include any concept the Foundation-conflict check (Step 7b) flagged as a deliberately-narrowed version of a deferred backlog item — that boundary failing silently is exactly the kind of assumption this section exists to capture.
+- **Assumption log** — a three-column table, `| ID | Assumption | Risk if wrong |`, addressed `A1`, `A2`, … Include only assumptions whose failure would materially change the phase. Zero is acceptable. Always include any concept the Foundation-conflict check (Step 7b) flagged as a deliberately-narrowed version of a deferred backlog item — that boundary failing silently is exactly the kind of assumption this section exists to capture.
 
   **B1 still applies inside each row — state the constraint, not the mechanism.** An assumption-log row records *what is being assumed about the product*, never *how it is implemented*. Persistence/identity/transport mechanisms are `mano spec`'s, even when an assumption is genuinely about identity or state.
   - ❌ Don't: *"Participants are identified by session cookies tied to the shareable link."* — "session cookies" is a persistence mechanism (B1).

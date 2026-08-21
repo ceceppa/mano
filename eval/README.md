@@ -417,6 +417,34 @@ as a real quoted argument, because the channel is part of what is under test:
 → approval, in auto, ending at `mano build` with no story file anywhere and no
 review entry.
 
+### Review cases
+
+Review is the one mandatory action, and it has to cost one exchange. These cases
+pin both halves of that — the shape, and everything the shape must not drop:
+
+| case | what it pins |
+|---|---|
+| `review-opening-shape` | the opening: every Exit leaf at its own address, one ask, no tags or recording mechanics |
+| `review-sign-off-close` | `close it` is sign-off — leaves flip to `met` with recorded human provenance, questions record `unanswered at close` |
+| `review-mixed-echo` | mixed feedback echoes only what Mano classified, and writes nothing yet |
+| `review-close-with-finding` | `close it` beside a defect closes the phase and asks route-or-dismiss instead of erasing it |
+| `review-followup-compact` | the follow-up confirmation uses the same compact rule |
+| `review-positive-one-liner` | a natural positive verdict closes with no close token and no echo round |
+| `review-build-finding` | a build-path finding becomes a durable `R…` event and routes to build, never to stories |
+| `build-validate-now` | D6: the brief's `Try` guidance at the build handoff **and** again in a fresh review opening |
+
+`review-open-phase` is the fixture behind four of them: a finished build-path
+phase whose ledger carries one `needs-human` leaf with its recorded reason, and
+whose brief carries two addressed questions (`Q1`, `Q2`) and two addressed
+assumptions (`A1`, `A2`). One fixture, four different asks of it — the opening,
+the close, a mixed echo, and a close arriving with a finding — because what is
+under test is the response, not the state.
+
+`build-validate-now` is the only two-command case here: `mano build` then a
+**fresh** `mano review`. The freshness is the point. `Try` guidance appearing
+twice looks redundant in one transcript and is not redundant at all across a
+session boundary, where the earlier message no longer exists.
+
 ## Notes / limits
 
 - Assertions are deterministic text checks. Subjective qualities

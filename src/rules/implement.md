@@ -82,9 +82,29 @@ A new file is written in full — that is the only sanctioned full-file write. *
 
 A full-file rewrite is invisible in the rendered result and catastrophic in a diff: it buries the one real change in a wall of noise, turns every concurrent edit into a merge conflict, and silently reverts anything another change added since you read the file. Restructuring is a human decision — say so and let them ask for it. The equivalent rule for planning artifacts is `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**; neither implementation skill loads `core.md`, which is why source needs its own statement of it here.
 
+## `Validate now:` — the one expansion of the terminal line
+
+When this run leaves the **phase** ready for review — the last Scope row is `done` and every Exit leaf is `met` or `needs-human`, the last pending story is `done`, or a `yolo` batch emptied the index — the terminal line is followed by the phase brief's compact `Try` guidance:
+
+```text
+[mano build]: phase 2 built — S1a–S2b done, E1a–E2a met, E2b needs a human check.
+
+Validate now:
+- load 200 items and scroll — the list should not stutter
+```
+
+- **Source every line from the brief's `## Validation Plan` → `### Try`.** Copy it compactly; never invent a check, and never derive one from an Exit Criterion. A brief with no Validation Plan, or no `Try` bullets, omits the block entirely — an absent plan is not a prompt to write one.
+- **Once per run, not per row and not per story.** One block, after the aggregate line, listing the phase's `Try` items.
+- **Only at the terminal handoff.** A mid-run stop, a single story that leaves others pending, and a deviation stop all keep their one-line shape.
+- It precedes the `[mano auto]` closing block when one applies.
+
+This block is the **sole** sanctioned expansion of **Implementation Output Discipline**'s one-line rule, and it is stated here — once — so `mano build`, `mano dev`, and the auto chain cannot disagree about it. It is not a summary, so nothing else joins it: no recap, no file list, no restated acceptance criteria.
+
+`mano review` shows the same `Try` guidance again beside the promise it tests. That is deliberate, not redundancy to optimise away: chat delivery is not durable state, and the review that reads it is frequently a fresh session in which this message no longer exists.
+
 ## Closing an armed auto chain
 
-Both implementation skills are the terminal action of an armed `mano mode auto` chain. When one finishes such a chain, its ordinary aggregate or deviation line is that action's log, and exactly one closing block follows it:
+Both implementation skills are the terminal action of an armed `mano mode auto` chain. When one finishes such a chain, its ordinary aggregate or deviation line is that action's log — followed by the **`Validate now:`** block when the run left the phase ready for review — and exactly one closing block follows:
 
 ```text
 [mano auto]: phase-[N] — [first] → … → [last]
@@ -100,7 +120,7 @@ Next:
 - [when paused] Reply to the named question — the recorded remaining chain resumes automatically
 ```
 
-That block is the **only** permitted content after the aggregate line, and it is not an implementation summary: do not add a recap, a file list, or restated acceptance criteria between them. In `manual` mode there is no chain and no closing block — the aggregate line is the whole response. Re-read `MODE` from the freshest projection before deciding which applies.
+That block, and the `Validate now:` block that may precede it, are the **only** permitted content after the aggregate line, and neither is an implementation summary: do not add a recap, a file list, or restated acceptance criteria between them. In `manual` mode there is no chain and no closing block — the aggregate line is the whole response. Re-read `MODE` from the freshest projection before deciding which applies.
 
 This contract is stated here, in full, on purpose. Both implementation skills declare themselves self-contained and forbid opening `_mano/workflow.md` or `_mano/rules/core.md` mid-skill, so a pointer into either would be an instruction they cannot follow. The planning skills' copy lives in `_mano/rules/core.md` → **Auto-chain execution**; the two must stay in step.
 
@@ -108,7 +128,7 @@ This contract is stated here, in full, on purpose. Both implementation skills de
 
 The implementing agent writes code and updates the unit's status. It does not append completion reports, verification logs, behavioural confirmations, or implementation narratives to the story file or the ledger.
 
-It also does not print these to chat. After implementing, the only required chat output is the skill's own single closing line — dev step 12, or build's report from the ledger. Do not restate acceptance criteria, list "AC Met", enumerate created files, or write an implementation summary. The acceptance criteria already live in the story or the brief; echoing them back adds no information and only grows the conversation. Report only non-acceptance deviations or follow-up that did not weaken any AC. An unmet or unverified AC leaves the row pending under step 10.1. If there are no such notes, the one-line confirmation is the complete response.
+It also does not print these to chat. After implementing, the only required chat output is the skill's own single closing line — dev step 12, or build's report from the ledger — plus the **`Validate now:`** block above when this run leaves the phase ready for review. Do not restate acceptance criteria, list "AC Met", enumerate created files, or write an implementation summary. The acceptance criteria already live in the story or the brief; echoing them back adds no information and only grows the conversation. Report only non-acceptance deviations or follow-up that did not weaken any AC. An unmet or unverified AC leaves the row pending under step 10.1. If there are no such notes, the one-line confirmation is the complete response.
 
 If implementation produces project-relevant decisions worth preserving — colour values, dimensions, performance budgets, accessibility measurements, architectural patterns, technique choices, library quirks discovered in practice — the agent surfaces them in chat and offers to capture them in the appropriate artifact:
 
