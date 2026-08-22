@@ -1,0 +1,20 @@
+.vp-doc img,
+.VPHero .image-src {
+  cursor: zoom-in;
+}
+
+.medium-zoom-overlay {
+  z-index: 100;
+}
+
+.medium-zoom-image--opened {
+  z-index: 101;
+  cursor: zoom-out;
+}
+
+/* medium-zoom clones the image into a fixed layer; without a max-height a tall
+   diagram opens taller than the viewport and cannot be read. */
+.medium-zoom-image--opened {
+  max-height: 92vh !important;
+  object-fit: contain;
+}

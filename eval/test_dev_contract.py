@@ -38,12 +38,15 @@ class DevContractPins(unittest.TestCase):
             DEV,
         )
 
-    def test_step12_single_line_with_fresh_session_suffix(self) -> None:
+    def test_step12_single_line_with_next_command_suffix(self) -> None:
         self.assertIn(
             "`Story [N] done — status updated in stories/README.md. "
-            "Start a fresh session for the next story.`",
+            "Next: mano dev for the next story.`",
             DEV,
         )
+        # The suffix names a command; it never instructs the human to manage
+        # their own context. See CHANGELOG 1.5.1.
+        self.assertNotIn("Start a fresh session", DEV)
 
     def test_repair_mode_budget_present(self) -> None:
         self.assertIn("## Repair Mode", DEV)

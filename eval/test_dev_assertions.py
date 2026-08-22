@@ -87,7 +87,7 @@ class DevYoloAssertionTests(unittest.TestCase):
             {"1": "done", "2": "pending", "3": "pending"},
             {"src/yolo/base.js"},
             "Story 1 done — status updated in stories/README.md. "
-            "Start a fresh session for the next story.",
+            "Next: mano dev for the next story.",
         )
         self.assertEqual(assertions.dev_default_completed_only_next(ctx), [])
         self.assertEqual(assertions.dev_default_output_discipline(ctx), [])
@@ -106,7 +106,7 @@ class DevYoloAssertionTests(unittest.TestCase):
             {"1": "pending", "2": "pending", "3": "done"},
             {"src/yolo/release.js"},
             "Story 3 done — status updated in stories/README.md. "
-            "Start a fresh session for the next story.",
+            "Next: mano dev for the next story.",
         )
         self.assertTrue(assertions.dev_plain_words_order_gate(ctx))
 
