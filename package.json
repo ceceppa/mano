@@ -1,7 +1,7 @@
 {
   "name": "mano-plan",
   "version": "1.5.0",
-  "description": "Installer for Mano \u2014 a fast planning loop for AI-assisted development: plan in small phases and validate each assumption before it becomes code, with the human in control at every step.",
+  "description": "Installer for Mano — a fast planning loop for AI-assisted development: plan in small phases and validate each assumption before it becomes code, with the human in control at every step.",
   "bin": {
     "mano-plan": "bin/mano-plan.js"
   },
@@ -9,7 +9,10 @@
     "test": "node --test && python3 -m unittest discover -s eval -p 'test_*.py'",
     "eval": "python3 eval/run.py",
     "eval:rules": "python3 eval/run.py --list-rules",
-    "stacks": "node eval/stacks.js"
+    "stacks": "node eval/stacks.js",
+    "docs:dev": "vitepress dev site",
+    "docs:build": "vitepress build site",
+    "docs:preview": "vitepress preview site"
   },
   "type": "commonjs",
   "engines": {
@@ -31,5 +34,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ceceppa/mano.git"
+  },
+  "devDependencies": {
+    "medium-zoom": "^1.1.0",
+    "vitepress": "^1.6.4"
   }
 }
