@@ -398,13 +398,15 @@ node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_I
 
 ## Chat output
 
-`_mano/rules/implement.md` → **Implementation Output Discipline** applies in full. Build's own shape: one closing line per invocation — the **Terminal** line below, or a **Deviation stop** — never an interim report between passes. `Next:` names a command; never instruct the human to start a fresh session or manage their context.
+`_mano/rules/implement.md` → **Implementation Output Discipline** applies in full. Build's own shape: one closing line per invocation — the **Terminal** line below, a **Deviation stop**, or a **Repair-limit stop** — never an interim report between passes. `Next:` names a command; never instruct the human to start a fresh session or manage their context.
 
-**Terminal:** one aggregate line, and only after the **Terminal evidence sweep** passes: `[mano build]: [PHASE_ID] built — all scope rows done, all exit criteria met in [PHASE_DIR]/progress.md. Run mano review to close the phase.` When the sweep left any leaf `needs-human`, say so in the same line — `… all scope rows done, 6 exit criteria met, 1 needs human check in [PHASE_DIR]/progress.md.` — without listing them; review shows them.
+**Terminal:** one aggregate line, and only after the **Terminal evidence sweep** passes: `[mano build]: [PHASE_ID] built — all scope rows done, all exit criteria met in [PHASE_DIR]/progress.md. Next: mano review to close the phase.` When the sweep left any leaf `needs-human`, say so in the same line — `… all scope rows done, 6 exit criteria met, 1 needs human check in [PHASE_DIR]/progress.md.` — without listing them; review shows them.
 
 The terminal line is followed by the **`Validate now:`** block — the brief's own `Try` guidance, copied compactly, once for the phase — exactly as `_mano/rules/implement.md` → **`Validate now:` — the one expansion of the terminal line** defines it. Omit the block when the brief has no `Try` bullets; never invent one, and never derive one from an Exit Criterion.
 
 **Deviation stop:** the named condition, the deviating text, and the question — nothing else. Then stop; do not continue into code while the question is open.
+
+**Repair-limit stop:** Repair Mode's attempt limit (`_mano/rules/implement.md`) is the one stop that is neither terminal nor a deviation — the rows already closed stay closed and the failing row stays open. Its ≤3-line report is the whole output, under one ledger line: `[mano build]: [PHASE_ID] — S1a–S1c done, S2a open. Next: mano build once the failure below is cleared.` No recap, no file list, no widened repair budget.
 
 Two suffixes are permitted, and only when one genuinely applies: a short note about a non-acceptance deviation that did not weaken verification, and a project-relevant decision worth preserving, offered for capture in the artifact that owns it. An unmet Exit Criterion is never a permitted suffix — gate 10.1 leaves the row open instead.
 
