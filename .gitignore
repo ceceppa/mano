@@ -10,3 +10,9 @@ plan*.md
 # Eval manifests: ad-hoc runs are local noise; a recorded baseline is committed.
 eval/results/*.json
 !eval/results/baseline-*.json
+
+node_modules
+
+# VitePress build output and cache
+site/.vitepress/dist
+site/.vitepress/cache

@@ -2,6 +2,17 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.5.1 — August 21, 2026
+
+Implementation stops telling you how to manage your own context.
+
+`mano build` and `mano dev` both ended their hand-off by instructing the human to start a fresh session. That instruction existed to save the framework tokens, not to help the person reading it — and because it sat where a command normally sits, it read as a requirement. It never was one: `progress.md` and `stories/README.md` are the durable state, so a resume costs a projection read from any session, new or continued.
+
+### Changed
+- **The implementation hand-off names a command, not a chore.** `mano build`'s mid-run stop now ends `Next: mano build — continues at S3.`, and `mano dev` ends `Next: mano dev for the next story.` This is the `Next:` convention every other skill already followed; implementation was the one place that broke it by substituting session management for the next action. Where to resume is the human's call — a long build is often exactly when you want to keep the context you have.
+- **`mano build`'s mid-run stop is motivated by row boundaries, not by token economy.** The rule was "stop when this turn's output budget is spent"; it is now "stop at a row boundary, never mid-row". The behaviour is the same and the reason is better: a run that trails off inside a row leaves work the ledger cannot describe, which is the one state a resume cannot recover from. Pass sizing is untouched — a pass is still only as large as what can be implemented *and verified* in the turn, which is the gate that actually prevents half-done rows.
+- **Session hygiene is agent-side guidance.** `_mano/rules/core.md` still prefers one story per session and still explains why replaying a long session is expensive. It now says explicitly that this governs where the agent ends a turn and is never printed at the human as an instruction.
+
 ## 1.5.0 — August 21, 2026
 
 `mano build` — a second way into code, for phases that do not need story files. The unit of work becomes the numbered `## Phase Scope` item the human already approved, so nothing invents a decomposition and nothing can drift from the brief. The saving is not in skipping files; it is in not needing the guard rails that discipline an invented unit.

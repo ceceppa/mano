@@ -182,7 +182,7 @@ class GroupingTests(unittest.TestCase):
             "Never include a `+N` correction or a dotted split row",
             "Stop before a leaf whose real implementation surface differs",
             "Stop before any per-row gate failure",
-            "The whole candidate can be implemented *and verified* within this turn",
+            "The whole candidate can be implemented and verified as one unit",
         ):
             self.assertIn(condition, section)
 

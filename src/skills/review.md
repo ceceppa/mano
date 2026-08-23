@@ -149,7 +149,7 @@ Promised:
 Open bet A1: [the assumption, one compact line].
 Open question Q1: [the Validation Plan question, one line per question].
 
-What broke, what you'd change, or "close it".
+What broke, what you'd change, or your close: "close it" (untested) or "all good, close it" (checked).
 ```
 
 - **Every Exit Criterion leaf gets its own line.** A category that hides an unverified leaf inside it is the exact defect addressable Exit Criteria were built to remove. Never omit an Exit Criterion because the Validation Plan does not mention it — the two sections answer different questions.
@@ -372,7 +372,7 @@ Left open:
 1. [the finding the recorded review logged, one line]
 2. [next finding]
 
-What's fixed, what's still broken, or "close it".
+What's fixed, what's still broken, or your close: "close it" (untested) or "all good, close it" (checked).
 ```
 
 Same rule as the standard opening: one response, one ask, every open item separately visible, no enumeration checklist and no closer menu. `Left open:` lists what the recorded review entry logged as a defect, refinement, or open outcome — one line each, from the review entry and the backlog items it named, never invented. When the recorded review left nothing open, omit the list and let the ask stand alone.

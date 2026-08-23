@@ -4,6 +4,8 @@
 
 **Mano is a fast planning loop for AI-assisted development.**
 
+📖 **Docs & guides: [mano.ceceppa.me](https://mano.ceceppa.me/)**
+
 Plan in small phases and validate each assumption before it becomes code. You stay in control of the direction — correcting course at the brief, not after dozens of tasks have already shipped.
 
 Mano is built on a simple assumption: software projects rarely move in a straight line. Feedback, testing, and technical discovery invalidate early assumptions. So the goal isn't a perfect upfront plan — it's a tight loop where each small phase is scoped, reviewed, and corrected before the next one starts. You catch the wrong turn early, while it's still cheap to change.
