@@ -86,9 +86,11 @@ class CompetingShapesRemovedTests(unittest.TestCase):
     def test_each_step_ends_in_exactly_one_ask(self) -> None:
         review = _read("src/skills/review.md")
         asks = {
-            'What broke, what you\'d change, or "close it".': 1,
+            'What broke, what you\'d change, or your close: "close it" (untested) '
+            'or "all good, close it" (checked).': 1,
             'Anything in the wrong bucket? Otherwise "close it".': 2,
-            'What\'s fixed, what\'s still broken, or "close it".': 1,
+            'What\'s fixed, what\'s still broken, or your close: "close it" (untested) '
+            'or "all good, close it" (checked).': 1,
         }
         for ask, expected in asks.items():
             with self.subTest(ask=ask):
@@ -122,7 +124,8 @@ class OpeningShapeTests(unittest.TestCase):
             "   Try: [the brief's matching Try guidance, when one exists]",
             "Open bet A1: [the assumption, one compact line].",
             "Open question Q1: [the Validation Plan question, one line per question].",
-            'What broke, what you\'d change, or "close it".',
+            'What broke, what you\'d change, or your close: "close it" (untested) '
+            'or "all good, close it" (checked).',
         ):
             with self.subTest(line=line):
                 self.assertIn(line, review)

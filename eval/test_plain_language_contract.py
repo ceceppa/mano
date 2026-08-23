@@ -118,7 +118,11 @@ class PlainLanguageContractTests(unittest.TestCase):
         self.assertNotIn("Questions to consider:", review)
         self.assertNotIn("Try this:\n", review)
         self.assertIn("**One response, one ask, and the ask is that last line as written.**", review)
-        self.assertIn('What broke, what you\'d change, or "close it".', review)
+        self.assertIn(
+            'What broke, what you\'d change, or your close: "close it" (untested) '
+            'or "all good, close it" (checked).',
+            review,
+        )
 
 
 if __name__ == "__main__":

@@ -42,7 +42,11 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertIn("`Validation` as `Result: Not tested`", review)
         self.assertIn("**Whole-review verdict rule.**", review)
         self.assertIn("`all went as planned`", review)
-        self.assertIn('What broke, what you\'d change, or "close it".', review)
+        self.assertIn(
+            'What broke, what you\'d change, or your close: "close it" (untested) '
+            'or "all good, close it" (checked).',
+            review,
+        )
 
     def test_positive_summary_close_preserves_the_human_verdict(self) -> None:
         review = _read("src/skills/review.md")

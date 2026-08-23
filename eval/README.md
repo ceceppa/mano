@@ -390,7 +390,7 @@ state cannot distinguish the right order from a plausible one:
 
 Some build contracts are pinned by deterministic tests instead of evals, because
 no fixture can provoke them on demand: the lazy sub-row split fires only when a
-row overflows a turn's output budget, and the `--expect-phase-id` owner guard
+row overflows what one pass can honestly prove, and the `--expect-phase-id` owner guard
 needs the owner to change *between* two commands. Both are covered in
 `test/scripts/progress.test.js`. Prefer a deterministic test wherever a property
 can be decided by a script — the same trade `verify.js` and `state.js` made.
@@ -398,7 +398,7 @@ can be decided by a script — the same trade `verify.js` and `state.js` made.
 ### Grouping cases, and what a fixture cannot show
 
 `mano build` may cover several contiguous leaves of one brief category in a
-single pass. Grouping changes how many rows one *turn* covers, and the final
+single pass. Grouping changes how many rows one *pass* covers, and the final
 ledger does not record pass boundaries — so "it grouped" is not directly
 observable from a finished run. The cases assert the properties that must hold
 whether it grouped or not:
@@ -419,8 +419,9 @@ whether it grouped or not:
 
 Three grouping rules cannot be provoked by any fixture and are pinned in
 `test_implementation_entry_contract.py` instead: stopping at a *surface*
-boundary and stopping for *budget* certainty both depend on a turn boundary no
-fixture can force, and "a correction or split row is never grouped" is a
+boundary and stopping when a candidate cannot be honestly proven as one unit
+both depend on a judgment call no fixture can force, and "a correction or
+split row is never grouped" is a
 statement about a pass that only ever contains one row anyway. The same file
 pins that the entry rule's six clauses exist, in order, at every operational
 site — the drift wave 4 fixed was prose agreeing with the rule beside an
@@ -509,8 +510,8 @@ session boundary, where the earlier message no longer exists.
   debt: the rule cannot be meaningfully probed for retirement until its case
   exists.
 - Not every rule can be provoked on demand. `mano build`'s lazy sub-row split
-  fires only when a row overflows a turn's output budget, which no fixture can
-  force; it is pinned by `progress.js`'s deterministic refusals instead (a
+  fires only when a row overflows what one pass can honestly prove, which no
+  fixture can force; it is pinned by `progress.js`'s deterministic refusals instead (a
   `pending` row cannot be split, the first part is recorded `done`, a parent
   cannot close before its sub-rows). Prefer a deterministic test over an eval
   case whenever the property can be decided by a script — that is the same trade
