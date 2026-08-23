@@ -10,13 +10,16 @@ export default {
   setup() {
     const route = useRoute()
 
+    const zoom = mediumZoom({
+      background: 'var(--vp-c-bg)',
+      margin: 24
+    })
+
     // Content images and the hero mark are click-to-zoom. Re-run after every
     // navigation: VitePress swaps page content without remounting the theme.
     const initZoom = () => {
-      mediumZoom('.vp-doc img, .VPHero .image-src', {
-        background: 'var(--vp-c-bg)',
-        margin: 24
-      })
+      zoom.detach()
+      zoom.attach('.vp-doc img, .VPHero .image-src')
     }
 
     onMounted(initZoom)
