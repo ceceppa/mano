@@ -1,15 +1,16 @@
 {
   "name": "review-sign-off-close",
-  "description": "D10: `close it` is full human sign-off. It closes in that exchange, flips the pending and `needs-human` Exit leaves to `met` with recorded human provenance, accepts the assumptions the phase shipped on, and records the questions the human never answered as `unanswered at close` rather than as passed.",
+  "description": "D10: `close it` is sign-off on the phase, not an answer to anything Mano asked. It cannot close while a Validation Question or the decision is open — review comes back once with a single line naming exactly what is missing, then closes on the reply, flipping the pending and `needs-human` Exit leaves to `met` with recorded human provenance, accepting the assumptions the phase shipped on, and recording each question with the human's own answer.",
   "fixture": "review-open-phase",
   "phase": 1,
   "steps": [
     { "prompt": "mano review", "session": "fresh" },
-    { "prompt": "close it", "session": "continue" }
+    { "prompt": "close it", "session": "continue" },
+    { "prompt": "Q1 flat is fine, nobody asked for nesting. Q2 didn't check. Nothing to decide, and I didn't test it beyond that.", "session": "continue" }
   ],
   "assertions": [
+    "review_gated_close_on_missing_answers",
     "review_sign_off_recorded_human_provenance",
-    "review_recorded_unanswered_questions",
-    "review_one_exchange_close"
+    "review_questions_carry_human_answers"
   ]
 }

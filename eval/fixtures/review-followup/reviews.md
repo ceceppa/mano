@@ -19,11 +19,11 @@
 
 | # | Question | Answer |
 |---|---|---|
-| Q1 | Is one flat tag per note enough, or do readers immediately want nesting? | unanswered at close |
+| Q1 | Is one flat tag per note enough, or do readers immediately want nesting? | not checked — only tagged a handful of notes so far |
 
 ### Decision
 
-- **Choice:** Not assessed
+- **Choice:** Nothing to decide
 
 ### Assumptions
 

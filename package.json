@@ -1,18 +1,22 @@
 {
   "name": "mano-plan",
-  "version": "1.5.1",
-  "description": "Installer for Mano — a fast planning loop for AI-assisted development: plan in small phases and validate each assumption before it becomes code, with the human in control at every step.",
+  "version": "1.5.2",
+  "description": "Installer for Mano \u2014 a fast planning loop for AI-assisted development: plan in small phases and validate each assumption before it becomes code, with the human in control at every step.",
   "bin": {
     "mano-plan": "bin/mano-plan.js"
   },
   "scripts": {
-    "test": "node --test && python3 -m unittest discover -s eval -p 'test_*.py'",
+    "test": "node tools/check-version.js && node --test && python3 -m unittest discover -s eval -p 'test_*.py'",
     "eval": "python3 eval/run.py",
     "eval:rules": "python3 eval/run.py --list-rules",
     "stacks": "node eval/stacks.js",
     "docs:dev": "vitepress dev site",
     "docs:build": "vitepress build site",
-    "docs:preview": "vitepress preview site"
+    "docs:preview": "vitepress preview site",
+    "version:check": "node tools/check-version.js",
+    "version:sync": "node tools/check-version.js --fix",
+    "version": "node tools/check-version.js --fix && git add src/VERSION",
+    "prepublishOnly": "node tools/check-version.js"
   },
   "type": "commonjs",
   "engines": {

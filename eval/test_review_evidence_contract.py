@@ -39,12 +39,12 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertIn("A clear summary result is enough", review)
         self.assertIn("Omit this field when the human does not supply it", review)
         self.assertIn("Never grade validation", review)
-        self.assertIn("`Validation` as `Result: Not tested`", review)
+        self.assertIn("`Not tested` records their own", review)
         self.assertIn("**Whole-review verdict rule.**", review)
         self.assertIn("`all went as planned`", review)
         self.assertIn(
-            'What broke, what you\'d change, or your close: "close it" (untested) '
-            'or "all good, close it" (checked).',
+            'Answer each open question and say what broke or what you\'d change '
+            '— then "close it". "Didn\'t check" answers a question.',
             review,
         )
 
@@ -54,11 +54,11 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertIn("Record the user's verdict in `Result`.", review)
         self.assertIn("Mark every Phase check `passed`.", review)
         self.assertIn("Mark every presented assumption `confirmed`.", review)
-        self.assertIn("A positive summary verdict never uses this path.", review)
+        self.assertIn("once the answer gate is satisfied", review)
         self.assertIn("`all went as planned, close it`", review)
         self.assertIn("reuse that result as the Decision's `Why`", review)
 
-    def test_fast_close_matches_the_review_template(self) -> None:
+    def test_bare_close_matches_the_review_template(self) -> None:
         review = _read("src/skills/review.md")
         template = _read("src/templates/phase-review.md")
 
@@ -75,7 +75,9 @@ class ReviewValidationContractTests(unittest.TestCase):
         self.assertIn("### Questions", template)
         self.assertIn("### Backlog changes", template)
         self.assertIn("**No release recap.**", review)
-        self.assertIn("Record the decision as `Not assessed`", review)
+        self.assertNotIn("`Not assessed`", template)
+        self.assertIn("`Nothing to decide`", template)
+        self.assertNotIn("unanswered at close", template)
 
     def test_review_confirmation_echoes_judgments_and_records_everything(self) -> None:
         review = _read("src/skills/review.md")
@@ -90,10 +92,12 @@ class ReviewValidationContractTests(unittest.TestCase):
     def test_review_keeps_learning_questions_human_owned(self) -> None:
         review = _read("src/skills/review.md")
 
-        self.assertIn("**Every unresolved Validation Question gets its own `Open question` line.**", review)
-        self.assertIn("unanswered at close", review)
+        self.assertIn("**Every unresolved Validation Question gets its own line under `Answer before close:`.**", review)
+        self.assertIn("**Answer gate — the two things review may never write for the human.**", review)
         self.assertIn("Do not infer a Decision choice", review)
         self.assertIn("Never infer a choice from completion or test success", review)
+        # The gate is the only reason no question can reach the record unanswered.
+        self.assertNotIn("Fast close", review)
 
     def test_review_never_hides_phase_promises_behind_the_validation_plan(self) -> None:
         review = _read("src/skills/review.md")
@@ -111,7 +115,8 @@ class ReviewValidationContractTests(unittest.TestCase):
         workflow = _read("src/workflow.md")
 
         self.assertIn("Feedback is optional; an honest record of its absence is not.", readme)
-        self.assertIn("closure never masquerades as validation", workflow)
+        self.assertIn("closure can never masquerade as validation", workflow)
+        self.assertIn("review will not write the record without them", workflow)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,11 @@
+{
+  "name": "start-arms-ux-ui-for-existing-surface",
+  "description": "ARTIFACTS: reports existence, not coverage. With ux-flow.md and design-brief.md both present but written for a two-category selector, the auto chain mano start proposes for a phase adding a third category must still include mano ux and mano ui — presence of the files is not evidence they cover this phase.",
+  "fixture": "start-existing-surface",
+  "phase": 1,
+  "run_mode": "auto",
+  "prompt": "mano start",
+  "assertions": [
+    "start_armed_ux_and_ui_for_user_facing_scope"
+  ]
+}

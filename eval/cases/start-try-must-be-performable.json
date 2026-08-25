@@ -1,0 +1,10 @@
+{
+  "name": "start-try-must-be-performable",
+  "description": "A Validation Plan `Try` the human cannot perform is not a test. Scoping the engine-only interruption policy together with a Showcase category that merely lists an existing grid demo, every Phase Scope leaf is either engine behaviour or a listing of something that demonstrates other behaviour — nothing runs a conflicting motion where a person can see it, and the debugger panel is deferred. `mano start` must not write `observe the resulting property state` with nothing to observe it on: it either brings a demo surface into Phase Scope or raises the conflict as a clarification before drafting. Never a silent instruction the human cannot follow and `mano review` will later demand an answer to.",
+  "fixture": "start-unobservable-behaviour",
+  "phase": 1,
+  "prompt": "mano start let's do the motion interruption policy and the showcase category",
+  "assertions": [
+    "start_try_is_performable"
+  ]
+}

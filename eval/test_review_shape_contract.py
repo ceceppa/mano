@@ -86,11 +86,13 @@ class CompetingShapesRemovedTests(unittest.TestCase):
     def test_each_step_ends_in_exactly_one_ask(self) -> None:
         review = _read("src/skills/review.md")
         asks = {
-            'What broke, what you\'d change, or your close: "close it" (untested) '
-            'or "all good, close it" (checked).': 1,
+            'Answer each open question and say what broke or what you\'d change '
+            '— then "close it". "Didn\'t check" answers a question.': 1,
             'Anything in the wrong bucket? Otherwise "close it".': 2,
-            'What\'s fixed, what\'s still broken, or your close: "close it" (untested) '
-            'or "all good, close it" (checked).': 1,
+            'What\'s fixed, what\'s still broken, and what happened when you checked '
+            '— then "close it". "Didn\'t test it" is a complete answer.': 1,
+            # The gate asks for what is missing; it never re-asks.
+            '"Didn\'t check" / "didn\'t test it" are complete answers.': 1,
         }
         for ask, expected in asks.items():
             with self.subTest(ask=ask):
@@ -123,9 +125,10 @@ class OpeningShapeTests(unittest.TestCase):
             "1. E1a — [Exit Criterion leaf]",
             "   Try: [the brief's matching Try guidance, when one exists]",
             "Open bet A1: [the assumption, one compact line].",
-            "Open question Q1: [the Validation Plan question, one line per question].",
-            'What broke, what you\'d change, or your close: "close it" (untested) '
-            'or "all good, close it" (checked).',
+            "Answer before close:",
+            "Q1 — [the Validation Plan question, one line per question].",
+            'Answer each open question and say what broke or what you\'d change '
+            '— then "close it". "Didn\'t check" answers a question.',
         ):
             with self.subTest(line=line):
                 self.assertIn(line, review)
@@ -141,10 +144,13 @@ class OpeningShapeTests(unittest.TestCase):
     def test_shorter_is_not_weaker(self) -> None:
         review = _read("src/skills/review.md")
         self.assertIn(
-            "**Every unresolved Validation Question gets its own `Open question` line.**",
+            "**Every unresolved Validation Question gets its own line under `Answer before close:`.**",
             review,
         )
         self.assertIn("a question the human was asked does not disappear", review)
+        # The heading is the fix for "I had no idea what review was expecting":
+        # `Open question` read as context to skim.
+        self.assertIn("reads as context to skim", review)
 
     def test_the_opening_forbids_tags_and_mechanics(self) -> None:
         review = _read("src/skills/review.md")
@@ -199,7 +205,8 @@ class ClosingSemanticsTests(unittest.TestCase):
         review = _read("src/skills/review.md")
         self.assertIn("**Closing semantics — `close it` is full human sign-off.**", review)
         self.assertIn(
-            "recording it as *untested* would be the framework second-guessing the person it exists to serve",
+            "That is an attestation about the phase — and it is not evidence, "
+            "and not an answer to anything Mano asked.",
             review,
         )
 
@@ -208,13 +215,25 @@ class ClosingSemanticsTests(unittest.TestCase):
         self.assertIn("One they did not rule on records `accepted`", review)
         self.assertIn("not for one they never mentioned", review)
 
-    def test_an_unanswered_question_is_recorded_as_such(self) -> None:
+    def test_no_question_reaches_the_record_unanswered(self) -> None:
         review = _read("src/skills/review.md")
-        self.assertIn("An unanswered question records `unanswered at close`", review)
+        self.assertIn("**There is no `unanswered at close`.**", review)
         self.assertIn(
-            '*"Ship it" does not answer a question the human was asked*',
+            '*"ship it" does not answer a question the human was asked*',
             review,
         )
+        # The gate, its one-line shape, and the escape hatch that keeps it
+        # from becoming a loop — all three or it is ceremony.
+        self.assertIn("**Answer gate — the two things review may never write for the human.**", review)
+        self.assertIn("[mano review]: [PHASE_ID] — still need:", review)
+        self.assertIn("**A refusal is an answer.**", review)
+        self.assertIn("List only what is actually missing", review)
+        # A brief states no decision, so the gate cannot name one — the slot
+        # that printed an empty bracket at the human.
+        self.assertIn("**The Decision is not a gate slot.**", review)
+        self.assertIn("**Never send a line you could not fill from the brief.**", review)
+        self.assertIn("**Send the gate at most once per review.**", review)
+        self.assertIn("**The reply to the gate is triage input, and STEP 2 runs over it in full.**", review)
 
     def test_there_is_no_second_closing_keyword(self) -> None:
         review = _read("src/skills/review.md")
@@ -231,9 +250,11 @@ class ClosingSemanticsTests(unittest.TestCase):
     def test_the_public_docs_agree(self) -> None:
         readme = _read("README.md")
         workflow = _read("src/workflow.md")
-        self.assertIn("that is your sign-off", readme)
-        self.assertIn("unanswered at close", readme)
-        self.assertIn("unanswered at close", workflow)
+        self.assertIn("is your sign-off", readme)
+        self.assertNotIn("unanswered at close", readme)
+        self.assertNotIn("unanswered at close", workflow)
+        self.assertIn("Mano never fills one in for you.", readme)
+        self.assertIn("review will not write the record without them", workflow)
 
 
 class ValidateNowTests(unittest.TestCase):

@@ -119,8 +119,8 @@ class PlainLanguageContractTests(unittest.TestCase):
         self.assertNotIn("Try this:\n", review)
         self.assertIn("**One response, one ask, and the ask is that last line as written.**", review)
         self.assertIn(
-            'What broke, what you\'d change, or your close: "close it" (untested) '
-            'or "all good, close it" (checked).',
+            'Answer each open question and say what broke or what you\'d change '
+            '— then "close it". "Didn\'t check" answers a question.',
             review,
         )
 
