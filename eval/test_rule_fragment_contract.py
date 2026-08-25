@@ -111,8 +111,20 @@ class AutoFragmentTests(unittest.TestCase):
         """`build` and `dev` never load `core` or `auto`; the closing block they
         need is stated in full in `implement.md`, and the two must stay in step."""
         implement = _read("src/rules/implement.md")
+        auto = _read("src/rules/auto.md")
         self.assertIn("## Closing an armed auto chain", implement)
-        self.assertIn("The planning skills' copy lives in `_mano/rules/auto.md`", implement)
+        self.assertIn("The planning skills' copies of both live in `_mano/rules/auto.md`", implement)
+        # Both halves, not just the closing block. A rule that exists only in
+        # `auto.md` does not exist on the implementation path at all: neither
+        # skill can ever open that file.
+        self.assertIn("## Never end a turn on an announcement", implement)
+        self.assertIn("## Continuing is an action, not an announcement", auto)
+        for phrase in (
+            "you have not run it",
+            "Every stop is named",
+        ):
+            with self.subTest(phrase=phrase):
+                self.assertIn(phrase, implement)
         for name in ("build", "dev"):
             text = (SKILLS / f"{name}.md").read_text(encoding="utf-8")
             with self.subTest(skill=name):

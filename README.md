@@ -75,12 +75,14 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano build ["what changed"]` | Build the active phase straight from its brief — no story files. The brief's own numbered Phase Scope items are the units, tracked in `progress.md`. The optional quoted text is a mid-phase correction, accepted only once a valid ledger exists. |
 | `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
-| `mano continue` | Auto-run only when there is a single obvious next planning step. If several planning actions are still reasonable, it stops and shows the options instead of picking the shortest path. |
+| `mano continue` | Resume where the project is. With an open ledger it runs the implementation entry — `mano build` to completion, or `mano dev` for one story. Otherwise it auto-runs a planning action only when there is a single obvious next step; if several are still reasonable it shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
 
 `mano dev` and `mano build` are the two named paths into implementation, but you don't have to remember either command — plain phrasing like "implement the next story" or "build the phase" routes to the same flows. Either way the agent follows the implementation contract in `AGENTS.md`.
 
 `mano dev yolo` (or the unambiguous `mano-dev yolo`) batches every story that is pending when the command starts. It still implements them as separate stories, in index order, marking each one done before moving on. It stops at the first blocker and never relaxes acceptance criteria, `Not this story`, project rules, verification, or the mandatory `mano review` phase close. Without the literal `yolo`, `mano dev` always stops after one story.
+
+`mano build` has no `yolo` because it never needed one: one invocation builds the whole phase, in `manual` as much as in `auto`. Its ledger is written as each row closes, so an interrupted run resumes from disk — a fresh session picks up at the first unresolved row with nothing carried in the conversation.
 
 #### Two ways into code
 

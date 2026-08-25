@@ -254,6 +254,14 @@ You are blind here by design, so resolve the uncertainty toward including the ac
 
 Propose only the actions the phase genuinely needs, applying `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** and `_mano/rules/auto.md` for the rest of the chain contract.
 
+**A removal is recorded; the rest of the chain is not.** Everything else about an armed chain is derivable at any moment — the artifacts on disk say which planning actions have run, and the ledger says whether implementation is done — so a chain needs no file to survive a dead session. One thing is not derivable: that the human looked at the proposal and struck an action. Recompute that and you re-propose what they just declined. So when, and **only** when, the approval reply removes an action (`go, skip ux`), record the subtraction once, immediately after the brief is written and the phase id is final:
+
+```
+node _mano/scripts/chain.js skip --phase [PHASE_ID] --actions ux,ui
+```
+
+A chain approved as proposed writes nothing. Never record an action the human added, never record `build` or `dev` (implementation is a chain's terminal action and is not optional), and never treat the record as the chain itself — it is a subtraction from a chain that is otherwise recomputed fresh every time it is read.
+
 ### Step 7 — Validate, clarify, and draft brief
 
 Run only after explicit human approval of the phase scope.

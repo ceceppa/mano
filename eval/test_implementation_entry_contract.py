@@ -75,10 +75,12 @@ class ImplementationEntryTests(unittest.TestCase):
         # State map: the no-ledger row is mode-aware, not stories-by-default.
         self.assertIn("the projected phase has **neither ledger** → planning stage", workflow)
         self.assertIn("This is rule 6 of **Implementation entry**", workflow)
-        # Continue has one fallback per path, not one story-shaped fallback.
-        self.assertIn("Build-mode fallback output, on the **stories** path", workflow)
-        self.assertIn("Build-mode fallback output, on the **build** path", workflow)
-        self.assertIn("Use `mano build` to resume at the row state reports next.", workflow)
+        # Continue dispatches into the entry the projection names; it never
+        # prints a card asking for the command the human just typed.
+        self.assertIn("**`IMPLEMENTATION_ENTRY:` decides first, and it is dispatch, not advice.**", workflow)
+        self.assertIn("It builds the phase to its terminal line in this same invocation", workflow)
+        self.assertIn("**Never `mano dev yolo`.**", workflow)
+        self.assertNotIn("Use `mano build` to resume at the row state reports next.", workflow)
 
     def test_the_command_menu_marks_the_entry_the_state_implies(self) -> None:
         workflow = _read("src/workflow.md")
@@ -122,8 +124,38 @@ class ImplementationEntryTests(unittest.TestCase):
         )
         self.assertIn("the armed chain's terminal action is mano build", state)
         self.assertIn("run mano stories (then mano dev) for story files, or mano build", state)
-        # The projection mano build itself reads.
-        self.assertIn("in auto the implementation entry is mano build", state)
+        # The projection `mano build` itself reads, on its first run. It gets a
+        # line addressed to it by name; the `DEV:` line beside it addresses a
+        # different reader and must not name an action build could mistake for
+        # its own instruction.
+        self.assertIn("this is mano build's FIRST run", state)
+        self.assertIn("implement every scope row to completion in this SAME invocation", state)
+        self.assertEqual(
+            state.count("DEV: ${s.phaseId} has no stories index"),
+            2,
+            "both no-ledger DEV: branches address mano dev, in either mode",
+        )
+        self.assertNotIn("in auto the implementation entry is mano build, which builds", state)
+
+    def test_the_entry_rule_has_one_implementation_and_it_is_the_script(self) -> None:
+        """A rule with no execution path is prose. `state.js` evaluates the six
+        clauses and prints the answer; nobody re-derives it by hand."""
+        state = _read("src/scripts/state.js")
+        workflow = _read("src/workflow.md")
+        self.assertIn("let implementationEntry = \"none\";", state)
+        self.assertIn("IMPLEMENTATION_ENTRY: ${s.implementationEntry}", state)
+        self.assertIn("IMPLEMENTATION_ENTRY: build | dev | none", workflow)
+        self.assertIn("never re-derive the rule by hand", workflow)
+
+    def test_the_resume_directive_names_the_whole_run_not_the_next_row(self) -> None:
+        """Stall 3: build read a projection that named one row and stopped after
+        it. The projection states the run, in both modes."""
+        state = _read("src/scripts/state.js")
+        self.assertIn(
+            "RUN: implement ROW now, then continue to the next unresolved row in this SAME invocation.",
+            state,
+        )
+        self.assertIn("Do not stop between rows and do not report progress between passes", state)
 
     def test_bootstrap_names_the_entry_rule(self) -> None:
         agents = _read("src/bootstrap/AGENTS.md")

@@ -480,6 +480,10 @@ Next:
 - `mano dev` — implement the next pending story
 ```
 
+<!-- mano-rule: id=chain-handoff-prints-no-next; incident=chain-ended-on-a-next-menu-it-was-about-to-run; model=codex; date=2026-08-25; eval=build-auto-direct -->
+**Mid-chain, that `Next:` block is omitted entirely** — `_mano/rules/auto.md` → **Continuing is an action, not an announcement**. An armed chain continues into `mano dev yolo` itself, and rendering the command you are about to run as an option for the human is the shape that ends chains.
+<!-- /mano-rule: chain-handoff-prints-no-next -->
+
 Give each story its **full project-root-relative path** (as above), not a bare `story-N-[slug].md` — that is what makes each line tap-to-open in the editor. The path replaces the old parenthesised filename.
 
 Two rules for the flag lines (see the canonical execution-log format in `_mano/rules/core.md`): **(1)** When an input artifact omits a behaviour-driving value, apply the readiness hard gates. Write no story files. Route the missing decision to its owning skill. Do not infer a value, embed a provisional default, or turn the gap into a story-level `❓ Decide:`. **(2)** If another decision explicitly permitted by this skill remains open, a pending `❓ Decide:` makes the affected next action conditional. Name which story is blocked. Show `mano dev` only after that decision. Do not add a separate `Status:` line.

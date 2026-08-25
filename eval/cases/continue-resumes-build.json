@@ -1,0 +1,13 @@
+{
+  "name": "continue-resumes-build",
+  "description": "`mano continue` on a phase with an open build ledger runs `mano build` to completion. `IMPLEMENTATION_ENTRY: build` is dispatch, not advice: answering `continue` with a card that asks the human to type `mano build` makes them type twice for one action.",
+  "fixture": "build-stage-chain",
+  "phase": 1,
+  "prompt": "mano continue",
+  "assertions": [
+    "continue_dispatched_into_implementation",
+    "build_completed_the_phase",
+    "build_did_not_rebuild_done_row",
+    "build_wrote_no_story_files"
+  ]
+}

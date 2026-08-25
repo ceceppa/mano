@@ -12,6 +12,10 @@ This file plus `_mano/rules/implement.md` are the **complete contract** for `man
 
 `mano build` is one of two paths and replaces neither. `mano stories` + `mano dev` stay first-class: they split planning (big model) from implementation (small model) and suit a large phase. `mano build` runs one phase in one contract on one model, checkpointed by a ledger. One phase uses one path — a phase holding both `stories/README.md` and `progress.md` is refused by the state projection.
 
+<!-- mano-rule: id=implementation-run-to-completion; incident=build-handed-back-after-creating-the-ledger; model=codex; date=2026-08-25; eval=build-runs-to-completion,continue-resumes-build -->
+**One invocation builds the whole phase.** `mano build` is `mano dev yolo` with no opt-in word: there is no one-row variant to fall back to, so *every* invocation runs from wherever the ledger stands to the terminal sweep. That holds in `manual` as much as in `auto` — the mode decides whether planning actions chain into this one, never how much of the phase this one finishes. The ledger is what makes it safe: it is written as each row closes, so an interrupted run resumes from disk in a fresh session with nothing carried in the conversation. Resumability is why the run may be long, not permission to leave it half-run — **`_mano/rules/implement.md` → Never end a turn on an announcement** governs every stop.
+<!-- /mano-rule: implementation-run-to-completion -->
+
 **Read order — keep the prefix stable.** Read this contract and `_mano/rules/implement.md` first (they are identical on every run, so they cache as a stable prompt prefix), then the state projection, then the phase brief, then the artifact sections a row needs, then source.
 
 **An argument is a correction, never new scope.** `mano build "[what changed]"` is accepted **only when a valid ledger exists** — the ledger is the thing the text corrects, and this design still rests on the ledger itself being derivable from the brief alone. The invocation is only a channel; the classification, the write rules, and the stops are the same ones a correction typed mid-run goes through (**Mid-phase corrections**). The exact wording is the human's contract: pass it through verbatim, never paraphrase it into scope-ese, and never treat it as licence to widen a row.
@@ -22,7 +26,7 @@ This file plus `_mano/rules/implement.md` are the **complete contract** for `man
 
 ## Flow
 
-**0. Find what to build by running the state script — do not `ls` for the phase or infer it from the conversation.** Run `node _mano/scripts/state.js --next`. It reports `MODE`, the selected `OWNER`, exact `PHASE_ID`, numeric `PHASE`, `PHASE_DIR`, `BRIEF`, `PROGRESS`, `PROGRESS_STATUS`, `ARTIFACTS`, both ledger tables, the `ROW` to work now with its exact `ROW_CONTRACT`, and `REWORK` when review findings are open. If `MODE` or any routing field is absent, stop and report the malformed projection. Obey its `OWNER`/`PHASE_ID`/paths; never construct `phase-N` from the number. **If the script cannot run, stop and report the exact failure** — do not scan for the phase by hand. If it reports no phase or no brief, follow the line it prints and stop.
+**0. Find what to build by running the state script — do not `ls` for the phase or infer it from the conversation.** Run `node _mano/scripts/state.js --next`. It reports `MODE`, the selected `OWNER`, exact `PHASE_ID`, numeric `PHASE`, `PHASE_DIR`, `BRIEF`, `PROGRESS`, `PROGRESS_STATUS`, `ARTIFACTS`, both ledger tables, the `ROW` to work now with its exact `ROW_CONTRACT`, `REWORK` when review findings are open, and the line addressed to this skill — `BUILD:` before a ledger exists, `RUN:` once one does — which states what this whole invocation must do, not just its next step. **The `DEV:` line in the same projection addresses `mano dev`, not you.** Never act on it and never relay it to the human; it names `mano build` because it is telling a different reader where the work lives, and reading it as an instruction ends the run before pre-flight. If `MODE` or any routing field is absent, stop and report the malformed projection. Obey its `OWNER`/`PHASE_ID`/paths; never construct `phase-N` from the number. **If the script cannot run, stop and report the exact failure** — do not scan for the phase by hand. If it reports no phase or no brief, follow the line it prints and stop.
 
 Branch on `PROGRESS_STATUS`, and on nothing else:
 
@@ -41,6 +45,8 @@ node _mano/scripts/progress.js init --phase [N] --expect-phase-id [PHASE_ID]
 `[N]` is the numeric `PHASE` and `[PHASE_ID]` the exact `PHASE_ID`, both from that same fresh projection. The script reads the brief and emits both tables itself — a Scope row per `## Phase Scope` **leaf** (`S1a`, `S1b`, `S2a` for a two-level brief; `S1`, `S2` for a flat one), an Exit Criteria row per `## Exit Criteria` leaf — and fingerprints the brief's addressed sections so a later edit to them fails closed. **You never pass rows in and never hand-write the ledger.** If `init` refuses because a section has no list to parse, that is the brief's shape, not something to work around: report it and route to `mano start`.
 
 Then read the emitted tables back and confirm they are the brief you just ran pre-flight against: one Scope row per scope leaf, one Exit row per exit leaf, the brief's own numbering and lettering, and the label of each joining its category to its leaf. A mismatch means the brief changed underneath you — stop and report it rather than building against a ledger you did not verify.
+
+**Then go straight to step 2 in this same invocation.** Creating the ledger is not a unit of work and is not a stopping point: it is the first thing that happens inside a run that then builds the phase. Do not report the ledger, do not describe its rows, and do not hand back for the human to type `mano build` again — a run that ends here has written a file and built nothing, which is the one outcome worse than not starting. The only things that may stop the run between `init` and the first row are the stops this contract already names.
 
 **2. Implement in row order, one pass at a time.** Take the `ROW` and `ROW_CONTRACT` from the projection. `ROW_CONTRACT` is the row's exact text — the brief's own item or leaf for a normal row, the human's or your own recorded text for a correction or a split — so there is no second read of the brief to make.
 
@@ -422,6 +428,8 @@ When `mano build` is the terminal action of an armed `mano mode auto` chain, the
 - Do not group a correction row, a split row, or leaves from two brief categories into one pass.
 - Do not write any backlog item except through the previewed, explicitly approved defer flow — exactly one item, never assigned to a phase.
 - Do not infer a rework dismissal. Relay the human's decision or leave the event pending.
+- Do not end the invocation after `init`, after pre-flight, or between passes; do not report the ledger's rows to the human as if creating it were the run.
+- Do not act on the projection's `DEV:` line or relay it — it addresses `mano dev`.
 - Do not report the phase built on the strength of the statuses alone; the terminal sweep runs first.
 - Do not run `mano review`, close the phase, or scope another phase. Built is not closed.
 - Do not edit the phase brief or any other input artifact — flag and route instead.

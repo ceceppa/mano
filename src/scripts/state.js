@@ -54,6 +54,7 @@ const {
   reviewHeadingPattern,
 } = require("./phase.js");
 const Ledger = require("./ledger.js");
+const Chain = require("./chain.js");
 
 const GAP_TYPES = ["spec-gap", "rule-gap"];
 
@@ -955,6 +956,10 @@ function scan(projectRoot, options = {}) {
 
 // Derive the verdict from raw signals, faithful to mano start's gate.
 function finalize(s, options = {}) {
+  // The one part of an armed chain that is not derivable from disk: the actions
+  // the human removed at scope approval. Absent for every default chain, which
+  // is the common case and costs nothing to read.
+  s.chainSkipped = s.phaseId ? Chain.readSkipped(s.projectRoot, s.phaseId) : [];
   const storiesAllDone = !!(s.stories && s.stories.total > 0 && s.stories.done === s.stories.total);
   const storiesMissing = !s.stories || s.stories.total === 0;
   // The build path's ledger answers the same two questions the stories index
@@ -1047,6 +1052,17 @@ function finalize(s, options = {}) {
     }
   }
 
+  // Which implementation action `mano continue` dispatches into, read off the
+  // ledger rather than guessed from whichever path is more familiar. `none`
+  // means there is nothing to continue *into* — either no implementable state,
+  // or the one genuine fork Mano leaves to the human (no ledger, manual mode:
+  // `mano stories` and `mano build` are both valid and the choice is theirs).
+  let implementationEntry = "none";
+  if (s.progressStatus === "invalid") implementationEntry = "none";
+  else if (building && !buildAllDone) implementationEntry = "build";
+  else if (!building && s.storiesExists && !storiesAllDone) implementationEntry = "dev";
+  else if (ledgerMissing && s.runMode === "auto") implementationEntry = "build";
+
   // Collapse the verdict to the only thing mano start branches on: go/no-go,
   // plus which path to take when going. The verdict + evidence remain for the
   // human (and --json), but the skill consumes just decision + next.
@@ -1063,6 +1079,7 @@ function finalize(s, options = {}) {
   s.closed = closed;
   s.verdict = verdict;
   s.action = action;
+  s.implementationEntry = implementationEntry;
   s.decision = proceeds ? "PROCEED" : "STOP";
   s.next = proceeds ? NEXT_BY_VERDICT[verdict] : null;
 
@@ -1157,6 +1174,13 @@ function renderDecision(s) {
   if (s.gaps && s.gaps["spec-gap"] > 0) openGapRoutes.push(`${s.gaps["spec-gap"]} spec-gap → mano spec`);
   if (s.gaps && s.gaps["rule-gap"] > 0) openGapRoutes.push(`${s.gaps["rule-gap"]} rule-gap → mano rules`);
   if (openGapRoutes.length) L.push(`OPEN_GAPS: ${openGapRoutes.join("; ")}`);
+  // Which implementation action `mano continue` runs, decided by the ledger.
+  // `none` is not "nothing to do" — it is "nothing to continue *into*", which
+  // includes the one fork the human owns (no ledger, manual mode).
+  L.push(`IMPLEMENTATION_ENTRY: ${s.implementationEntry}`);
+  if (s.chainSkipped && s.chainSkipped.length) {
+    L.push(`CHAIN_SKIPPED: ${s.chainSkipped.join(", ")} — the human removed these at scope approval; do not re-propose them for this phase`);
+  }
   L.push(s.action);
   return L.join("\n");
 }
@@ -1477,9 +1501,22 @@ function renderNext(s) {
         for (const line of contract.split("\n")) L.push(`  ${line}`);
         L.push("END_ROW_CONTRACT");
       }
+      // The resume directive, stated on every read in both modes. `mano build`
+      // is a run-to-completion batch with no one-row variant — it is `mano dev
+      // yolo` with no opt-in word — so the projection names the whole run, not
+      // just the next row. A build that hands back between rows leaves a phase
+      // nobody is finishing, and the ledger cannot tell that apart from a
+      // contract stop.
+      const openScope = s.progress.scope.total - s.progress.scope.closed;
+      const openExit = s.progress.exit.total - s.progress.exit.closed;
+      L.push(
+        "RUN: implement ROW now, then continue to the next unresolved row in this SAME invocation. " +
+          `${openScope} of ${s.progress.scope.total} scope rows and ${openExit} of ${s.progress.exit.total} exit criteria still open. ` +
+          "Do not stop between rows and do not report progress between passes; the run ends at the terminal evidence sweep or a stop this contract names.",
+      );
     } else if (s.progress.openRework.length) {
       L.push("ROW: none");
-      L.push(`Every scope row is done, but ${s.progress.openRework.length} review finding(s) are still pending. Work the first pending R… event in order; each one keeps its own exact text in \`## Row Contracts\`. The phase does not go back to review until none is pending.`);
+      L.push(`Every scope row is done, but ${s.progress.openRework.length} review finding(s) are still pending. Work the first pending R… event in order, then continue to the next one in this SAME invocation; each keeps its own exact text in \`## Row Contracts\`. The phase does not go back to review until none is pending.`);
     } else if (!s.progress.allMet) {
       L.push("ROW: none");
       L.push("Every scope row is done but not every Exit Criterion is met. Prove the remaining ones or reopen the row that owes the evidence; the phase is not built until both tables are closed.");
@@ -1510,10 +1547,22 @@ function renderNext(s) {
   }
 
   if (!s.stories || s.stories.total === 0) {
+    // Two readers, two lines, each addressed by name. This projection is shared
+    // by `mano dev` and `mano build`, and on this branch build is the one that
+    // has work: it creates the ledger it is about to run. A single `DEV:` line
+    // naming `mano build` as the entry is read by build itself as "tell the
+    // human to run mano build" — the misroute that ends the run before
+    // pre-flight. Build reads BUILD:, dev reads DEV:, and neither is handed the
+    // other's instruction.
+    L.push(
+      `BUILD: ${s.phaseId} has a brief and no ledger — this is mano build's FIRST run, and it is a run, not a setup step. ` +
+        "Pre-flight (build.md step 0), then progress.js init, then implement every scope row to completion in this SAME invocation. " +
+        "Creating the ledger is not a stopping point; do not hand back after init, and do not report the ledger to the human.",
+    );
     L.push(
       s.runMode === "auto"
-        ? `DEV: ${s.phaseId} has a brief but no stories yet — in auto the implementation entry is mano build, which builds straight from the brief. Nothing for mano dev yet.`
-        : `DEV: ${s.phaseId} has a brief but no stories yet — run mano stories for story files, or mano build to build straight from the brief. Nothing for mano dev yet.`,
+        ? `DEV: ${s.phaseId} has no stories index — nothing for mano dev. In auto the implementation entry is mano build (see BUILD: above); do not route the human anywhere.`
+        : `DEV: ${s.phaseId} has no stories index — nothing for mano dev. mano stories creates one, or mano build builds straight from the brief.`,
     );
     L.push(`PHASE: ${s.phase}`);
     L.push(`PHASE_ID: ${s.phaseId}`);
@@ -1601,6 +1650,8 @@ function renderJson(s) {
     targetReviewHeading: s.targetReviewHeading,
     verdict: s.verdict,
     action: s.action,
+    implementationEntry: s.implementationEntry,
+    chainSkipped: s.chainSkipped,
     scope: s.scope,
   }, null, 2);
 }

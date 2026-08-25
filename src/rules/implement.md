@@ -102,6 +102,20 @@ This block is the **sole** sanctioned expansion of **Implementation Output Disci
 
 `mano review` shows the same `Try` guidance again beside the promise it tests. That is deliberate, not redundancy to optimise away: chat delivery is not durable state, and the review that reads it is frequently a fresh session in which this message no longer exists.
 
+## Never end a turn on an announcement
+
+<!-- mano-rule: id=implementation-run-to-completion; incident=build-handed-back-after-creating-the-ledger; model=codex; date=2026-08-25; eval=build-runs-to-completion,continue-resumes-build -->
+**A run ends by finishing, by a stop this contract names, or not at all.** Describing what you are about to do next and then ending the turn is the run stopping while claiming the opposite: the human is left holding a promise instead of a result, and no stop condition fired to explain it. Default `mano dev` ends after step 12 — that is its whole unit. Every other shape here (`mano dev yolo`, `mano build`, either skill inside an armed chain) runs until its terminal line.
+
+- ❌ "Ledger created — it has four scope rows; the first is `S1a`." → *turn ends*
+- ❌ "Pre-flight is in progress." / "Continuing into implementation now." → *turn ends*
+- ✅ ledger created → `S1a` implemented → … → the terminal aggregate line
+
+If you have written words describing what you are about to run, you have not run it. Either invoke it now, or print the stop. **Interim progress reports are the usual disguise**: they read as work and contain none, which is exactly why **Implementation Output Discipline** allows one closing line per invocation and no report between passes. Setup is not a unit of work — creating a ledger, passing pre-flight, and reading an artifact are things that happen *inside* the run, never things a run is finished having done.
+
+**Every stop is named, and only these are stops.** A run that hands back without naming its condition is a bug, not a stop — the two look identical to the human, and only the named one tells them whether to answer something or re-run the command. The complete list: a gap gate (6.2–6.4), the acceptance-evidence gate (10.1) leaving a unit unproven, Repair Mode's attempt limit, a script failure, a deviation stop, `REWORK` routing, or the terminal line. The size of what remains, how many units are already closed, and how long the run is taking are **never** stops.
+<!-- /mano-rule: implementation-run-to-completion -->
+
 ## Closing an armed auto chain
 
 Both implementation skills are the terminal action of an armed `mano mode auto` chain. When one finishes such a chain, its ordinary aggregate or deviation line is that action's log — followed by the **`Validate now:`** block when the run left the phase ready for review — and exactly one closing block follows:
@@ -122,7 +136,7 @@ Next:
 
 That block, and the `Validate now:` block that may precede it, are the **only** permitted content after the aggregate line, and neither is an implementation summary: do not add a recap, a file list, or restated acceptance criteria between them. In `manual` mode there is no chain and no closing block — the aggregate line is the whole response. Re-read `MODE` from the freshest projection before deciding which applies.
 
-This contract is stated here, in full, on purpose. Both implementation skills declare themselves self-contained and forbid opening `_mano/workflow.md` or `_mano/rules/core.md` mid-skill, so a pointer into either would be an instruction they cannot follow. The planning skills' copy lives in `_mano/rules/auto.md`; the two must stay in step.
+This contract is stated here, in full, on purpose. Both implementation skills declare themselves self-contained and forbid opening `_mano/workflow.md` or `_mano/rules/core.md` mid-skill, so a pointer into either would be an instruction they cannot follow. Neither declares `requires-in-auto: [auto]`, so neither can ever open `_mano/rules/auto.md` — which is why **Never end a turn on an announcement** above is stated here too, not left there. The planning skills' copies of both live in `_mano/rules/auto.md`; each pair must stay in step, and a rule that exists only in `auto.md` does not exist on this path at all.
 
 ## Implementation Output Discipline
 

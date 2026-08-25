@@ -1,0 +1,11 @@
+{
+  "name": "start-flags-near-duplicate-item",
+  "description": "backlog.js add reports an item resembling one already tracked and writes it anyway. mano start must carry that report to the human as one advisory line and keep going — never block on it, never re-ask it as a decision, and never drop the item.",
+  "fixture": "start-named-existing-item",
+  "phase": 1,
+  "prompt": "mano start. Scope the automatic layout transitions item for this phase. Also add a backlog item called \"Motion interruption example scenarios\" for later. Then draft the brief.",
+  "assertions": [
+    "start_flagged_the_near_duplicate",
+    "start_did_not_mine_backlog"
+  ]
+}

@@ -4192,6 +4192,90 @@ def auto_reached_build_without_story_files(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+def build_did_not_stop_at_the_ledger(ctx: Ctx) -> list[Failure]:
+    """One invocation creates the ledger *and* builds the phase.
+
+    The incident: build ran pre-flight, wrote `progress.md`, reported its rows
+    to the human, and ended the turn. Nothing was built, and the human had to
+    type `mano build` again to reach the first row. Setup is not a unit of work,
+    so a run that produced a ledger and no source is a stall wearing a progress
+    report — and the ledger alone cannot tell the two apart, which is why the
+    chat shape is checked too.
+    """
+    assertion = "build_did_not_stop_at_the_ledger"
+    fails = []
+    if ctx.progress() is None:
+        return [Failure(assertion, "no progress.md — the run never reached init")]
+    rows = ctx.progress_rows()
+    scope = [(rid, status) for rid, _, status in rows if rid.startswith("S")]
+    if scope and all(status == "pending" for _, status in scope):
+        fails.append(Failure(
+            assertion,
+            "every scope row is still pending — the invocation created the ledger and built nothing",
+        ))
+    if not ctx.source_files():
+        fails.append(Failure(assertion, "no source file was written"))
+    # The report that reads as work and contains none.
+    lowered = ctx.transcript.lower()
+    for shape in ("ledger created", "build ledger", "pre-flight is in progress", "pre-flight is complete"):
+        if shape in lowered:
+            fails.append(Failure(assertion, f"the closing message reports setup as the result: {shape!r}"))
+    return fails
+
+
+def continue_dispatched_into_implementation(ctx: Ctx) -> list[Failure]:
+    """`mano continue` runs the entry the projection names; it does not print a
+    card asking for the command the human just typed.
+
+    `continue` is already the go-ahead. Answering it with "use `mano build` to
+    resume" is a loop, not a routing decision — the human types twice to get one
+    action, and in a chain that stopped for an unnamed reason they cannot tell
+    whether they were being asked something or just delayed.
+    """
+    assertion = "continue_dispatched_into_implementation"
+    fails = []
+    if ctx.progress() is None:
+        return [Failure(assertion, "no progress.md after the run")]
+    seeded = ctx.fixture_text("progress.md")
+    if seeded is not None and ctx.progress() == seeded:
+        fails.append(Failure(
+            assertion,
+            "the ledger is byte-identical to the seeded one — continue ran no implementation",
+        ))
+    if not ctx.source_files():
+        fails.append(Failure(assertion, "no source file was written — continue printed instead of running"))
+    for card in ("Build mode:", "Use `mano build` to resume", "Use `mano dev` to implement"):
+        if card in ctx.transcript:
+            fails.append(Failure(assertion, f"continue printed the retired status card: {card!r}"))
+    return fails
+
+
+def auto_chain_handoff_printed_no_next_menu(ctx: Ctx) -> list[Failure]:
+    """A mid-chain action never renders the menu it is about to walk past.
+
+    Once the chain has reached `mano build`, any `Next:` block still offering an
+    implementation command is the stall shape: a log that presents a choice and
+    continues past it in the same breath, leaving the human holding options for
+    work that already happened. The closing block's `Next: mano review` is the
+    one legitimate `Next:` on this path.
+    """
+    assertion = "auto_chain_handoff_printed_no_next_menu"
+    if ctx.progress() is None:
+        return []  # the chain never reached build; another assertion owns that
+    fails = []
+    for line in ctx.all_responses().splitlines():
+        stripped = line.strip().lstrip("-*").strip()
+        if not stripped.startswith("`mano "):
+            continue
+        for offered in ("`mano build`", "`mano stories`", "`mano dev`", "`mano continue`"):
+            if stripped.startswith(offered):
+                fails.append(Failure(
+                    assertion,
+                    f"the chain offered {offered} as a next-step option after already running it: {stripped[:80]!r}",
+                ))
+    return fails
+
+
 def auto_chain_stopped_before_review(ctx: Ctx) -> list[Failure]:
     """The chain's terminal action is implementation. Closing the phase is the
     human's, so a review entry means the chain ran one action too far."""
@@ -4348,6 +4432,9 @@ REGISTRY = {
     "build_no_ledger_argument_created_nothing": build_no_ledger_argument_created_nothing,
     "auto_reached_build_without_story_files": auto_reached_build_without_story_files,
     "auto_chain_stopped_before_review": auto_chain_stopped_before_review,
+    "build_did_not_stop_at_the_ledger": build_did_not_stop_at_the_ledger,
+    "continue_dispatched_into_implementation": continue_dispatched_into_implementation,
+    "auto_chain_handoff_printed_no_next_menu": auto_chain_handoff_printed_no_next_menu,
     # two-phase extension
     "two_phase_one_behaviour_survives": two_phase_one_behaviour_survives,
     "two_phase_extension_behaviour_works": two_phase_extension_behaviour_works,

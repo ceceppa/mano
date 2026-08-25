@@ -1,0 +1,11 @@
+{
+  "name": "start-uses-named-item-not-a-new-one",
+  "description": "When the human names work that the backlog already tracks, mano start scopes THAT item. Re-wording the request into a second, newly-invented item leaves the one they meant untouched while a near-twin enters the phase — the anima phase-22 failure.",
+  "fixture": "start-named-existing-item",
+  "phase": 1,
+  "prompt": "mano start. I want to add motion interruption example coverage to this phase — approve that scope and draft the brief.",
+  "assertions": [
+    "start_scoped_the_named_item",
+    "start_did_not_mine_backlog"
+  ]
+}
