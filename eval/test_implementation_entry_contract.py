@@ -249,8 +249,8 @@ class GroupingTests(unittest.TestCase):
         build = _read("src/skills/build.md")
         self.assertIn("It composes no scope text, invents no row, and needs no human confirmation", build)
         self.assertIn(
-            "A split, a reopen, or a correction remains a **deviation stop**, and none of the three "
-            "ever appears inside a group",
+            "A split or a correction remains a **deviation stop**, and none of the three "
+            "\u2014 split, reopen, correction \u2014 ever appears inside a group",
             build,
         )
 
