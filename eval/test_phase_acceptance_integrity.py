@@ -37,7 +37,7 @@ class PhaseAcceptanceIntegrityTests(unittest.TestCase):
         # The gate is in the shared contract; dev's status write cites it as
         # the thing that must have passed first.
         self.assertIn("10.1 **Acceptance-evidence gate", implement)
-        self.assertIn("the acceptance-evidence gate (10.1) has passed", dev)
+        self.assertIn("the acceptance-evidence and design-contract gates (10.1, 10.2) have passed", dev)
         dev = dev + implement
         self.assertIn("A passing suite is not enough", dev)
         self.assertIn("states the opposite outcome", dev)

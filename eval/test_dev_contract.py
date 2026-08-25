@@ -53,7 +53,7 @@ class DevContractPins(unittest.TestCase):
         self.assertIn("the FIRST error only", DEV)
         self.assertIn("Attempt limit: 3 on the same error", DEV)
         # The two checks that are never optimised away inside Repair Mode.
-        self.assertIn("acceptance-evidence gate (10.1), run in full regardless", DEV)
+        self.assertIn("design-contract gates (10.1, 10.2), run in full regardless", DEV)
 
     def test_verification_runs_through_verify_script(self) -> None:
         self.assertIn("node _mano/scripts/verify.js -- <command>", DEV)

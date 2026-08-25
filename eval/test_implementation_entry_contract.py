@@ -241,7 +241,7 @@ class GroupingTests(unittest.TestCase):
         section = build.split("**Execution order for a pass:**", 1)[1].split("\n## ", 1)[0]
         self.assertIn("**per row**, before any code", section)
         self.assertIn("One status batch to `doing`", section)
-        self.assertIn("apply gate **10.1 separately to every row and every `E` leaf**", section)
+        self.assertIn("apply gates **10.1 and 10.2 separately to every row and every `E` leaf**", section)
         self.assertIn("A partial pass closes what it proved and nothing else", section)
         self.assertIn("One state and identity post-check for the pass", section)
 

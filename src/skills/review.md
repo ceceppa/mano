@@ -331,7 +331,7 @@ When the user confirms (e.g., "close it", "yes"):
    ```
 1b. **On the build path only — persist confirmed findings as durable rework, and record the human's sign-off.**
 
-   These two calls are review's entire write surface on `progress.md`. Skip both on the stories path.
+   These two calls are review's entire write surface on `progress.md`. Skip both on the stories path. `request-rework` is not review's alone — `mano build` writes one for a defect the human reports mid-build (`--source build`), so that a correction handed over in chat is as durable as a finding raised here. Review's own events take the default `review` source; do not pass `--source`.
 
    **Findings first.** For every confirmed **substantive** finding — 🐛 Defects, 📋 Spec gaps, 📏 Rule gaps, and any 🔧 Refinement the human wants fixed in this phase — write one event per finding, in the order they were triaged:
 

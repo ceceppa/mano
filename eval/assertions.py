@@ -3072,6 +3072,58 @@ def build_reopened_instead_of_appending(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+def build_recorded_the_correction_as_rework(ctx: Ctx) -> list[Failure]:
+    """Case (A) durability: a defect the human reports mid-build becomes an
+    `R…` event carrying their exact words before anything is reopened, and is
+    resolved by the run that fixes it. Without it the reopen is invisible —
+    once the row is `done` again the ledger matches a phase that never had the
+    defect, and the only record lived in a conversation."""
+    assertion = "build_recorded_the_correction_as_rework"
+    fails = []
+    ledger = ctx.progress() or ""
+
+    events = [
+        (cells[0], cells[-1].lower())
+        for cells in (
+            [c.strip() for c in line.split("|")][1:-1]
+            for line in ledger.split("\n")
+            if line.count("|") >= 4
+        )
+        if cells and re.fullmatch(r"R\d+", cells[0])
+    ]
+    if not events:
+        fails.append(Failure(assertion, "the correction was reopened with no rework event recorded"))
+        return fails
+    if len(events) > 1:
+        fails.append(Failure(assertion, f"one correction produced {len(events)} events: {events}"))
+
+    rid, status = events[0]
+    if status != "resolved":
+        fails.append(Failure(
+            assertion,
+            f"{rid} is {status!r} after the fix landed; a run that fixes the defect resolves its event",
+        ))
+
+    contracts = parse_row_contracts(ledger)
+    body = contracts.get(rid)
+    if body is None or not body["text"]:
+        fails.append(Failure(assertion, f"{rid} has no exact text in `## Row Contracts`"))
+        return fails
+
+    source = body["attributes"].get("source", "").strip()
+    if source != "build":
+        fails.append(Failure(
+            assertion,
+            f"{rid} records source {source!r}; a defect the human reported mid-build is not a review finding",
+        ))
+
+    verbatim = "requiring src/release-stage.js returns base+release, not base+feature+release"
+    if verbatim.lower() not in body["text"].lower():
+        fails.append(Failure(assertion, f"the recorded event paraphrases the report: {body['text']!r}"))
+
+    return fails
+
+
 def build_appended_the_users_words(ctx: Ctx) -> list[Failure]:
     """Case (C): an in-goal nuance is appended as a lettered row carrying the
     user's own words — never a paraphrase, never a rewritten existing row."""
@@ -3474,6 +3526,56 @@ def build_honoured_the_documentation_rule(ctx: Ctx) -> list[Failure]:
                 ))
 
     return fails
+
+
+# --- the design brief's named components are obligations, not references -------
+
+def build_reused_the_named_components(ctx: Ctx) -> list[Failure]:
+    """0g.1 and 10.2 on the build path: the design brief names a component for a
+    screen because a reusable one already exists. The screen satisfies that by
+    instantiating it — never by hand-rolling something that looks the same and
+    passes the phase's purely behavioural Exit Criteria."""
+    assertion = "build_reused_the_named_components"
+    fails = []
+
+    screens = ("src/screens/latency-screen.js", "src/screens/error-screen.js")
+    components = {
+        "PanelHeader": "panel-header",
+        "SegmentedControl": "segmented-control",
+    }
+
+    for path in screens:
+        module = ctx.source_text(path)
+        if module is None:
+            fails.append(Failure(assertion, f"{path} was never written"))
+            continue
+
+        for name, basename in components.items():
+            required = re.search(
+                rf"""require\(\s*['"][^'"]*components/{basename}(?:\.js)?['"]\s*\)""",
+                module,
+            )
+            if required is None:
+                fails.append(Failure(
+                    assertion,
+                    f"{path} never requires the shared components/{basename} the design brief names",
+                ))
+            elif not re.search(rf"\bnew\s+{name}\b", module):
+                fails.append(Failure(
+                    assertion,
+                    f"{path} requires components/{basename} but never instantiates {name}",
+                ))
+
+        # A lookalike built in place is the failure this case exists to catch.
+        lookalike = re.search(r"""class\s+\w*(?:Header|Selector|Segmented|Control|Tabs)\w*\b""", module)
+        if lookalike:
+            fails.append(Failure(
+                assertion,
+                f"{path} declares its own {lookalike.group(0)!r} instead of reusing the named component",
+            ))
+
+    return fails
+
 
 
 # --- post-stories hook findings stay diagnostic --------------------------------
@@ -4340,6 +4442,7 @@ REGISTRY = {
     "stories_hook_triage_offer_present": stories_hook_triage_offer_present,
     "dev_polarity_left_the_story_pending": dev_polarity_left_the_story_pending,
     "build_honoured_the_documentation_rule": build_honoured_the_documentation_rule,
+    "build_reused_the_named_components": build_reused_the_named_components,
     # review as a short triage inbox (wave 5)
     "review_opening_shape": review_opening_shape,
     "review_opening_kept_every_promise": review_opening_kept_every_promise,
@@ -4409,6 +4512,7 @@ REGISTRY = {
     "build_refused_free_text_scope": build_refused_free_text_scope,
     "build_review_gate_held": build_review_gate_held,
     "build_reopened_instead_of_appending": build_reopened_instead_of_appending,
+    "build_recorded_the_correction_as_rework": build_recorded_the_correction_as_rework,
     "build_appended_the_users_words": build_appended_the_users_words,
     "build_no_row_appended": build_no_row_appended,
     # mano build — wave 3 contracts

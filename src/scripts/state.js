@@ -124,7 +124,7 @@ Usage:
                 # and file path) plus the ordered story list, or, when the phase
                 has a progress.md ledger, its next non-done Scope row plus both
                 ledger tables. On the build path it also reports the optional
-                artifact inventory (ARTIFACTS) and any pending review findings
+                artifact inventory (ARTIFACTS) and any pending rework events
                 (REWORK), before the ledger exists as well as after
   --ui          for mano ui: report the current phase brief and phase-local
                 design preview paths without exposing backlog content or
@@ -966,7 +966,8 @@ function finalize(s, options = {}) {
   // does, with one addition: built means every Scope row done AND every Exit
   // Criterion met. A phase has one ledger or the other (scan refuses both).
   const building = s.progressStatus === "present";
-  // D4: a confirmed review finding is durable state, not conversation. While one
+  // D4: a confirmed defect is durable state, not conversation — whether review
+// found it or the human reported it mid-build. While one
   // is pending the phase routes back to build even though every row reads done —
   // that is the whole reason the finding is in the ledger and not in the chat.
   const openRework = building ? s.progress.openRework.length : 0;
@@ -1021,7 +1022,7 @@ function finalize(s, options = {}) {
   } else if (building && !buildAllDone) {
     verdict = "PHASE_IN_PROGRESS";
     action = openRework
-      ? `${s.phaseId} has ${openRework} pending review finding(s) in its ledger. Not complete — run mano build to work the first pending R… event. mano start must NOT scope a next phase.`
+      ? `${s.phaseId} has ${openRework} pending rework event(s) in its ledger. Not complete — run mano build to work the first pending R… event. mano start must NOT scope a next phase.`
       : `${s.phaseId} is being built (${s.progress.scope.closed}/${s.progress.scope.total} scope rows done, ${s.progress.exit.closed}/${s.progress.exit.total} exit criteria met). Not complete — run mano build. mano start must NOT scope a next phase.`;
   } else if (!building && !storiesAllDone) {
     verdict = "PHASE_IN_PROGRESS";
@@ -1516,7 +1517,7 @@ function renderNext(s) {
       );
     } else if (s.progress.openRework.length) {
       L.push("ROW: none");
-      L.push(`Every scope row is done, but ${s.progress.openRework.length} review finding(s) are still pending. Work the first pending R… event in order, then continue to the next one in this SAME invocation; each keeps its own exact text in \`## Row Contracts\`. The phase does not go back to review until none is pending.`);
+      L.push(`Every scope row is done, but ${s.progress.openRework.length} rework event(s) are still pending. Work the first pending R… event in order, then continue to the next one in this SAME invocation; each keeps its own exact text in \`## Row Contracts\`. The phase does not go back to review until none is pending.`);
     } else if (!s.progress.allMet) {
       L.push("ROW: none");
       L.push("Every scope row is done but not every Exit Criterion is met. Prove the remaining ones or reopen the row that owes the evidence; the phase is not built until both tables are closed.");
@@ -1538,7 +1539,7 @@ function renderNext(s) {
     }
     if (s.progress.rework.length) {
       L.push("");
-      L.push("Rework (review findings; build routes here while any is pending):");
+      L.push("Rework (review findings and mid-build corrections; build routes here while any is pending):");
       for (const r of s.progress.rework) {
         L.push(`  ${r.id.padEnd(8)} ${r.status.padEnd(11)} ${r.label}`);
       }
