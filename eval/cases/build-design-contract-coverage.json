@@ -1,0 +1,12 @@
+{
+  "name": "build-design-contract-coverage",
+  "description": "The build path's design-contract coverage gate (0g.1) and its reciprocal (10.2). The design brief names PanelHeader and SegmentedControl for both new screens, and both already exist under src/components/. The brief's Scope leaves and Exit Criteria are purely behavioural, so a screen with a hand-rolled header and its own row of window buttons passes every Exit Criterion. Build must map the named components onto the Scope rows and instantiate them; reusing the shared theme, or building a lookalike, is not reuse.",
+  "fixture": "build-design-contract-coverage",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_ledger_rows_are_the_briefs",
+    "build_reused_the_named_components",
+    "build_wrote_no_story_files"
+  ]
+}
