@@ -382,6 +382,34 @@ test("text arguments are refused on the command line", () => {
 
 // ---- rework ---------------------------------------------------------------
 
+test("an event records who raised it, defaulting to review", () => {
+  const p = project();
+  init(p);
+  const dflt = run(p.root, ["request-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+    "--text-file", p.file("r1.txt", "found at review")]);
+  assert.equal(dflt.status, 0, dflt.stderr);
+  const mid = run(p.root, ["request-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+    "--text-file", p.file("r2.txt", "you told me mid-build"), "--source", "build"]);
+  assert.equal(mid.status, 0, mid.stderr);
+
+  const parsed = p.parse();
+  assert.equal(parsed.ledger.contracts.get("R1").attributes.source, "review");
+  assert.equal(parsed.ledger.contracts.get("R2").attributes.source, "build");
+  // The attribute lives outside the fence, so the human's words stay exact.
+  assert.equal(parsed.ledger.contracts.get("R2").text, "you told me mid-build");
+
+  // It survives a re-render by another command.
+  const resolved = run(p.root, ["resolve-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+    "--id", "R2", "--status", "resolved"]);
+  assert.equal(resolved.status, 0, resolved.stderr);
+  assert.equal(p.parse().ledger.contracts.get("R2").attributes.source, "build");
+
+  const bad = run(p.root, ["request-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+    "--text-file", p.file("r3.txt", "who?"), "--source", "human"]);
+  assert.equal(bad.status, 1);
+  assert.match(bad.stderr, /--source must be one of review\|build/);
+});
+
 test("rework events are ordered, keep their exact text, and close explicitly", () => {
   const p = project();
   init(p);

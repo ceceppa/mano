@@ -1368,6 +1368,233 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("OWNER_MODE: legacy", legacy.stdout)
         self.assertIn("PHASE_ID: phase-4", legacy.stdout)
 
+    # --- near-duplicate hold and the backlog roster ---------------------------
+
+    ROSTER_BACKLOG = (
+        "# Backlog\n\n## Items\n\n"
+        "### Motion interruption example coverage\n"
+        "- **Type:** feature\n- **Context:**\n"
+        "  Let people manually exercise motion interruption choices.\n"
+        "- **Status:** backlog\n\n"
+        "### Offline sync for the ledger\n"
+        "- **Type:** feature\n- **Context:**\n"
+        "  Already shipped; invisible to --scope, which shows open items only.\n"
+        "- **Status:** resolved\n\n"
+        "### Sequential group playback mode\n"
+        "- **Type:** feature\n- **Context:**\n"
+        "  Members play one after another.\n"
+        "- **Status:** in-phase-3\n"
+    )
+
+    def test_add_holds_an_item_that_restates_an_existing_one(self):
+        """The live failure: 'Motion interruption example scenarios' entered the
+        backlog beside 'Motion interruption example coverage'. Exact-title
+        matching never saw it."""
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        result = self.run_backlog(
+            "add", "--title", "Motion interruption example scenarios",
+            "--type", "test", "--context", "Examples demonstrate an interrupted motion.",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("SIMILAR", result.stdout)
+        self.assertIn("Motion interruption example coverage", result.stdout)
+        self.assertIn("Status: backlog", result.stdout)
+        # Advisory only: the item is written and nothing is blocked.
+        self.assertIn(
+            "Motion interruption example scenarios",
+            self.backlog.read_text(encoding="utf-8"),
+        )
+
+    def test_add_holds_against_resolved_items_that_scope_input_never_shows(self):
+        """--scope carries open items only. A resolved item is exactly what a
+        skill cannot see and therefore duplicates."""
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        result = self.run_backlog(
+            "add", "--title", "Offline ledger sync",
+            "--type", "feature", "--context", "Sync offline.",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Offline sync for the ledger", result.stdout)
+        self.assertIn("Status: resolved", result.stdout)
+
+    def test_add_writes_the_whole_batch_and_reports_only_the_collision(self):
+        """The report must not cost the caller any item, including the one it
+        names — the human decides, after the fact."""
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        items = self.root / "items.json"
+        items.write_text(json.dumps([
+            {"title": "Reduced-motion accessibility toggle", "type": "feature", "context": "A toggle."},
+            {"title": "Motion interruption example scenarios", "type": "test", "context": "Examples."},
+        ]), encoding="utf-8")
+        result = self.run_backlog("add", "--file", str(items))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        text = self.backlog.read_text(encoding="utf-8")
+        self.assertIn("Reduced-motion accessibility toggle", text)
+        self.assertIn("Motion interruption example scenarios", text)
+        self.assertIn("2 written", result.stdout)
+        # Only the colliding one is named.
+        self.assertIn("Motion interruption example coverage", result.stdout)
+        self.assertNotIn("resembles: Reduced-motion", result.stdout)
+
+    def test_add_holds_a_duplicate_that_arrives_twice_in_one_batch(self):
+        """A batch must not be able to smuggle a duplicate past itself."""
+        self.backlog.write_text("# Backlog\n\n## Items\n", encoding="utf-8")
+        items = self.root / "items.json"
+        items.write_text(json.dumps([
+            {"title": "Export the ledger to CSV", "type": "feature", "context": "Export it."},
+            {"title": "Export ledger as CSV file", "type": "feature", "context": "Export it again."},
+        ]), encoding="utf-8")
+        result = self.run_backlog("add", "--file", str(items))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("this batch", result.stdout)
+
+    def test_no_similar_warning_silences_the_report_but_not_the_exact_check(self):
+        """mano import passes this: one authored document legitimately yields
+        sibling titles, and the report would be continuous noise there."""
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        quiet = self.run_backlog(
+            "add", "--title", "Motion interruption example scenarios",
+            "--type", "test", "--context", "Genuinely different.", "--no-similar-warning",
+        )
+        self.assertEqual(quiet.returncode, 0, quiet.stdout + quiet.stderr)
+        self.assertNotIn("SIMILAR", quiet.stdout)
+        self.assertIn(
+            "Motion interruption example scenarios",
+            self.backlog.read_text(encoding="utf-8"),
+        )
+        repeat = self.run_backlog(
+            "add", "--title", "Motion interruption example scenarios",
+            "--type", "test", "--context", "Same title again.", "--no-similar-warning",
+        )
+        self.assertEqual(repeat.returncode, 0, repeat.stdout + repeat.stderr)
+        self.assertIn("skipped (duplicate title)", repeat.stdout)
+
+    def test_add_leaves_unrelated_work_alone(self):
+        """The guard must not tax ordinary additions."""
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        result = self.run_backlog(
+            "add", "--title", "Keyboard shortcut overlay",
+            "--type", "feature", "--context", "Show shortcuts.",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("1 written", result.stdout)
+        self.assertNotIn("SIMILAR", result.stdout)
+
+    def test_titles_roster_groups_every_status_without_context(self):
+        """mano start is barred from opening backlog.md; this is the channel
+        that shows it what the project already tracks, including scoped and
+        shipped items that --scope omits by design."""
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        result = self.run_state("--titles")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("BACKLOG ROSTER", result.stdout)
+        self.assertIn("COUNT: 3", result.stdout)
+        self.assertIn("## backlog (1)", result.stdout)
+        self.assertIn("## resolved (1)", result.stdout)
+        self.assertIn("## in-phase (1)", result.stdout)
+        self.assertIn("in-phase-3", result.stdout)
+        self.assertNotIn("Members play one after another", result.stdout)
+        self.assertNotIn("Let people manually exercise", result.stdout)
+
+    def test_titles_roster_filters_on_match(self):
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        result = self.run_state("--titles", "--match", "LEDGER")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Offline sync for the ledger", result.stdout)
+        self.assertNotIn("Sequential group playback mode", result.stdout)
+        empty = self.run_state("--titles", "--match", "nothing-matches-this")
+        self.assertEqual(empty.returncode, 0)
+        self.assertIn("no item title matches", empty.stdout)
+
+    def test_titles_rejects_being_combined_with_another_projection(self):
+        self.backlog.write_text(self.ROSTER_BACKLOG, encoding="utf-8")
+        result = self.run_state("--titles", "--scope")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("cannot be combined", result.stderr)
+
+    # --- update: the missing rewrite path -------------------------------------
+
+    UPDATE_BACKLOG = (
+        "# Backlog\n\n## Items\n\n"
+        "### Motion interruption example coverage\n"
+        "- **Type:** feature\n- **Source:** phase-1 review\n- **Track:** option-b\n"
+        "- **Context:**\n  Exercise interruption choices.\n"
+        "- **Status:** in-phase-2\n\n"
+        "### Other item\n"
+        "- **Type:** bug\n- **Context:**\n  Unrelated.\n- **Status:** backlog\n"
+    )
+
+    def test_update_rewrites_context_and_leaves_every_other_field_alone(self):
+        """The skills were told to 'update its context instead of creating a
+        duplicate' and to rewrite an item when splitting it, with no command
+        that could do either. This is that command — and the fields it must not
+        disturb are the ones carrying phase identity and provenance."""
+        self.backlog.write_text(self.UPDATE_BACKLOG, encoding="utf-8")
+        result = self.run_backlog(
+            "update", "--title", "Motion interruption example coverage",
+            "--context", "Exercise interruption choices.\\nShow the observable result.",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        text = self.backlog.read_text(encoding="utf-8")
+        self.assertIn("  Show the observable result.", text)
+        self.assertIn("- **Type:** feature", text)
+        self.assertIn("- **Source:** phase-1 review", text)
+        self.assertIn("- **Track:** option-b", text)
+        self.assertIn("- **Status:** in-phase-2", text)
+        self.assertIn("(unchanged)", result.stdout)
+
+    def test_update_renames_an_item_for_a_split(self):
+        self.backlog.write_text(self.UPDATE_BACKLOG, encoding="utf-8")
+        result = self.run_backlog(
+            "update", "--title", "Motion interruption example coverage",
+            "--new-title", "Motion interruption example coverage (Control nodes)",
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        text = self.backlog.read_text(encoding="utf-8")
+        self.assertIn("### Motion interruption example coverage (Control nodes)", text)
+        self.assertIn("- **Status:** in-phase-2", text)
+        # The context it did not name survives untouched.
+        self.assertIn("  Exercise interruption choices.", text)
+
+    def test_update_never_changes_status(self):
+        """Status carries phase identity; a careless rewrite there loses work."""
+        self.backlog.write_text(self.UPDATE_BACKLOG, encoding="utf-8")
+        result = self.run_backlog(
+            "update", "--title", "Other item", "--status", "resolved",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("assign / resolve / reject", result.stdout + result.stderr)
+        self.assertIn("- **Status:** backlog", self.backlog.read_text(encoding="utf-8"))
+
+    def test_update_refuses_without_writing(self):
+        """Every rejected target must leave the file byte-identical."""
+        self.backlog.write_text(self.UPDATE_BACKLOG, encoding="utf-8")
+        before = self.backlog.read_text(encoding="utf-8")
+        for args, needle in (
+            (("update", "--title", "No such item", "--context", "x"), "no item has the exact title"),
+            (("update", "--title", "Other item"), "needs --new-title, --context, or both"),
+            (("update", "--title", "Other item", "--context", "   "), "cannot be empty"),
+            (("update", "--title", "Other item", "--context", "a\\nb\\nc\\nd\\ne\\nf"), "max 5"),
+            (("update", "--title", "Other item", "--new-title", "Motion interruption example coverage"),
+             "already titled"),
+            (("update", "--context", "x"), "exactly one --title"),
+        ):
+            result = self.run_backlog(*args)
+            self.assertNotEqual(result.returncode, 0, f"{args} should fail")
+            self.assertIn(needle, result.stdout + result.stderr, f"{args} wrong reason")
+            self.assertEqual(before, self.backlog.read_text(encoding="utf-8"), f"{args} mutated the file")
+
+    def test_update_refuses_an_ambiguous_target(self):
+        self.backlog.write_text(
+            self.UPDATE_BACKLOG + "\n### Other item\n- **Type:** bug\n- **Context:**\n  Dupe.\n- **Status:** backlog\n",
+            encoding="utf-8",
+        )
+        result = self.run_backlog("update", "--title", "Other item", "--context", "x")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("ambiguous", result.stdout + result.stderr)
+
+
+
 
 class GapSkillContractTests(unittest.TestCase):
     def test_spec_and_rules_use_only_narrow_projections_and_targeted_writer(self):

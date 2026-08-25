@@ -14,6 +14,7 @@
  *
  * Source layout (inside this package) -> runtime layout (user's project):
  *   src/skills/ src/templates/ src/hooks/ src/workflow.md  ->  ./_mano/
+ *   src/VERSION                                              ->  ./_mano/VERSION
  *   src/bootstrap/AGENTS.md                                  ->  ./AGENTS.md     (always)
  *   src/bootstrap/CLAUDE.md                                  ->  ./CLAUDE.md     (optional)
  *   src/bootstrap/cursorrules                                ->  ./.cursorrules  (optional)
@@ -34,7 +35,10 @@ const CWD = process.cwd();
 
 // What lands inside ./_mano/ (read from src/)
 const MANO_DIRS = ["skills", "rules", "templates", "hooks", "scripts"];
-const MANO_FILES = ["workflow.md"];
+// VERSION is the installed copy's own version stamp — the only way a project
+// can tell which Mano it has. `tools/check-version.js` keeps src/VERSION equal
+// to package.json, so what lands here is never a guess.
+const MANO_FILES = ["workflow.md", "VERSION"];
 
 // Repo-side incident/eval metadata. `<!-- mano-rule: … -->` / `<!-- /mano-rule: … -->`
 // marker lines exist for the eval harness's provenance and retirement probes;

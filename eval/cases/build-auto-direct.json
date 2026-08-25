@@ -6,13 +6,23 @@
   "phase": 1,
   "run_mode": "auto",
   "steps": [
-    { "prompt": "mano import tag-index-brief.md", "session": "fresh" },
-    { "prompt": "mano start", "session": "fresh" },
-    { "prompt": "go", "session": "continue" }
+    {
+      "prompt": "mano import tag-index-brief.md",
+      "session": "fresh"
+    },
+    {
+      "prompt": "mano start",
+      "session": "fresh"
+    },
+    {
+      "prompt": "go",
+      "session": "continue"
+    }
   ],
   "assertions": [
     "auto_reached_build_without_story_files",
     "auto_chain_stopped_before_review",
-    "build_wrote_no_story_files"
+    "build_wrote_no_story_files",
+    "auto_chain_handoff_printed_no_next_menu"
   ]
 }

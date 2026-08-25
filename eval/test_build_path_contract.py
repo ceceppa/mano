@@ -113,6 +113,20 @@ class PreFlightOrderTests(unittest.TestCase):
         # Style and naming are not product promises.
         self.assertIn("do not invent a product promise for them", build)
 
+    def test_the_design_brief_is_mapped_like_the_project_rules(self) -> None:
+        """The named-component incident: the design brief carried the contract,
+        and only project-rules.md had a coverage pass to enforce one."""
+        build = _read("src/skills/build.md")
+        implement = _read("src/rules/implement.md")
+        self.assertIn("**0g.1 Design-contract coverage.** The same mapping", build)
+        self.assertIn("`### [PHASE_ID] — [Screen Name]`", build)
+        self.assertIn("**obligation list**, not reference material", build)
+        self.assertIn("**Naming a component is not describing one.**", build)
+        # The reciprocal half — a map nothing re-reads is a map that is forgotten.
+        self.assertIn("10.2 **Design-contract conformance", implement)
+        self.assertIn("**this turn's actual edits**", implement)
+        self.assertIn("leaves the row **pending**", implement)
+
     def test_an_unmapped_phase_goal_outcome_is_a_hard_outcome(self) -> None:
         build = _read("src/skills/build.md")
         self.assertIn("**0f. Prove the chain: `Phase Goal` outcome → Scope leaves → Exit leaves.**", build)
@@ -152,9 +166,25 @@ class CorrectionRoutingTests(unittest.TestCase):
 
     def test_a_defect_reopens_existing_rows_before_any_code(self) -> None:
         build = _read("src/skills/build.md")
-        self.assertIn("Reopen the affected rows **before writing any code**", build)
+        self.assertIn("Then reopen the affected rows, **before writing any code**", build)
         self.assertIn("never attach correction-only `affects:` metadata to a normal row", build)
         self.assertIn("records a sequence that did not happen", build)
+        # Reopening the nearest leaf as a proxy records a proven promise as unproven.
+        self.assertIn("**Reopen only what the defect actually touches.**", build)
+
+    def test_a_mid_build_correction_is_as_durable_as_a_review_finding(self) -> None:
+        """A reopen writes a status cell; once the row is `done` again the
+        ledger matches a phase that never had the defect."""
+        build = _read("src/skills/build.md")
+        self.assertIn("**Record it before you reopen anything.**", build)
+        self.assertIn("--text-file /tmp/correction.txt --source build", build)
+        self.assertIn("byte-identical to a phase in which the defect never happened", build)
+        self.assertIn("resolve-rework", build)
+        # Build must not deadlock against an event it recorded itself.
+        self.assertIn(
+            "**An event you recorded in this run is not a pending event blocking this run.**",
+            build,
+        )
 
     def test_a_correction_never_derives_both_contracts_from_one_sentence(self) -> None:
         build = _read("src/skills/build.md")
@@ -218,7 +248,9 @@ class ReworkTests(unittest.TestCase):
 
     def test_a_pending_finding_routes_to_build_even_when_the_ledger_is_complete(self) -> None:
         build = _read("src/skills/build.md")
-        self.assertIn("## Review findings (rework)", build)
+        self.assertIn("## Rework events", build)
+        # Two writers, one route: review findings and mid-build corrections.
+        self.assertIn("Two things write one: `mano review`", build)
         self.assertIn("**even when every row was already `done` and every criterion `met`**", build)
         self.assertIn("classify it into A, B, or C above — per event, never in aggregate", build)
 

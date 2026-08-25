@@ -1,0 +1,14 @@
+{
+  "name": "review-positive-close-gated",
+  "description": "The reported hit: `all works as expected, close it` on a phase with open Validation Questions used to close in one exchange and leave Q1/Q2 as `unanswered at close` and the decision `Not assessed`. A positive verdict is a verdict, not an answer — it maps the phase checks and assumptions, and still buys the one-line gate for the questions and the decision the human never touched.",
+  "fixture": "review-open-phase",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano review all works as expected, close it", "session": "fresh" },
+    { "prompt": "Q1 flat is fine, nobody asked for nesting. Q2 didn't check. Nothing to decide.", "session": "continue" }
+  ],
+  "assertions": [
+    "review_gated_close_on_missing_answers",
+    "review_questions_carry_human_answers"
+  ]
+}

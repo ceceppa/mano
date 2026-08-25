@@ -29,11 +29,7 @@ You already have a PRD, a spec, a long issue. You don't want to retype it into a
 mano import prd.md
 ```
 
-Import turns the document into a backlog and **stops**. It doesn't scope, decide, or read your source to guess at work — it converts what the document says into items, including the project-wide directives no single feature owns:
-
-> A document's project-wide technical directives — a runtime or version constraint, a module system, a folder structure, a file-naming scheme, where tests live — belong to every item and therefore to none, which is exactly how they vanish between the document and the first line of code.
-
-Those become their own items, carrying the directive verbatim, so `mano spec` and `mano rules` pick them up later instead of losing them.
+[Import](/features/import) turns the document into a backlog and **stops** — including the project-wide directives no single feature owns, which is exactly what usually vanishes between a document and the first line of code.
 
 Then hand off the typing:
 
@@ -42,7 +38,7 @@ mano mode auto
 mano start
 ```
 
-Auto mode chains the commands you'd otherwise type. It is armed by **one thing only** — your explicit approval of a phase scope:
+[Auto mode](/features/auto-mode) chains the commands you'd otherwise type, armed by one thing only — your explicit approval of a phase scope. It never scopes for you, never runs `mano review`, and stops at any open question.
 
 ```text
 → Auto mode: spec → rules → build
@@ -51,20 +47,7 @@ Auto mode chains the commands you'd otherwise type. It is armed by **one thing o
   questions; stops before review.
 ```
 
-What auto mode does **not** do:
-
-- It never scopes a phase for you. Approval is always yours.
-- It never runs `mano review`. Closing a phase is a judgement call.
-- It stops at any open question or missing artifact.
-- "stop" or "wait" ends it immediately.
-
-The chain ends at `mano build` — but that pairing is a convenience, not a coupling. `mano build` is one of the two ways into code and you can type it yourself in manual mode any time a phase doesn't need story files:
-
-```
-mano build
-```
-
-It works straight from the numbered `## Phase Scope` items you already approved, so nothing invents a decomposition and nothing can drift from the brief. Progress is tracked in a ledger on disk:
+The chain ends at [`mano build`](/features/build), which works straight from the numbered `## Phase Scope` items you already approved — so nothing invents a decomposition and nothing can drift from the brief. Progress is tracked in a ledger on disk, and **built is not proven**: a criterion that is inherently visual is handed back to you as `needs-human` with a reason, rather than claimed.
 
 ```markdown
 | #   | What                              | Status  |
@@ -78,86 +61,38 @@ It works straight from the numbered `## Phase Scope` items you already approved,
 | E2a | Any demo on a high-DPI display renders consistently | pending |
 ```
 
-Two status vocabularies, and the writer enforces the difference: scope rows are `pending | doing | done`, criteria are `pending | met | needs-human`. **Built is not proven.** A criterion that is inherently visual gets handed to you as `needs-human` with a reason, rather than claimed.
-
 **When to use it:** `mano build` whenever the phase is small enough to hold in one contract — with or without auto mode. Auto mode itself once you've read enough briefs to trust their shape.
 
 ## 3. When the project gets bigger
 
-### Two people, one repo, independent phases
+Three things you only need once a repo has more than one person, more than one document, or a correction you keep making by hand.
 
-By default a phase is `_mano_output/phase-7/`. In a team that collides immediately — two people both scoping "phase 7".
-
-```
-mano owner alice
-```
-
-Now phase-scoped commands use `_mano_output/alice-phase-1/` and `in-alice-phase-1` backlog statuses, on Alice's own number sequence. Bob's `mano owner bob` runs an independent sequence in the same repo.
-
-The slug lives in repository-local git config (`mano.owner`), isn't committed, and `MANO_OWNER` overrides it per shell — so linked worktrees can differ.
-
-::: warning What this is not
-Ownership selects *work*, not *isolation*. You still use branches and worktrees for merge isolation, and you still coordinate changes to the shared backlog, spec, and rules files. Mano namespaces identity; git handles execution.
-:::
-
-### Narrowing what a phase can contain
-
-A backlog that has absorbed three imported documents and two rounds of review feedback will happily offer `mano start` fifty candidates. Two filters cut that down.
-
-**By where an item came from:**
+**[Team owners](/features/owners)** — two people, one repo, independent phase sequences:
 
 ```
-mano start from source "onboarding-prd.md"
+mano owner alice     # → _mano_output/alice-phase-1/
 ```
 
-Only items whose backlog `Source` contains that text become phase candidates.
+Ownership selects *work*, not *isolation*. Mano namespaces identity; git handles execution.
 
-**By what you're currently working on:**
+**[Tracks & filters](/features/tracks)** — narrow what a phase is allowed to contain:
 
 ```
 mano track "offline-mode"
+mano start from source "onboarding-prd.md"
 ```
 
-A track is a named direction or experiment. Once set it applies to every `mano start` automatically, until you `mano track clear`. Use `mano start from track "<name>"` to borrow a different one for a single run, and combine it with `from source` when both origin and direction matter.
+Neither is an approval, a priority, or an epic. They narrow what Mano *proposes*; the scope gate is unchanged.
 
-Neither filter is an approval, a priority, or an epic. They narrow what Mano *proposes* — Start still suggests a subset, still runs its contradiction checks, and still waits for you to approve the scope. No matches means the filter is too narrow; Mano won't quietly fall back to the whole backlog.
-
-### Wiring your own review into the loop
-
-Every skill has one hook slot — `post-spec`, `post-stories`, `post-review`, and so on. A hook is inactive until you rename it:
+**[Hooks](/features/hooks)** — your own review checklist, run automatically after any skill:
 
 ```
 _mano/hooks/post-spec.example.md   → inactive
 _mano/hooks/post-spec.md           → active
 ```
 
-Three kinds, and the difference is judgement versus mechanism:
-
-| Mode | Body is | Runs | Approval |
-| --- | --- | --- | --- |
-| `check` | a checklist Mano applies itself | always | findings need per-item approval |
-| `suggest` | a pointer to an external skill | asks first, unless in an auto chain | findings need per-item approval |
-| `command` | one shell command | always | writing the file *is* the authorization |
-
-A `check` hook is your own review, written once:
-
-```markdown
-## Mode
-check
-
-## Inputs
-- `_mano_output/tech-spec.md`
-- the exact `BRIEF` path from the state projection
-
-## Checklist
-- No contradiction or omission relative to the phase brief.
-- Install commands match the actual package manager evidence.
-```
-
-`## Inputs` is a reading scope, not a permission to change things — findings still go through triage and still need your approval per item.
-
-**When to use it:** when you've noticed yourself making the same correction three phases running. That's a checklist item, not a habit.
+Three kinds — `check`, `suggest`, `command`. Findings still go through triage and still need your approval per item.
 
 ---
 
-Not sure which applies? Start with [one phase by hand](/first-phase).
+Not sure which applies? Start with [one phase by hand](/first-phase), or browse [all features](/features/).

@@ -479,7 +479,8 @@ pin both halves of that — the shape, and everything the shape must not drop:
 | case | what it pins |
 |---|---|
 | `review-opening-shape` | the opening: every Exit leaf at its own address, one ask, no tags or recording mechanics |
-| `review-sign-off-close` | `close it` is sign-off — leaves flip to `met` with recorded human provenance, questions record `unanswered at close` |
+| `review-sign-off-close` | `close it` is sign-off, not an answer — the open questions buy one `still need:` line, then leaves flip to `met` with recorded human provenance and every question carries the human's own answer |
+| `review-positive-close-gated` | `all works as expected, close it` maps the checks and assumptions but still gates on the questions and the decision it never touched |
 | `review-mixed-echo` | mixed feedback echoes only what Mano classified, and writes nothing yet |
 | `review-close-with-finding` | `close it` beside a defect closes the phase and asks route-or-dismiss instead of erasing it |
 | `review-followup-compact` | the follow-up confirmation uses the same compact rule |

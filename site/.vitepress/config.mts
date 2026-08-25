@@ -19,6 +19,18 @@ export default defineConfig({
 
     nav: [
       { text: 'First phase', link: '/first-phase' },
+      {
+        text: 'Features',
+        items: [
+          { text: 'All features', link: '/features/' },
+          { text: 'Build mode', link: '/features/build' },
+          { text: 'Auto mode', link: '/features/auto-mode' },
+          { text: 'Import', link: '/features/import' },
+          { text: 'Team owners', link: '/features/owners' },
+          { text: 'Tracks & filters', link: '/features/tracks' },
+          { text: 'Hooks', link: '/features/hooks' }
+        ]
+      },
       { text: 'Examples', link: '/examples' },
       { text: 'Commands', link: '/commands' },
       { text: 'Why Mano', link: '/why' }
@@ -30,6 +42,18 @@ export default defineConfig({
         items: [
           { text: 'Your first phase', link: '/first-phase' },
           { text: 'Commands', link: '/commands' }
+        ]
+      },
+      {
+        text: 'Features',
+        items: [
+          { text: 'Overview', link: '/features/' },
+          { text: 'Build mode', link: '/features/build' },
+          { text: 'Auto mode', link: '/features/auto-mode' },
+          { text: 'Import a document', link: '/features/import' },
+          { text: 'Team owners', link: '/features/owners' },
+          { text: 'Tracks & filters', link: '/features/tracks' },
+          { text: 'Hooks', link: '/features/hooks' }
         ]
       },
       {

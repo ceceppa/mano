@@ -192,6 +192,10 @@ List only files confirmed present by the projection and reads. Never print the c
 
 The next-action block follows `_mano/rules/artifact.md` → **Next-step suggestion rule**. Do not ask for confirmation or add conversational fluff.
 
+<!-- mano-rule: id=chain-handoff-prints-no-next; incident=chain-ended-on-a-next-menu-it-was-about-to-run; model=codex; date=2026-08-25; eval=build-auto-direct -->
+**A mid-chain hand-off prints no `Next:` block at all.** That rule is `_mano/rules/core.md` → **Canonical execution-log format** and `_mano/rules/auto.md` → **Continuing is an action, not an announcement**, and it outranks **Show both implementation paths** above: mid-chain nobody is choosing a command, so rendering `mano build` as an option and then running it yourself is a log that offers a choice and walks past it in the same breath — the exact shape that ends chains. The mode rule decides what a `Next:` block *contains* when there is one: on every `manual` run, and on the action that ends a chain.
+<!-- /mano-rule: chain-handoff-prints-no-next -->
+
 ## When `mano ui` runs again
 
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->

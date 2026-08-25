@@ -99,3 +99,52 @@ test("backlog inserts blocks inside the canonical Items section", () => {
   assert.equal(next.indexOf("### Third item") < next.indexOf("## Notes"), true);
   assert.match(backlog.buildWithItems(null, [block]), /^# Backlog\n\n## Items/);
 });
+
+// --- near-duplicate hold -----------------------------------------------------
+//
+// Exact-title matching only ever caught a re-run. These pin the case it misses:
+// the same work re-entering the backlog under a slightly different name.
+
+test("backlog title tokens drop noise words and singularize", () => {
+  assert.deepEqual([...backlog.titleTokens("Add the Motion Scenarios")].sort(), ["motion", "scenario"]);
+  // Stop words alone carry no signal.
+  assert.equal(backlog.titleTokens("the and of").size, 0);
+});
+
+test("backlog near-duplicate detection fires on a renamed item, not on a sibling", () => {
+  // The live anima failure: these two were both scoped into phase 22.
+  assert.equal(
+    backlog.titlesAreSimilar(
+      "Motion interruption example scenarios",
+      "Motion interruption example coverage",
+    ),
+    true,
+  );
+  // A restatement that only reorders and pads.
+  assert.equal(
+    backlog.titlesAreSimilar('Add "Showcase" category to demo selector', "Showcase category in demo selector"),
+    true,
+  );
+  // Genuinely different work that merely shares vocabulary must pass through.
+  assert.equal(
+    backlog.titlesAreSimilar("Layout transition visual demonstration scenario", "Layout transition scope limits"),
+    false,
+  );
+  assert.equal(backlog.titlesAreSimilar("Export ledger to CSV", "Offline sync for the ledger"), false);
+  // An empty token set can never collide.
+  assert.equal(backlog.titlesAreSimilar("the and of", "Motion interruption"), false);
+});
+
+test("backlog existingItems reports each item's status for collision messages", () => {
+  const items = backlog.existingItems(SAMPLE);
+  assert.deepEqual(items, [
+    { title: "First item", status: "backlog" },
+    { title: "Second item", status: "resolved" },
+  ]);
+  assert.deepEqual(backlog.existingItems(null), []);
+});
+
+test("backlog parses the --no-similar-warning suppression flag", () => {
+  assert.equal(backlog.parseArgs(["add", "--title", "X"]).noSimilarWarning, false);
+  assert.equal(backlog.parseArgs(["add", "--title", "X", "--no-similar-warning"]).noSimilarWarning, true);
+});

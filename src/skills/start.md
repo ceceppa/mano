@@ -79,7 +79,7 @@ Provide detail to minimize clarifying queries.
 ## Inputs
 
 - The state script's `SCOPE INPUT` block — on Path A it carries phase-scopeable `Status: backlog` items; on `resume-draft` it carries exact-phase assignments plus matching open candidates so the human can restore the lost approved subset. Gap types, closed items, and other phases are excluded. Both include `## Core Product Principles` and the latest review, so you never reopen `backlog.md` / `reviews.md` to scope.
-- `_mano_output/backlog.md` — write-only here, through `backlog.js` (add/assign); never opened to read. Scope context arrives only via the projection's `SCOPE INPUT`. Sole hand-edits: `## Core Product Principles`, and an item's title/context during a split.
+- `_mano_output/backlog.md` — **never opened to read**. Two projections give you everything you would have opened it for: `SCOPE INPUT` is the only scope-selection input, and `state.js --titles` is the only way to see what the project already tracks (see `_mano/rules/backlog.md` → **The backlog roster**). Writes go through `backlog.js` (`add` / `update` / `assign`); `## Core Product Principles` is the only hand-edit left.
 - `_mano_output/project-rules.md` only if it already exists and is explicitly relevant to scoping
 - PRD or reference document if provided by the user
 
@@ -160,6 +160,8 @@ node _mano/scripts/backlog.js add --file _mano_output/.add.json
 
 then delete the temp file. Don't hand-write `### ` blocks. (For just one or two items, the flag form — `backlog.js add --title "..." --type ... --context "..."` — is simpler.) **Script failing?** Stop and report the error — never hand-write the blocks instead (see "Scripts are mandatory" in `_mano/rules/core.md`).
 
+If the script reports a `SIMILAR` pair here, two of the items you just decomposed may describe the same work. Merge them before moving on — this is a backlog you are creating, so it is cheaper to fix now than to flag.
+
 Then proceed to Step 6.
 
 ### Already have a PRD or document?
@@ -172,13 +174,21 @@ Then proceed to Step 6.
 
 Work from the state script's `SCOPE INPUT` block (the phase-scopeable `Status: backlog` items, `## Core Product Principles`, and latest review) — it's already in context from activation, so don't reopen `backlog.md`, `reviews.md`, or the completed phase's folder. The projection has already removed `spec-gap` and `rule-gap` items. Estimate complexity of each remaining item based on its context.
 
-If the latest review records `Validation` as `Result: Not tested`, or uses the legacy `Evidence: none` form, and the candidate phase depends on an assumption that review left `accepted` or `inconclusive`, or on a question it recorded as `unanswered at close`, surface one non-blocking line with the suggestion: `⚠ Previous [PHASE_ID] closed without validation; [A2 / Q1 …] relevant to this scope was never answered.` Carry the review's own `A…` / `Q…` addresses so the human can find the entry. Do not block the new phase, manufacture a validation task, or repeat the warning when the candidate scope is unrelated. The human decides whether to validate later or continue knowingly.
+If the latest review records `Validation` as `Result: Not tested`, or uses the legacy `Evidence: none` form, and the candidate phase depends on an assumption that review left `accepted` or `inconclusive`, or on a question it recorded as `not checked`, surface one non-blocking line with the suggestion: `⚠ Previous [PHASE_ID] closed without validation; [A2 / Q1 …] relevant to this scope was never answered.` Carry the review's own `A…` / `Q…` addresses so the human can find the entry. Do not block the new phase, manufacture a validation task, or repeat the warning when the candidate scope is unrelated. The human decides whether to validate later or continue knowingly.
 
-**Hard constraint: one independently verifiable outcome per phase.** A phase should deliver one cohesive capability or retire one meaningful risk that can be validated without work planned for a later phase. It may cross backend, frontend, storage, or other layers when that is the smallest complete slice; keep each layer to the minimum required for the outcome. Do not bundle unrelated outcomes simply because they share infrastructure. Treat internal prerequisites as part of the outcome rather than separate phase-scope items, while recording them explicitly in the phase brief and stories.
+**Default scope shape: one independently verifiable outcome per phase.** A phase should deliver one cohesive capability or retire one meaningful risk that can be validated without work planned for a later phase. It may cross backend, frontend, storage, or other layers when that is the smallest complete slice; keep each layer to the minimum required for the outcome. Do not *propose* a bundle of unrelated outcomes simply because they share infrastructure. Treat internal prerequisites as part of the outcome rather than separate phase-scope items, while recording them explicitly in the phase brief and stories.
 
 Ask: "At the end of this phase, can someone demonstrate the capability or verify that the risk has been retired using clear acceptance criteria?" If not, reshape the scope.
 
-Suggest a shortlist that fits this constraint — 1-2 items if complex, several if small. When in doubt, err on fewer items. A phase that's too small ships fast; a phase that's too big never ships.
+**Size against effort, not item count.** One or two items when they are complex, several when they are small. A cluster of small items is not over-scoped by virtue of being a cluster, and a single large item is not right-sized by virtue of being alone. When in doubt, err on fewer items. A phase that's too small ships fast; a phase that's too big never ships.
+
+<!-- mano-rule: id=phase-scope-is-a-proposal; incident=start-refused-a-human-approved-combination; model=chatgpt-terra; date=2026-08-24; eval=start-combines-unrelated-small-items -->
+**The scope shape governs what you propose, never what the human may approve.** When the human asks for a combination you would not have suggested — two unrelated items, a small rider on top of the main outcome — take it and continue in the same turn. Say the cost once, as an advisory line, and move on:
+
+`⚠ [Item A] and [Item B] are unrelated outcomes; the phase review will return one verdict covering both.`
+
+Then draft the brief for the approved scope. Never answer a scope request with a refusal, a "pick one" menu, or the same question again. "I won't combine them" is not a move `mano start` has — the human owns the phase boundary, and you owe them the trade-off once, not a gate. This is a `⚠ Verify`, never a `❓ Decide` (`_mano/rules/core.md` → **Canonical execution-log format**).
+<!-- /mano-rule: phase-scope-is-a-proposal -->
 
 Prioritise:
 1. 🐛 Defects first — bugs always take priority
@@ -216,6 +226,12 @@ What do you want to build next?
 
 After presenting, stop. Do not continue to Step 7 until the user explicitly approves or adjusts the phase selection.
 
+**Answering the menu options.** Options 3, 4 and 5 are real offers — honour them in the same turn and then re-present the menu; none of them advances to Step 7 on its own.
+
+- **3 — I know what I want.** The human names the work. Match their words to real item titles before doing anything with them (`_mano/rules/backlog.md` → **The backlog roster**): `node _mano/scripts/state.js --titles --match "[distinctive word]"`. Quote the exact titles back and confirm. Never re-word their request into an item of your own invention — the item they mean almost always exists already.
+- **4 — Show full backlog.** Run `node _mano/scripts/state.js --titles` and show the roster grouped as the script prints it. This is the whole backlog, not just this phase's candidates: it includes items already scoped into a phase and items already shipped, which `SCOPE INPUT` deliberately omits. Do **not** open `backlog.md` to answer this, and do not paste item context — the roster is titles, types and statuses by design.
+- **5 — New idea.** Capture it as one or more items now, through the script, exactly as Step 5 does. Run the roster check first: an "idea" the human just had is frequently something the backlog already tracks, and `backlog.js add` will hold it back if so. Then re-present the menu with the new item among the candidates.
+
 **In auto mode** (`MODE: auto` in the state projection), append the intended chain to this same message, so the user arms it with the approval they are already giving — never as a second gate:
 
 ```text
@@ -228,7 +244,23 @@ In auto mode, replace option 1's description with `Approve this scope and run th
 
 Before proposing that line, decide whether this candidate scope requires `spec`, `ux`, `rules`, or `ui` from the projection's `ARTIFACTS:` line — it reports whether `tech-spec.md`, `ux-flow.md`, `project-rules.md`, and `design-brief.md` exist, so do not open any of them for this check. Never open the backlog, reviews, source, a prior phase folder, or another phase's preview either. An artifact that exists is only skipped when the candidate scope plainly adds nothing in its area; when its coverage of this phase is genuinely uncertain, include the action and let the human strike it in the approval reply.
 
+<!-- mano-rule: id=artifact-presence-is-not-coverage; incident=start-armed-no-ux-ui-for-a-new-selector-category; model=chatgpt-terra; date=2026-08-24; eval=start-arms-ux-ui-for-existing-surface -->
+**`ARTIFACTS:` reports existence, never coverage — and you may not open the files to find out.** `ux-flow=present` means a flow document exists, not that it describes this phase's interaction; `design-brief=present` means a brief exists, not that it covers this phase's screen. Both are project-lifetime artifacts: once written they read `present` for every phase that follows, so presence can never distinguish a covered phase from an uncovered one. Presence is therefore not a reason to omit an action.
+
+You are blind here by design, so resolve the uncertainty toward including the action: when the candidate scope touches an interactive surface or a rendered screen at all, put `ux` and `ui` in the chain and let the human strike them (`go, skip ux`). Apply `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** on the scope's own terms, never on whether the artifact exists.
+
+**"The phase only adds one more of something that artifact already describes" is the reasoning this rule exists to block.** A third category in an existing selector, a second mode beside the first, one more state on a known control — each is new navigation and new visual hierarchy that the existing flow, written before it existed, cannot have covered. Omitting `ux`/`ui` there is exactly the gap `mano build`'s pre-flight will stop on, one armed chain later.
+<!-- /mano-rule: artifact-presence-is-not-coverage -->
+
 Propose only the actions the phase genuinely needs, applying `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** and `_mano/rules/auto.md` for the rest of the chain contract.
+
+**A removal is recorded; the rest of the chain is not.** Everything else about an armed chain is derivable at any moment — the artifacts on disk say which planning actions have run, and the ledger says whether implementation is done — so a chain needs no file to survive a dead session. One thing is not derivable: that the human looked at the proposal and struck an action. Recompute that and you re-propose what they just declined. So when, and **only** when, the approval reply removes an action (`go, skip ux`), record the subtraction once, immediately after the brief is written and the phase id is final:
+
+```
+node _mano/scripts/chain.js skip --phase [PHASE_ID] --actions ux,ui
+```
+
+A chain approved as proposed writes nothing. Never record an action the human added, never record `build` or `dev` (implementation is a chain's terminal action and is not optional), and never treat the record as the chain itself — it is a subtraction from a chain that is otherwise recomputed fresh every time it is read.
 
 ### Step 7 — Validate, clarify, and draft brief
 
@@ -290,6 +322,24 @@ When the approved scope uses breadth words such as “any”, “all”, “ever
 Use one question per bullet. Never join independent questions with “and whether”. The human may use the phase directly, show it to someone, observe a workflow, or measure a result. Do not require external users when self-use or an objective check fits.
 
 Every Question needs at least one Try bullet that can answer it. Every Try bullet must support a Question. Move a capability check into Exit Criteria instead. Remove any unrelated activity. If a useful test is unclear, ask one focused question.
+
+**Performability check — a `Try` the human cannot perform is not a test.** Every Try bullet is an action on a surface. Before writing one, name that surface and confirm two things: a `## Phase Scope` leaf ships it, or the project already has it — **and it exercises this phase's behaviour**. An existing demo that shows something else is not a surface for this phase's Try. Then check `## Not This Phase`, which may have removed the fallback. A Try that survives neither check is an instruction the human cannot follow, and `mano review` will later demand an answer that was never obtainable.
+
+This fails on engine, API, and behaviour-only phases: the phase defines what happens internally, no leaf ships anything that runs it in front of a person, and the Try still says "observe the resulting state". Reading source, attaching a debugger, or writing a throwaway scene is **not** a Try — that is implementing, and the human is here to validate.
+
+**The tell is a scope leaf that promises observability while no leaf delivers it.** A leaf named `Observable outcome`, a design principle reading *make the result easy to inspect*, an Exit Criterion whose verb is *observe* or *inspect* — each names a person doing the looking. Find the leaf that gives them somewhere to look. When there isn't one, the brief contradicts itself and the Try inherits the contradiction.
+
+- ❌ Scope ships `a. Ownership`, `b. Interruption choices`, `c. Observable outcome` (all engine) plus `d. Showcase category` (lists an existing grid demo), and the Try reads `Start conflicting motions under each supported interruption choice and observe the resulting property state and playback outcome`. Nothing in that scope runs a conflicting motion where a person can see it, and `## Not This Phase` excludes the debugger panel that would have.
+- ✅ Either a leaf ships the surface — `e. Interruption demo — a scene that runs each interruption choice back to back on one property` — and the Try names it, or the question is not answerable this phase and does not belong in this brief.
+
+**Never resolve this silently, in either direction.** Adding a surface widens scope and dropping a question discards learning the human asked for — both are theirs to decide. Raise it in the 7b clarification block below, before drafting:
+
+```
+2. Q1 asks whether the interruption choices are predictable enough to use, but every Scope leaf is engine behaviour and the Showcase leaf only lists an existing grid demo — there is nothing to run a conflicting motion on.
+   Affects: add a demo scene to Phase Scope, or drop Q1 to a later phase
+```
+
+An automated check answers a Question only where the Question is about a result a test can assert. A question about whether something *feels* right, reads right, or matches expectation needs a human at a surface — pick the surface or drop the question.
 
 The plan is not a success prediction and Mano does not make the decision. It makes the intended evidence path visible before implementation. Infer it from the approved goal and Exit Criteria when clear. If either line would be invented, ask one focused 7b question. Do not add market research, business metrics, or a heavyweight experiment to a small phase unless the user requested them.
 
@@ -376,6 +426,8 @@ Each phase brief carries everything needed to understand the phase. No external 
 
 The brief must describe one independently verifiable outcome. That outcome may cross technical layers when the smallest complete slice needs them. Target roughly 250-500 words. If the brief needs long prose or a large scope list to make sense, the phase is too broad.
 
+When the human approved a scope spanning more than one outcome (see **Step 6**), carry them as separate `## Phase Scope` categories, each with its own exit criteria, and let `## Phase Goal` name the outcome that survives a scope cut. Do not merge them into one invented umbrella outcome to satisfy this section, and do not quietly drop the item you would not have proposed.
+
 ## Backlog format
 
 `mano start` owns `_mano_output/backlog.md`. Humans may also edit it directly.
@@ -434,7 +486,7 @@ Rules:
 
 **Max 5 lines per item** (excluding the title). Context can be multiline. If it needs more detail, it gets that when it enters a phase.
 
-**Before adding an item, check for duplicates.** If an existing item covers the same topic, update its context instead of creating a duplicate. Only create a new item if the topic is genuinely different.
+**Before adding an item, check for duplicates** — with `node _mano/scripts/state.js --titles`, not from memory. If an existing item covers the same topic, use it instead of creating a duplicate — and when your version carries detail the existing one lacks, fold that in with `backlog.js update --title "..." --context "..."` rather than adding a second item. Only create a new item if the topic is genuinely different. `backlog.js add` also reports a near-duplicate after the fact, as a backstop — it never blocks; see `_mano/rules/backlog.md` → **The backlog roster, and not adding the same work twice**.
 
 ### Item lifecycle
 
@@ -448,25 +500,33 @@ Rules:
 A backlog item may receive the projected `IN_PHASE_STATUS` only if **everything in its title and context** ships in that exact phase identity. If the approved phase covers only part of an item — a narrower version, fewer capabilities, a subset of what the title promises — you MUST split it before finalising. Do not stamp a broad item when the phase delivers only a slice of it.
 
 To split:
-1. Rewrite the original item in `backlog.md` so its title and context describe **only** the slice entering this phase — a direct hand-edit (the one place you edit `backlog.md` by hand instead of through the script). Leave its `Status: backlog`; Finalisation step 4's `assign` stamps it. The title must not name capabilities that are not in this phase.
+1. Rewrite the original item so its title and context describe **only** the slice entering this phase — through the script, not by hand:
+   ```
+   node _mano/scripts/backlog.js update --title "[exact current title]" --new-title "..." --context "..."
+   ```
+   `update` never touches `Status`, so the item stays `backlog` and Finalisation step 4's `assign` stamps it. The title must not name capabilities that are not in this phase.
+
+   **Script failing?** Stop and report the error — do not rewrite the item by hand.
 2. Add a new item for the deferred remainder via the script — title and context describing only the not-yet-built part — cross-referencing it in one line (e.g. "Extends [PHASE_ID] X once shipped"):
    ```
-   node _mano/scripts/backlog.js add --title "..." --type [type] --context "..." [--track "[TRACK]"]
+   node _mano/scripts/backlog.js add --title "..." --type [type] --context "..." --no-similar-warning [--track "[TRACK]"]
    ```
 
    Include `--track` with the exact projected `TRACK` whenever it is not `none`.
 
+   `--no-similar-warning` belongs here and only here among your `add` calls: the two halves of a split are *meant* to have closely-related titles, so the resemblance report would flag work you have already reasoned about. Everywhere else, let it report.
+
    **Script failing?** Stop and report the error — do not append the item by hand.
 
-Splitting is the one case where editing an existing item's title and context is required rather than append-only. It is not removal — both halves remain traceable.
+Splitting is not removal — both halves remain traceable. It is one of the two places you rewrite an existing item rather than appending; folding a duplicate into the item that already covers the work is the other. Both go through `backlog.js update`, and neither touches `Status`.
 
 **Self-check before finalising:** for every item you are about to stamp with `IN_PHASE_STATUS`, read its title and context out loud against the Phase Scope. If the item names or describes anything not in Phase Scope, it is not split correctly — split it.
 
 ### Who can write to the backlog
 
 - **`mano import`** populates the backlog from a PRD or document (initial creation, all items `Status: backlog`)
-- **`mano start`** writes deferred items during scoping
-- **`mano review`** writes deferred items during triage
+- **`mano start`** writes deferred items during scoping, and may rewrite an item's title/context via `backlog.js update` when splitting it or folding a duplicate into it
+- **`mano review`** writes deferred items during triage, and may rewrite an item's title/context via `backlog.js update` when a finding belongs in an item that already exists
 - **The user** can edit directly at any time
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
 - **`mano spec`** may only mark a fully addressed spec-gap item from `state.js --spec` as resolved, using `backlog.js resolve-gap`
@@ -475,7 +535,7 @@ Splitting is the one case where editing an existing item's title and context is 
 - **`mano stories`** may make only the narrow mid-phase `backlog.js assign` mutation for an exact user-named item in an already-approved active phase; it never hand-edits the file or chooses an item itself
 - No other skill may write to the backlog
 
-Item additions, `backlog → IN_PHASE_STATUS` stamps, phase-close sweeps, and targeted gap resolutions go through `_mano/scripts/backlog.js` (`add` / `assign` / `resolve` / `resolve-gap`). The script resolves the current owner independently and owns the item format and status changes. The only direct hand-edits to `backlog.md` are the `## Core Product Principles` section and an item's title/context when splitting.
+Item additions, title/context rewrites, `backlog → IN_PHASE_STATUS` stamps, phase-close sweeps, and targeted gap resolutions go through `_mano/scripts/backlog.js` (`add` / `update` / `assign` / `resolve` / `resolve-gap`). The script resolves the current owner independently and owns the item format and status changes. `## Core Product Principles` is the only part of `backlog.md` you edit by hand.
 
 ## Finalisation
 
@@ -489,6 +549,10 @@ Only finalise after explicit human approval of the phase scope.
    ```
    Use `\n` in `--context` for line breaks (max 5), and `--source` when there's an obvious one. When the projection reports a `TRACK`, include that exact value on every deferred item. The script owns the item format and skips a title that already exists. (Many at once: write them as a JSON array to a temp file and run `backlog.js add --file <path>`.)
    **Script failing?** Stop and report the error — do not append items by hand.
+
+   **Add only work the backlog does not already track.** Every item here is new wording you composed, so this is the exact point where the same work re-enters the backlog under a second name. Two things stand between you and that, and neither is optional:
+   - Anything the **human named** is theirs to name. Find their item with `node _mano/scripts/state.js --titles --match "[distinctive word]"` and use that title — assign it in step 4. Do not add a re-worded version of a request they made (`_mano/rules/backlog.md` → **The backlog roster, and not adding the same work twice**).
+   - `backlog.js add` **reports** any item resembling one already in the file — including items already `in-phase-N` or `resolved`, which `SCOPE INPUT` never showed you. It writes everything and blocks nothing. Pass what it reports to the human as one `⚠ Verify:` line in the finalisation log and carry on (`_mano/rules/backlog.md` → **The backlog roster, and not adding the same work twice**). Most of what it catches is a sibling, not a duplicate; the human decides.
 4. **Stamp approved items to this phase via the script** — don't edit `backlog.md` by hand:
    ```
    node _mano/scripts/backlog.js assign --phase [N] --title "Exact item title"

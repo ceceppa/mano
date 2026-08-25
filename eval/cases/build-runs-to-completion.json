@@ -1,0 +1,12 @@
+{
+  "name": "build-runs-to-completion",
+  "description": "One `mano build` invocation creates the ledger and builds the phase. The incident this reproduces: build ran pre-flight, wrote progress.md, reported the new rows, and ended the turn — a file written and nothing built. Runs in `manual` on purpose: build has no one-row variant, so the run-to-completion contract holds without an armed chain.",
+  "fixture": "build-single-pass",
+  "phase": 1,
+  "prompt": "mano build",
+  "assertions": [
+    "build_did_not_stop_at_the_ledger",
+    "single_pass_completed_the_phase",
+    "build_wrote_no_story_files"
+  ]
+}

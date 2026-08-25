@@ -16,6 +16,9 @@ hero:
       text: See real output
       link: /examples
     - theme: alt
+      text: Features
+      link: /features/
+    - theme: alt
       text: GitHub
       link: https://github.com/ceceppa/mano
 
@@ -51,7 +54,20 @@ mano review     →  record what held, what didn't, and close the phase
 
 Nothing forces that order. Every action checks its own inputs and tells you when it would be guessing.
 
-For a phase that doesn't need story files, `mano build` implements the brief's approved scope items directly, tracked in a ledger on disk.
+For a phase that doesn't need story files, [`mano build`](/features/build) implements the brief's approved scope items directly, tracked in a ledger on disk.
+
+## Beyond the loop
+
+Optional, none of it on by default:
+
+| | |
+| --- | --- |
+| [**Build mode**](/features/build) | Implement a phase straight from its approved brief, no story files |
+| [**Auto mode**](/features/auto-mode) | Chain the commands you'd otherwise type — armed only by your scope approval |
+| [**Import**](/features/import) | Turn an existing PRD or document into a backlog, then stop |
+| [**Team owners**](/features/owners) | Namespaced phases per person, so two people don't both scope "phase 7" |
+| [**Tracks & filters**](/features/tracks) | Narrow what a phase is allowed to contain |
+| [**Hooks**](/features/hooks) | Wire your own review checklist into any skill |
 
 ## Built with Mano
 

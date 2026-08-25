@@ -1265,6 +1265,11 @@ OPENING_ASSUMPTIONS = {
     "A1": "as they write",
     "A2": "one line",
 }
+# What the human answers at the gate, keyed to the question it answers.
+OPENING_ANSWERS = {
+    "Q1": "flat is fine",
+    "Q2": "not checked",
+}
 OPENING_NEEDS_HUMAN = "E2b"
 # Every alternative closer the opening used to offer. One ask means one ask.
 BANNED_CLOSERS = (
@@ -1384,20 +1389,52 @@ def review_sign_off_recorded_human_provenance(ctx: Ctx) -> list[Failure]:
     return fails
 
 
-def review_recorded_unanswered_questions(ctx: Ctx) -> list[Failure]:
-    """"Ship it" does not answer a question the human was asked."""
-    assertion = "review_recorded_unanswered_questions"
+def review_gated_close_on_missing_answers(ctx: Ctx) -> list[Failure]:
+    """A close instruction with open questions buys one line asking for them.
+
+    The human did not write the brief and has no reason to remember its
+    questions at close time; being shown the open ones is how they find out
+    what they were about to skip.
+    """
+    assertion = "review_gated_close_on_missing_answers"
+    text = _plain(ctx)
+    fails = []
+
+    if not re.search(r"still need", text, re.IGNORECASE):
+        fails.append(Failure(assertion, "the close was not gated — review never asked for the missing answers"))
+    for qid, needle in OPENING_QUESTIONS.items():
+        if qid not in text or needle.lower() not in text.lower():
+            fails.append(Failure(assertion, f"the gate did not name {qid} ({needle!r})"))
+
+    # One line, once. A gate that re-asks is the ceremony it replaced.
+    if len(re.findall(r"still need", text, re.IGNORECASE)) > 1:
+        fails.append(Failure(assertion, "review asked for the same answers more than once"))
+    return fails
+
+
+def review_questions_carry_human_answers(ctx: Ctx) -> list[Failure]:
+    """"Ship it" does not answer a question the human was asked — and neither
+    does Mano. Every question reaches the record with the human's own answer."""
+    assertion = "review_questions_carry_human_answers"
     review = ctx.output_text("reviews.md")
     if review is None:
         return [Failure(assertion, "reviews.md was not written")]
     fails = []
 
-    for qid in OPENING_QUESTIONS:
+    if "unanswered at close" in review.lower():
+        fails.append(Failure(assertion, "a question was recorded as `unanswered at close`"))
+    if "not assessed" in review.lower():
+        fails.append(Failure(assertion, "the decision was recorded as `Not assessed`"))
+
+    for qid, needle in OPENING_ANSWERS.items():
         line = next((l for l in review.splitlines() if re.search(rf"\b{qid}\b", l)), None)
         if line is None:
             fails.append(Failure(assertion, f"{qid} is absent from the review record"))
-        elif "unanswered at close" not in line.lower():
-            fails.append(Failure(assertion, f"{qid} was not recorded as unanswered at close: {line.strip()!r}"))
+        elif needle.lower() not in line.lower():
+            fails.append(Failure(
+                assertion,
+                f"{qid} does not carry the human's own answer ({needle!r}): {line.strip()!r}",
+            ))
 
     for aid in OPENING_ASSUMPTIONS:
         line = next((l for l in review.splitlines() if re.search(rf"\b{aid}\b", l)), None)
@@ -1600,6 +1637,168 @@ def start_did_not_mine_backlog(ctx: Ctx) -> list[Failure]:
             "a resolved backlog item surfaced in the response — backlog.md was read directly",
         )]
     return []
+
+
+def start_scoped_the_named_item(ctx: Ctx) -> list[Failure]:
+    """The human named a backlog item; that exact item must be what enters the
+    phase.
+
+    The live failure this pins (anima, phase 22): asked to add "Motion
+    interruption example coverage", `mano start` assigned it *and* invented a
+    second item, "Motion interruption example scenarios", for the same work.
+    Both landed in-phase, so the phase looked correct and the backlog quietly
+    grew a twin. The tell is not the assignment — that part was right — it is
+    the extra item.
+    """
+    assertion = "start_scoped_the_named_item"
+    failures: list[Failure] = []
+    backlog_path = ctx.output_dir / "backlog.md"
+    if not backlog_path.is_file():
+        return [Failure(assertion, "backlog.md is missing")]
+    backlog = backlog_path.read_text(encoding="utf-8")
+
+    titles = re.findall(r"^###\s+(.+?)\s*$", backlog, re.MULTILINE)
+    named = "Motion interruption example coverage"
+
+    # 1. The item the human named must be the one scoped into the phase.
+    block_re = re.compile(
+        r"^###\s+" + re.escape(named) + r"\s*$(.*?)(?=^###\s|\Z)",
+        re.MULTILINE | re.DOTALL,
+    )
+    match = block_re.search(backlog)
+    if match is None:
+        failures.append(Failure(assertion, f"the item the human named is gone from the backlog: {named!r}"))
+    else:
+        status = re.search(r"^-\s*\*\*Status:\*\*\s*(.+?)\s*$", match.group(1), re.MULTILINE)
+        value = status.group(1).strip().lower() if status else ""
+        if not value.startswith("in-"):
+            failures.append(Failure(
+                assertion,
+                f"the human named {named!r} but it was left at Status: {value or 'unknown'} "
+                "instead of being scoped into the phase",
+            ))
+
+    # 2. No second item may describe the same work. Compare against the named
+    #    item only — the fixture's sequential/parallel pair is deliberately
+    #    similar and must NOT be reported.
+    def tokens(title: str) -> set[str]:
+        stop = {"a", "an", "the", "and", "or", "of", "to", "for", "in", "on",
+                "with", "by", "at", "from", "add", "adds", "new", "its", "it",
+                "as", "into", "per", "via"}
+        out = set()
+        for raw in re.sub(r"[^a-z0-9]+", " ", title.lower()).split():
+            if raw in stop:
+                continue
+            out.add(raw[:-1] if len(raw) > 3 and raw.endswith("s") and not raw.endswith("ss") else raw)
+        return out
+
+    target = tokens(named)
+    for title in titles:
+        if title.strip().lower() == named.lower():
+            continue
+        other = tokens(title)
+        if not other:
+            continue
+        shared = len(target & other)
+        union = len(target | other)
+        if union and shared / union >= 0.6:
+            failures.append(Failure(
+                assertion,
+                f"a second item was created for work the human already named: {title!r} "
+                f"beside {named!r}",
+            ))
+    return failures
+
+
+def start_flagged_the_near_duplicate(ctx: Ctx) -> list[Failure]:
+    """The resemblance report is advisory: `backlog.js add` writes every item
+    and never changes its exit code.
+
+    So the skill owes exactly three things, and the failure modes sit on both
+    sides of them. It must not lose the item (the script did not reject it), it
+    must not stay silent (the report exists to reach the human), and it must not
+    turn an over-firing heuristic into a gate — the check fires on roughly one
+    add in three, and most of what it catches is a sibling, not a duplicate.
+    """
+    assertion = "start_flagged_the_near_duplicate"
+    failures: list[Failure] = []
+    backlog_path = ctx.output_dir / "backlog.md"
+    if not backlog_path.is_file():
+        return [Failure(assertion, "backlog.md is missing")]
+    backlog = backlog_path.read_text(encoding="utf-8")
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+
+    # 1. Nothing was blocked, so the item must be there.
+    if "motion interruption example scenarios" not in backlog.lower():
+        failures.append(Failure(
+            assertion,
+            "the item was dropped — the resemblance report is advisory and writes the item; "
+            "only the human decides to merge or discard it",
+        ))
+
+    # 2. The human has to hear about it, on an advisory line.
+    advisory = [
+        line for line in text.splitlines()
+        if "⚠" in line and re.search(r"resembl|already track|duplicat|similar", line, re.IGNORECASE)
+    ]
+    if not advisory:
+        failures.append(Failure(
+            assertion,
+            "the resemblance was never surfaced to the human; it needs one '⚠ Verify:' line "
+            "naming the new item and the one it resembles",
+        ))
+    else:
+        # The line is only useful if it names the item already tracked.
+        if not any("coverage" in line.lower() for line in advisory):
+            failures.append(Failure(
+                assertion,
+                "the advisory line does not name the existing item "
+                "('Motion interruption example coverage'), so the human cannot act on it",
+            ))
+        if len(advisory) > 1:
+            failures.append(Failure(
+                assertion,
+                f"{len(advisory)} advisory lines were emitted; one line covers every resemblance",
+            ))
+
+    # 3. Advisory, never a gate. A ❓ Decide, or a question back to the human,
+    #    converts a heuristic that over-fires by design into an interruption.
+    for line in text.splitlines():
+        if "❓" in line and re.search(r"resembl|duplicat|similar|already track", line, re.IGNORECASE):
+            failures.append(Failure(
+                assertion,
+                f"the resemblance was raised as a '❓ Decide' gate rather than an advisory line: {line.strip()[:200]!r}",
+            ))
+            break
+    for pattern in (
+        r"(should|shall|do you want) I (add|keep|merge|drop)",
+        r"are (these|they) the same",
+        r"(is|it) (this|that) a duplicate\?",
+    ):
+        if re.search(pattern, text, re.IGNORECASE):
+            failures.append(Failure(
+                assertion,
+                f"the skill stopped to ask the human about the resemblance ({pattern!r}); "
+                "it reports and continues",
+            ))
+            break
+
+    # 4. Suppressing the report instead of relaying it.
+    if "--no-similar-warning" in text:
+        failures.append(Failure(
+            assertion,
+            "--no-similar-warning was used to silence the report; that flag is for mano import, "
+            "not for keeping start's output clean",
+        ))
+
+    # 5. The phase still has to get scoped — the report must not derail the run.
+    brief = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if not brief.is_file():
+        failures.append(Failure(
+            assertion,
+            "no phase brief was written; an advisory resemblance report must not stop the phase",
+        ))
+    return failures
 
 
 # --- stories mid-build path ---------------------------------------------------
@@ -2032,6 +2231,206 @@ def start_kept_rules_visible_for_new_category(ctx: Ctx) -> list[Failure]:
         )
     return failures
 
+
+def start_honoured_combined_scope(ctx: Ctx) -> list[Failure]:
+    """A human-approved combination is scope, not a proposal to negotiate.
+
+    The default shape is one independently verifiable outcome per phase, and
+    the fixture's two items are deliberately unrelated so that shape argues for
+    a split. It governs what `mano start` *suggests*; once the human names the
+    scope, refusing it, or answering with a pick-one menu, is the failure this
+    case exists to catch.
+    """
+    assertion = "start_honoured_combined_scope"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    failures = []
+
+    brief_path = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if not brief_path.is_file():
+        compact = " ".join(text.strip().split())
+        return [
+            Failure(
+                assertion,
+                "no phase brief was written for the scope the human approved; "
+                f"output ended: {compact[-500:]!r}",
+            )
+        ]
+
+    # Both approved outcomes must survive into the brief. Keeping one and
+    # dropping the other is the quiet form of the same refusal.
+    brief = brief_path.read_text(encoding="utf-8").lower()
+    for label, needles in (
+        ("preset grouping", ("preset", "group")),
+        ("operation cancellation", ("cancel",)),
+    ):
+        if not all(needle in brief for needle in needles):
+            failures.append(
+                Failure(assertion, f"the brief dropped the approved {label} outcome")
+            )
+
+    # An outright refusal, or the choose-one menu that is a refusal wearing a
+    # menu's clothes.
+    refusals = (
+        r"won'?t combine",
+        r"will not combine",
+        r"cannot combine",
+        r"can'?t combine",
+        r"should not be combined",
+        r"reply\s+`?1`?,?\s+(?:or\s+)?`?2`?",
+        r"choose (?:the )?(?:one|a )?(?:direction|between)",
+        r"pick (?:one|which)",
+        r"which (?:one )?(?:do you want|direction)",
+    )
+    for pattern in refusals:
+        if re.search(pattern, text, re.IGNORECASE):
+            failures.append(
+                Failure(
+                    assertion,
+                    f"the response pushed the approved scope back to the human ({pattern!r})",
+                )
+            )
+            break
+
+    # Flagging the cost is correct; parking the phase on it is not. The human
+    # already answered the scope question in the prompt, so a scope-shaped
+    # decide line means the skill re-asked it.
+    for line in text.splitlines():
+        if "❓" not in line:
+            continue
+        if re.search(r"scope|phase|combin|unrelated|split", line, re.IGNORECASE):
+            failures.append(
+                Failure(
+                    assertion,
+                    f"scope was raised as a blocking `❓ Decide` instead of a `⚠ Verify`: {line.strip()!r}",
+                )
+            )
+            break
+
+    return failures
+
+
+SURFACE_WORDS = (
+    "demo", "example", "playground", "showcase", "scene", "sample", "sandbox",
+    "preview", "harness", "gallery", "inspector", "panel", "overlay", "viewer",
+)
+
+
+def start_try_is_performable(ctx: Ctx) -> list[Failure]:
+    """A `Try` the human cannot perform is not a test.
+
+    The fixture scopes engine-only interruption behaviour beside a category
+    that merely lists an existing grid demo, with the debugger panel deferred.
+    Nothing in that scope runs a conflicting motion where a person can see it,
+    so `observe the resulting property state` is an instruction the human
+    cannot follow — and the answer gate in `mano review` will later demand an
+    answer that was never obtainable.
+
+    Two outcomes pass: a Scope leaf ships the surface, or `mano start` raised
+    the conflict instead of drafting around it.
+    """
+    assertion = "start_try_is_performable"
+    text = _plain(ctx)
+    brief = ctx.artifact_text("phase-brief.md")
+
+    # Raising it before drafting is a pass on its own — that is the human's
+    # call to make, and start is not allowed to make it either way.
+    raised = bool(
+        re.search(r"nothing to (run|observe|try|see)", text, re.IGNORECASE)
+        or re.search(r"(no|not a|without a) (way|surface|scene|demo|place) to (run|observe|try|see)", text, re.IGNORECASE)
+        or re.search(r"drop Q\d|later phase", text, re.IGNORECASE)
+    )
+    if brief is None:
+        return [] if raised else [
+            Failure(assertion, "no brief was drafted and the missing surface was never raised")
+        ]
+
+    def section(name: str) -> str:
+        m = re.search(rf"^##+ {name}\s*$(.*?)(?=^##\s|\Z)", brief, re.M | re.S)
+        return m.group(1) if m else ""
+
+    scope = section("Phase Scope")
+    try_block = re.search(r"^###+ Try\s*$(.*?)(?=^##+\s|\Z)", brief, re.M | re.S)
+    tries = try_block.group(1) if try_block else ""
+    if not tries.strip():
+        return []
+
+    scope_ships_surface = any(w in scope.lower() for w in SURFACE_WORDS)
+    if scope_ships_surface or raised:
+        return []
+
+    # The tell: scope promises observability that no leaf delivers.
+    observes = [
+        line.strip()
+        for line in tries.splitlines()
+        if re.search(r"\b(observe|inspect|watch|see|check)\b", line, re.IGNORECASE)
+    ]
+    if observes:
+        return [Failure(
+            assertion,
+            "a Try asks the human to observe behaviour no Phase Scope leaf makes observable, "
+            f"and start never raised it: {observes[0]!r}",
+        )]
+    return []
+
+
+def start_armed_ux_and_ui_for_user_facing_scope(ctx: Ctx) -> list[Failure]:
+    """Presence of a planning artifact is not evidence that it covers this phase.
+
+    The fixture ships a real ux-flow.md and design-brief.md, both written for a
+    two-category selector, against a phase that adds a third. `ARTIFACTS:` can
+    only say `present`, and `mano start` may not open either file — so the only
+    correct reading of `present` is "unknown coverage", and the chain keeps
+    `ux` and `ui` for the human to strike.
+    """
+    assertion = "start_armed_ux_and_ui_for_user_facing_scope"
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    failures = []
+
+    # The proposed chain, not the prose around it: naming `mano ux` while
+    # explaining that a flow already exists is the failure, not the pass.
+    chain = next(
+        (
+            line
+            for line in text.splitlines()
+            if "→" in line and re.search(r"\bbuild\b", line, re.IGNORECASE)
+        ),
+        None,
+    )
+    if chain is None:
+        compact = " ".join(text.strip().split())
+        return [
+            Failure(
+                assertion,
+                f"no auto chain line was proposed in auto mode; output ended: {compact[-500:]!r}",
+            )
+        ]
+
+    # `\bui\b` deliberately: "build" contains "ui" but offers no word boundary.
+    for action, pattern in (("mano ux", r"\bux\b"), ("mano ui", r"\bui\b")):
+        if not re.search(pattern, chain, re.IGNORECASE):
+            failures.append(
+                Failure(
+                    assertion,
+                    f"the armed chain omitted `{action}` for a phase adding a third "
+                    f"category to an existing selector: {chain.strip()!r}",
+                )
+            )
+
+    # Scope is proposed, not executed: nothing may be written before approval.
+    brief = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if brief.is_file():
+        failures.append(
+            Failure(assertion, "a phase brief was written before the human approved the scope")
+        )
+
+    for name in ("ux-flow.md", "design-brief.md"):
+        current = ctx.output_dir / name
+        if current.is_file() and current.read_text(encoding="utf-8") != (ctx.fixture_text(name) or ""):
+            failures.append(
+                Failure(assertion, f"mano start edited {name}; it may only propose `mano ux` / `mano ui`")
+            )
+
+    return failures
 
 # --- public-interface planning readiness ------------------------------------
 
@@ -2673,6 +3072,58 @@ def build_reopened_instead_of_appending(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+def build_recorded_the_correction_as_rework(ctx: Ctx) -> list[Failure]:
+    """Case (A) durability: a defect the human reports mid-build becomes an
+    `R…` event carrying their exact words before anything is reopened, and is
+    resolved by the run that fixes it. Without it the reopen is invisible —
+    once the row is `done` again the ledger matches a phase that never had the
+    defect, and the only record lived in a conversation."""
+    assertion = "build_recorded_the_correction_as_rework"
+    fails = []
+    ledger = ctx.progress() or ""
+
+    events = [
+        (cells[0], cells[-1].lower())
+        for cells in (
+            [c.strip() for c in line.split("|")][1:-1]
+            for line in ledger.split("\n")
+            if line.count("|") >= 4
+        )
+        if cells and re.fullmatch(r"R\d+", cells[0])
+    ]
+    if not events:
+        fails.append(Failure(assertion, "the correction was reopened with no rework event recorded"))
+        return fails
+    if len(events) > 1:
+        fails.append(Failure(assertion, f"one correction produced {len(events)} events: {events}"))
+
+    rid, status = events[0]
+    if status != "resolved":
+        fails.append(Failure(
+            assertion,
+            f"{rid} is {status!r} after the fix landed; a run that fixes the defect resolves its event",
+        ))
+
+    contracts = parse_row_contracts(ledger)
+    body = contracts.get(rid)
+    if body is None or not body["text"]:
+        fails.append(Failure(assertion, f"{rid} has no exact text in `## Row Contracts`"))
+        return fails
+
+    source = body["attributes"].get("source", "").strip()
+    if source != "build":
+        fails.append(Failure(
+            assertion,
+            f"{rid} records source {source!r}; a defect the human reported mid-build is not a review finding",
+        ))
+
+    verbatim = "requiring src/release-stage.js returns base+release, not base+feature+release"
+    if verbatim.lower() not in body["text"].lower():
+        fails.append(Failure(assertion, f"the recorded event paraphrases the report: {body['text']!r}"))
+
+    return fails
+
+
 def build_appended_the_users_words(ctx: Ctx) -> list[Failure]:
     """Case (C): an in-goal nuance is appended as a lettered row carrying the
     user's own words — never a paraphrase, never a rewritten existing row."""
@@ -3075,6 +3526,56 @@ def build_honoured_the_documentation_rule(ctx: Ctx) -> list[Failure]:
                 ))
 
     return fails
+
+
+# --- the design brief's named components are obligations, not references -------
+
+def build_reused_the_named_components(ctx: Ctx) -> list[Failure]:
+    """0g.1 and 10.2 on the build path: the design brief names a component for a
+    screen because a reusable one already exists. The screen satisfies that by
+    instantiating it — never by hand-rolling something that looks the same and
+    passes the phase's purely behavioural Exit Criteria."""
+    assertion = "build_reused_the_named_components"
+    fails = []
+
+    screens = ("src/screens/latency-screen.js", "src/screens/error-screen.js")
+    components = {
+        "PanelHeader": "panel-header",
+        "SegmentedControl": "segmented-control",
+    }
+
+    for path in screens:
+        module = ctx.source_text(path)
+        if module is None:
+            fails.append(Failure(assertion, f"{path} was never written"))
+            continue
+
+        for name, basename in components.items():
+            required = re.search(
+                rf"""require\(\s*['"][^'"]*components/{basename}(?:\.js)?['"]\s*\)""",
+                module,
+            )
+            if required is None:
+                fails.append(Failure(
+                    assertion,
+                    f"{path} never requires the shared components/{basename} the design brief names",
+                ))
+            elif not re.search(rf"\bnew\s+{name}\b", module):
+                fails.append(Failure(
+                    assertion,
+                    f"{path} requires components/{basename} but never instantiates {name}",
+                ))
+
+        # A lookalike built in place is the failure this case exists to catch.
+        lookalike = re.search(r"""class\s+\w*(?:Header|Selector|Segmented|Control|Tabs)\w*\b""", module)
+        if lookalike:
+            fails.append(Failure(
+                assertion,
+                f"{path} declares its own {lookalike.group(0)!r} instead of reusing the named component",
+            ))
+
+    return fails
+
 
 
 # --- post-stories hook findings stay diagnostic --------------------------------
@@ -3793,6 +4294,90 @@ def auto_reached_build_without_story_files(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+def build_did_not_stop_at_the_ledger(ctx: Ctx) -> list[Failure]:
+    """One invocation creates the ledger *and* builds the phase.
+
+    The incident: build ran pre-flight, wrote `progress.md`, reported its rows
+    to the human, and ended the turn. Nothing was built, and the human had to
+    type `mano build` again to reach the first row. Setup is not a unit of work,
+    so a run that produced a ledger and no source is a stall wearing a progress
+    report — and the ledger alone cannot tell the two apart, which is why the
+    chat shape is checked too.
+    """
+    assertion = "build_did_not_stop_at_the_ledger"
+    fails = []
+    if ctx.progress() is None:
+        return [Failure(assertion, "no progress.md — the run never reached init")]
+    rows = ctx.progress_rows()
+    scope = [(rid, status) for rid, _, status in rows if rid.startswith("S")]
+    if scope and all(status == "pending" for _, status in scope):
+        fails.append(Failure(
+            assertion,
+            "every scope row is still pending — the invocation created the ledger and built nothing",
+        ))
+    if not ctx.source_files():
+        fails.append(Failure(assertion, "no source file was written"))
+    # The report that reads as work and contains none.
+    lowered = ctx.transcript.lower()
+    for shape in ("ledger created", "build ledger", "pre-flight is in progress", "pre-flight is complete"):
+        if shape in lowered:
+            fails.append(Failure(assertion, f"the closing message reports setup as the result: {shape!r}"))
+    return fails
+
+
+def continue_dispatched_into_implementation(ctx: Ctx) -> list[Failure]:
+    """`mano continue` runs the entry the projection names; it does not print a
+    card asking for the command the human just typed.
+
+    `continue` is already the go-ahead. Answering it with "use `mano build` to
+    resume" is a loop, not a routing decision — the human types twice to get one
+    action, and in a chain that stopped for an unnamed reason they cannot tell
+    whether they were being asked something or just delayed.
+    """
+    assertion = "continue_dispatched_into_implementation"
+    fails = []
+    if ctx.progress() is None:
+        return [Failure(assertion, "no progress.md after the run")]
+    seeded = ctx.fixture_text("progress.md")
+    if seeded is not None and ctx.progress() == seeded:
+        fails.append(Failure(
+            assertion,
+            "the ledger is byte-identical to the seeded one — continue ran no implementation",
+        ))
+    if not ctx.source_files():
+        fails.append(Failure(assertion, "no source file was written — continue printed instead of running"))
+    for card in ("Build mode:", "Use `mano build` to resume", "Use `mano dev` to implement"):
+        if card in ctx.transcript:
+            fails.append(Failure(assertion, f"continue printed the retired status card: {card!r}"))
+    return fails
+
+
+def auto_chain_handoff_printed_no_next_menu(ctx: Ctx) -> list[Failure]:
+    """A mid-chain action never renders the menu it is about to walk past.
+
+    Once the chain has reached `mano build`, any `Next:` block still offering an
+    implementation command is the stall shape: a log that presents a choice and
+    continues past it in the same breath, leaving the human holding options for
+    work that already happened. The closing block's `Next: mano review` is the
+    one legitimate `Next:` on this path.
+    """
+    assertion = "auto_chain_handoff_printed_no_next_menu"
+    if ctx.progress() is None:
+        return []  # the chain never reached build; another assertion owns that
+    fails = []
+    for line in ctx.all_responses().splitlines():
+        stripped = line.strip().lstrip("-*").strip()
+        if not stripped.startswith("`mano "):
+            continue
+        for offered in ("`mano build`", "`mano stories`", "`mano dev`", "`mano continue`"):
+            if stripped.startswith(offered):
+                fails.append(Failure(
+                    assertion,
+                    f"the chain offered {offered} as a next-step option after already running it: {stripped[:80]!r}",
+                ))
+    return fails
+
+
 def auto_chain_stopped_before_review(ctx: Ctx) -> list[Failure]:
     """The chain's terminal action is implementation. Closing the phase is the
     human's, so a review entry means the chain ran one action too far."""
@@ -3857,11 +4442,13 @@ REGISTRY = {
     "stories_hook_triage_offer_present": stories_hook_triage_offer_present,
     "dev_polarity_left_the_story_pending": dev_polarity_left_the_story_pending,
     "build_honoured_the_documentation_rule": build_honoured_the_documentation_rule,
+    "build_reused_the_named_components": build_reused_the_named_components,
     # review as a short triage inbox (wave 5)
     "review_opening_shape": review_opening_shape,
     "review_opening_kept_every_promise": review_opening_kept_every_promise,
     "review_sign_off_recorded_human_provenance": review_sign_off_recorded_human_provenance,
-    "review_recorded_unanswered_questions": review_recorded_unanswered_questions,
+    "review_gated_close_on_missing_answers": review_gated_close_on_missing_answers,
+    "review_questions_carry_human_answers": review_questions_carry_human_answers,
     "review_echoed_findings_only": review_echoed_findings_only,
     "review_close_did_not_erase_the_finding": review_close_did_not_erase_the_finding,
     "review_followup_wrote_nothing_yet": review_followup_wrote_nothing_yet,
@@ -3883,6 +4470,13 @@ REGISTRY = {
     "legacy_blank_suggest_hook_surfaced": legacy_blank_suggest_hook_surfaced,
     # start: projection is the only backlog read
     "start_did_not_mine_backlog": start_did_not_mine_backlog,
+    "start_scoped_the_named_item": start_scoped_the_named_item,
+    "start_flagged_the_near_duplicate": start_flagged_the_near_duplicate,
+    # start: the human owns the phase boundary
+    "start_honoured_combined_scope": start_honoured_combined_scope,
+    # start: ARTIFACTS: existence is not coverage
+    "start_armed_ux_and_ui_for_user_facing_scope": start_armed_ux_and_ui_for_user_facing_scope,
+    "start_try_is_performable": start_try_is_performable,
     # stories mid-build
     "midbuild_lettered_story_inserted": midbuild_lettered_story_inserted,
     "existing_stories_unchanged": existing_stories_unchanged,
@@ -3918,6 +4512,7 @@ REGISTRY = {
     "build_refused_free_text_scope": build_refused_free_text_scope,
     "build_review_gate_held": build_review_gate_held,
     "build_reopened_instead_of_appending": build_reopened_instead_of_appending,
+    "build_recorded_the_correction_as_rework": build_recorded_the_correction_as_rework,
     "build_appended_the_users_words": build_appended_the_users_words,
     "build_no_row_appended": build_no_row_appended,
     # mano build — wave 3 contracts
@@ -3941,6 +4536,9 @@ REGISTRY = {
     "build_no_ledger_argument_created_nothing": build_no_ledger_argument_created_nothing,
     "auto_reached_build_without_story_files": auto_reached_build_without_story_files,
     "auto_chain_stopped_before_review": auto_chain_stopped_before_review,
+    "build_did_not_stop_at_the_ledger": build_did_not_stop_at_the_ledger,
+    "continue_dispatched_into_implementation": continue_dispatched_into_implementation,
+    "auto_chain_handoff_printed_no_next_menu": auto_chain_handoff_printed_no_next_menu,
     # two-phase extension
     "two_phase_one_behaviour_survives": two_phase_one_behaviour_survives,
     "two_phase_extension_behaviour_works": two_phase_extension_behaviour_works,

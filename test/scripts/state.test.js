@@ -1,6 +1,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const childProcess = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -341,4 +342,135 @@ test("state refuses a phase that holds both a stories index and a build ledger",
   fs.writeFileSync(path.join(phaseDir, "progress.md"),
     "## Scope\n| # | What | Status |\n|---|---|---|\n| S1 | Store | pending |\n");
   assert.throws(() => state.scan(root), /one ledger/i);
+});
+
+// --- Routing lines the implementation skills read ---------------------------
+//
+// The incident: `mano build`'s first run read a projection whose only
+// imperative sentence was a `DEV:` line telling it that "the implementation
+// entry is mano build". Build, which *was* mano build, read that as a routing
+// instruction for the human and handed back before pre-flight. Twice more it
+// stopped after `init`, because nothing in the projection described the run —
+// only its next step.
+
+function projectWithBrief(prefix, { ledger = null, brief = null } = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  const phaseDir = path.join(root, "_mano_output", "phase-1");
+  fs.mkdirSync(phaseDir, { recursive: true });
+  fs.writeFileSync(path.join(root, "_mano_output", "backlog.md"), "# Backlog\n\n## Items\n");
+  fs.writeFileSync(
+    path.join(phaseDir, "phase-brief.md"),
+    brief || "# Phase Brief — Demo — Phase 1\n\n## Phase Goal\n\nShip it.\n",
+  );
+  if (ledger) fs.writeFileSync(path.join(phaseDir, "progress.md"), ledger);
+  return root;
+}
+
+test("the no-ledger projection addresses build by name, and never hands it dev's line", () => {
+  const root = projectWithBrief("mano-state-build-entry-");
+  for (const mode of ["manual", "auto"]) {
+    const previous = process.env.MANO_MODE;
+    process.env.MANO_MODE = mode;
+    try {
+      const rendered = state.renderNext(state.scan(root));
+      // Build gets a line of its own, naming the whole invocation.
+      assert.match(rendered, /^BUILD: phase-1 has a brief and no ledger/m, mode);
+      assert.match(rendered, /implement every scope row to completion in this SAME invocation/, mode);
+      assert.match(rendered, /do not hand back after init/, mode);
+      // And dev's line no longer tells its reader to run mano build.
+      const dev = rendered.split("\n").find((line) => line.startsWith("DEV:"));
+      assert.ok(dev, `${mode}: dev still needs its own routing line`);
+      assert.doesNotMatch(dev, /the implementation entry is mano build, which builds/, mode);
+      assert.match(rendered, /PROGRESS_STATUS: missing/, mode);
+    } finally {
+      if (previous === undefined) delete process.env.MANO_MODE;
+      else process.env.MANO_MODE = previous;
+    }
+  }
+});
+
+const SCOPED_BRIEF = `# Phase Brief — Demo — Phase 1
+
+## Phase Goal
+
+Ship a registry.
+
+## Phase Scope
+
+1. Registry core
+   a. List the registered labels.
+   b. Add a label.
+2. Formatting
+   a. Join the labels into one line.
+
+## Not This Phase
+
+- Persistence.
+
+## Exit Criteria
+
+1. Registry
+   a. \`list()\` returns the added labels.
+   b. \`add()\` returns the new count.
+2. Formatting
+   a. \`line()\` joins the labels with a comma.
+`;
+
+/** A project whose ledger really came from `progress.js init` against its brief,
+ *  so the contract digest matches and the projection is the one build reads. */
+function projectWithLedger(prefix, done = []) {
+  const root = projectWithBrief(prefix, { brief: SCOPED_BRIEF });
+  const progressScript = path.join(__dirname, "..", "..", "src", "scripts", "progress.js");
+  const init = childProcess.spawnSync(
+    "node",
+    [progressScript, "init", "--phase", "1", "--expect-phase-id", "phase-1", root],
+    { cwd: root, encoding: "utf8" },
+  );
+  assert.equal(init.status, 0, init.stderr);
+  for (const row of done) {
+    const status = row.startsWith("E") ? "met" : "done";
+    const set = childProcess.spawnSync(
+      "node",
+      [progressScript, "set-status", "--phase", "1", "--expect-phase-id", "phase-1",
+        "--row", row, "--status", status, root],
+      { cwd: root, encoding: "utf8" },
+    );
+    assert.equal(set.status, 0, set.stderr);
+  }
+  return root;
+}
+
+test("an open ledger projects the whole remaining run, not just the next row", () => {
+  const root = projectWithLedger("mano-state-run-directive-", ["S1a", "E1a"]);
+  const rendered = state.renderNext(state.scan(root));
+  assert.match(rendered, /^ROW: S1b$/m);
+  assert.match(rendered, /^RUN: implement ROW now, then continue to the next unresolved row in this SAME invocation\./m);
+  // The counts are the *open* ones, so "how much is left" needs no arithmetic.
+  assert.match(rendered, /2 of 3 scope rows and 2 of 3 exit criteria still open/);
+  assert.match(rendered, /Do not stop between rows and do not report progress between passes/);
+});
+
+test("IMPLEMENTATION_ENTRY is the entry rule's one implementation", () => {
+  const open = projectWithLedger("mano-state-entry-build-");
+  assert.match(state.renderDecision(state.scan(open)), /^IMPLEMENTATION_ENTRY: build$/m);
+
+  // No ledger: auto terminates at build, manual is the fork the human owns.
+  const scoped = projectWithBrief("mano-state-entry-fork-");
+  const previous = process.env.MANO_MODE;
+  try {
+    process.env.MANO_MODE = "auto";
+    assert.match(state.renderDecision(state.scan(scoped)), /^IMPLEMENTATION_ENTRY: build$/m);
+    process.env.MANO_MODE = "manual";
+    assert.match(state.renderDecision(state.scan(scoped)), /^IMPLEMENTATION_ENTRY: none$/m);
+  } finally {
+    if (previous === undefined) delete process.env.MANO_MODE;
+    else process.env.MANO_MODE = previous;
+  }
+});
+
+test("an invalid ledger is never an implementation entry", () => {
+  const root = projectWithBrief("mano-state-entry-invalid-", { ledger: "not a ledger at all\n" });
+  const rendered = state.renderDecision(state.scan(root));
+  assert.match(rendered, /^IMPLEMENTATION_ENTRY: none$/m);
+  assert.match(rendered, /is not a valid v2 ledger/);
 });
