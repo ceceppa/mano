@@ -1639,6 +1639,168 @@ def start_did_not_mine_backlog(ctx: Ctx) -> list[Failure]:
     return []
 
 
+def start_scoped_the_named_item(ctx: Ctx) -> list[Failure]:
+    """The human named a backlog item; that exact item must be what enters the
+    phase.
+
+    The live failure this pins (anima, phase 22): asked to add "Motion
+    interruption example coverage", `mano start` assigned it *and* invented a
+    second item, "Motion interruption example scenarios", for the same work.
+    Both landed in-phase, so the phase looked correct and the backlog quietly
+    grew a twin. The tell is not the assignment — that part was right — it is
+    the extra item.
+    """
+    assertion = "start_scoped_the_named_item"
+    failures: list[Failure] = []
+    backlog_path = ctx.output_dir / "backlog.md"
+    if not backlog_path.is_file():
+        return [Failure(assertion, "backlog.md is missing")]
+    backlog = backlog_path.read_text(encoding="utf-8")
+
+    titles = re.findall(r"^###\s+(.+?)\s*$", backlog, re.MULTILINE)
+    named = "Motion interruption example coverage"
+
+    # 1. The item the human named must be the one scoped into the phase.
+    block_re = re.compile(
+        r"^###\s+" + re.escape(named) + r"\s*$(.*?)(?=^###\s|\Z)",
+        re.MULTILINE | re.DOTALL,
+    )
+    match = block_re.search(backlog)
+    if match is None:
+        failures.append(Failure(assertion, f"the item the human named is gone from the backlog: {named!r}"))
+    else:
+        status = re.search(r"^-\s*\*\*Status:\*\*\s*(.+?)\s*$", match.group(1), re.MULTILINE)
+        value = status.group(1).strip().lower() if status else ""
+        if not value.startswith("in-"):
+            failures.append(Failure(
+                assertion,
+                f"the human named {named!r} but it was left at Status: {value or 'unknown'} "
+                "instead of being scoped into the phase",
+            ))
+
+    # 2. No second item may describe the same work. Compare against the named
+    #    item only — the fixture's sequential/parallel pair is deliberately
+    #    similar and must NOT be reported.
+    def tokens(title: str) -> set[str]:
+        stop = {"a", "an", "the", "and", "or", "of", "to", "for", "in", "on",
+                "with", "by", "at", "from", "add", "adds", "new", "its", "it",
+                "as", "into", "per", "via"}
+        out = set()
+        for raw in re.sub(r"[^a-z0-9]+", " ", title.lower()).split():
+            if raw in stop:
+                continue
+            out.add(raw[:-1] if len(raw) > 3 and raw.endswith("s") and not raw.endswith("ss") else raw)
+        return out
+
+    target = tokens(named)
+    for title in titles:
+        if title.strip().lower() == named.lower():
+            continue
+        other = tokens(title)
+        if not other:
+            continue
+        shared = len(target & other)
+        union = len(target | other)
+        if union and shared / union >= 0.6:
+            failures.append(Failure(
+                assertion,
+                f"a second item was created for work the human already named: {title!r} "
+                f"beside {named!r}",
+            ))
+    return failures
+
+
+def start_flagged_the_near_duplicate(ctx: Ctx) -> list[Failure]:
+    """The resemblance report is advisory: `backlog.js add` writes every item
+    and never changes its exit code.
+
+    So the skill owes exactly three things, and the failure modes sit on both
+    sides of them. It must not lose the item (the script did not reject it), it
+    must not stay silent (the report exists to reach the human), and it must not
+    turn an over-firing heuristic into a gate — the check fires on roughly one
+    add in three, and most of what it catches is a sibling, not a duplicate.
+    """
+    assertion = "start_flagged_the_near_duplicate"
+    failures: list[Failure] = []
+    backlog_path = ctx.output_dir / "backlog.md"
+    if not backlog_path.is_file():
+        return [Failure(assertion, "backlog.md is missing")]
+    backlog = backlog_path.read_text(encoding="utf-8")
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+
+    # 1. Nothing was blocked, so the item must be there.
+    if "motion interruption example scenarios" not in backlog.lower():
+        failures.append(Failure(
+            assertion,
+            "the item was dropped — the resemblance report is advisory and writes the item; "
+            "only the human decides to merge or discard it",
+        ))
+
+    # 2. The human has to hear about it, on an advisory line.
+    advisory = [
+        line for line in text.splitlines()
+        if "⚠" in line and re.search(r"resembl|already track|duplicat|similar", line, re.IGNORECASE)
+    ]
+    if not advisory:
+        failures.append(Failure(
+            assertion,
+            "the resemblance was never surfaced to the human; it needs one '⚠ Verify:' line "
+            "naming the new item and the one it resembles",
+        ))
+    else:
+        # The line is only useful if it names the item already tracked.
+        if not any("coverage" in line.lower() for line in advisory):
+            failures.append(Failure(
+                assertion,
+                "the advisory line does not name the existing item "
+                "('Motion interruption example coverage'), so the human cannot act on it",
+            ))
+        if len(advisory) > 1:
+            failures.append(Failure(
+                assertion,
+                f"{len(advisory)} advisory lines were emitted; one line covers every resemblance",
+            ))
+
+    # 3. Advisory, never a gate. A ❓ Decide, or a question back to the human,
+    #    converts a heuristic that over-fires by design into an interruption.
+    for line in text.splitlines():
+        if "❓" in line and re.search(r"resembl|duplicat|similar|already track", line, re.IGNORECASE):
+            failures.append(Failure(
+                assertion,
+                f"the resemblance was raised as a '❓ Decide' gate rather than an advisory line: {line.strip()[:200]!r}",
+            ))
+            break
+    for pattern in (
+        r"(should|shall|do you want) I (add|keep|merge|drop)",
+        r"are (these|they) the same",
+        r"(is|it) (this|that) a duplicate\?",
+    ):
+        if re.search(pattern, text, re.IGNORECASE):
+            failures.append(Failure(
+                assertion,
+                f"the skill stopped to ask the human about the resemblance ({pattern!r}); "
+                "it reports and continues",
+            ))
+            break
+
+    # 4. Suppressing the report instead of relaying it.
+    if "--no-similar-warning" in text:
+        failures.append(Failure(
+            assertion,
+            "--no-similar-warning was used to silence the report; that flag is for mano import, "
+            "not for keeping start's output clean",
+        ))
+
+    # 5. The phase still has to get scoped — the report must not derail the run.
+    brief = ctx.output_dir / f"phase-{ctx.phase}" / "phase-brief.md"
+    if not brief.is_file():
+        failures.append(Failure(
+            assertion,
+            "no phase brief was written; an advisory resemblance report must not stop the phase",
+        ))
+    return failures
+
+
 # --- stories mid-build path ---------------------------------------------------
 
 EXISTING_DONE_STORY = """### STORY-3: Existing shipped story
@@ -4121,6 +4283,8 @@ REGISTRY = {
     "legacy_blank_suggest_hook_surfaced": legacy_blank_suggest_hook_surfaced,
     # start: projection is the only backlog read
     "start_did_not_mine_backlog": start_did_not_mine_backlog,
+    "start_scoped_the_named_item": start_scoped_the_named_item,
+    "start_flagged_the_near_duplicate": start_flagged_the_near_duplicate,
     # start: the human owns the phase boundary
     "start_honoured_combined_scope": start_honoured_combined_scope,
     # start: ARTIFACTS: existence is not coverage

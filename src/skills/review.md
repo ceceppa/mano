@@ -316,7 +316,9 @@ When the user confirms (e.g., "close it", "yes"):
    ```
    node _mano/scripts/backlog.js add --file [tmp].json
    ```
-   The script owns the `### / **Type:** / **Context:** / **Status:**` shape, starts every item at `Status: backlog`, and skips any title already present — so you can't misname, invent, or duplicate a field. **Script failing?** Stop and report the error — do not hand-write item blocks (see "Scripts are mandatory" in `_mano/rules/core.md`). For reference, the exact shape the writer produces:
+   The script owns the `### / **Type:** / **Context:** / **Status:**` shape, starts every item at `Status: backlog`, and skips any title already present — so you can't misname, invent, or duplicate a field. **Script failing?** Stop and report the error — do not hand-write item blocks (see "Scripts are mandatory" in `_mano/rules/core.md`).
+
+   A review triages findings against a backlog that already holds everything shipped so far, so a finding is often something the project already tracks. The script **reports** any item resembling an existing one — including resolved items you never saw — and writes it anyway. Nothing blocks. Carry what it reports into your output as one `⚠ Verify:` line so the human can merge or drop a genuine duplicate (`_mano/rules/backlog.md` → **The backlog roster, and not adding the same work twice**). To check before writing, `node _mano/scripts/state.js --titles --match "[word]"` shows what exists. For reference, the exact shape the writer produces:
 
    ```markdown
    ### [Short title]

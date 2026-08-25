@@ -33,7 +33,7 @@ class ConsistencyContractTests(unittest.TestCase):
         start = read("src/skills/start.md")
 
         self.assertIn(
-            'backlog.js add --title "..." --type [type] --context "..." [--track "[TRACK]"]',
+            'backlog.js add --title "..." --type [type] --context "..." --no-similar-warning [--track "[TRACK]"]',
             start,
         )
         self.assertIn(

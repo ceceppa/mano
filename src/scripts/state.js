@@ -68,7 +68,7 @@ function parseArgs(argv) {
     root: process.cwd(), json: false, verbose: false,
     scope: false, next: false, ui: false, current: false,
     spec: false, gaps: null, source: null, track: null, help: false,
-    amendCurrent: false,
+    amendCurrent: false, titles: false, match: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -90,6 +90,8 @@ function parseArgs(argv) {
       if (candidate == null || candidate.startsWith("-")) args.track = "";
       else { args.track = candidate; i++; }
     }
+    else if (a === "--titles") args.titles = true;
+    else if (a === "--match") args.match = argv[++i];
     else if (a === "--gaps") {
       const candidate = argv[i + 1];
       if (candidate == null || candidate.startsWith("-")) args.gaps = "";
@@ -104,7 +106,7 @@ function parseArgs(argv) {
 const HELP = `mano state — read-only projections of _mano_output/
 
 Usage:
-  node state.js [projectRoot] [--scope [--source <text>] [--track <name>] | --next | --ui | --current | --spec | --gaps <type>] [--verbose] [--json]
+  node state.js [projectRoot] [--scope [--source <text>] [--track <name>] | --next | --ui | --current | --spec | --gaps <type> | --titles [--match <text>]] [--verbose] [--json]
 
   projectRoot   directory containing _mano_output/ (default: current dir)
   --amend-current  with --scope only: ask whether the *current* phase's brief may
@@ -132,6 +134,14 @@ Usage:
   --spec        for mano spec: report the current phase brief path, exact
                 in-phase-N backlog items, and open spec-gap items without
                 exposing the rest of backlog.md
+  --titles      the backlog roster: every item's title, type and status,
+                grouped by status, with no context — what the project already
+                tracks, including items already scoped or shipped that --scope
+                never shows. Use it to answer "do we track this already?"
+                before adding an item, and to show the human the full backlog.
+                Never a scope-selection input: that stays SCOPE INPUT only
+  --match <text>  with --titles only: case-insensitive substring filter on the
+                title, for checking one piece of work rather than listing all
   --gaps <type> read only backlog.md and print unresolved items of exact type
                 spec-gap or rule-gap (mano rules uses the rule-gap projection)
   --verbose     also print the evidence (phase, stories, reviewed, backlog)
@@ -569,6 +579,77 @@ function artifactsLine(artifacts) {
 
 // A narrow gap-only projection. It intentionally bypasses scan(): only
 // backlog.md is read, and only matching open gap blocks are returned.
+// The backlog roster: every item's title, type and status, and nothing else.
+//
+// mano start is barred from opening backlog.md, and its SCOPE INPUT carries
+// only `Status: backlog` items with full context. That leaves it blind to
+// everything already scoped or shipped — which is how the same work gets added
+// twice under two names. This projection restores the missing visibility at the
+// one granularity that is both sufficient and cheap: on a real 381-item
+// backlog it is 16 KB against the file's 165 KB, because it carries no context.
+// It answers "what does this project already track?", never "what should this
+// phase contain?" — scope selection still comes from SCOPE INPUT alone.
+function scanTitles(projectRoot, match) {
+  const backlog = readGapText(path.join(projectRoot, "_mano_output", "backlog.md"));
+  assertBacklogItemsWellFormed(backlog);
+  const wanted = match ? String(match).trim().toLowerCase() : null;
+  const items = [];
+  for (const block of extractBacklogItems(backlog)) {
+    const title = (/^###\s+(.+?)\s*$/m.exec(block) || [])[1];
+    if (!title) continue;
+    if (wanted && !title.toLowerCase().includes(wanted)) continue;
+    const type = (/^-\s*\*\*Type:\*\*\s*(.+?)\s*$/im.exec(block) || [])[1] || "?";
+    const status = (/^-\s*\*\*Status:\*\*\s*(.+?)\s*$/im.exec(block) || [])[1] || "?";
+    items.push({ title: title.trim(), type: type.trim().toLowerCase(), status: status.trim().toLowerCase() });
+  }
+  const run = resolveConfiguredMode(projectRoot);
+  return {
+    projectRoot,
+    runMode: run.mode,
+    runModeSource: run.source,
+    match: wanted,
+    total: items.length,
+    items,
+  };
+}
+
+function renderTitles(t) {
+  const L = ["--- BACKLOG ROSTER (from the state script — do NOT open _mano_output/backlog.md) ---"];
+  L.push(`MODE: ${t.runMode}`);
+  if (t.match) L.push(`MATCH: ${t.match}`);
+  L.push(`COUNT: ${t.total}`);
+  const order = ["backlog", "in-phase", "resolved", "rejected"];
+  const bucket = (status) => {
+    if (status.startsWith("in-")) return "in-phase";
+    return order.includes(status) ? status : "other";
+  };
+  const groups = new Map();
+  for (const item of t.items) {
+    const key = bucket(item.status);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  if (t.items.length === 0) {
+    L.push("");
+    L.push(t.match ? "(no item title matches)" : "(no items)");
+    return L.join("\n");
+  }
+  for (const key of order.concat("other")) {
+    const list = groups.get(key);
+    if (!list || list.length === 0) continue;
+    L.push("");
+    L.push(`## ${key} (${list.length})`);
+    for (const item of list) {
+      L.push(`  ${item.title}  [${item.type}` + (key === "in-phase" ? `, ${item.status}` : "") + "]");
+    }
+  }
+  return L.join("\n");
+}
+
+function renderTitlesJson(t) {
+  return JSON.stringify({ match: t.match, total: t.total, items: t.items }, null, 2);
+}
+
 function scanGaps(projectRoot, type) {
   const backlog = readGapText(path.join(projectRoot, "_mano_output", "backlog.md"));
   assertBacklogItemsWellFormed(backlog);
@@ -1584,6 +1665,21 @@ function main() {
       process.exit(1);
     }
     process.stdout.write((args.json ? renderJson(current) : renderCurrent(current)) + "\n");
+    process.exit(0);
+  }
+  if (args.titles) {
+    if (args.scope || args.next || args.ui || args.current || args.spec || args.gaps !== null || args.verbose) {
+      process.stderr.write("[mano state] --titles cannot be combined with --scope, --next, --ui, --current, --spec, --gaps, or --verbose.\n");
+      process.exit(1);
+    }
+    let roster;
+    try {
+      roster = scanTitles(args.root, args.match);
+    } catch (error) {
+      process.stderr.write(`[mano state] cannot read _mano_output/backlog.md — ${error.message}\n`);
+      process.exit(1);
+    }
+    process.stdout.write((args.json ? renderTitlesJson(roster) : renderTitles(roster)) + "\n");
     process.exit(0);
   }
   if (args.gaps !== null) {
