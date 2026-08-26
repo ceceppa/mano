@@ -24,16 +24,41 @@ When inputs are missing, follow the missing-input protocol in `_mano/rules/core.
 Read this file plus `_mano/rules/core.md` and `_mano/rules/artifact.md` first — before the state projection, then artifacts — and read only those rule files; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 
 On activation:
-1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails, lacks `STATUS`, `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, or reports `STATUS: NO_PHASE`, stop and route to `mano start`. Never construct `phase-N` from the number.
-2. Read the exact projected `BRIEF` path.
-3. Read `_mano_output/ux-flow.md` if it exists.
-4. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
-5. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
-6. If the projected phase brief does not exist, stop and route to `mano start`. Do not write or offer to continue without it.
+1. Run `node _mano/scripts/state.js --gaps ux-gap`. Its `GAP INPUT` is the complete backlog-derived context for open UX gaps: only unresolved `ux-gap` items are exposed. **Do not open `_mano_output/backlog.md` before or after this command.** If the command fails or its output lacks the `GAP INPUT`, exact `MODE:`, `TYPE: ux-gap`, `STATUS: backlog`, and `COUNT:` lines, stop and report the exact failure.
+2. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails or lacks `STATUS`, `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, stop and report the exact failure. Never construct `phase-N` from the number.
+3. Read the exact projected `BRIEF` path when one exists.
+4. Read `_mano_output/ux-flow.md` if it exists.
+5. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
+6. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
+7. **No phase brief → gap-only mode, or stop.** If `STATUS: NO_PHASE` or the projected brief does not exist, check `COUNT:` from step 1. `COUNT: 0` → stop and route to `mano start`; there is nothing to do and nothing to write. `COUNT:` above zero → run **Gap-only mode** below. Do not scope, invent, or extend screens for a phase that does not exist.
+
+<!-- mano-rule: id=ux-gap-needs-no-phase; incident=gap-block-deadlock; model=claude; date=2026-08-25; eval=ux-gap-only-mode -->
+## Gap-only mode
+
+`ux-flow.md` is a cumulative project artifact, not a per-phase one. A `ux-gap` says something already proved it wrong or incomplete — a rework that changed a flow, a review finding nobody homed — and that repair must not wait for the next phase to be scoped. It cannot wait: an open gap blocks `mano start` from scoping one, so a `ux-gap` that needed a phase brief would deadlock the loop it was meant to close.
+
+In gap-only mode:
+
+- Work **only** the projected `ux-gap` items. Do not add, extend, or restructure any screen no projected gap names.
+- Repair `_mano_output/ux-flow.md` with targeted replacements, per `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**. Never a full-file regeneration.
+- A gap item may carry a stated directive rather than an open question — the human's own words about how a flow must work. That is authoritative intent: adopt it as written, or override it explicitly with the reason in the completion log, never silently.
+- Write **no** phase preview and **no** phase-scoped content. There is no phase.
+- Resolve each item the flow now addresses, one call per item:
+
+```
+node _mano/scripts/backlog.js resolve-gap --type ux-gap --title "[exact projected title]"
+```
+
+- Resolve an item only once `ux-flow.md` actually adopts or explicitly overrides it. If a projected gap turns out to need a decision only the human can make, leave it open, and surface it as a `❓ Decide:` line — an unresolved gap keeps `mano start` blocked, which is the correct outcome while a UX decision is genuinely pending.
+- Close with the canonical execution log, then `Next:` — `mano start` when no gap remains, otherwise the skills the remaining routes name.
+<!-- /mano-rule: ux-gap-needs-no-phase -->
+
+**With a phase brief present, projected `ux-gap` items are still in scope.** Address them in the same run as the phase's own screens and resolve each one the same way. A gap left open blocks the next `mano start`, so never defer one on the grounds that the phase's own work came first.
 
 ## Inputs
 
-- Phase brief (required)
+- Projected `ux-gap` items (required — from `state.js --gaps ux-gap`)
+- Phase brief (required, except in **Gap-only mode**)
 - Existing UX flow (if it exists — extend, don't regenerate)
 - Tech spec (optional — constrains what's possible)
 - `_mano_output/project-rules.md` (optional — a11y rules that affect layout)

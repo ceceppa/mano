@@ -37,8 +37,23 @@ On activation:
    The projection is also the only phase-identity, mode, and track source. Record its `MODE`, `TRACK`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `IN_PHASE_STATUS`, and `REVIEW_HEADING_PREFIX`. Never construct a directory or backlog status from the number alone. With no owner configured these remain the legacy `phase-N` / `in-phase-N` forms; owner-scoped forms appear only after explicit `mano owner <slug>` opt-in.
    - `DECISION: STOP` → you can't scope a phase now. Relay the script's one-line reason (prefixed `[mano start]:`) and stop. Don't re-derive or re-explain it — for the full picture, run `node _mano/scripts/state.js --verbose`. You may note any artifact defect you happened to spot, but it never licenses advancing.
      **Route, don't dead-end.** `STOP` blocks *advancing to a new phase*; it does not mean nothing can be done. If the user asked to **add specific work to the phase that is already open**, add one line pointing at the path that owns it — and which path that is comes from the open phase's ledger, not from habit: `` `mano stories "[what they named]"` — adds it to the open [PHASE_ID] `` when that phase has a stories index, `` `mano build "[what they named]"` — adds it to the open [PHASE_ID] `` when it has a `progress.md` ledger (see `_mano/rules/backlog.md` → **Mid-phase additions**). The projection's own reason line names which one addresses the brief. Add this line only when they asked to add work; a plain `mano start` on an in-progress phase still just relays the reason and stops. Never assign a backlog item or write a story yourself here.
+
+<!-- mano-rule: id=open-gaps-block-new-scope; incident=refcounted-rework-never-reached-the-spec; model=claude; date=2026-08-25; eval=start-gap-block -->
+     **`OPEN_GAPS:` present with `DECISION: STOP` → the gap block. Relay the routes; do not scope.** An open gap item is an artifact decision that a rework or a review already proved missing. Scoping a new phase on top of one is how a tech spec, rule set, UX flow, or design brief stays wrong for phases at a time — so this stop exists to spend one command now instead of a rewrite later. Render one line per route from the projection's `OPEN_GAPS:` line, with its count and its owning skill, then stop:
+
+     ```text
+     [mano start]: Can't scope a new phase — [N] artifact gap(s) are still open.
+
+     - `mano spec` — [N] spec-gap item(s)
+     - `mano ux` — [N] ux-gap item(s)
+
+     Each skill resolves its own items. Re-run `mano start` once none remain.
+     ```
+
+     **This block is never negotiable and never has an override.** Do not offer to scope anyway, do not ask whether the gaps matter, and do not rank them by apparent importance — the owning skill decides that with better information, and a gap it judges already covered costs it one `resolve-gap` call. Do not open `backlog.md` to read or summarise the gap contents; the counts and the routes are the whole message. If the user insists on scoping regardless, tell them the resolving skill is the only route and that it is usually one command — never edit the backlog to clear the block.
+<!-- /mano-rule: open-gaps-block-new-scope -->
    - `DECISION: PROCEED` → act on `NEXT:`:
-     - `scope-backlog` → **Path A.** The script prints a `SCOPE INPUT` block — the phase-scopeable `Status: backlog` items (with `spec-gap` / `rule-gap` already excluded), core product principles, and latest review. A source or track query restricts only these candidate items and is labelled in the projection; a combined query is their intersection. That is everything you need for scope; go straight to Step 6 using it. If a filtered projection has no items, say that no open backlog item matches the requested Source/Track and ask for a broader query or an unfiltered `mano start`; do not treat the full backlog as empty. **Do not open any file under `_mano_output/` to choose scope** (no `backlog.md`, no `reviews.md`, and especially not the finished phase's folder — it's shipped). The only exception is the narrow auto-chain planning read in Step 6 after a candidate scope exists. Don't greet conversationally.
+     - `scope-backlog` → **Path A.** The script prints a `SCOPE INPUT` block — the phase-scopeable `Status: backlog` items (with every gap type already excluded), core product principles, and latest review. A source or track query restricts only these candidate items and is labelled in the projection; a combined query is their intersection. That is everything you need for scope; go straight to Step 6 using it. If a filtered projection has no items, say that no open backlog item matches the requested Source/Track and ask for a broader query or an unfiltered `mano start`; do not treat the full backlog as empty. **Do not open any file under `_mano_output/` to choose scope** (no `backlog.md`, no `reviews.md`, and especially not the finished phase's folder — it's shipped). The only exception is the narrow auto-chain planning read in Step 6 after a candidate scope exists. Don't greet conversationally.
      - `conversation` → **Path B** (new project).
      - `resume-draft` → a previous run left the projected `PHASE_DIR` without a brief. The script prints items already carrying the projected `IN_PHASE_STATUS` plus matching open candidates; it excludes gaps, resolved work, rejected work, and other phases. Do not infer which items were approved: show the likely assigned items, then ask the user to confirm or restate the exact approved scope for this phase. Once confirmed, resume at Step 7; do not start a new phase.
 
@@ -196,7 +211,7 @@ Prioritise:
 3. Momentum — items that build on what was just shipped
 
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
-`mano start` ignores `spec-gap` and `rule-gap` items when suggesting phase scope — `state.js --scope` excludes them before they enter context. They are exposed to their owners by `state.js --spec` / `state.js --gaps rule-gap` and addressed by `mano spec` / `mano rules`.
+`mano start` ignores every gap type when suggesting phase scope — `state.js --scope` excludes them before they enter context. They are exposed to their owners by `state.js --spec` and `state.js --gaps <type>`, and addressed by `mano spec` / `mano rules` / `mano ux` / `mano ui`. They are excluded from *scope*, not from *consequence*: while any one is open, the projection returns `DECISION: STOP` and no new phase is scoped at all (see the gap block above).
 <!-- /mano-rule: public-interface-contract-readiness -->
 
 ```
@@ -419,7 +434,7 @@ Each phase brief carries everything needed to understand the phase. No external 
 - **Stated Technical Preferences** — *pass-through appendix, not part of the phase narrative.* Include **only** if the source input explicitly stated a stack, framework, storage, auth, or other technical directive. Transcribe each **strictly verbatim** — copy the source sentence character-for-character inside quotes, one per line. Do not paraphrase, evaluate, rank, expand, condense, re-tense, or "tidy" — meaning-preserving normalisation is still a violation here (e.g. turning *"Authentication can be deferred if the first phase uses shareable trip links instead of accounts"* into *"Authentication deferred — shareable trip links instead of accounts"* is wrong; quote the original sentence unchanged). If the source states it in prose, lift the exact clause. `mano start` is a courier here, not an editor or decision-maker (see **Boundaries** B1 pass-through clause). Head the block with: *"Verbatim from the source; not scoped or decided by `mano start`. `mano spec` evaluates these and must flag any override."* Omit the entire section if the source stated no technical preference — never invent one to fill it. This block is the single durable channel for stated tech directives across a context reset; its absence is why a blank-context `mano spec` would otherwise never see them. The B1 implementation-token prohibition below does **not** apply to this block — it is a quoted record of what the user said, explicitly exempted, not `mano start` introducing tech tokens.
 
   <!-- mano-rule: id=stated-directive-homing; incident=unhomed-stated-directive-dropped-at-import; model=sonnet; date=2026-08-21; eval=import-unhomed-directive -->
-  A directive that outlives this phase — folder structure, file naming, where tests live, a runtime or version constraint — **also** gets its own backlog item, typed `spec-gap` or `rule-gap` per **B1 → Every stated directive gets a home** in `_mano/rules/intake.md`. This block is per-phase and disappears with it; the item is durable and routes the human to the artifact that will own the decision. Recording it in both places is correct, not duplication.
+  A directive that outlives this phase — folder structure, file naming, where tests live, a runtime or version constraint — **also** gets its own backlog item, typed `spec-gap`, `rule-gap`, `ux-gap`, or `ui-gap` per **B1 → Every stated directive gets a home** in `_mano/rules/intake.md`. This block is per-phase and disappears with it; the item is durable and routes the human to the artifact that will own the decision. Recording it in both places is correct, not duplication.
   <!-- /mano-rule: stated-directive-homing -->
 
 ### Hard constraint
@@ -464,7 +479,7 @@ Rules:
 
 ```markdown
 ### [Short title]
-- **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
+- **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap / ux-gap / ui-gap
 - **Source:** [PHASE_ID] / User idea / Review triage / Product brief   ← optional, omit if no meaningful source
 - **Context:**
   [Line 1 — what it is]
@@ -483,6 +498,8 @@ Rules:
 - `test` — missing test coverage, test improvements
 - `spec-gap` — missing or unclear information in the tech spec, **or** a stated technical directive the spec must still adopt (`mano spec` resolves during `mano spec`)
 - `rule-gap` — missing or unclear project rule, **or** a stated convention the rules must still adopt (`mano rules` resolves during `mano rules`)
+- `ux-gap` — missing or unclear UX flow, **or** a stated flow directive the flow must still adopt (`mano ux` resolves during `mano ux`)
+- `ui-gap` — missing or unclear design brief, **or** a stated design directive the brief must still adopt (`mano ui` resolves during `mano ui`)
 
 **Max 5 lines per item** (excluding the title). Context can be multiline. If it needs more detail, it gets that when it enters a phase.
 
@@ -532,6 +549,7 @@ Splitting is not removal — both halves remain traceable. It is one of the two 
 - **`mano spec`** may only mark a fully addressed spec-gap item from `state.js --spec` as resolved, using `backlog.js resolve-gap`
 <!-- /mano-rule: public-interface-contract-readiness -->
 - **`mano rules`** may only mark a fully addressed item from `state.js --gaps rule-gap` as resolved, using `backlog.js resolve-gap`
+- **`mano ux`** and **`mano ui`** may only mark a fully addressed item from their own `state.js --gaps ux-gap` / `--gaps ui-gap` projection as resolved, using `backlog.js resolve-gap`
 - **`mano stories`** may make only the narrow mid-phase `backlog.js assign` mutation for an exact user-named item in an already-approved active phase; it never hand-edits the file or chooses an item itself
 - No other skill may write to the backlog
 
@@ -580,7 +598,7 @@ The test is whether the convention constrains **how future work is written** rat
      - The phase introduces a **new internal model, algorithm, or representation** the spec doesn't yet describe (a conflict-resolution model, a state machine, a scheduling scheme) — "internal, not an external API" does not make it spec-free.
      - The brief's own **Acknowledged Risks or Assumption Log names an unresolved technical question** ("what counts as a duplicate record", "where does X state live"). A technical question the brief admits is open is a spec-gap by definition — do not recommend skipping spec while the brief itself flags one. Scan those sections before defaulting to `mano stories`.
    - Never lists `mano spec` with a hedge like "if technical decisions feel fuzzy" — either the phase needs a spec (new technical territory) or it doesn't (incremental on existing tech).
-   - **When the projection printed `OPEN_GAPS:`, keep those routes visible.** They are backlog items no phase can absorb — `state.js --scope` excludes them by design — so this block is where the human hears about them at all. Name `mano spec` for open `spec-gap` items and `mano rules` for open `rule-gap` items, with the count. Do not open the backlog to read them, do not describe their contents, and do not let them displace the recommended action: they are an additional line, not a competing recommendation.
+   - **When the projection printed `OPEN_GAPS:`, keep those routes visible.** They are backlog items no phase can absorb — `state.js --scope` excludes them by design — so this block is where the human hears about them at all. Name the owning skill for each open type, with the count: `mano spec`, `mano rules`, `mano ux`, `mano ui`. Do not open the backlog to read them, do not describe their contents, and do not let them displace the recommended action: they are an additional line, not a competing recommendation.
 
 Use the canonical execution-log format. List only useful actions whose artifacts are missing or need refinement; put the recommended action first, but keep other genuinely valid options visible:
 

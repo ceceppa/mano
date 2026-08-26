@@ -25,21 +25,45 @@ Read this file plus `_mano/rules/core.md` and `_mano/rules/artifact.md` first �
 
 On activation:
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
-1. Run `node _mano/scripts/state.js --ui`. Its `UI INPUT` is the only phase-directory discovery for this skill. Do not list or scan phase folders yourself. If the command fails or its output lacks the `UI INPUT`, `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `PREVIEW` lines, stop and report the exact failure. Use the exact projected paths; never construct `phase-N` from the number.
-2. `STATUS: BLOCKED` → relay the script's route and stop without writing anything. A phase brief is required because the preview must have an unambiguous phase owner; do not offer to continue without one.
-3. `STATUS: READY` → read the exact `BRIEF` path printed by the script.
-4. Read `_mano_output/ux-flow.md` if it exists — know what screens and navigation exist before designing components.
-5. Read `_mano_output/tech-spec.md` if it exists — constrain component library choices.
-6. Read `_mano_output/project-rules.md` if it exists — respect any a11y requirements or component patterns already agreed.
-7. Read design-relevant requirements only when they are included in the current phase brief, existing design brief, UX flow, project rules, or explicitly provided context.
-8. Read `_mano_output/design-brief.md` if it exists and extend it as the project-wide foundation.
-9. Read the exact current-phase `PREVIEW` path only when the projection reports it as present; this is a same-phase rerun input. Never read an earlier phase's preview or the legacy root `_mano_output/design-preview.html`.
-10. Immediately before the first write—especially after the preference checkpoint pauses the flow—run `node _mano/scripts/state.js --ui` again. Continue only if it still reports `STATUS: READY` with the same `OWNER`, `PHASE_ID`, `BRIEF`, and `PREVIEW`. If any value changed or the phase became blocked, write nothing; report that project state changed and ask the user to invoke `mano ui` again so the new phase context is read fresh.
+1. Run `node _mano/scripts/state.js --gaps ui-gap`. Its `GAP INPUT` is the complete backlog-derived context for open UI gaps: only unresolved `ui-gap` items are exposed. **Do not open `_mano_output/backlog.md` before or after this command.** If the command fails or its output lacks the `GAP INPUT`, exact `MODE:`, `TYPE: ui-gap`, `STATUS: backlog`, and `COUNT:` lines, stop and report the exact failure.
+2. Run `node _mano/scripts/state.js --ui`. Its `UI INPUT` is the only phase-directory discovery for this skill. Do not list or scan phase folders yourself. If the command fails or its output lacks the `UI INPUT`, `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `PREVIEW` lines, stop and report the exact failure. Use the exact projected paths; never construct `phase-N` from the number.
+3. `STATUS: BLOCKED` → check `COUNT:` from step 1. `COUNT: 0` → relay the script's route and stop without writing anything; a phase preview requires an unambiguous phase owner, so do not offer to continue without one. `COUNT:` above zero → run **Gap-only mode** below, which writes no preview and therefore needs no phase owner.
+4. `STATUS: READY` → read the exact `BRIEF` path printed by the script.
+5. Read `_mano_output/ux-flow.md` if it exists — know what screens and navigation exist before designing components.
+6. Read `_mano_output/tech-spec.md` if it exists — constrain component library choices.
+7. Read `_mano_output/project-rules.md` if it exists — respect any a11y requirements or component patterns already agreed.
+8. Read design-relevant requirements only when they are included in the current phase brief, existing design brief, UX flow, project rules, or explicitly provided context.
+9. Read `_mano_output/design-brief.md` if it exists and extend it as the project-wide foundation.
+10. Read the exact current-phase `PREVIEW` path only when the projection reports it as present; this is a same-phase rerun input. Never read an earlier phase's preview or the legacy root `_mano_output/design-preview.html`.
+11. Immediately before the first write—especially after the preference checkpoint pauses the flow—run `node _mano/scripts/state.js --ui` again. Continue only if it still reports `STATUS: READY` with the same `OWNER`, `PHASE_ID`, `BRIEF`, and `PREVIEW`. If any value changed or the phase became blocked, write nothing; report that project state changed and ask the user to invoke `mano ui` again so the new phase context is read fresh.
 <!-- /mano-rule: ui-phase-preview-ownership -->
+
+<!-- mano-rule: id=ui-gap-needs-no-phase; incident=gap-block-deadlock; model=claude; date=2026-08-25; eval=ui-gap-only-mode -->
+## Gap-only mode
+
+`design-brief.md` is a cumulative project artifact; only `design-preview.html` is phase-scoped. A `ui-gap` says something already proved the design brief wrong or incomplete — a rework that changed a component treatment, a review finding nobody homed — and that repair must not wait for the next phase. It cannot wait: an open gap blocks `mano start` from scoping one, so a `ui-gap` that needed a phase brief would deadlock the loop it was meant to close.
+
+In gap-only mode:
+
+- Work **only** the projected `ui-gap` items. Do not restyle, extend, or add any component no projected gap names.
+- Repair `_mano_output/design-brief.md` with targeted replacements, per `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**. Never a full-file regeneration.
+- Write **no** `design-preview.html` — not into a phase directory, not at the legacy root. There is no phase to own one, and the preview-ownership rule above is what makes gap-only mode safe without a phase.
+- Resolve each item the design brief now addresses, one call per item:
+
+```
+node _mano/scripts/backlog.js resolve-gap --type ui-gap --title "[exact projected title]"
+```
+
+- Resolve an item only once `design-brief.md` actually adopts or explicitly overrides it. If a projected gap needs a decision only the human can make, leave it open and surface it as a `❓ Decide:` line — an unresolved gap keeps `mano start` blocked, which is correct while a design decision is genuinely pending.
+- Close with the canonical execution log, then `Next:` — `mano start` when no gap remains, otherwise the skills the remaining routes name.
+<!-- /mano-rule: ui-gap-needs-no-phase -->
+
+**With a phase brief present, projected `ui-gap` items are still in scope.** Address them in the same run as the phase's own design work and resolve each one the same way. A gap left open blocks the next `mano start`, so never defer one on the grounds that the phase's own work came first.
 
 ## Inputs
 
-- Phase brief (required — stop and route to `mano start` if missing)
+- Projected `ui-gap` items (required — from `state.js --gaps ui-gap`)
+- Phase brief (required, except in **Gap-only mode**)
 - UX flow (recommended — `mano ui` should know what screens exist before designing)
 - Tech spec (optional — constrains component library choices)
 - `_mano_output/project-rules.md` (optional — a11y rules, component patterns)

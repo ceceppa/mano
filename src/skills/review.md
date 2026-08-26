@@ -176,6 +176,8 @@ When the user replies with their feedback, or when substantive feedback was alre
 - ✨ New ideas — emerged from usage, not originally scoped
 - 📋 Spec gaps — missing or unclear tech spec (if applicable)
 - 📏 Rule gaps — missing or unclear rules (if applicable)
+- 🧭 UX gaps — missing or unclear UX flow (if applicable)
+- 🎨 UI gaps — missing or unclear design brief (if applicable)
 - ❌ Rejected scope — open backlog items whose premise this feedback invalidates (if applicable)
 
 **Validation rule:** Track validation separately from feedback triage. Validation records what happened. Optional context records where or how the human checked it. Neither becomes a backlog item by itself.
@@ -298,12 +300,53 @@ There is no second closing keyword. A human who wants to record a failure says w
 
 ---
 
+<!-- mano-rule: id=rework-teaches-an-artifact; incident=refcounted-rework-never-reached-the-spec; model=claude; date=2026-08-25; eval=review-rework-harvest,review-rework-harvest-noise -->
+**STEP 2b — Harvest what the reworks taught. Build path only.**
+
+A rework event is a correction the human already proved necessary *during the build*. Some of them are pure implementation defects. Some of them taught something an artifact should have said and now still doesn't — and that knowledge currently dies in the ledger, because the fix landed in code and no skill owns carrying it back. That is how a tech spec, rule set, UX flow, or design brief stays wrong for phases at a time.
+
+Read the **Rework** table and its **Row Contracts** in the exact projected `PROGRESS` path — you already read that file at activation. For **every** event, `resolved` and `dismissed` alike, ask one question:
+
+> Does this correction teach something an artifact should have stated?
+
+That is the whole test. **Do not** ask whether it was "architectural", whether the artifact already covers it, or whether it is worth a phase — those are the owning skill's judgements, made later with better information, and guessing at them here is how the harvest goes quiet.
+
+- **Yes, or unsure → emit a gap item.** Erring loud is deliberate. A false positive costs the owning skill one `resolve-gap` call on its next run. A false negative costs a wrong artifact for as long as nobody notices — which this phase's own history shows is measured in phases, not hours.
+- **No → emit nothing.** A correction that a rule or spec *already* covered, and the code simply got wrong, taught nothing new. Reserve this for events you can name the existing coverage for.
+
+Route each by the artifact that should own the statement, not by the wording of the complaint:
+
+| The correction is about | Type | Owner |
+|---|---|---|
+| technical model, data model, API or event contract, lifetime/ownership, persistence, state ownership, a behaviour-driving default | `spec-gap` | `mano spec` |
+| a convention any future unit must follow — a platform/engine gotcha, a naming or structure rule, a testing or error-handling pattern | `rule-gap` | `mano rules` |
+| a screen, step, navigation path, empty/locked/error state, or how a user reaches something | `ux-gap` | `mano ux` |
+| a component treatment, visual hierarchy, palette, spacing, or design-system statement | `ui-gap` | `mano ui` |
+
+**Write the event's own words, plus exactly one line of your framing.** The `Context` is the verbatim `Row Contracts` text for that event, preceded by a single line naming what the owning artifact must settle. Their words are the highest-authority record of what actually went wrong; your line is the address, not a rewrite. Never paraphrase the event away, and never let your framing grow past one line.
+
+```
+- **Type:** spec-gap
+- **Context:**
+  Tech spec must state AnimaLayoutTransition's base class and observation lifetime.
+  [verbatim Row Contracts text for R1]
+```
+
+Title each item after the decision the artifact must make (`Open decision: layout transition lifetime`), not after the bug. These items go through the same STEP 3 writer as every other triaged item, and they are **not** rework events — the phase is closing, and a gap is the next artifact run's input, not this phase's reopened work.
+
+**This harvest is not gated on the human's feedback.** It reads the ledger, which is durable, so it runs on a silent `close it` exactly as it runs on a detailed review. Present the harvested items in the STEP 2 echo with everything else; on the one-exchange positive-verdict path, write them and report them in the changelog.
+
+**Show your work when the harvest is empty.** If every event taught nothing, say so in one line naming the events — `R2, R3: no artifact gap (existing rules already covered these)`. A silent empty harvest is indistinguishable from a skipped one.
+<!-- /mano-rule: rework-teaches-an-artifact -->
+
 **STEP 3 — Write to Files (One-Shot Execution)**
 
 When the user confirms (e.g., "close it", "yes"):
 1. Read the exact current phase brief's optional `**Track:**` line. If present, use that exact value on every new review item; if absent, omit `track`. Never substitute the active local track: review preserves the experiment that produced the feedback. Then write ALL confirmed triaged items to the backlog **via the writer — don't hand-write the item blocks.** **Map each triage category to its exact `Type` first** (this classification is the review's job; the script only takes the result):
    - 📋 Spec gaps → `spec-gap`
    - 📏 Rule gaps → `rule-gap`
+   - 🧭 UX gaps → `ux-gap`
+   - 🎨 UI gaps → `ui-gap`
    - 🐛 Defects → `bug`
    - 🔧 Refinements → `refinement`
    - ✨ New ideas → `feature`
@@ -322,7 +365,7 @@ When the user confirms (e.g., "close it", "yes"):
 
    ```markdown
    ### [Short title]
-   - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
+   - **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap / ux-gap / ui-gap
    - **Source:** [PHASE_ID] review
    - **Track:** [copy the phase brief's Track, if present]
    - **Context:**
@@ -375,6 +418,7 @@ Use the canonical execution-log format defined in `_mano/rules/core.md` ("Canoni
 ```
 [mano review]: mano review — _mano_output/backlog.md, _mano_output/reviews.md
 - Triaged items inserted to backlog
+- Rework harvest: [N gap item(s) from R…, R… / no artifact gap — name the events]
 - [N] backlog item(s) marked rejected — omit this line if none
 - Validation: [recorded / not tested]
 - [PHASE_ID] items marked resolved
@@ -384,9 +428,21 @@ Use the canonical execution-log format defined in `_mano/rules/core.md` ("Canoni
 [Optional hook block if active]
 
 Next:
-- `mano start` — scope the next phase from the updated backlog
+- `mano spec` — settle [N] open spec-gap item(s)
+- `mano rules` — settle [N] open rule-gap item(s)
+- `mano ux` — settle [N] open ux-gap item(s)
+- `mano ui` — settle [N] open ui-gap item(s)
+- `mano start` — scope the next phase, once no gap remains
 ```
 That is your complete response.
+
+<!-- mano-rule: id=review-names-the-drift-routes; incident=refcounted-rework-never-reached-the-spec; model=claude; date=2026-08-25; eval=review-drift-routes -->
+**The `Next:` block names every open gap route, and `mano start` comes last.** Writing a gap item is not the same as the human knowing it exists. Re-run `node _mano/scripts/state.js --current` after the STEP 3 writes and read its `OPEN_GAPS:` line — that is the authoritative list, and it includes gaps left over from earlier phases, not only the ones this review just wrote. Render one line per route with its count, in the order the projection prints them, and drop any route with no open item.
+
+This is the one `Next:` block where `mano start` is **not** the recommended action. An open gap blocks it — `state.js` returns `DECISION: STOP` while any gap is unresolved — so listing it first would recommend a command that refuses. Keep it last and conditional, exactly as shown. When `OPEN_GAPS:` is absent, the block is the single `mano start` line and nothing else.
+
+Never soften this into "you may also want to". These routes are the drift the review just found; naming them is the whole point of having found it.
+<!-- /mano-rule: review-names-the-drift-routes -->
 
 ## Follow-up review
 

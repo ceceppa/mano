@@ -384,7 +384,7 @@ The one narrow exception to the ledger-and-source write gate (0⊘): build may w
 [mano build]: That's a distinct outcome, so it's not this phase. Defer it to the backlog?
 
   Title:   [the exact title]
-  Type:    [feature | bug | chore | spec-gap | rule-gap]
+  Type:    [feature | bug | chore | spec-gap | rule-gap | ux-gap | ui-gap]
   Context: [the exact context, in the user's own terms]
   Source:  [PHASE_ID]
   Track:   [the phase brief's track, or "none"]

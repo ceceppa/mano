@@ -774,7 +774,11 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("PHASE: 4", reopened.stdout)
 
     def test_start_scope_excludes_gaps_and_gap_only_state_stops(self):
-        self.backlog.write_text(MIXED_BACKLOG)
+        # A scopeable backlog no longer wins over an open gap: scoping a new
+        # phase on top of a known-missing artifact decision is the drift this
+        # gate exists to stop. The exclusion from SCOPE INPUT still holds.
+        no_gaps = MIXED_BACKLOG.replace(OPEN_SPEC_BLOCK, "").replace(OPEN_RULE_BLOCK, "")
+        self.backlog.write_text(no_gaps)
         scoped = self.run_state("--scope")
         self.assertEqual(scoped.returncode, 0, scoped.stderr)
         self.assertIn("DECISION: PROCEED", scoped.stdout)
@@ -793,16 +797,49 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("rule-gap → mano rules", stopped.stdout)
         self.assertNotIn("SCOPE INPUT", stopped.stdout)
 
-    def test_open_gaps_stay_visible_while_the_backlog_is_scopeable(self):
-        # A scopeable backlog wins the verdict, so the gap routes never reach the
-        # action text — and a stated directive homed as a gap item would be lost
-        # exactly where it was homed to survive. OPEN_GAPS carries them anyway.
+    def test_open_gaps_block_scoping_a_new_phase(self):
+        # An open gap is an artifact decision something already proved missing.
+        # Scoping the next phase on top of it is how a spec, rule set, UX flow,
+        # or design brief stays wrong for phases at a time, so it stops here —
+        # with every route named, because the fix is one command per route.
         self.backlog.write_text(MIXED_BACKLOG)
         scoped = self.run_state("--scope")
         self.assertEqual(scoped.returncode, 0, scoped.stderr)
-        self.assertIn("DECISION: PROCEED", scoped.stdout)
+        self.assertIn("DECISION: STOP", scoped.stdout)
         self.assertIn("OPEN_GAPS: 1 spec-gap → mano spec; 1 rule-gap → mano rules",
                       scoped.stdout)
+        self.assertIn("before scoping a new phase", scoped.stdout)
+        self.assertNotIn("SCOPE INPUT", scoped.stdout)
+
+    def test_ux_and_ui_gaps_route_to_their_own_skills(self):
+        ux_block = (
+            "### Open decision: empty-state flow\n"
+            "- **Type:** ux-gap\n"
+            "- **Context:**\n"
+            "  The rework proved the flow has no empty state.\n"
+            "- **Status:** backlog\n"
+        )
+        ui_block = (
+            "### Open decision: card elevation\n"
+            "- **Type:** ui-gap\n"
+            "- **Context:**\n"
+            "  The rework changed the card treatment.\n"
+            "- **Status:** backlog\n"
+        )
+        no_gaps = MIXED_BACKLOG.replace(OPEN_SPEC_BLOCK, "").replace(OPEN_RULE_BLOCK, "")
+        self.backlog.write_text(no_gaps.rstrip() + "\n\n" + ux_block + "\n" + ui_block)
+        scoped = self.run_state("--scope")
+        self.assertEqual(scoped.returncode, 0, scoped.stderr)
+        self.assertIn("DECISION: STOP", scoped.stdout)
+        self.assertIn("1 ux-gap → mano ux", scoped.stdout)
+        self.assertIn("1 ui-gap → mano ui", scoped.stdout)
+
+        projected = self.run_state("--gaps", "ux-gap")
+        self.assertEqual(projected.returncode, 0, projected.stderr)
+        self.assertIn("TYPE: ux-gap", projected.stdout)
+        self.assertIn("COUNT: 1", projected.stdout)
+        self.assertIn("empty-state flow", projected.stdout)
+        self.assertNotIn("card elevation", projected.stdout)
 
     def test_open_gaps_line_is_omitted_when_no_gap_is_open(self):
         no_gaps = MIXED_BACKLOG.replace(OPEN_SPEC_BLOCK, "").replace(OPEN_RULE_BLOCK, "")

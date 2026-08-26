@@ -28,7 +28,7 @@ Current-phase implementation work belongs in `phase-brief.md` or the phase's sto
 `Source` is optional provenance; omit it when there is no meaningful source. `Track` is an optional experiment/direction label (for example, `Option B`); it is not a replacement for Source.
 
 ### [Short title]
-- **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap
+- **Type:** bug / refinement / feature / tech-debt / test / spec-gap / rule-gap / ux-gap / ui-gap
 - **Source:** [PHASE_ID] / User idea / Review triage / Product brief
 - **Track:** [Optional experiment or direction]
 - **Context:**

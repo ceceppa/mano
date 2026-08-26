@@ -21,7 +21,7 @@
  *   update   rewrite one exact item's title and/or context (never its status)
  *   assign   move approved items from `Status: backlog` to `in-phase-<N>`
  *   resolve  mano review's close sweep: `in-phase-<N>` -> `resolved` (whole phase)
- *   resolve-gap  mark one exact spec-gap / rule-gap item resolved
+ *   resolve-gap  mark one exact gap item (spec/rule/ux/ui) resolved
  *   reject   mark named open items `rejected` (premise invalidated, won't do)
  *
  * Usage:
@@ -48,8 +48,19 @@ const path = require("node:path");
 const { phaseRef, phaseRouting, validateTrack } = require("./phase.js");
 const { writeAtomic } = require("./atomic.js");
 
-const VALID_TYPES = ["bug", "refinement", "feature", "tech-debt", "test", "spec-gap", "rule-gap"];
-const GAP_TYPES = ["spec-gap", "rule-gap"];
+const VALID_TYPES = [
+  "bug", "refinement", "feature", "tech-debt", "test",
+  "spec-gap", "rule-gap", "ux-gap", "ui-gap",
+];
+// Which skill owns each gap type. A gap item is a routing address, not a
+// decision: the type says which artifact must still adopt or reject it.
+const GAP_OWNER = {
+  "spec-gap": "mano spec",
+  "rule-gap": "mano rules",
+  "ux-gap": "mano ux",
+  "ui-gap": "mano ui",
+};
+const GAP_TYPES = Object.keys(GAP_OWNER);
 const ITEMS_HEADING = "## Items";
 
 const HELP = `mano backlog — deterministic writer for _mano_output/backlog.md
@@ -59,7 +70,7 @@ Commands:
   update   rewrite one exact item's title and/or context (never its status)
   assign   move approved items from 'Status: backlog' to the configured phase
   resolve  mano review's close sweep for the configured phase identity
-  resolve-gap  flip one exact open spec-gap / rule-gap item to 'resolved'
+  resolve-gap  flip one exact open gap item (spec/rule/ux/ui) to 'resolved'
   reject   flip named open items to 'rejected' (premise invalidated, won't do)
 
 add — one item from flags (the shell-safe path):
@@ -102,7 +113,7 @@ assign:
   --title "..."     one per approved item, repeatable
   Uses phase-N by default; owner opt-in uses <owner>-phase-N.
   Flips only non-gap items currently 'Status: backlog'; reports anything it
-  can't. spec-gap / rule-gap items stay backlog-owned by mano spec / mano rules.
+  can't. Gap items stay backlog-owned by their owning skill (see resolve-gap).
 
 resolve:
   --phase N         the configured owner's phase being closed (required)
@@ -112,7 +123,7 @@ resolve:
   never touched.
 
 resolve-gap:
-  --type <type>      required: spec-gap or rule-gap
+  --type <type>      required: one of ${GAP_TYPES.join(", ")}
   --title "..."      required: one exact item title
   Resolves only the unique item with that exact title, exact type, and
   'Status: backlog'. An already-resolved matching item is an idempotent success.
@@ -525,7 +536,7 @@ function cmdAssign(args) {
   for (const r of results) {
     if (r.outcome === "assigned") process.stdout.write(`  + ${r.title}\n`);
     else if (r.outcome === "gap") {
-      const owner = r.type === "spec-gap" ? "mano spec" : "mano rules";
+      const owner = GAP_OWNER[r.type] || "its owning skill";
       process.stdout.write(`  ~ ${r.title} (${r.type}; route to ${owner}, left as '${r.status}')\n`);
     }
     else if (r.outcome === "skipped") process.stdout.write(`  ~ ${r.title} (already '${r.status}', left as-is)\n`);

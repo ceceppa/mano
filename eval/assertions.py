@@ -4392,6 +4392,132 @@ def auto_chain_stopped_before_review(ctx: Ctx) -> list[Failure]:
     return fails
 
 
+
+
+# --- gap harvest and gap routing -------------------------------------------
+# A rework event is a correction the human already proved necessary. Some teach
+# something an artifact should have said; those must leave the ledger as gap
+# items or the artifact stays wrong for phases. These check both directions:
+# the teaching events are harvested, and the merely-buggy one is not.
+
+def _gap_items(ctx: Ctx, kind: str) -> list[str]:
+    return [b for _, k, b in _backlog_blocks(ctx) if k == kind]
+
+
+def review_harvested_teaching_reworks(ctx: Ctx) -> list[Failure]:
+    name = "review_harvested_teaching_reworks"
+    out = []
+    spec = " ".join(_gap_items(ctx, "spec-gap")).lower()
+    if "thumbnailwatcher" not in spec:
+        out.append(Failure(name, "R1 taught a lifetime/ownership decision the tech spec "
+                                 "never states, but no spec-gap item carries it — the "
+                                 "correction dies in the ledger"))
+    rule = " ".join(_gap_items(ctx, "rule-gap")).lower()
+    if "one element at a time" not in rule and "per-element" not in rule:
+        out.append(Failure(name, "R3 taught a platform behaviour every future unit must "
+                                 "handle, but no rule-gap item carries it"))
+    return out
+
+
+def review_left_the_covered_rework_alone(ctx: Ctx) -> list[Failure]:
+    """Erring loud is not erring blind: R2 is covered by an existing rule."""
+    name = "review_left_the_covered_rework_alone"
+    out = []
+    gaps = " ".join(
+        b for _, k, b in _backlog_blocks(ctx) if k.endswith("-gap")
+    ).lower()
+    if "settled flag" in gaps or "completion flag" in gaps:
+        out.append(Failure(name, "R2 was a defect against the Completion Flags rule that "
+                                 "already exists; harvesting it as a gap is noise"))
+    if "r2" not in ctx.all_responses().lower():
+        out.append(Failure(name, "R2 produced no gap and was never named — a silent empty "
+                                 "harvest is indistinguishable from a skipped one"))
+    return out
+
+
+def review_next_named_the_drift_routes(ctx: Ctx) -> list[Failure]:
+    name = "review_next_named_the_drift_routes"
+    text = ctx.transcript
+    low = text.lower()
+    out = []
+    for route in ("mano spec", "mano rules"):
+        if route not in low:
+            out.append(Failure(name, f"closing output never names `{route}` — the gap it "
+                                     f"just wrote is invisible to the human"))
+    start = low.rfind("mano start")
+    for route in ("mano spec", "mano rules"):
+        pos = low.rfind(route)
+        if start != -1 and pos != -1 and start < pos:
+            out.append(Failure(name, "`mano start` is listed above a gap route, but an open "
+                                     "gap makes it refuse — it must come last"))
+            break
+    return out
+
+
+def start_gap_block_wrote_no_brief(ctx: Ctx) -> list[Failure]:
+    name = "start_gap_block_wrote_no_brief"
+    out = []
+    for phase in (2, 3):
+        brief = ctx.output_dir / f"phase-{phase}" / "phase-brief.md"
+        if brief.is_file():
+            out.append(Failure(name, f"phase-{phase}/phase-brief.md was written while a gap "
+                                     f"was open — the block did not hold"))
+    low = ctx.transcript.lower()
+    for route in ("mano spec", "mano ux"):
+        if route not in low:
+            out.append(Failure(name, f"the block did not name `{route}`, so the human is "
+                                     f"stopped without being told how to proceed"))
+    return out
+
+
+def _gap_resolved(ctx: Ctx, title_fragment: str) -> bool:
+    for title, _, block in _backlog_blocks(ctx):
+        if title_fragment.lower() in title.lower():
+            return "**Status:** resolved" in block
+    return False
+
+
+def ux_gap_only_repaired_the_flow(ctx: Ctx) -> list[Failure]:
+    name = "ux_gap_only_repaired_the_flow"
+    out = []
+    flow = ctx.output_dir / "ux-flow.md"
+    text = flow.read_text(encoding="utf-8") if flow.is_file() else ""
+    if text == ctx.fixture_snapshot.get("ux-flow.md", ""):
+        out.append(Failure(name, "ux-flow.md is unchanged — the ux-gap was not addressed, "
+                                 "and it still blocks mano start"))
+    if not _gap_resolved(ctx, "settle progress feedback"):
+        out.append(Failure(name, "the ux-gap item is still Status: backlog — an unresolved "
+                                 "gap keeps mano start blocked forever"))
+    for stray in ("design-brief.md", "tech-spec.md", "project-rules.md"):
+        p = ctx.output_dir / stray
+        before = ctx.fixture_snapshot.get(stray)
+        if before is not None and p.is_file() and p.read_text(encoding="utf-8") != before:
+            out.append(Failure(name, f"{stray} was edited by mano ux — gap-only mode repairs "
+                                     f"its own artifact and nothing else"))
+    if any(p.name.startswith("phase-") for p in ctx.output_dir.glob("phase-*")):
+        out.append(Failure(name, "a phase directory was created — gap-only mode runs "
+                                 "precisely because there is no phase"))
+    return out
+
+
+def ui_gap_only_repaired_the_brief(ctx: Ctx) -> list[Failure]:
+    name = "ui_gap_only_repaired_the_brief"
+    out = []
+    brief = ctx.output_dir / "design-brief.md"
+    text = brief.read_text(encoding="utf-8") if brief.is_file() else ""
+    if text == ctx.fixture_snapshot.get("design-brief.md", ""):
+        out.append(Failure(name, "design-brief.md is unchanged — the ui-gap was not "
+                                 "addressed, and it still blocks mano start"))
+    if not _gap_resolved(ctx, "settling thumbnail treatment"):
+        out.append(Failure(name, "the ui-gap item is still Status: backlog — an unresolved "
+                                 "gap keeps mano start blocked forever"))
+    previews = list(ctx.output_dir.rglob("design-preview.html"))
+    if previews:
+        out.append(Failure(name, "a design preview was written with no phase to own it — "
+                                 "the preview-ownership rule is what makes gap-only safe"))
+    return out
+
+
 REGISTRY = {
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
@@ -4548,4 +4674,10 @@ REGISTRY = {
     "two_phase_identity_and_ledger_held": two_phase_identity_and_ledger_held,
     "two_phase_did_not_read_other_phase_brief": two_phase_did_not_read_other_phase_brief,
     "two_phase_each_step_wrote_only_its_own_artifact": two_phase_each_step_wrote_only_its_own_artifact,
+    "review_harvested_teaching_reworks": review_harvested_teaching_reworks,
+    "review_left_the_covered_rework_alone": review_left_the_covered_rework_alone,
+    "review_next_named_the_drift_routes": review_next_named_the_drift_routes,
+    "start_gap_block_wrote_no_brief": start_gap_block_wrote_no_brief,
+    "ux_gap_only_repaired_the_flow": ux_gap_only_repaired_the_flow,
+    "ui_gap_only_repaired_the_brief": ui_gap_only_repaired_the_brief,
 }
