@@ -38,12 +38,8 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org
-
-      # Node 20 ships npm 10, which predates OIDC publishing.
-      - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@latest
 
       - name: Read the version
         id: version
