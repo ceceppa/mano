@@ -1,0 +1,109 @@
+name: Release
+
+# Publishes `mano-plan` to npm when a version bump lands on main.
+#
+# The trigger is a merge, but the decision is the version: every push that
+# touches package.json wakes this workflow up, and it publishes only when
+# package.json names a version npm has never seen. That makes it idempotent —
+# a re-run, a revert, or a merge that edits package.json for some other reason
+# is a no-op rather than a failed publish.
+#
+# Auth is npm trusted publishing (OIDC): no NPM_TOKEN is stored anywhere. The
+# `id-token: write` permission below lets npm exchange a short-lived GitHub
+# token for publish rights, and it only works while npmjs.com lists this repo
+# and this workflow file as a trusted publisher for the package.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push the v<version> tag, create the GitHub Release
+  id-token: write   # mint the OIDC token npm trades for publish rights
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      # Node 20 ships npm 10, which predates OIDC publishing.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
+      - name: Read the version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Is this version already on npm?
+        id: check
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if npm view "mano-plan@${VERSION}" version >/dev/null 2>&1; then
+            echo "mano-plan@${VERSION} is already published — nothing to release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "mano-plan@${VERSION} is new — releasing."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # `prepublishOnly` runs tools/check-version.js, so a src/VERSION that
+      # disagrees with package.json fails here instead of shipping.
+      - name: Publish to npm
+        if: steps.check.outputs.publish == 'true'
+        run: npm publish
+
+      - name: Tag the release
+        if: steps.check.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v${VERSION}" >/dev/null 2>&1; then
+            echo "Tag v${VERSION} already exists on origin — leaving it alone."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${VERSION}" -m "mano-plan v${VERSION}"
+          git push origin "v${VERSION}"
+
+      # The release body is that version's own CHANGELOG section: everything
+      # between its `## <version> — <date>` heading and the next `## ` heading.
+      - name: Create the GitHub Release
+        if: steps.check.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          awk -v version="${VERSION}" '
+            /^## / {
+              if (found) exit
+              split($0, parts, " ")
+              if (parts[2] == version) { found = 1; next }
+            }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+
+          if [ ! -s release-notes.md ]; then
+            echo "No CHANGELOG section for ${VERSION} — falling back to a bare note."
+            echo "Published \`mano-plan@${VERSION}\` to npm." > release-notes.md
+          fi
+
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file release-notes.md

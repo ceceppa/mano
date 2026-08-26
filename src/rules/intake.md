@@ -15,6 +15,8 @@ Intake asks *what the product does and for whom*, never *how it's built*. Before
 - **Every stated directive gets a home — "no item owns it" is not a reason to drop it.** The pass-through clause above assumes each directive belongs to some feature item. The project-wide ones do not: a runtime or version constraint, a module system, a folder structure, a file-naming scheme, a test-layout rule — each spans every item and therefore attaches to none, which is exactly how they get lost between the source document and the first line of code. When a stated directive has no single owning item, intake gives it **its own backlog item**, typed by the artifact that will own the decision:
   - `spec-gap` → `tech-spec.md`, resolved by `mano spec`: runtime and version constraints, language or dialect, module system, storage mechanism, libraries, package manager, interface shape.
   - `rule-gap` → `project-rules.md`, resolved by `mano rules`: folder structure, file layout and naming, code conventions, component patterns, where tests live.
+  - `ux-gap` → `ux-flow.md`, resolved by `mano ux`: a stated screen, step, navigation path, or required empty/error state.
+  - `ui-gap` → `design-brief.md`, resolved by `mano ui`: a stated palette, typeface, spacing scale, or component treatment.
 
   The title names the directive (`Stated: project directory structure`); the context carries it verbatim. The gap type here is a **routing address, not a verdict** — intake still evaluates and decides nothing, and these items are the only channel that puts an unattached directive in front of `mano spec` / `mano rules` instead of nowhere. `state.js --scope` excludes gap items from phase-scope selection, so homing one never inflates a phase.
 

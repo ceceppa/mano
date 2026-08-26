@@ -118,7 +118,15 @@ human review, not automatic permission to delete the rule.
 
 Mano ships on npm as `mano-plan` (SemVer). The installer version is selected at the
 npm layer (`npx mano-plan@latest install`). Don't bump the version in a PR unless you
-coordinate the release — the maintainer cuts versions and tags.
+coordinate the release — the maintainer cuts versions.
+
+Releasing is a merge. A release PR bumps `package.json` (`npm version <patch|minor|major>`,
+which also syncs `src/VERSION`) and adds that version's CHANGELOG section; merging it to
+`main` runs [`.github/workflows/release.yml`](.github/workflows/release.yml), which
+publishes to npm, pushes the `v<version>` tag, and opens a GitHub Release carrying the
+CHANGELOG section. The workflow keys off the version rather than the merge: if
+`package.json` names a version npm already has, it does nothing, so re-runs and unrelated
+`package.json` edits are safe.
 
 ## Questions and ideas
 

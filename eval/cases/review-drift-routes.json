@@ -1,0 +1,13 @@
+{
+  "name": "review-drift-routes",
+  "description": "After writing the review, the closing `Next:` block names one route per open gap so the human hears about the drift immediately — with `mano start` last, because an open gap makes it refuse.",
+  "fixture": "review-rework-harvest",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano review", "session": "fresh" },
+    { "prompt": "all good, close it", "session": "continue" }
+  ],
+  "assertions": [
+    "review_next_named_the_drift_routes"
+  ]
+}

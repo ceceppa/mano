@@ -56,7 +56,23 @@ const {
 const Ledger = require("./ledger.js");
 const Chain = require("./chain.js");
 
-const GAP_TYPES = ["spec-gap", "rule-gap"];
+// Which skill owns each gap type. A gap is a routing address the projection
+// prints, so the human never has to remember which artifact owns a decision.
+const GAP_OWNER = {
+  "spec-gap": "mano spec",
+  "rule-gap": "mano rules",
+  "ux-gap": "mano ux",
+  "ui-gap": "mano ui",
+};
+const GAP_TYPES = Object.keys(GAP_OWNER);
+
+// "2 spec-gap → mano spec; 1 ux-gap → mano ux", in a stable type order.
+function gapRoutes(gaps) {
+  if (!gaps) return [];
+  return GAP_TYPES
+    .filter((t) => gaps[t] > 0)
+    .map((t) => `${gaps[t]} ${t} → ${GAP_OWNER[t]}`);
+}
 
 // Post-skill hook slots and the optional project-level artifacts, projected so
 // skills never probe the filesystem for hooks or open artifacts merely to see
@@ -143,8 +159,8 @@ Usage:
                 Never a scope-selection input: that stays SCOPE INPUT only
   --match <text>  with --titles only: case-insensitive substring filter on the
                 title, for checking one piece of work rather than listing all
-  --gaps <type> read only backlog.md and print unresolved items of exact type
-                spec-gap or rule-gap (mano rules uses the rule-gap projection)
+  --gaps <type> read only backlog.md and print unresolved items of exact type:
+                spec-gap, rule-gap, ux-gap, ui-gap — each skill reads its own
   --verbose     also print the evidence (phase, stories, reviewed, backlog)
   --json        emit the full structured state as JSON
 
@@ -879,7 +895,7 @@ function scan(projectRoot, options = {}) {
     backlogItems: 0,        // all Status: backlog lines (backward-compatible field)
     unresolvedItems: 0,     // canonical open item count, including gap types
     scopeableBacklogItems: 0, // open items eligible for phase scope
-    gaps: { "spec-gap": 0, "rule-gap": 0 },
+    gaps: Object.fromEntries(GAP_TYPES.map((t) => [t, 0])),
     inPhaseRemaining: 0,    // Status: in-phase-<phase> count
     _backlogText: null,     // raw text, kept for scope extraction; not serialized
     _reviewsText: null,
@@ -909,12 +925,11 @@ function scan(projectRoot, options = {}) {
   s.backlogItems = s.backlog["backlog"] || 0;
   s.unresolvedItems = openItems.length;
   s.scopeableBacklogItems = scopeableItems.length;
-  s.gaps["spec-gap"] = extractBacklogItems(s._backlogText, {
-    status: "backlog", type: "spec-gap",
-  }).length;
-  s.gaps["rule-gap"] = extractBacklogItems(s._backlogText, {
-    status: "backlog", type: "rule-gap",
-  }).length;
+  for (const t of GAP_TYPES) {
+    s.gaps[t] = extractBacklogItems(s._backlogText, {
+      status: "backlog", type: t,
+    }).length;
+  }
 
   const ref = routing.latest;
   s.phaseRef = ref;
@@ -987,12 +1002,9 @@ function finalize(s, options = {}) {
     if (s.scopeableBacklogItems > 0) {
       verdict = "READY_FIRST_PHASE";
       action = `Backlog has ${s.scopeableBacklogItems} phase-scopeable item(s) and no phase exists yet for ${s.owner || "legacy routing"}. mano start scopes phase 1 (Path A).`;
-    } else if (s.gaps["spec-gap"] > 0 || s.gaps["rule-gap"] > 0) {
+    } else if (gapRoutes(s.gaps).length) {
       verdict = "GAPS_ONLY";
-      const routes = [];
-      if (s.gaps["spec-gap"] > 0) routes.push(`${s.gaps["spec-gap"]} spec-gap → mano spec`);
-      if (s.gaps["rule-gap"] > 0) routes.push(`${s.gaps["rule-gap"]} rule-gap → mano rules`);
-      action = `No phase-scopeable backlog items. Open gaps remain (${routes.join("; ")}). Address them with their owning skill; mano start has nothing to scope.`;
+      action = `No phase-scopeable backlog items. Open gaps remain (${gapRoutes(s.gaps).join("; ")}). Address them with their owning skill; mano start has nothing to scope.`;
     } else {
       verdict = "NEW_PROJECT";
       action = "An _mano_output/ scaffold exists but the backlog is empty and no phase started. mano start takes Path B (conversation), or `mano import <doc>` to populate the backlog first.";
@@ -1044,9 +1056,7 @@ function finalize(s, options = {}) {
       action = `${s.phaseId} is complete. mano start may scope phase ${s.phase + 1} for ${s.owner || "legacy routing"} from the ${s.scopeableBacklogItems} phase-scopeable backlog item(s) (Path A).`;
     } else {
       verdict = "COMPLETE_BACKLOG_EMPTY";
-      const routes = [];
-      if (s.gaps["spec-gap"] > 0) routes.push(`${s.gaps["spec-gap"]} spec-gap → mano spec`);
-      if (s.gaps["rule-gap"] > 0) routes.push(`${s.gaps["rule-gap"]} rule-gap → mano rules`);
+      const routes = gapRoutes(s.gaps);
       action = routes.length
         ? `${s.phaseId} is complete and no phase-scopeable backlog items remain. Open gaps: ${routes.join("; ")}. Address them with their owning skill; mano start has nothing to scope.`
         : `${s.phaseId} is complete and no items have Status: backlog. Nothing to scope — add backlog items (or mano import a doc) before mano start.`;
@@ -1073,7 +1083,25 @@ function finalize(s, options = {}) {
     RESUME_DRAFT: "resume-draft",
     NEW_PROJECT: "conversation",
   };
-  const proceeds = Object.prototype.hasOwnProperty.call(NEXT_BY_VERDICT, verdict);
+  let proceeds = Object.prototype.hasOwnProperty.call(NEXT_BY_VERDICT, verdict);
+
+  // Open gaps block scoping a NEW phase, and only that. A gap item is an
+  // artifact decision a rework or a review already proved missing; scoping the
+  // next phase on top of it is how the spec, rules, UX flow, or design brief
+  // stay wrong for phases at a time. Blocking here is the cheapest possible
+  // place — nothing is written yet, and the fix is one named command.
+  //
+  // `resume-draft` and `conversation` are deliberately NOT blocked: the first
+  // finishes a phase already approved, the second is a project with no backlog
+  // and therefore no gaps. Only the scope-a-new-phase path stops.
+  const blockingGapRoutes = NEXT_BY_VERDICT[verdict] === "scope-backlog"
+    ? gapRoutes(s.gaps)
+    : [];
+  if (blockingGapRoutes.length) {
+    proceeds = false;
+    verdict = "GAPS_BLOCK_SCOPE";
+    action = `Open artifact gaps must be addressed before scoping a new phase: ${blockingGapRoutes.join("; ")}. Run each named skill; it resolves its own items. mano start proceeds once none remain.`;
+  }
 
   s.storiesAllDone = storiesAllDone;
   s.buildAllDone = buildAllDone;
@@ -1171,9 +1199,7 @@ function renderDecision(s) {
   // them from the human entirely — including a stated directive intake homed
   // here precisely so it would not be lost. Surfacing the routes costs one
   // line and never changes the decision.
-  const openGapRoutes = [];
-  if (s.gaps && s.gaps["spec-gap"] > 0) openGapRoutes.push(`${s.gaps["spec-gap"]} spec-gap → mano spec`);
-  if (s.gaps && s.gaps["rule-gap"] > 0) openGapRoutes.push(`${s.gaps["rule-gap"]} rule-gap → mano rules`);
+  const openGapRoutes = gapRoutes(s.gaps);
   if (openGapRoutes.length) L.push(`OPEN_GAPS: ${openGapRoutes.join("; ")}`);
   // Which implementation action `mano continue` runs, decided by the ledger.
   // `none` is not "nothing to do" — it is "nothing to continue *into*", which
@@ -1233,8 +1259,7 @@ function renderEvidence(s) {
     if (keys.length === 0) L.push("  (no items)");
     for (const k of keys) L.push(`  ${k}: ${b[k]}`);
     L.push(`  phase-scopeable backlog items: ${s.scopeableBacklogItems}`);
-    L.push(`  open spec-gap items: ${s.gaps["spec-gap"]}`);
-    L.push(`  open rule-gap items: ${s.gaps["rule-gap"]}`);
+    for (const t of GAP_TYPES) L.push(`  open ${t} items: ${s.gaps[t]}`);
     L.push("");
   }
 

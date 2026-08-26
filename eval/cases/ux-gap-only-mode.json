@@ -1,0 +1,9 @@
+{
+  "name": "ux-gap-only-mode",
+  "description": "An open ux-gap blocks mano start, so mano ux must be able to repair ux-flow.md with no phase at all — otherwise the block deadlocks the loop it exists to close. It edits its own artifact, resolves the item, and creates no phase.",
+  "fixture": "ux-gap-only-mode",
+  "prompt": "mano ux",
+  "assertions": [
+    "ux_gap_only_repaired_the_flow"
+  ]
+}

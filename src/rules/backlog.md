@@ -9,8 +9,11 @@ Other skills should not edit the backlog except for narrow gap-resolution status
 - `mano spec` must run `node _mano/scripts/state.js --spec`; its current-phase item plus spec-gap projection is its only backlog read. After updating the technical specification, it may mark only a fully addressed projected spec-gap item resolved via `backlog.js resolve-gap --type spec-gap --title "..."`.
 <!-- /mano-rule: public-interface-contract-readiness -->
 - `mano rules` must run `node _mano/scripts/state.js --gaps rule-gap`; that projection is its only backlog read. After updating project rules, it may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type rule-gap --title "..."`.
+- `mano ux` and `mano ui` must run `node _mano/scripts/state.js --gaps ux-gap` / `--gaps ui-gap`; that projection is their only backlog read. After updating `ux-flow.md` / `design-brief.md`, each may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type ux-gap|ui-gap --title "..."`.
 
-Neither skill opens `backlog.md`, even when the user asks it to handle backlog gaps; the read-only projection and targeted writer are the complete interface. Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
+**An open gap is not a note — it is a stop.** While any gap item of any type is unresolved, `state.js` returns `DECISION: STOP` for a new phase and no scope is proposed. That is deliberate: a gap is an artifact decision that a review or a rework already proved missing, and scoping the next phase on top of one is how a spec, rule set, UX flow, or design brief stays wrong for phases at a time. The cost of clearing it is one command per route, named in the projection's `OPEN_GAPS:` line.
+
+No gap-owning skill opens `backlog.md`, even when the user asks it to handle backlog gaps; the read-only projection and targeted writer are the complete interface. Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.
 
 <!-- mano-rule: id=backlog-duplicate-entry; incident=start-added-a-second-item-for-work-the-human-named; model=chatgpt-terra; date=2026-08-25; eval=start-uses-named-item-not-a-new-one,start-flags-near-duplicate-item -->
 ## The backlog roster, and not adding the same work twice
