@@ -1,0 +1,10 @@
+{
+  "name": "start-gap-block",
+  "description": "A closed phase and a scopeable backlog are not enough while an artifact gap is open: mano start writes no brief and relays one route per gap type. Scoping on top of a known-missing decision is exactly how the spec and UX flow stay wrong for phases.",
+  "fixture": "start-gap-block",
+  "phase": 1,
+  "prompt": "mano start",
+  "assertions": [
+    "start_gap_block_wrote_no_brief"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "review-rework-harvest-noise",
+  "description": "The harvest errs loud but not blind. R2 was a defect against the Completion Flags rule that project-rules.md already states, so it teaches nothing and must produce no gap item — while still being named, because a silent empty harvest cannot be told apart from a skipped one.",
+  "fixture": "review-rework-harvest",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano review", "session": "fresh" },
+    { "prompt": "all good, close it", "session": "continue" }
+  ],
+  "assertions": [
+    "review_left_the_covered_rework_alone"
+  ]
+}

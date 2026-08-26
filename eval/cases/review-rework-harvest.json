@@ -1,0 +1,13 @@
+{
+  "name": "review-rework-harvest",
+  "description": "Closing a build-path phase harvests what its rework events taught: R1's lifetime correction becomes a spec-gap and R3's platform behaviour becomes a rule-gap, each carrying the event's verbatim text. Without this the correction lands in code only and the artifact stays wrong for phases.",
+  "fixture": "review-rework-harvest",
+  "phase": 1,
+  "steps": [
+    { "prompt": "mano review", "session": "fresh" },
+    { "prompt": "all good, close it", "session": "continue" }
+  ],
+  "assertions": [
+    "review_harvested_teaching_reworks"
+  ]
+}

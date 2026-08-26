@@ -1,0 +1,9 @@
+{
+  "name": "ui-gap-only-mode",
+  "description": "The same deadlock for design: an open ui-gap blocks mano start, so mano ui repairs design-brief.md with no phase. It writes no design-preview.html — the preview needs a phase owner, the cumulative brief does not.",
+  "fixture": "ui-gap-only-mode",
+  "prompt": "mano ui",
+  "assertions": [
+    "ui_gap_only_repaired_the_brief"
+  ]
+}
