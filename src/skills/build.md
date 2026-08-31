@@ -309,7 +309,7 @@ node _mano/scripts/progress.js request-rework --phase [N] --expect-phase-id [PHA
   --text-file /tmp/correction.txt --source build
 ```
 
-`--source build` is what distinguishes a defect you were told about from one `mano review` found; the two are the same class of fact and take the same route, and the record may not credit yours to a review that never saw it. The text is the user's, verbatim — never paraphrased into scope-ese — for the same reason a `+N` row's is.
+`--source build` is the only accepted value — it is what the script enforces so that a review can never open one. Pass it explicitly anyway: it makes the call readable next to a ledger that may still hold `source: review` events written before 1.6.1. The text is the user's, verbatim — never paraphrased into scope-ese — for the same reason a `+N` row's is.
 
 **Why this comes first, and why the reopen alone is not enough.** `set-status --reopen` writes a status cell. Once you fix the row it reads `done` again, and `progress.md` is byte-identical to a phase in which the defect never happened — the reopen, the reason, and your correction all lived in a conversation that a compaction, a restart, or an interleaved command destroys. The event is the half that survives all three: it holds your words, `sign-off` refuses while it is pending, and if this run dies before the fix lands, the next `mano build` finds it under `REWORK:` and resumes exactly here. Then reopen the affected rows, **before writing any code**, in one call:
 
@@ -318,7 +318,7 @@ node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_I
   --row S2 --status doing --reopen --row E2c --status pending --reopen
 ```
 
-Resolve the event in the same write that closes the work, exactly as a review-sourced event is resolved:
+Resolve the event in the same write that closes the work:
 
 ```
 node _mano/scripts/progress.js resolve-rework --phase [N] --expect-phase-id [PHASE_ID] \
@@ -399,7 +399,7 @@ Everything else in 0⊘ still holds: this exception is one backlog item, preview
 
 ## Rework events
 
-An `R…` event is a confirmed defect held in the ledger with its own exact text, in order. Two things write one: `mano review`, for each confirmed substantive finding, and **case (A)** above, for a defect the human reports mid-build. The `source:` attribute records which. They are durable state, not conversation: a compaction, a restart, or an interleaved command loses a conversation, and these have to survive all three — which is the whole reason a correction you were handed in chat becomes one before you act on it.
+An `R…` event is a confirmed defect held in the ledger with its own exact text, in order. **One thing writes one: `mano build`** — **case (A)** above, for a defect the human reports mid-build, and `progress.js request-rework` refuses any other `--source`. `mano review` does not: an event reopens the phase and review closes it, and a review able to do both once produced a phase that was `resolved` in the backlog and in progress in the ledger at the same moment. A review finding reaches you through the backlog and the next phase, or through the human typing `mano build "[the change]"` — which is this same case (A). They are durable state, not conversation: a compaction, a restart, or an interleaved command loses a conversation, and these have to survive all three — which is the whole reason a correction you were handed in chat becomes one before you act on it.
 
 When the projection reports `REWORK: [n] pending`, that routes here **even when every row was already `done` and every criterion `met`**. Take the **first pending event**, read its exact text from the ledger's `## Row Contracts`, and classify it into A, B, or C above — per event, never in aggregate:
 

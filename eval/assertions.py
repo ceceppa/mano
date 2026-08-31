@@ -1484,19 +1484,28 @@ def review_close_did_not_erase_the_finding(ctx: Ctx) -> list[Failure]:
     if "tag" not in text.lower() or not re.search(r"remove|reopen|linger|stays on screen", text, re.IGNORECASE):
         fails.append(Failure(assertion, "the finding was not echoed back at all"))
 
-    routed = re.search(r"rework|route|reopen|fix(ed|ing|\b)", text, re.IGNORECASE)
-    dismissed = re.search(r"dismiss|intended|by design|leave it|as-is|as is|not doing", text, re.IGNORECASE)
-    if not (routed and dismissed):
+    # 1.6.1: the finding is a backlog item and the phase still closes. Review
+    # neither asks which it is nor reopens the phase to hold it.
+    if not re.search(r"backlog", text, re.IGNORECASE):
         fails.append(Failure(
             assertion,
-            "the close did not ask whether to route the finding to rework or dismiss it",
+            "the finding was never routed to the backlog, which is its only home now",
         ))
 
-    # Never conclude a dismissal on the human's behalf.
     progress = ctx.progress() or ""
+    seeded_rework = {rid for rid, _, _ in _rows_of(ctx.fixture_text("progress.md") or "")
+                     if rid.startswith("R")}
     contracts = parse_row_contracts(progress)
     for row_id, contract in contracts.items():
-        if row_id.startswith("R") and "dismissed-reason" in contract.get("attributes", {}):
+        if not row_id.startswith("R"):
+            continue
+        if row_id not in seeded_rework:
+            fails.append(Failure(
+                assertion,
+                f"{row_id} was opened at review — a finding does not reopen the phase being closed",
+            ))
+        # Never conclude a dismissal on the human's behalf.
+        if "dismissed-reason" in contract.get("attributes", {}):
             fails.append(Failure(assertion, f"{row_id} was dismissed without the human saying so"))
 
     if fails:
@@ -3311,30 +3320,42 @@ def build_worked_the_pending_rework(ctx: Ctx) -> list[Failure]:
     return fails
 
 
-def review_persisted_findings_as_rework(ctx: Ctx) -> list[Failure]:
-    """D4 + B6: a confirmed build-path finding becomes durable ledger state, and
-    review never routes it through the stories path."""
-    assertion = "review_persisted_findings_as_rework"
+def review_routed_the_finding_to_the_backlog(ctx: Ctx) -> list[Failure]:
+    """1.6.1 + B6: a confirmed build-path finding becomes a backlog item and
+    nothing else. Review closes a phase; it never reopens one, and it never
+    routes a build-path finding through the stories path.
+
+    The regression this guards is a real one. Review used to write the finding
+    as a pending `R…` event *and* run the close sweep in the same turn, so the
+    phase came out `resolved` in the backlog, in progress in the ledger, and
+    already written up in `reviews.md` — with `mano start` then refusing to
+    scope on work the human had just been told was done.
+    """
+    assertion = "review_routed_the_finding_to_the_backlog"
     fails = []
     rows = ctx.progress_rows()
-    rework = [(rid, status) for rid, _, status in rows if rid.startswith("R")]
-    if not rework:
+
+    seeded_rows = _rows_of(ctx.fixture_text("progress.md") or "")
+    seeded_rework = {rid for rid, _, _ in seeded_rows if rid.startswith("R")}
+    opened = [rid for rid, _, _ in rows if rid.startswith("R") and rid not in seeded_rework]
+    if opened:
         fails.append(Failure(
             assertion,
-            "no R… rework event was written — the finding lives only in the conversation, "
-            "which a compaction or a restart loses",
+            f"review opened rework event(s) {opened} — that reopens the phase it is closing. "
+            "A finding is a backlog item; only mano build opens an R… event",
         ))
-    else:
-        contracts = parse_row_contracts(ctx.progress() or "")
-        for rid, _ in rework:
-            body = contracts.get(rid)
-            if body is None or not (body["text"] or "").strip():
-                fails.append(Failure(assertion, f"{rid} has no exact text in `## Row Contracts`"))
+
+    backlog = ctx.backlog() or ""
+    seeded_backlog = ctx.fixture_text("backlog.md") or ""
+    if len(_backlog_titles(backlog)) <= len(_backlog_titles(seeded_backlog)):
+        fails.append(Failure(
+            assertion,
+            "no backlog item was added — the confirmed finding was dropped",
+        ))
 
     # No Scope row may move: review does not decide work is done or undone.
-    seeded = [(rid, status) for rid, _, status in _rows_of(ctx.fixture_text("progress.md") or "")]
     after = {rid: status for rid, _, status in rows}
-    for rid, status in seeded:
+    for rid, _, status in seeded_rows:
         if after.get(rid) != status:
             fails.append(Failure(assertion, f"review changed {rid} from {status} to {after.get(rid)}"))
 
@@ -3346,9 +3367,12 @@ def review_persisted_findings_as_rework(ctx: Ctx) -> list[Failure]:
             "review routed a build-path finding to mano stories / mano dev, which would "
             "give the phase a second ledger",
         ))
-    if not re.search(r"mano\s+build", ctx.transcript, re.IGNORECASE):
-        fails.append(Failure(assertion, "review does not route the finding to mano build"))
     return fails
+
+
+def _backlog_titles(text: str) -> list[str]:
+    """Every `### title` under the backlog's `## Items` heading."""
+    return re.findall(r"^###\s+(.+?)\s*$", text or "", re.M)
 
 
 # --- acceptance polarity: an artifact that contradicts the phase promise --------
@@ -4646,7 +4670,7 @@ REGISTRY = {
     "build_refused_two_ledgers_when_invalid": build_refused_two_ledgers_when_invalid,
     "build_refused_edited_brief": build_refused_edited_brief,
     "build_worked_the_pending_rework": build_worked_the_pending_rework,
-    "review_persisted_findings_as_rework": review_persisted_findings_as_rework,
+    "review_routed_the_finding_to_the_backlog": review_routed_the_finding_to_the_backlog,
     "start_amend_previewed_before_writing": start_amend_previewed_before_writing,
     "start_amend_wrote_only_after_approval": start_amend_wrote_only_after_approval,
     "start_amend_refused_with_ledger": start_amend_refused_with_ledger,

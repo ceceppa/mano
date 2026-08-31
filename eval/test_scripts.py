@@ -14,6 +14,7 @@ STORIES_SCRIPT = REPO_ROOT / "src" / "scripts" / "stories.js"
 OWNER_SCRIPT = REPO_ROOT / "src" / "scripts" / "owner.js"
 MODE_SCRIPT = REPO_ROOT / "src" / "scripts" / "mode.js"
 TRACK_SCRIPT = REPO_ROOT / "src" / "scripts" / "track.js"
+PROGRESS_SCRIPT = REPO_ROOT / "src" / "scripts" / "progress.js"
 
 OPEN_SPEC_BLOCK = """### Open spec
 - **Type:** spec-gap
@@ -1631,6 +1632,126 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("ambiguous", result.stdout + result.stderr)
 
 
+
+
+@unittest.skipUnless(shutil.which("node"), "Node.js is required for Mano script tests")
+class PhaseCloseIsAtomicTests(unittest.TestCase):
+    """1.6.1: both halves of the close refuse on the same condition.
+
+    `mano review` used to write a pending rework event and run the close sweep
+    in the same turn, because only `progress.js sign-off` checked. The phase came
+    out `resolved` in the backlog, in progress in the ledger, and written up in
+    `reviews.md` — and `mano start` then refused to scope on work the human had
+    just been told was done. The skill prose is one half of the fix; these two
+    refusals are the half that holds when the prose is not followed.
+    """
+
+    BRIEF = (
+        "# Phase Brief — Close Gate — Phase 1\n\n"
+        "## Phase Goal\n\nShip one thing.\n\n"
+        "## Phase Scope\n\n1. **Only row** — the single unit of work.\n\n"
+        "## Exit Criteria\n\n1. **Only check**\n   a. It does the thing\n"
+    )
+    ITEM = (
+        "### Shipped item\n"
+        "- **Type:** feature\n"
+        "- **Context:**\n  The one item this phase carried.\n"
+        "- **Status:** in-phase-1\n"
+    )
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.output = self.root / "_mano_output"
+        self.phase = self.output / "phase-1"
+        self.phase.mkdir(parents=True)
+        (self.phase / "phase-brief.md").write_text(self.BRIEF)
+        self.backlog = self.output / "backlog.md"
+        self.backlog.write_text(f"# Backlog\n\n## Items\n\n{self.ITEM}")
+        self.finding = self.root / "finding.txt"
+        self.finding.write_text("the panel still shows the chord notes in scale mode\n")
+        init = self._progress("init", "--phase", "1", "--expect-phase-id", "phase-1")
+        self.assertEqual(init.returncode, 0, init.stderr)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def _progress(self, *args):
+        return subprocess.run(
+            ["node", str(PROGRESS_SCRIPT), *args, str(self.root)],
+            cwd=self.root, text=True, capture_output=True,
+        )
+
+    def _backlog(self, *args):
+        return subprocess.run(
+            ["node", str(BACKLOG_SCRIPT), *args, str(self.root)],
+            cwd=self.root, text=True, capture_output=True,
+        )
+
+    def _open_rework(self):
+        result = self._progress(
+            "request-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+            "--text-file", str(self.finding), "--source", "build",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_the_close_sweep_refuses_while_a_rework_event_is_pending(self):
+        self._open_rework()
+        before = self.backlog.read_bytes()
+
+        result = self._backlog("resolve", "--phase", "1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("R1", result.stderr)
+        self.assertIn("still pending", result.stderr)
+        self.assertIn("mano build", result.stderr)
+        self.assertEqual(self.backlog.read_bytes(), before)
+
+    def test_the_close_sweep_runs_once_the_event_is_resolved(self):
+        self._open_rework()
+        resolved = self._progress(
+            "resolve-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+            "--id", "R1", "--status", "resolved",
+        )
+        self.assertEqual(resolved.returncode, 0, resolved.stderr)
+
+        result = self._backlog("resolve", "--phase", "1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("- **Status:** resolved", self.backlog.read_text())
+
+    def test_the_close_sweep_is_unaffected_by_a_phase_with_no_ledger(self):
+        (self.phase / "progress.md").unlink()
+        result = self._backlog("resolve", "--phase", "1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("- **Status:** resolved", self.backlog.read_text())
+
+    def test_only_build_may_open_a_rework_event(self):
+        """A review that can reopen the phase it is closing is the bug itself."""
+        result = self._progress(
+            "request-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+            "--text-file", str(self.finding), "--source", "review",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("must be 'build'", result.stderr)
+        self.assertIn("backlog", result.stderr)
+        self.assertNotIn("| R1 ", (self.phase / "progress.md").read_text())
+
+    def test_an_unsourced_event_defaults_to_build_rather_than_review(self):
+        result = self._progress(
+            "request-rework", "--phase", "1", "--expect-phase-id", "phase-1",
+            "--text-file", str(self.finding),
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("source: build", result.stdout)
+        self.assertIn("source: build", (self.phase / "progress.md").read_text())
+
+    def test_sign_off_and_the_close_sweep_refuse_on_the_same_condition(self):
+        self._open_rework()
+        sign_off = self._progress("sign-off", "--phase", "1", "--expect-phase-id", "phase-1")
+        sweep = self._backlog("resolve", "--phase", "1")
+        self.assertNotEqual(sign_off.returncode, 0)
+        self.assertNotEqual(sweep.returncode, 0)
+        for stderr in (sign_off.stderr, sweep.stderr):
+            self.assertIn("R1", stderr)
 
 
 class GapSkillContractTests(unittest.TestCase):

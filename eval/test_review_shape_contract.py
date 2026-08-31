@@ -245,7 +245,11 @@ class ClosingSemanticsTests(unittest.TestCase):
             "**`close it` arriving with a negative finding closes the phase; it does not erase the finding.**",
             review,
         )
-        self.assertIn("routed to rework, or dismissed in their own words", review)
+        self.assertIn(
+            "The finding goes in the list above as a 🐛 Defect and becomes a backlog item; "
+            "the phase still closes.",
+            review,
+        )
 
     def test_the_public_docs_agree(self) -> None:
         readme = _read("README.md")

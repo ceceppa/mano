@@ -74,8 +74,7 @@ class FluentChainContractTests(unittest.TestCase):
             text,
         )
         self.assertIn(
-            "**Review's only sanctioned `progress.js` surfaces are `request-rework`, "
-            "`resolve-rework`, and `sign-off`.**",
+            "**`sign-off` is review's only sanctioned `progress.js` surface, and it closes.**",
             text,
         )
 
