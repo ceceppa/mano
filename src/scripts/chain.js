@@ -1,25 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
-/**
- * Record the planning actions a human removed from a proposed auto chain.
- *
- * An armed chain is otherwise derived, not stored: what is on disk says which
- * planning artifacts exist and the ledger says whether implementation is done,
- * so a fresh session recomputes the remaining chain without help. Exactly one
- * thing is not derivable — that the human looked at the proposed chain and
- * *removed* an action ("go, skip ui"). Recompute it and you re-propose the
- * action they just declined; store the whole chain and you own a second copy of
- * state the filesystem already answers, which drifts the moment an artifact is
- * written outside the chain.
- *
- * So this script stores the subtraction and nothing else. `mano start` writes it
- * only when the approval reply actually edited the proposed chain; a default
- * chain costs no record at all.
- *
- * Storage is local Git config, exactly like `mano mode`: a chain edit is a
- * property of how this human is running this clone, not of the project, and
- * must not be committed.
+/** Store approved remaining actions and explicit skips in local Git config.
+ * Artifact existence cannot reconstruct approval order or human additions.
  */
 
 const path = require("node:path");
@@ -32,21 +15,23 @@ const { parsePhaseDirName } = require("./phase.js");
 // did nothing. `review` is never in a chain at all.
 const SKIPPABLE = ["spec", "ux", "rules", "ui", "stories"];
 
-const HELP = `mano chain — record planning actions removed from a proposed auto chain
+const HELP = `mano chain — persist approved remaining actions and explicit skips
 
 Usage:
   node chain.js show [--phase <phase-id>] [projectRoot]
+  node chain.js save --phase <phase-id> --actions <ordered-actions> [projectRoot]
   node chain.js skip --phase <phase-id> --actions <a,b,...> [projectRoot]
   node chain.js clear --phase <phase-id> [projectRoot]
 
+save     persist approved remaining actions in order; an empty string marks completion.
 skip     record that the human removed these actions when they approved the
          scope. Only ${SKIPPABLE.join(", ")} may be skipped; implementation is a
          chain's terminal action and is never optional.
-show     print the recorded skips for one phase, or for every phase.
-clear    forget a phase's record (a re-approval that restores an action).
+show     print the saved run and skips for one phase, or skips for every phase.
+clear    forget a phase's skips (a re-approval that restores an action).
 
-The record is a subtraction, not a chain: everything else is derived fresh from
-what exists on disk, so an interrupted session recomputes the rest by itself.
+Approved remaining actions are stored separately as mano.run.<phase-id>.
+Missing run records require recovering approval from chat or asking the human.
 It is stored in local Git config as mano.chain.<phase-id> and is not committed.`;
 
 function fail(message) {
@@ -129,6 +114,27 @@ function readSkipped(root, phaseId) {
     .filter(Boolean);
 }
 
+/** null means no saved approval; [] means the approved run completed. */
+function readRemaining(root, phaseId) {
+  const result = childProcess.spawnSync("git",
+    ["config", "--local", "--get", `mano.run.${phaseId}`],
+    { cwd: root, encoding: "utf8" });
+  if (result.status === 1) return null;
+  if (result.status !== 0) throw new Error("Unable to read approved chain record");
+  const actions = JSON.parse(result.stdout);
+  validateRemaining(actions);
+  return actions;
+}
+
+function validateRemaining(actions) {
+  if (!Array.isArray(actions) || actions.some(a => ![...SKIPPABLE, "build", "dev"].includes(a)) ||
+      new Set(actions).size !== actions.length ||
+      (actions.length && !["build", "dev"].includes(actions.at(-1))) ||
+      actions.slice(0, -1).some(a => ["build", "dev"].includes(a))) {
+    throw new Error("Remaining actions must be unique planning actions followed by build or dev, or empty after completion");
+  }
+}
+
 /** Every phase with a record, as { phaseId, skipped } rows. */
 function readAll(root) {
   const result = childProcess.spawnSync(
@@ -153,8 +159,18 @@ function main() {
     process.stdout.write(HELP + "\n");
     return;
   }
-  if (!["show", "skip", "clear"].includes(args.command)) {
-    fail(`unknown command ${JSON.stringify(args.command)}; use show, skip, or clear`);
+  if (!["show", "skip", "save", "clear"].includes(args.command)) {
+    fail(`unknown command ${JSON.stringify(args.command)}; use show, save, skip, or clear`);
+  }
+
+  if (args.command === "save") {
+    const phaseId = validatePhaseId(args.phase);
+    if (args.actions == null) fail("save requires --actions (empty after completion)");
+    const actions = args.actions === "" ? [] : args.actions.split(",").map(a => a.trim());
+    validateRemaining(actions);
+    runGit(args.root, ["config", "--local", `mano.run.${phaseId}`, JSON.stringify(actions)]);
+    process.stdout.write(`[mano chain] ${phaseId} — remaining: ${actions.join(", ") || "none (completed)"}\n`);
+    return;
   }
 
   if (args.command === "skip") {
@@ -178,17 +194,19 @@ function main() {
   runGit(args.root, ["rev-parse", "--git-dir"]);
   if (args.phase) {
     const phaseId = validatePhaseId(args.phase);
+    const remaining = readRemaining(args.root, phaseId);
+    if (remaining !== null) process.stdout.write(`CHAIN_REMAINING: ${remaining.join(", ") || "none (completed)"}\n`);
     const skipped = readSkipped(args.root, phaseId);
     process.stdout.write(
       skipped.length
         ? `[mano chain] ${phaseId} — skipped: ${skipped.join(", ")}\n`
-        : `[mano chain] ${phaseId} — no record; the chain is derived from what exists on disk\n`,
+        : `[mano chain] ${phaseId} — no skip record; recover approved actions from the saved run or chat\n`,
     );
     return;
   }
   const rows = readAll(args.root);
   if (!rows.length) {
-    process.stdout.write("[mano chain] no records; every chain is derived from what exists on disk\n");
+    process.stdout.write("[mano chain] no skip records; use show --phase to read an approved run\n");
     return;
   }
   for (const row of rows) {
@@ -204,4 +222,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { SKIPPABLE, parseArgs, readSkipped, readAll, validateActions, main };
+module.exports = { SKIPPABLE, parseArgs, readSkipped, readAll, readRemaining, validateRemaining, validateActions, main };

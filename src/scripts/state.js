@@ -971,9 +971,8 @@ function scan(projectRoot, options = {}) {
 
 // Derive the verdict from raw signals, faithful to mano start's gate.
 function finalize(s, options = {}) {
-  // The one part of an armed chain that is not derivable from disk: the actions
-  // the human removed at scope approval. Absent for every default chain, which
-  // is the common case and costs nothing to read.
+  // Approval order and explicit skips cannot be inferred from artifact presence.
+  s.chainRemaining = s.phaseId && fs.existsSync(path.join(s.projectRoot, ".git")) ? Chain.readRemaining(s.projectRoot, s.phaseId) : null;
   s.chainSkipped = s.phaseId ? Chain.readSkipped(s.projectRoot, s.phaseId) : [];
   const storiesAllDone = !!(s.stories && s.stories.total > 0 && s.stories.done === s.stories.total);
   const storiesMissing = !s.stories || s.stories.total === 0;
@@ -1205,6 +1204,7 @@ function renderDecision(s) {
   // `none` is not "nothing to do" — it is "nothing to continue *into*", which
   // includes the one fork the human owns (no ledger, manual mode).
   L.push(`IMPLEMENTATION_ENTRY: ${s.implementationEntry}`);
+  if (s.chainRemaining !== null && s.chainRemaining !== undefined) L.push(`CHAIN_REMAINING: ${s.chainRemaining.join(", ") || "none (completed)"}`);
   if (s.chainSkipped && s.chainSkipped.length) {
     L.push(`CHAIN_SKIPPED: ${s.chainSkipped.join(", ")} — the human removed these at scope approval; do not re-propose them for this phase`);
   }
@@ -1678,6 +1678,7 @@ function renderJson(s) {
     action: s.action,
     implementationEntry: s.implementationEntry,
     chainSkipped: s.chainSkipped,
+    chainRemaining: s.chainRemaining,
     scope: s.scope,
   }, null, 2);
 }

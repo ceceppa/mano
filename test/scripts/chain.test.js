@@ -80,13 +80,30 @@ test("a phase id that is not one is refused rather than stored", () => {
   assert.deepEqual(chain.readAll(root), []);
 });
 
-test("no record is the normal case and reads as derived, not as an error", () => {
+test("missing records do not invent approval", () => {
   const root = gitProject("mano-chain-empty-");
   const shown = run(root, ["show", "--phase", "phase-1"]);
   assert.equal(shown.status, 0, shown.stderr);
-  assert.match(shown.stdout, /no record; the chain is derived from what exists on disk/);
+  assert.match(shown.stdout, /no skip record; recover approved actions/);
 
   const all = run(root, ["show"]);
   assert.equal(all.status, 0, all.stderr);
-  assert.match(all.stdout, /no records/);
+  assert.match(all.stdout, /no skip records/);
+});
+
+
+test("approved order survives sessions and completion differs from missing approval", () => {
+  const root = gitProject("mano-chain-plan-");
+  assert.equal(chain.readRemaining(root, "phase-1"), null);
+  assert.equal(run(root, ["save", "--phase", "phase-1", "--actions", "rules,spec,ui,build"]).status, 0);
+  assert.deepEqual(chain.readRemaining(root, "phase-1"), ["rules", "spec", "ui", "build"]);
+  assert.equal(chain.readRemaining(root, "alice-phase-1"), null);
+  assert.equal(run(root, ["save", "--phase", "phase-1", "--actions", "ui,build"]).status, 0);
+  assert.deepEqual(chain.readRemaining(root, "phase-1"), ["ui", "build"]);
+  for (const actions of ["review", "build,ui", "spec,spec,build", "start,build"]) {
+    assert.equal(run(root, ["save", "--phase", "phase-1", "--actions", actions]).status, 1);
+    assert.deepEqual(chain.readRemaining(root, "phase-1"), ["ui", "build"]);
+  }
+  assert.equal(run(root, ["save", "--phase", "phase-1", "--actions", ""]).status, 0);
+  assert.deepEqual(chain.readRemaining(root, "phase-1"), []);
 });

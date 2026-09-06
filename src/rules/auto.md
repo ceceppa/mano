@@ -9,6 +9,9 @@ description: "The rules a skill applies while an armed auto chain is running —
 
 ## The pause rule
 
+**Durable run plan.** Read `node _mano/scripts/chain.js show --phase [PHASE_ID]` before resuming an armed chain. Preserve its ordered `CHAIN_REMAINING` actions; artifact presence does not prove a planned rerun completed. After an action and its hook triage finish, save the remaining ordered actions with `node _mano/scripts/chain.js save --phase [PHASE_ID] --actions <comma-separated-actions>`. Keep an unfinished action in the list at a pause; save `--actions ""` only after terminal implementation completes. Persist human-approved plan edits the same way. The record never bypasses current mode, ledger routing, hard gates, or a user's stop instruction. If no saved plan exists, recover the explicit approval from available chat and save it; if approval cannot be recovered, ask for the remaining plan rather than inventing it. A completed record does not arm another run.
+
+
 **Auto mode pauses whenever the human's answer is required, and never answers on their behalf.** This is the whole safety model: the mode removes typing, not decisions. Pause and hand back on any of these, then resume the chain from where it stopped once the user replies:
 
 - a `❓ Decide:` line — already defined as "confirm or change before the next command runs" (`_mano/rules/core.md` → **Canonical execution-log format**), which makes it exactly this signal

@@ -126,6 +126,9 @@ If you have written words describing what you are about to run, you have not run
 
 ## Closing an armed auto chain
 
+**Durable run plan.** Read `node _mano/scripts/chain.js show --phase [PHASE_ID]` before resuming an armed chain. Preserve its ordered `CHAIN_REMAINING` actions; artifact presence does not prove a planned rerun completed. After an action and its hook triage finish, save the remaining ordered actions with `node _mano/scripts/chain.js save --phase [PHASE_ID] --actions <comma-separated-actions>`. Keep an unfinished action in the list at a pause; save `--actions ""` only after terminal implementation completes. Persist human-approved plan edits the same way. The record never bypasses current mode, ledger routing, hard gates, or a user's stop instruction. If no saved plan exists, recover the explicit approval from available chat and save it; if approval cannot be recovered, ask for the remaining plan rather than inventing it. A completed record does not arm another run.
+
+
 Both implementation skills are the terminal action of an armed `mano mode auto` chain. When one finishes such a chain, its ordinary aggregate or deviation line is that action's log — followed by the **`Validate now:`** block when the run left the phase ready for review — and exactly one closing block follows:
 
 ```text

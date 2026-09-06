@@ -2,6 +2,22 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.6.2 — September 7, 2026
+
+Workflow rules now agree on who approves phase scope, how an approved auto chain survives a session reset, and which commands can run during an existing phase.
+
+### Changed
+
+- **Auto chains retain the approved run plan.** `chain.js save` stores the remaining actions in their approved order in local Git config, including human-added actions. `chain.js show --phase` and the state projection expose that plan. Planning and implementation handoffs save progress; an empty plan records completion. If a previous session left no plan, Mano recovers approval from chat or asks the human instead of inferring it from artifact existence. Explicit skips remain separately recorded.
+
+### Fixed
+
+- **Human-approved scope overrides are consistent.** Start still proposes one independently verifiable outcome, but its forbidden list no longer contradicts the rule allowing a human to approve multiple outcomes with one advisory about the review tradeoff.
+- **Planning reruns respect the existing ledger.** Next-action guidance uses validated state instead of assuming planning always happens before implementation. A rerun no longer selects a different implementation path merely because of the current mode.
+- **UI gaps can be repaired without a phase brief.** The dispatcher now recognises UI's gap-only mode, avoiding a redirect to Start when unresolved gaps prevent Start from scoping a phase.
+- **Follow-up review's backlog exception is explicit.** Shared backlog rules now match the existing permission to mark exact, human-confirmed open items resolved during a follow-up review. The exception does not close phases or change unrelated statuses.
+- **Regression coverage.** Chain tests cover preserved ordering, phase isolation, partial progress, invalid-plan rejection, and the distinction between completed runs and missing approval records.
+
 ## 1.6.1 — September 1, 2026
 
 `mano review` closed a phase and reopened it in the same turn, and left behind the one state no command could read back.

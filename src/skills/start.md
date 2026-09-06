@@ -269,13 +269,13 @@ You are blind here by design, so resolve the uncertainty toward including the ac
 
 Propose only the actions the phase genuinely needs, applying `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** and `_mano/rules/auto.md` for the rest of the chain contract.
 
-**A removal is recorded; the rest of the chain is not.** Everything else about an armed chain is derivable at any moment — the artifacts on disk say which planning actions have run, and the ledger says whether implementation is done — so a chain needs no file to survive a dead session. One thing is not derivable: that the human looked at the proposal and struck an action. Recompute that and you re-propose what they just declined. So when, and **only** when, the approval reply removes an action (`go, skip ux`), record the subtraction once, immediately after the brief is written and the phase id is final:
+**Persist the approved run plan.** After writing the approved brief, record every remaining action in its approved order, including human additions:
 
 ```
-node _mano/scripts/chain.js skip --phase [PHASE_ID] --actions ux,ui
+node _mano/scripts/chain.js save --phase [PHASE_ID] --actions spec,rules,build
 ```
 
-A chain approved as proposed writes nothing. Never record an action the human added, never record `build` or `dev` (implementation is a chain's terminal action and is not optional), and never treat the record as the chain itself — it is a subtraction from a chain that is otherwise recomputed fresh every time it is read.
+Use the actual approved list, not the example. When the human removed actions, also record those with `chain.js skip --phase [PHASE_ID] --actions ux,ui`; clear an obsolete skip record before saving a re-approved plan. At each handoff, save the remaining list through `chain.js save`; use `--actions ""` after implementation completes. Never infer approved order or completion of planning actions from artifact existence. See `_mano/rules/auto.md` for recovery and pause handling.
 
 ### Step 7 — Validate, clarify, and draft brief
 
@@ -646,7 +646,7 @@ This list is the negative restatement of rules defined in full elsewhere. Where 
 - Do not create optional project-rule, technical, UX, or UI design artifacts during `mano start`.
 - Do not write a phase brief, create the projected phase folder, create stories, or stamp the projected in-phase status before explicit human approval of the phase scope.
 - Do not put implementation tokens in the phase brief — specific hex values, pixel sizes, animation durations, function signatures, API contracts, file paths, or data-model decisions (schema fields, column names, storage shape). Applies everywhere in the brief, including the Assumption Log and Acknowledged Risks. Express the *constraint or intent*, not the *mechanism*. (This is the brief-output face of B1.) **Sole exemption:** the `## Stated Technical Preferences` pass-through block, which is a verbatim quoted record of a directive the user themselves stated — not `mano start` introducing or deciding tech. The exemption covers only verbatim transcription there; everywhere else, including paraphrasing those preferences into other sections, remains forbidden.
-- Do not skip scope sizing. Enforce one independently verifiable outcome even if the user asks for a larger dump.
+- Do not skip scope sizing. Propose one independently verifiable outcome. If the human explicitly approves multiple outcomes, honour that scope under Step 6 and state the review tradeoff once.
 - Do not accept one-liners without pushing back.
 - Do not produce more than one phase of scope.
 - Do not ask about market positioning or business metrics for small projects.

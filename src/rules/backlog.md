@@ -1,6 +1,6 @@
 # Backlog Ownership Boundary
 
-`mano start` and `mano review` own backlog content and long-lived project continuity. They add items with `backlog.js add`, and rewrite an existing item's title or context with `backlog.js update --title "..." [--new-title "..."] [--context "..."]` — which never touches `Status`, because status changes belong to `assign` / `resolve` / `reject`.
+`mano start` and `mano review` own backlog content and long-lived project continuity. They add items with `backlog.js add`, and rewrite an existing item's title or context with `backlog.js update --title "..." [--new-title "..."] [--context "..."]` — which never touches `Status`, because status changes belong to `assign` / `resolve` / `resolve-gap` / `reject`, except for the explicitly sanctioned follow-up review operation: after human confirmation, `mano review` may hand-edit only the exact existing open items the human reported fixed to `resolved`. This title-scoped exception never closes a phase, rejects an item, or changes unrelated statuses.
 
 An item's `Status` says where it stands: `backlog` (open), `in-phase-N` / `in-owner-phase-N` (scoped into a phase), `resolved` (shipped or fixed), `rejected` (no longer wanted — its premise was invalidated). `resolved` and `rejected` are both closed states and neither is scopeable, but they are not interchangeable: recording a rejection as `resolved` claims work was done that never was. Only `mano review` sets `rejected`, only on items the human confirmed, via `backlog.js reject --title "..."`.
 
