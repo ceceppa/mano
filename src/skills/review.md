@@ -70,7 +70,13 @@ That is your complete response. Do not flip a row or a criterion, do not proceed
 
 The story-specific safety nets below **do not apply on this path**. Review never asks for an `Implementation Reference`, never opens a story file, and never routes to `mano stories` or `mano dev` — on a build-path phase, both of those would create the second ledger the projection refuses.
 
-**Review's only sanctioned `progress.js` surfaces are `request-rework`, `resolve-rework`, and `sign-off`.** It may not flip a Scope row, add or split a row, cut work, or hand-edit the ledger.
+<!-- mano-rule: id=review-closes-never-reopens; incident=review-closed-the-phase-and-reopened-it-in-the-same-turn; model=claude; date=2026-09-01; eval=review-build-finding,review-close-with-finding -->
+**`sign-off` is review's only sanctioned `progress.js` surface, and it closes.** Review may not flip a Scope row, add or split a row, cut work, open or resolve a rework event, or hand-edit the ledger. **Review closes a phase; it never reopens one.** A rework event reopens the phase — it belongs to `mano build`, which is the only writer of one (`progress.js request-rework` refuses any other source).
+
+That is not a technicality about who holds the pen. A review that could close *and* reopen in the same turn wrote both: the backlog said `resolved`, the ledger said in progress, the review record was already appended, and `mano start` then refused to scope on work the human had just been told was done. There is no state a later command can read back out of that.
+
+So **every finding this review confirms is a backlog item** — that is the whole routing decision, and it holds for a 🐛 Defect and a failed Exit Criterion exactly as it does for a ✨ New idea. That is not the finding being downgraded. A human who wants it fixed inside this phase has a better route than review ever did, and it is open to them right up until they close: leave the review unclosed, run `mano build "[the change]"`, and review again after. Build classifies the text A/B/C and re-runs the gap gates against it, catching the spec or artifact impact a blind rework event would have skipped. Name that option in the triage message when the finding plainly belongs in this phase; never take it for them, and never delay the close waiting for an answer they did not offer.
+<!-- /mano-rule: review-closes-never-reopens -->
 
 **On the stories path**, if any stories are not marked `done`, **refuse and stop**. Review does not manage story state — that is not its job. Report what's pending and point to the right path:
 
@@ -232,7 +238,7 @@ Anything in the wrong bucket? Otherwise "close it".
 
 Rejection candidates follow the same confirmation model as every other bucket: they are visible in this list, the user removes any that survive, and `close it` confirms the list as presented. Never reject an item that was not listed as a candidate here.
 
-**`close it` arriving with a negative finding closes the phase; it does not erase the finding.** "The export is broken, close it" is two instructions, and silently dropping the first is the one outcome the human cannot recover. Echo the finding and ask which it is — routed to rework, or dismissed in their own words — then close in that same exchange. Never infer the dismissal (see **Relay a dismissal, never conclude one** below).
+**`close it` arriving with a negative finding closes the phase; it does not erase the finding.** "The export is broken, close it" is two instructions, and silently dropping the first is the one outcome the human cannot recover. The finding goes in the list above as a 🐛 Defect and becomes a backlog item; the phase still closes. That is not the framework overruling them — they said to close, and a tracked defect is what closing with a known problem looks like. Never infer a dismissal from a close instruction (see **Relay a dismissal, never conclude one** below).
 
 That is your complete response. DO NOT write files yet.
 
@@ -274,13 +280,9 @@ Result — what happened when you tried it
 **Past the gate, the close instruction is terminal — never re-confirm it.** A message may carry a whole-review verdict, individual verdicts, or feedback with its close instruction. Examples include `all went as planned, close it` and `1 confirmed, 2 invalidated; close it`. Apply the supplied outcomes, satisfy the answer gate if anything is still open, then go straight to writing files. Do **not** emit a triage-confirmation prompt. The user already confirmed the review.
 <!-- /mano-rule: review-answer-gate -->
 
-**Dismissing a build-path finding is the human's word, never an inference.** When the human rejects a finding outright during triage — "that's intended", "not doing that, close it" — and it had already been written as a rework event, record that exact decision:
+**Relay a dismissal, never conclude one.** When the human rejects a finding outright during triage — "that's intended", "not doing that, close it" — that finding is dropped from the triage list and no backlog item is written for it. Their word is the only thing that does this: not that a finding looks minor, not that it seems already handled, and not that dropping it clears the way to a close. A finding you dismissed on your own judgment is one the human never learns they had.
 
-```
-node _mano/scripts/progress.js resolve-rework --phase [N] --expect-phase-id [PHASE_ID] --id R2 --status dismissed --reason-file [tmp].txt
-```
-
-The reason file holds the human's own words; the script refuses a dismissal without one. **Relay a dismissal, never conclude one** — not because a finding looks minor, not because it seems already handled, and not to clear the way to a close.
+There is no `resolve-rework` here. A rework event is `mano build`'s, and the pre-review gate has already refused if one is pending — so review never meets one to dismiss.
 
 The one thing that survives a close instruction is a ❌ rejection candidate the user has not seen. "Drop the dock work, close it" closes the phase, but the open backlog items that rejection orphans are information the user has not been shown, not a re-confirmation of something they already approved. Present the ❌ list alone — no other buckets, no re-litigating the rest of the triage — and write the rest of the close in the same turn.
 
@@ -372,29 +374,21 @@ When the user confirms (e.g., "close it", "yes"):
      [what it is; why it matters]
    - **Status:** backlog
    ```
-1b. **On the build path only — persist confirmed findings as durable rework, and record the human's sign-off.**
+1b. **On the build path only — record the human's sign-off.** Skip it on the stories path.
 
-   These two calls are review's entire write surface on `progress.md`. Skip both on the stories path. `request-rework` is not review's alone — `mano build` writes one for a defect the human reports mid-build (`--source build`), so that a correction handed over in chat is as durable as a finding raised here. Review's own events take the default `review` source; do not pass `--source`.
+   `sign-off` is review's entire write surface on `progress.md`, and there is no second one. Every confirmed finding was already written as a backlog item in step 1 — including a 🐛 Defect and a failed Exit Criterion. Review does not open a rework event; see **Review closes a phase; it never reopens one** in the pre-review gate.
 
-   **Findings first.** For every confirmed **substantive** finding — 🐛 Defects, 📋 Spec gaps, 📏 Rule gaps, and any 🔧 Refinement the human wants fixed in this phase — write one event per finding, in the order they were triaged:
-
-   ```
-   node _mano/scripts/progress.js request-rework --phase [N] --expect-phase-id [PHASE_ID] --text-file [tmp].txt
-   ```
-
-   **One event per finding, each with its own exact text.** Never squeeze mixed feedback into a single blob: build classifies each event A/B/C on its own, and an aggregate event cannot be classified at all. The text file holds the finding as the human described it — their words, not a summary — because that text is what a fresh session will read weeks later.
-
-   This is why the events exist: a conversation does not survive a compaction, a restart, or an interleaved command, and a confirmed finding must. Once written, `state.js` routes the phase back to `mano build` while any event is `pending`, even though every row already reads `done`. A ✨ New idea is not a finding — it is backlog, and it does not reopen the phase.
-
-   **Then the sign-off.** When the human closes the phase — a clear positive verdict, or the literal `close it` — record that attestation:
+   When the human closes the phase — a clear positive verdict, or the literal `close it` — record that attestation:
 
    ```
    node _mano/scripts/progress.js sign-off --phase [N] --expect-phase-id [PHASE_ID]
    ```
 
-   It flips every `pending` and `needs-human` Exit leaf to `met` and records `human sign-off at review, [date]` against each one. Typing `close it` **is** a human attestation, and the ledger records *who* proved each criterion rather than leaving it as a status nobody owns. The script refuses while any rework event is pending — which is correct: a phase with an open finding is not closing.
+   It flips every `pending` and `needs-human` Exit leaf to `met` and records `human sign-off at review, [date]` against each one. Typing `close it` **is** a human attestation, and the ledger records *who* proved each criterion rather than leaving it as a status nobody owns.
 
-   Do not run `sign-off` when the review produced findings that route back to build. Do not run it to tidy a ledger the human did not close.
+   **A criterion the human reported as failed keeps `failed` in the review record and stays as the ledger left it.** Do not reconcile the two — they are different claims. `progress.md` says what the build proved when it ran; `reviews.md` says what the human found afterwards; the backlog item carries the failure forward. A ledger edited at review to agree with the review would erase the only evidence that the two ever disagreed.
+
+   Do not run `sign-off` to tidy a ledger the human did not close.
 
 2. **Resolve shipped items — via the writer's close sweep:**
    ```
@@ -569,7 +563,7 @@ If the state projection's `HOOK:` line names `post-review`, follow `_mano/rules/
 - Do not debug, inspect code, trace payloads, propose patches, run tests, or attempt repairs. `mano review` only classifies feedback and updates backlog/review files after confirmation.
 - Do not create stories. `mano review` writes to the backlog and review log only.
 - Do not manage story or ledger state. Do not edit story files, mark stories `done`, cut stories, or touch the stories README index — not even in the pre-review gate. If stories aren't `done`, refuse per the pre-review gate and point the user to `mano dev` or their own README edit.
-- Do not run `progress.js` outside its three sanctioned surfaces: `request-rework`, `resolve-rework`, and `sign-off`. Never `init`, `set-status`, `split`, or `add-row` — flipping a Scope row would make review the thing that decides work is done.
+- Do not run `progress.js` outside its one sanctioned surface, `sign-off`. Never `init`, `set-status`, `split`, `add-row`, `request-rework`, or `resolve-rework` — flipping a Scope row would make review the thing that decides work is done, and opening a rework event would make it the thing that reopens a phase it is closing.
 - On a build-path phase, do not ask for an `Implementation Reference`, open a story file, or route to `mano stories` / `mano dev`. There are no stories, and creating one would give the phase two ledgers.
 - Do not check off acceptance criteria in story files.
 - Do not scope the next phase. That's `mano start`'s job.

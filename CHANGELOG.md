@@ -2,6 +2,29 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.6.1 — September 1, 2026
+
+`mano review` closed a phase and reopened it in the same turn, and left behind the one state no command could read back.
+
+Phase 3 of a piano chord explorer. Everything built, every criterion `met`, review opened its answer gate. Two findings came back with the answers: *"Q2 - yes, but I'd show the scale ones tho. Now it repeats across all the sections and is confusing"*, and *"Actually one exit criteria E3b — partially met: when I select 'scale' I don't want to see the chord notes."* Both real, both correctly triaged. Then STEP 3 ran, and it ran all of itself: two `R…` rework events written into the ledger, two backlog items written for the same two findings, the close sweep flipping every `in-phase-3` item to `resolved`, and the Phase 3 review record appended to `reviews.md`.
+
+So the backlog said the phase shipped, `reviews.md` said it was reviewed, and `progress.md` said two findings were still pending. `mano start` refused to scope phase 4 — correctly, on its own terms — over work the human had just been told was done. There was a way out, and the projection even printed it (`run mano build to work the first pending R… event`), but nothing in the artifacts admitted the phase was in two states at once, and the report that came back was, reasonably, *"I'm in an impossible state."*
+
+Nothing malfunctioned. STEP 3 is written as a one-shot execution, and only `sign-off` carried the condition — *"do not run it when the review produced findings that route back to build"*. The close sweep and the review record carried none, so the half that reopens the phase and the half that closes it were guarded by one clause between them. The rule directly above made it worse rather than better: **`close it` arriving with a negative finding closes the phase; it does not erase the finding** told review to close *and* route the finding to rework — two things `progress.js sign-off` and `state.js` have always defined as mutually exclusive.
+
+The double-write was the quieter half. `R3` and `R4` were also *"Scale markers repeat across every keyboard section"* and *"Scale-only view still shows chord notes"*, sitting open in the backlog. Fixing the rework would have left both items `Status: backlog` and phase-scopeable — the same work re-proposed as new scope a phase or two later, with nothing in either file hinting they were twins.
+
+### Changed
+- **`mano review` closes a phase and never reopens one.** `request-rework` and `resolve-rework` are gone from its contract; `sign-off` is its only remaining `progress.js` surface, and it is the one that closes. Every finding a review confirms is now a backlog item — a 🐛 Defect and a failed Exit Criterion exactly like a ✨ New idea. The routing rule is one sentence with no branches in it, which is the point: the previous version had two, and picking wrong produced a phase that was `resolved` and in progress at the same moment.
+- **A finding you want fixed *inside* the phase has a better route than review ever offered.** Leave the review unclosed, run `mano build "[the change]"`, review again after. Build classifies your exact text A/B/C and re-runs the gap gates against it — so a change with tech-spec or design-brief impact stops and routes there, which a rework event written blind at review never did. That is the specific worry the piano report raised: *"the change I've asked could have impact on spec or other artifacts."* Review names the option when the finding plainly belongs in this phase, and never takes it for you.
+- **`mano build` is the only writer of an `R…` event.** `progress.js request-rework` accepts `--source build` and nothing else, and defaults to it. `source: review` stays readable in ledgers written before this release.
+
+### Fixed
+- **Both halves of the close now refuse on the same condition.** `progress.js sign-off` has always refused while a rework event is pending. `backlog.js resolve` — the sweep that actually closes a phase — never looked at the ledger at all; it did not so much as open `progress.md`. It now reads the phase's ledger and refuses with the pending event ids, writing nothing. Prose is one half of this fix and the weaker half; a state reachable by a script is a state that will be reached.
+- **The same finding no longer lands in two ledgers.** With rework off review's surface, a confirmed finding has exactly one home. There is no longer a version of it that survives its own fix and comes back as new scope.
+- **A criterion you report as failed is left as a disagreement, on purpose.** The ledger keeps what the build proved when it ran; the review record keeps `failed` with your words; the backlog item carries it forward. Review does not reach into `progress.md` to reconcile the two — a ledger edited at close to agree with the review erases the only evidence they ever disagreed.
+- **Eval coverage.** `review-build-finding` and `review-close-with-finding` now assert the inverse of what they asserted before: no `R…` event opened at review, a backlog item written, no Scope or Exit row moved. Six script tests cover the two new refusals, including that they fire on the same condition and that a phase with no ledger still closes normally.
+
 ## 1.6.0 — August 25, 2026
 
 A correction you make during a build is the most expensive information Mano ever gets: you found it by running the thing, and you were right. Until now, some of it landed in code and nowhere else.

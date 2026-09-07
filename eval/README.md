@@ -384,7 +384,8 @@ state cannot distinguish the right order from a plausible one:
 - `start-amend-pre-ledger` — a preview that writes nothing, then a write after
   approval. Checked with `ctx.changed_in_step(1)`; the final brief alone cannot
   tell preview-then-write from write-then-describe.
-- `review-build-finding` — a confirmed finding becomes a durable `R…` event.
+- `review-build-finding` — a confirmed finding becomes a backlog item and opens
+  no `R…` event: review closes a phase and never reopens one.
 - `build-rework-pending` — that event routes back to build even though every row
   already reads `done`.
 
@@ -485,7 +486,7 @@ pin both halves of that — the shape, and everything the shape must not drop:
 | `review-close-with-finding` | `close it` beside a defect closes the phase and asks route-or-dismiss instead of erasing it |
 | `review-followup-compact` | the follow-up confirmation uses the same compact rule |
 | `review-positive-one-liner` | a natural positive verdict closes with no close token and no echo round |
-| `review-build-finding` | a build-path finding becomes a durable `R…` event and routes to build, never to stories |
+| `review-build-finding` | a build-path finding becomes a backlog item, opens no `R…` event, and never routes to stories |
 | `build-validate-now` | D6: the brief's `Try` guidance at the build handoff **and** again in a fresh review opening |
 
 `review-open-phase` is the fixture behind four of them: a finished build-path

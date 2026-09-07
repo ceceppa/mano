@@ -20,7 +20,8 @@
  *   add      append item(s) under `## Items`
  *   update   rewrite one exact item's title and/or context (never its status)
  *   assign   move approved items from `Status: backlog` to `in-phase-<N>`
- *   resolve  mano review's close sweep: `in-phase-<N>` -> `resolved` (whole phase)
+ *   resolve  mano review's close sweep: `in-phase-<N>` -> `resolved` (whole phase);
+ *            refuses while the phase ledger has a pending rework event
  *   resolve-gap  mark one exact gap item (spec/rule/ux/ui) resolved
  *   reject   mark named open items `rejected` (premise invalidated, won't do)
  *
@@ -46,6 +47,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { phaseRef, phaseRouting, validateTrack } = require("./phase.js");
+const Ledger = require("./ledger.js");
 const { writeAtomic } = require("./atomic.js");
 
 const VALID_TYPES = [
@@ -546,12 +548,40 @@ function cmdAssign(args) {
 
 // ---- resolve --------------------------------------------------------------
 
+// This sweep is the act that closes a phase, so it refuses while that phase's
+// ledger still carries a pending rework event. Without the check, `mano review`
+// could write a finding into the ledger and close the phase in the same turn —
+// which it did: `resolved` in the backlog, in progress in the ledger, the review
+// already appended, and `mano start` then refusing to scope on work the human
+// had been told was done. `progress.js sign-off` refuses on the same condition;
+// both halves of the close have to agree or neither is worth trusting.
+//
+// A missing or unparseable ledger is not this command's problem to report. A
+// phase can legitimately close with no ledger (the stories path, or a phase
+// that never ran build), and an invalid one is a hard stop that `state.js`
+// raises with a repair instruction long before a close sweep is reached.
+function refuseOnPendingRework(args, ref) {
+  const progressFile = path.join(args.root, "_mano_output", ref.dirName, "progress.md");
+  const text = readText(progressFile);
+  if (text == null) return;
+  const parsed = Ledger.parseLedger(text);
+  if (!parsed.ok) return;
+  const pending = parsed.ledger.rework.filter((r) => r.status === "pending");
+  if (!pending.length) return;
+  fail(
+    `resolve: ${pending.map((r) => r.id).join(", ")} still pending in ` +
+    `${ref.relativeDir}/progress.md. ${ref.id} is not closed, so its items stay ` +
+    `${ref.inPhaseStatus}. Run mano build to work the pending event(s) first.`,
+  );
+}
+
 // mano review's close sweep and the twin of assign: flip every item currently
 // carrying the configured phase's exact in-phase status to `Status: resolved`.
 // Freshly-added `Status: backlog` items (the items review triaged this same
 // turn) are never touched. Not title-scoped — it sweeps the whole phase.
 function cmdResolve(args) {
   const ref = configuredPhase(args, "resolve");
+  refuseOnPendingRework(args, ref);
   const want = ref.inPhaseStatus;
 
   const file = backlogPath(args.root);

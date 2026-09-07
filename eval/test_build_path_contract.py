@@ -233,24 +233,28 @@ class AmendCurrentTests(unittest.TestCase):
 class ReworkTests(unittest.TestCase):
     """D4: a confirmed finding must survive a compaction."""
 
-    def test_review_persists_one_event_per_finding(self) -> None:
+    def test_only_build_opens_a_rework_event(self) -> None:
+        """1.6.1: review closes a phase and must never reopen one."""
         review = _read("src/skills/review.md")
-        self.assertIn("progress.js request-rework", review)
-        self.assertIn("**One event per finding, each with its own exact text.**", review)
-        self.assertIn("an aggregate event cannot be classified at all", review)
+        self.assertIn("**Review closes a phase; it never reopens one.**", review)
+        self.assertIn("**every finding this review confirms is a backlog item**", review)
+        # The name may appear as a prohibition; what must not appear is a call.
+        fenced = "\n".join(re.findall(r"```[a-z]*\n(.*?)```", review, re.S))
+        self.assertNotIn("progress.js request-rework", fenced)
+        self.assertNotIn("progress.js resolve-rework", fenced)
+        build = _read("src/skills/build.md")
+        self.assertIn("**One thing writes one: `mano build`**", build)
 
     def test_review_may_relay_a_dismissal_but_never_infer_one(self) -> None:
         review = _read("src/skills/review.md")
-        self.assertIn("resolve-rework", review)
-        self.assertIn("**Relay a dismissal, never conclude one**", review)
+        self.assertIn("**Relay a dismissal, never conclude one.**", review)
+        self.assertIn("There is no `resolve-rework` here.", review)
         build = _read("src/skills/build.md")
         self.assertIn("**Dismissal is the human's word, never an inference.**", build)
 
     def test_a_pending_finding_routes_to_build_even_when_the_ledger_is_complete(self) -> None:
         build = _read("src/skills/build.md")
         self.assertIn("## Rework events", build)
-        # Two writers, one route: review findings and mid-build corrections.
-        self.assertIn("Two things write one: `mano review`", build)
         self.assertIn("**even when every row was already `done` and every criterion `met`**", build)
         self.assertIn("classify it into A, B, or C above — per event, never in aggregate", build)
 
@@ -258,7 +262,15 @@ class ReworkTests(unittest.TestCase):
         review = _read("src/skills/review.md")
         self.assertIn("progress.js sign-off", review)
         self.assertIn("Typing `close it` **is** a human attestation", review)
-        self.assertIn("Do not run `sign-off` when the review produced findings", review)
+        self.assertIn("Do not run `sign-off` to tidy a ledger the human did not close.", review)
+
+    def test_review_never_reconciles_a_failed_criterion_into_the_ledger(self) -> None:
+        review = _read("src/skills/review.md")
+        self.assertIn(
+            "**A criterion the human reported as failed keeps `failed` in the review "
+            "record and stays as the ledger left it.**",
+            review,
+        )
 
 
 class ReviewLedgerSpecificTests(unittest.TestCase):
