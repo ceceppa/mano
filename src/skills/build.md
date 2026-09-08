@@ -34,7 +34,7 @@ Branch on `PROGRESS_STATUS`, and on nothing else:
 - **`missing`** → go to step 1.
 - **`present`** → go to step 2.
 
-**1. No ledger yet → run pre-flight once, against the whole brief, and write nothing until it passes.** This is the cheapest place in the whole phase to catch a gap: nothing has been written and nothing has been built. Run **Step 0 pre-flight** below, in its stated order. A hard gate, an unresolved artifact gap, an unmapped project-rule obligation, or an unproven `Phase Goal` outcome **stops the run and writes no ledger** — route it to the owning skill and stop.
+**1. No ledger yet → run pre-flight once, against the whole brief, and write nothing until it passes.** This is the cheapest place in the whole phase to catch a gap: nothing has been written and nothing has been built. Run **Step 0 pre-flight** below, in its stated order. A hard gate, an unresolved artifact gap, an unmapped project-rule obligation, or an unproven `Phase Goal` outcome **stops the run and writes no ledger** — route it to the owning skill and stop implementation. Before handing back, apply **Automatic pre-flight repair** below; only an eligible armed auto chain continues through the owner.
 
 Only once pre-flight is clean: re-run `state.js --next`, confirm `OWNER` and `PHASE_ID` still match what pre-flight ran against, and create the ledger with one command. It takes no content:
 
@@ -92,9 +92,30 @@ The order is the point. Every one of these can only stop the run cheaply while n
 2. **0a, 0c–0e** — the hard gates and the artifact-gap check.
 3. **0g** — map every applicable project-rule obligation to a Scope leaf.
 4. **0f** — prove the `Phase Goal` → Scope → Exit chain.
-5. Any gap or contradiction: **stop, with no ledger written.**
+5. Any gap or contradiction: **stop, with no ledger written.** Apply **Automatic pre-flight repair** before deciding whether the chain must hand back.
 6. Re-check identity, then `init --expect-phase-id`.
 7. Verify the emitted rows are the brief you ran pre-flight against.
+
+### Automatic pre-flight repair
+
+This is the sole exception to handing back for an artifact readiness gap. It stops implementation while the owning planning skill repairs its artifact; it never lets build invent or edit an input contract. It applies only to the initial whole-brief pre-flight, never per-row gates, corrections, terminal sweeps, or `mano dev`.
+
+**All conditions must hold:**
+
+- Fresh `state.js --next` reports `MODE: auto`, the same `OWNER` and `PHASE_ID`, and neither implementation ledger exists. No script failure, refusal, review gate, or user stop is pending.
+- `chain.js show --phase [PHASE_ID]` recovers an approved run with only `build` remaining. Missing approval, completed runs, and other remaining actions are not permission to reorder a plan.
+- The approved brief clearly determines the intended behavior. The gap is missing guidance or an obsolete supporting contract, with exactly one owning skill identifiable: `spec` for technical/data/API/state, `ux` for interaction paths, `ui` for visual contracts, or `rules` for implementation conventions. A technical representation may be chosen by spec within that approved behavior.
+- Repair needs no scope or Exit Criteria change, no choice between competing product outcomes, and no override of an applicable project rule or stated technical preference. An overloaded-screen choice, unmapped scope/exit obligation, or ambiguous authority between artifacts still needs the human.
+- The owner was not explicitly skipped and is absent from `CHAIN_REPAIRS`. One automatic attempt per owner per approved run bounds retries, even if the next gap looks different or the session restarts. A failed repair or conflicting repair output pauses; never cycle among owners to settle contradictory decisions.
+
+**If eligible, execute the handoff in this turn:**
+
+1. Report the readiness gap with its scope references and both conflicting statements (or the missing guidance). State the owning action being inserted; this is the build action's gap log, not a closing pause block.
+2. Run `node _mano/scripts/chain.js repair --phase [PHASE_ID] --actions [owner]`. This atomically persists `[owner],build` and consumes that owner's attempt before execution. A failure stops; never substitute `save` to bypass it.
+3. End the build action and invoke the exact owning Mano skill now, loading that skill's own contract and required rules. Pass the gap and approved phase references. Build's self-contained read/write restrictions apply to build, not to this separate planning action. The owner retains all its decision gates, artifact ownership, and hook triage; a `❓ Decide:` or other genuine question pauses the chain normally.
+4. After the owner and its hook triage finish, save `build` as remaining, refresh mode and phase identity, and invoke plain `mano build` in this turn. Rerun the entire pre-flight against the updated artifacts before any ledger or code. A remaining gap for an attempted owner pauses with the unresolved evidence and a concrete question.
+
+If any condition fails, retain the original gap's stop and ask the actual unresolved question. Do not offer a hard-gate bypass. An explicit skip stays effective where an existing gate permits it; it never authorizes an automatic repair or waives a non-continuable conflict. Never ask merely “run spec?” when this recovery is eligible. Never print “waiting on a question” while actually performing the repair.
 
 **0⊘. Ledger-and-source gate (hard stop).** The only files this skill writes are source code, the exact projected `PHASE_DIR/progress.md` (through `progress.js` only), and files a row's own work requires. If you are about to Edit, Write, or shell-modify **another Mano artifact** — the phase brief, tech spec, UX flow, design brief, project rules, backlog, or another owner's phase — **stop immediately**. That belongs to the skill that owns it. This applies even when the user just told you an input artifact is wrong: flag it and route it, do not edit it.
 
@@ -176,7 +197,7 @@ Use the relevant Mano action for the gap type:
 
 Do not invent final design, UX, rules, or technical contracts while building. There is no story file on this path to hold a temporary note: if the human sanctions a temporary choice, it lives in the chat log for this run and nowhere else. Never write it into an artifact you do not own, and never treat it as a substitute for the answer this gate is asking for.
 
-**The options require a human answer.** After presenting a material gap, stop. Never choose option 2 yourself because the artifact is optional, the approved auto chain omitted it, the control is familiar/canonical, or enough implementation can be guessed. In an armed auto chain this is a named pause with the remaining chain preserved. Continue without the owning artifact only after the human explicitly chooses that path; an explicit `skip ux` / `skip ui` in the approved chain already counts as that choice.
+**The options require a human answer unless Automatic pre-flight repair applies.** Check that exception before presenting options; when eligible, invoke the owner instead. Otherwise, after presenting a material gap, stop. Never choose option 2 yourself because the artifact is optional, the approved auto chain omitted it, the control is familiar/canonical, or enough implementation can be guessed. In an armed auto chain this is a named pause with the remaining chain preserved. Continue without the owning artifact only after the human explicitly chooses that path; an explicit `skip ux` / `skip ui` in the approved chain already counts as that choice.
 
 If sufficient guidance exists, do not warn — read that section when you reach the row that needs it, for example:
 
@@ -456,7 +477,7 @@ The terminal line is followed by the **`Validate now:`** block — the brief's o
 
 Three suffixes are permitted, and only when one genuinely applies: a run that reopened rows names them and the event it closed — `Reworked: S2, E2c reopened and rebuilt (R1 resolved).` — ; a short note about a non-acceptance deviation that did not weaken verification; and a project-relevant decision worth preserving, offered for capture in the artifact that owns it. An unmet Exit Criterion is never a permitted suffix — gate 10.1 leaves the row open instead.
 
-When `mano build` is the terminal action of an armed `mano mode auto` chain, the aggregate or deviation line is the build action's log, followed by the required `[mano auto]` closing block from `_mano/rules/implement.md` → **Closing an armed auto chain**. That block is the only permitted content after the line.
+When `mano build` is the terminal action of an armed `mano mode auto` chain, the aggregate or deviation line is the build action's log, followed by the required `[mano auto]` closing block from `_mano/rules/implement.md` → **Closing an armed auto chain**. That block is the only permitted content after the line. An eligible **Automatic pre-flight repair** is a handoff within the running chain, not a deviation stop: its gap log is followed by the owning skill's execution, and the closing block waits until the chain actually stops.
 
 ## Forbidden
 

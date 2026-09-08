@@ -1,0 +1,11 @@
+{
+  "name": "import-reject-superseded-backlog",
+  "description": "Import reconciles conflicting documents while respecting rejection authorization and existing item statuses.",
+  "fixture": "import-existing-conflict",
+  "prompt": "mano import product-brief.md. Merge this into the existing backlog. I approve replacing the panel dock direction: reject the existing backlog work for that direction and capture the new timeline work. Leave scoped and closed items unchanged.",
+  "assertions": [
+    "import_applied_authorized_rejection",
+    "no_phase_brief_written",
+    "import_wrote_only_backlog"
+  ]
+}

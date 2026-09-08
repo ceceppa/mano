@@ -1,0 +1,12 @@
+{
+  "name": "start-combines-defect-with-feature",
+  "description": "A small cancellation-label defect can accompany preset grouping without a routine mixed-scope warning or another approval gate.",
+  "fixture": "start-combine-defect",
+  "phase": 1,
+  "prompt": "mano start. I want both remaining backlog items in Phase 1 \u2014 approve that scope and draft the brief.",
+  "assertions": [
+    "start_honoured_combined_scope",
+    "start_no_routine_mix_warning",
+    "start_did_not_mine_backlog"
+  ]
+}

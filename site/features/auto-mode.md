@@ -19,10 +19,16 @@ You can edit the chain in the same breath as approving it: `go, skip rules`, `1,
 
 - It never scopes a phase for you. Approval is always yours.
 - It never runs `mano review`. Closing a phase is a judgement call.
-- It stops at any open question or missing artifact.
+- It stops at any open question. Before implementation begins, a missing or stale artifact with a clear repair route can be repaired automatically.
 - "stop" or "wait" ends it immediately.
 
 The chain ends at [`mano build`](/features/build) — but that pairing is a convenience, not a coupling. Build is one of the two ways into code and you can type it yourself in `manual` mode any time a phase doesn't need story files.
+
+## Repairing a readiness gap
+
+If build finds a missing or stale supporting contract before either implementation ledger exists, auto mode can run its owner (`spec`, `ux`, `ui`, or `rules`) and retry build. The approved phase must already settle the intended behavior, and the owner must not have been explicitly skipped. The revised chain and repair attempt survive a session restart.
+
+Each owner gets one automatic repair attempt per approved run. Unresolved product choices, changes to scope, conflicts requiring a human decision, and gaps that survive that attempt still pause. The repair skill also pauses for its own questions. Build reruns full readiness before creating its ledger or writing code.
 
 ## Back to manual
 

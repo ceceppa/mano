@@ -1,6 +1,6 @@
 ---
 name: mano-import
-description: Use to turn an existing PRD, spec, or product document into a Mano backlog. Decomposes the document into backlog items, then stops.
+description: Use to turn an existing PRD, spec, or product document into a Mano backlog. Decomposes the document into backlog items, reconciles existing backlog items when merging, then stops.
 requires: [core, artifact, intake, backlog]
 requires-in-auto: [auto]
 ---
@@ -25,7 +25,7 @@ Read this file plus `_mano/rules/core.md`, `_mano/rules/artifact.md`, `_mano/rul
 On activation:
 1. Run `node _mano/scripts/state.js` and record `TRACK:`. This is the only active-track source; do not read Git config yourself. A missing track is `TRACK: none`.
 2. Create `_mano_output/` if it doesn't exist.
-3. Read `_mano_output/backlog.md` if it already exists. If it does and already has items, this is not a fresh import — tell the user the backlog already exists and ask whether to merge new items from this document or stop. Do not silently overwrite or duplicate.
+3. Read `_mano_output/backlog.md` if it already exists. If it does and already has items, this is not a fresh import — tell the user the backlog already exists and ask whether to merge this document or stop, unless they already requested a merge or an update to the existing backlog. Do not silently overwrite or duplicate.
 
 ## Boundaries
 
@@ -88,6 +88,24 @@ A question survives only if its answer is a product definition, an entity distin
 
 Wait for the user's response before decomposing. Per **B3**, do not ask phase-selection or scope-sizing questions here — including ones disguised as contradictions or as yes/no confirmations ("the document defers X but the dashboard shows it — only X this phase, or also Y?", "does that mean X is out of Phase 1?"). A document that looks too big, or that defers a capability it also references, is normal and is resolved later by `mano start`, not by interrogating the user now.
 
+<!-- mano-rule: id=import-reject-superseded-backlog; incident=import-refused-to-reject-backlog-items-invalidated-by-new-brief; model=not-recorded; date=2026-09-09; eval=import-reject-superseded-backlog,import-conflict-needs-decision -->
+### Step 1b — Reconcile an existing backlog
+
+When merging, run `node _mano/scripts/state.js --titles` and compare the document with existing item context before writing. A newer document is not automatically authoritative, and silence about an older feature is not a rejection. Distinguish added detail (merge into the existing item), genuinely new work (append), and an incompatible product direction (reconcile here).
+
+For a clash, name the exact existing item, its status, the conflicting source requirement, and the proposed disposition. If the user has not already authorized rejecting that item or explicitly replacing the direction it belongs to, ask which direction should stand and wait before changing the affected item. Permission to merge alone is not permission to reject. If the user already gave that decision, apply it without asking again. These are product decisions, not phase sizing; do not defer them to `mano start` merely because they affect existing items.
+
+Import may reject only items currently `Status: backlog`, including gap items whose premise the user has invalidated, using:
+
+```text
+node _mano/scripts/backlog.js reject --title "[exact existing title]"
+```
+
+Before rejecting, preserve the item and its provenance and record the reason and incoming document name in its context using `backlog.js update --title "..." --context "[existing context plus concise rejection reason]"`, within the five-line limit; do not erase still-relevant source detail. Rejection means no longer wanted, not completed. Never use `resolved`, delete the item, or reopen a closed item. If only part of an item changes, merge the surviving requirement through `update` instead of rejecting the whole item; add a distinct replacement item only when it describes genuinely different work.
+
+Leave items already `in-phase-N`, `in-owner-phase-N`, `resolved`, or `rejected` unchanged. Surface conflicts with scoped or shipped work for `mano review`; import does not revise phase artifacts or implementation. A source requirement that revives previously rejected work needs an explicit product decision and separate follow-up, not a duplicate title that the writer would skip. Leave unrelated items unchanged. Check writer output and report only changes it actually made; script errors remain blockers.
+<!-- /mano-rule: import-reject-superseded-backlog -->
+
 ### Step 2 — Capture durable product principles
 
 If the document clearly states durable product values (product feel, interaction expectations, simplicity constraints, performance feel, accessibility posture), write them to the `## Core Product Principles` section of `_mano_output/backlog.md` per **Backlog format → Core product principles section** in `mano start`. Keep the wording plain and human-editable. Do not invent principles to fill the section. Do not propose a phase-level design principle — that is `mano start`'s job once a phase is being scoped.
@@ -100,7 +118,7 @@ Decompose the entire document into backlog items. Every feature, requirement, no
 **Home the directives no feature item owns.** A document's project-wide technical directives — a runtime or version constraint, a module system, a folder structure, a file-naming scheme, where tests live — belong to every item and therefore to none, which is exactly how they vanish between the document and the first line of code. Sweep the document for them *before* you write, and give each its own item rather than dropping it for lack of a host: `spec-gap` when `tech-spec.md` will own the decision, `rule-gap` when `project-rules.md` will, `ux-gap` for `ux-flow.md`, `ui-gap` for `design-brief.md`. Title it after the directive (`Stated: project directory structure`), carry the directive verbatim in the context, and leave `Status: backlog` — `mano spec` and `mano rules` see it through their own projections, and `state.js` routes the human to them. The type is a routing address; `mano import` still decides nothing. Full rule and the block/budget case: **B1 → Every stated directive gets a home** in `_mano/rules/intake.md`.
 <!-- /mano-rule: stated-directive-homing -->
 
-Write all items to `_mano_output/backlog.md` with `Status: backlog` through the deterministic writer. Produce a JSON array of `{ "title", "type", "context", "source", "track"? }` objects, write it to a temporary file such as `_mano_output/.import.json`, then run:
+Write all new items to `_mano_output/backlog.md` with `Status: backlog` through the deterministic writer. Produce a JSON array of `{ "title", "type", "context", "source", "track"? }` objects, write it to a temporary file such as `_mano_output/.import.json`, then run:
 
 ```text
 node _mano/scripts/backlog.js add --file _mano_output/.import.json --no-similar-warning
@@ -108,7 +126,7 @@ node _mano/scripts/backlog.js add --file _mano_output/.import.json --no-similar-
 
 Delete the temporary file after the writer succeeds. The writer owns the item shape, duplicate-title check, and default `Status: backlog`; never hand-write blocks.
 
-`--no-similar-warning` is correct for import and nowhere else in this skill: you are decomposing **one authored document**, whose sibling sections legitimately produce closely-related titles ("Convenience `fade_in`" beside "Convenience `fade_out`"), so the resemblance report would be near-continuous noise about the document's own shape. It silences that report only — an exactly repeated title is still skipped. Importing a second document into a backlog that already has items is the case to be careful with: run `node _mano/scripts/state.js --titles` first and drop what the project already tracks, because nothing downstream will catch it for you. **Script failing?** Stop and report the error (see "Scripts are mandatory" in `_mano/rules/core.md`). For reference, the exact shape the writer produces — no `ID`, no `Title`, no `Description`, no checkboxes, no numbering:
+`--no-similar-warning` is correct for import and nowhere else in this skill: you are decomposing **one authored document**, whose sibling sections legitimately produce closely-related titles ("Convenience `fade_in`" beside "Convenience `fade_out`"), so the resemblance report would be near-continuous noise about the document's own shape. It silences that report only — an exactly repeated title is still skipped. Importing a second document into a backlog that already has items is the case to be careful with: use the roster from Step 1b and merge additional detail into existing `backlog` items with `backlog.js update`; do not duplicate work the project already tracks or discard new detail just because its title already exists. **Script failing?** Stop and report the error (see "Scripts are mandatory" in `_mano/rules/core.md`). For reference, the exact shape the writer produces — no `ID`, no `Title`, no `Description`, no checkboxes, no numbering:
 
 ```markdown
 ### [Short title]
@@ -133,6 +151,7 @@ The backlog is the deliverable. Do not scope a phase, draft a brief, or suggest 
 ```
 [mano import]: mano import — _mano_output/backlog.md
 - [N] items decomposed from [document name]
+- Existing items merged: [N]; rejected: [N — exact titles and brief reasons / none]
 - Core Product Principles captured: [yes / none found]
 - Stated directives homed: [N spec-gap → mano spec, N rule-gap → mano rules, N ux-gap → mano ux, N ui-gap → mano ui / none stated]
 ⚠ Verify: [any assumption or unresolved ambiguity worth checking — omit if none]
@@ -152,11 +171,11 @@ If the state projection's `HOOK:` line names `post-import`, follow `_mano/rules/
 This list is the negative restatement of rules defined in full elsewhere. Where a rule has a canonical home, the pointer is authoritative.
 
 - Do not scope a phase, suggest what ships first, or float a candidate decomposition — that is `mano start`'s job, and it is also forbidden by **B3** and **B4**.
-- Do not draft a phase brief, create a phase folder, or mark items `in-phase-[N]`. `mano import` only produces a backlog with all items `Status: backlog`.
+- Do not draft a phase brief, create a phase folder, or mark items `in-phase-[N]`. `mano import` creates new items with `Status: backlog`; the only status transition it owns is the authorized `backlog` → `rejected` transition in Step 1b.
 - Do not ask about tech, persistence, or implementation, or re-open closed scope — see **Intake Boundaries B1 and B2** in `_mano/rules/intake.md`.
 - Do not ask scope-sizing or phase-selection questions, including ones disguised as contradictions or yes/no confirmations — see **B3**.
 - Do not decide, evaluate, or act on a stated technical preference — transcribe it verbatim into the item context and leave the decision to `mano spec` (see **B1**, pass-through).
 - Do not drop a stated directive because no feature item hosts it. Home it as its own gap item, typed for the artifact that will own it (see **B1**, every stated directive gets a home).
 - Do not create optional project-rule, technical, UX, or UI design artifacts.
-- Do not remove or replace existing backlog items. Only append, or merge with explicit user confirmation when a backlog already exists.
+- Do not delete existing backlog items or change scoped or closed items. Merge and reject existing `backlog` items only under Step 1b; preserve their history.
 - Do not write or fix code. `mano import` is a planner.

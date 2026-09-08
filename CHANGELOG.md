@@ -8,11 +8,15 @@ Workflow rules now agree on who approves phase scope, how an approved auto chain
 
 ### Changed
 
+- **Auto chains repair clear artifact gaps before build.** Before either ledger exists, an unambiguous repair can insert `spec`, `ux`, `ui`, or `rules`, then rerun full build readiness. The chain persists one attempt per owner; explicit skips, product decisions, scope changes, and unsuccessful repairs still pause. Start now explicitly includes spec for state removal or replacement.
+
 - **Auto chains retain the approved run plan.** `chain.js save` stores the remaining actions in their approved order in local Git config, including human-added actions. `chain.js show --phase` and the state projection expose that plan. Planning and implementation handoffs save progress; an empty plan records completion. If a previous session left no plan, Mano recovers approval from chat or asks the human instead of inferring it from artifact existence. Explicit skips remain separately recorded.
 
 ### Fixed
 
-- **Human-approved scope overrides are consistent.** Start still proposes one independently verifiable outcome, but its forbidden list no longer contradicts the rule allowing a human to approve multiple outcomes with one advisory about the review tradeoff.
+- **Import can retire superseded backlog work.** Document merges can reject existing `Status: backlog` items when the human authorizes replacing their direction, preserving the reason and source. Scoped and closed items stay unchanged; merge permission alone does not authorize rejection.
+
+- **Human-approved scope overrides are consistent.** Start still proposes one independently verifiable outcome, but its forbidden list no longer contradicts the rule allowing a human to approve multiple outcomes without a routine warning about mixed scope. Advisories require a concrete consequence for the selected work; necessary product questions still apply.
 - **Planning reruns respect the existing ledger.** Next-action guidance uses validated state instead of assuming planning always happens before implementation. A rerun no longer selects a different implementation path merely because of the current mode.
 - **UI gaps can be repaired without a phase brief.** The dispatcher now recognises UI's gap-only mode, avoiding a redirect to Start when unresolved gaps prevent Start from scoping a phase.
 - **Follow-up review's backlog exception is explicit.** Shared backlog rules now match the existing permission to mark exact, human-confirmed open items resolved during a follow-up review. The exception does not close phases or change unrelated statuses.

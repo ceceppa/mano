@@ -107,3 +107,73 @@ test("approved order survives sessions and completion differs from missing appro
   assert.equal(run(root, ["save", "--phase", "phase-1", "--actions", ""]).status, 0);
   assert.deepEqual(chain.readRemaining(root, "phase-1"), []);
 });
+
+function repairProject() {
+  const root = gitProject("mano-chain-repair-");
+  childProcess.spawnSync("git", ["config", "mano.mode", "auto"], { cwd: root });
+  const dir = path.join(root, "_mano_output", "phase-1");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "phase-brief.md"), "# Approved phase\n");
+  run(root, ["save", "--phase", "phase-1", "--actions", "build"]);
+  return { root, dir };
+}
+
+function repair(root, action) {
+  return run(root, ["repair", "--phase", "phase-1", "--actions", action]);
+}
+
+test("each artifact owner can be inserted once, with durable attempts across saves", () => {
+  const { root } = repairProject();
+  for (const owner of ["spec", "ux", "ui", "rules"]) {
+    const result = repair(root, owner);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(chain.readRemaining(root, "phase-1"), [owner, "build"]);
+    assert.ok(chain.readRun(root, "phase-1").repairs.includes(owner));
+    run(root, ["save", "--phase", "phase-1", "--actions", "build"]);
+    const before = chain.readRun(root, "phase-1");
+    assert.match(repair(root, owner).stderr, /already attempted/);
+    assert.deepEqual(chain.readRun(root, "phase-1"), before);
+  }
+  assert.match(run(root, ["show", "--phase", "phase-1"]).stdout,
+    /CHAIN_REPAIRS: spec, ux, ui, rules/);
+  run(root, ["save", "--phase", "phase-1", "--actions", ""]);
+  assert.equal(repair(root, "spec").status, 1);
+  assert.equal(chain.readRun(root, "phase-1").repairs.length, 4);
+});
+
+test("repair refusals preserve both the plan and retry budget", () => {
+  const scenarios = [
+    ["explicit skip", ({ root }) => run(root, ["skip", "--phase", "phase-1", "--actions", "spec"])],
+    ["manual mode", ({ root }) => childProcess.spawnSync("git", ["config", "mano.mode", "manual"], { cwd: root })],
+    ["missing brief", ({ dir }) => fs.unlinkSync(path.join(dir, "phase-brief.md"))],
+    ["build ledger", ({ dir }) => fs.writeFileSync(path.join(dir, "progress.md"), "invalid also blocks")],
+    ["stories ledger", ({ dir }) => {
+      fs.mkdirSync(path.join(dir, "stories"));
+      fs.writeFileSync(path.join(dir, "stories", "README.md"), "ledger");
+    }],
+    ["remaining planning", ({ root }) => run(root, ["save", "--phase", "phase-1", "--actions", "ui,build"])],
+    ["missing approval", ({ root }) => childProcess.spawnSync("git", ["config", "--unset", "mano.run.phase-1"], { cwd: root })],
+    ["completed run", ({ root }) => run(root, ["save", "--phase", "phase-1", "--actions", ""])],
+  ];
+  for (const [name, setup] of scenarios) {
+    const project = repairProject();
+    setup(project);
+    const before = chain.readRun(project.root, "phase-1");
+    assert.equal(repair(project.root, "spec").status, 1, name);
+    assert.deepEqual(chain.readRun(project.root, "phase-1"), before, name);
+  }
+  const { root } = repairProject();
+  for (const owner of ["stories", "build", "dev", "review", "start", "spec,ux"]) {
+    assert.equal(repair(root, owner).status, 1, owner);
+    assert.deepEqual(chain.readRun(root, "phase-1"), { actions: ["build"], repairs: [] });
+  }
+});
+
+test("legacy plans support repair and fresh approval clears attempts without losing actions", () => {
+  const { root } = repairProject();
+  childProcess.spawnSync("git", ["config", "mano.run.phase-1", '["build"]'], { cwd: root });
+  assert.equal(repair(root, "spec").status, 0);
+  assert.equal(chain.readRun(root, "alice-phase-1"), null);
+  run(root, ["clear", "--phase", "phase-1"]);
+  assert.deepEqual(chain.readRun(root, "phase-1"), { actions: ["spec", "build"], repairs: [] });
+});
