@@ -18,7 +18,7 @@ export default defineConfig({
     logo: '/mano.svg',
 
     nav: [
-      { text: 'First phase', link: '/first-phase' },
+      { text: 'Get started', link: '/getting-started' },
       {
         text: 'Features',
         items: [
@@ -40,7 +40,8 @@ export default defineConfig({
       {
         text: 'Start here',
         items: [
-          { text: 'Your first phase', link: '/first-phase' },
+          { text: 'Get started', link: '/getting-started' },
+          { text: 'A real phase walkthrough', link: '/first-phase' },
           { text: 'Commands', link: '/commands' }
         ]
       },

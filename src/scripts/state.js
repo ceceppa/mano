@@ -972,7 +972,7 @@ function scan(projectRoot, options = {}) {
 // Derive the verdict from raw signals, faithful to mano start's gate.
 function finalize(s, options = {}) {
   // Approval order and explicit skips cannot be inferred from artifact presence.
-  s.chainRemaining = s.phaseId && fs.existsSync(path.join(s.projectRoot, ".git")) ? Chain.readRemaining(s.projectRoot, s.phaseId) : null;
+  s.chainRemaining = s.phaseId ? Chain.readRemaining(s.projectRoot, s.phaseId) : null;
   s.chainSkipped = s.phaseId ? Chain.readSkipped(s.projectRoot, s.phaseId) : [];
   const storiesAllDone = !!(s.stories && s.stories.total > 0 && s.stories.done === s.stories.total);
   const storiesMissing = !s.stories || s.stories.total === 0;

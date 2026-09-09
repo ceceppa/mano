@@ -55,6 +55,8 @@ node _mano/scripts/backlog.js resolve-gap --type ux-gap --title "[exact projecte
 
 **With a phase brief present, projected `ux-gap` items are still in scope.** Address them in the same run as the phase's own screens and resolve each one the same way. A gap left open blocks the next `mano start`, so never defer one on the grounds that the phase's own work came first.
 
+**Artifact resolution is not implementation completion.** Apply `_mano/rules/backlog.md` → **Artifact gaps versus implementation work**. Updating `ux-flow.md` never ships a requested product change. If a legacy projected gap actually contains unimplemented work, do not mark it resolved merely because the artifact now describes it. Report the exact title and route to `mano review` to propose a scopeable replacement and rejection of the misclassified gap; do not write application code in gap-only mode.
+
 ## Inputs
 
 - Projected `ux-gap` items (required — from `state.js --gaps ux-gap`)

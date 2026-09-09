@@ -113,28 +113,74 @@ mano owner alice
 
 That clone now uses `_mano_output/alice-phase-N/` and `in-alice-phase-N`. Another teammate can use `mano owner bob` for an independent sequence, or configure `alice` to take over or pair on Alice's current phase. `mano owner` shows the selection; `mano owner clear` returns the clone to legacy `phase-N` routing. Existing folders are never renamed or migrated.
 
-The owner is stored in repository-local Git config as `mano.owner`, so it is not committed. Setting or clearing it requires a Git checkout; run `git init` first in a new directory, or use `MANO_OWNER=alice` for a shell. Linked worktrees share the configured value. Use a stable lowercase handle, not an email address or machine username.
+#### Owner JSON files
 
-#### The three local settings are plain Git config
+Mano saves portable settings and chain state in `_mano_output/[owner].json`. Each owner has a separate file that you can commit with the project.
 
-`mano owner`, `mano mode`, and `mano track` are thin wrappers over `git config --local`. Each command is exactly equivalent to editing the key yourself:
+| File | What it contains | Commit it? |
+| --- | --- | --- |
+| `_mano_output/alice.json` | Alice's mode, track, and chain records by phase | Yes, to resume elsewhere |
+| `_mano_output/.default.json` | The same settings for work without an owner | Yes, if used |
+| `_mano_output/.local.json` | The owner selected in this checkout | No; Mano adds it to `_mano_output/.gitignore` |
 
-| Command | Equivalent |
-|---------|------------|
-| `mano owner alice` | `git config --local mano.owner alice` |
-| `mano owner clear` | `git config --local --unset-all mano.owner` |
-| `mano mode auto` | `git config --local mano.mode auto` |
-| `mano mode clear` | `git config --local --unset-all mano.mode` |
-| `mano track "Option B"` | `git config --local mano.track "Option B"` |
-| `mano track clear` | `git config --local --unset-all mano.track` |
+Use these commands in your agent's chat to create or update the files:
 
-Read them back with `git config --local --get mano.mode` (or `mano mode` / `mano owner` / `mano track` with no argument, which also tells you whether an environment variable is overriding the stored value).
+```text
+mano owner alice
+mano mode auto
+mano track "Option B"
+```
 
-Two things the wrapper adds, which is why it is still worth typing: it **validates** the value before storing it (an invalid owner slug or a `mano mode fast` is rejected at the command rather than silently ignored later), and it prints what the setting now means. Three details matter if you edit the config by hand:
+A new owner starts in `manual` mode with no track. Selecting an existing owner restores that owner's saved settings. Bare `mano owner`, `mano mode`, and `mano track` show the effective values. `mano mode clear` resets the mode to `manual`; `mano track clear` resets the track to `null`. `mano owner clear` selects the unowned `.default.json` settings without deleting any owner's file.
 
-- **`--local` is not optional.** Mano reads these keys with `git config --local --get`, so a `--global` or `--system` value is never picked up. That is deliberate: these record how *this checkout* is being worked on.
-- **No `=`.** It is `git config --local mano.mode auto`, not `mano.mode = auto`.
-- **The environment wins.** `MANO_OWNER`, `MANO_MODE`, and `MANO_TRACK` override the stored value for a shell or worktree, and an empty one is an error rather than a silent fallback. Every `state.js` projection prints the effective values, so that is where to look when a setting seems ignored.
+An owner file with an approved chain in progress looks like this:
+
+```json
+{
+  "version": 1,
+  "owner": "alice",
+  "mode": "auto",
+  "track": "Option B",
+  "phases": {
+    "alice-phase-1": {
+      "skipped": ["ux"],
+      "run": {
+        "actions": ["ui", "build"],
+        "repairs": []
+      }
+    }
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `version` | Settings format version; currently `1` |
+| `owner` | Owner slug matching the filename; `null` in `.default.json` |
+| `mode` | `manual` or `auto` |
+| `track` | Active work track, or `null` for none |
+| `phases` | Chain records keyed by the exact phase ID |
+| `skipped` | Planning actions the human explicitly removed from this phase's chain |
+| `run.actions` | Remaining approved actions, in order; a nonempty list ends with `build` or `dev` |
+| `run.repairs` | Artifact actions already given an automatic repair attempt in this run |
+
+`run: null` means there is no saved approval. A run with `"actions": []` means the approved chain has finished. These records accompany the phase artifacts and implementation ledgers; they do not replace them. Mano updates the chain fields as approved actions finish, so use the commands to manage them rather than reconstructing approval by editing JSON.
+
+The local selection contains only:
+
+```json
+{ "owner": "alice" }
+```
+
+To continue on another computer:
+
+1. Commit and push the owner JSON together with the phase artifacts and code.
+2. Clone or pull the project on the other computer.
+3. Run `mano owner alice` once in that checkout, then `mano continue`.
+
+`MANO_OWNER`, `MANO_MODE`, and `MANO_TRACK` override the stored values for a shell or worktree without saving those overrides. Empty overrides are errors. Settings work without a Git repository; Git is only needed when you want to commit and share them.
+
+Existing settings from older Mano versions migrate automatically when corresponding JSON state is missing. Existing JSON values win, including cleared settings and completed chains.
 
 Ownership scopes phase discovery and lifecycle gates; it is not a concurrency lock. The backlog, tech spec, UX flow, design brief, project rules, and reviews remain shared project files. Teammates should use branches or worktrees, choose disjoint backlog scope, and coordinate merges normally.
 
@@ -146,9 +192,9 @@ When you are exploring parallel directions, set a local track:
 mano track "Option B"
 ```
 
-Track is distinct from `Source`: Source records where a backlog item came from; Track records the experiment or direction it belongs to. While active, it tags imported and conversation-created items. Start copies it into the phase brief. Review items then copy that phase Track, even if your local Track changed. `mano start` considers only matching-track backlog items. `mano track clear` returns to untracked planning without modifying existing items. Track never bypasses phase approval or any conflict check. Like the other two, it is repository-local Git config — `mano track "Option B"` is exactly `git config --local mano.track "Option B"` (see **The three local settings are plain Git config** above), and `MANO_TRACK` overrides it for a shell.
+Track is distinct from `Source`: Source records where a backlog item came from; Track records the experiment or direction it belongs to. While active, it tags imported and conversation-created items. Start copies it into the phase brief. Review items then copy that phase Track, even if your local Track changed. `mano start` considers only matching-track backlog items. `mano track clear` returns to untracked planning without modifying existing items. Track never bypasses phase approval or any conflict check. Track travels with the owner JSON; `MANO_TRACK` overrides it for a shell.
 
-Setting or clearing Track requires a Git checkout because Mano stores it in repository-local Git config. Run `git init` first in a new directory, or use `MANO_TRACK="Option B"` for a shell.
+Setting or clearing Track works without Git.
 
 You can also narrow one Start run without changing provenance or scope authority:
 
@@ -182,16 +228,9 @@ For a new interactive frontend, auto mode normally includes `ux` and `ui` when t
 
 Suggest hooks are the one behaviour that inverts after approval: in manual or unarmed runs Mano asks before running them; during an armed auto chain they run automatically — because you are deliberately not reading the artifacts mid-chain, so the hook is the only check left. Their findings still need your approval before anything is edited. Command hooks run automatically in both modes.
 
-`mano mode` shows the current setting and `mano mode manual` turns it off. Like the owner, it lives in repository-local Git config (`mano.mode`) and is not committed — it records how much *you* review, not a property of the project. `mano mode auto` is exactly `git config --local mano.mode auto`; see **The three local settings are plain Git config** above. `MANO_MODE` overrides it for a shell.
+`mano mode` shows the current setting and `mano mode manual` turns it off. Mode travels with the owner JSON. `MANO_MODE` overrides it for a shell.
 
-Persisting `mano mode auto` or `mano mode manual` therefore requires the project to be a Git checkout. In a new project directory, initialise version control first:
-
-```bash
-git init
-mano mode auto
-```
-
-Mano never runs `git init` for you. Importing, scoping, and other manual-mode planning can still happen before a repository exists; the Git requirement begins when you persist a run-mode choice. For a temporary shell or worktree override, use `MANO_MODE=auto` instead.
+Settings work before a Git repository exists. Use `MANO_MODE=auto` for a temporary shell override, or `mano mode auto` to save it in the owner JSON.
 
 Actions are independent, not sequential. There is no fixed conveyor belt, but not every action is equally useful at every moment. Each skill checks for required context first: some can proceed with partial inputs, others warn and redirect you to the action that creates the missing artifact.
 

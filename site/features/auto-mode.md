@@ -38,7 +38,7 @@ mano mode manual
 
 ## Where the mode lives
 
-The mode lives in repository-local git config (`mano.mode`), isn't committed, and `MANO_MODE` overrides it per shell — so linked worktrees can differ.
+Mode, track, remaining approved actions, skips, and repair attempts live in committed `_mano_output/[owner].json` files. Without an owner, they use `_mano_output/.default.json`. Only the selected owner stays in ignored `_mano_output/.local.json`. Environment variables override the stored values for a shell or worktree. See [Owner JSON files](/features/#owner-json-files) for the file structure, commands, and steps to resume on another computer.
 
 In chat:
 
@@ -51,11 +51,11 @@ mano mode clear     # back to the default, manual
 From a terminal:
 
 ```bash
-git config --local mano.mode      # read it
+node _mano/scripts/mode.js show   # read it
 export MANO_MODE=manual           # override, for agents launched from this shell
 ```
 
-It isn't committed on purpose: the mode records **how much you review**, which is a property of you and this clone, not of the project. A teammate cloning the repo starts in `manual`.
+A new owner starts in `manual`. Selecting an existing owner restores their committed mode; use `MANO_MODE=manual` for a temporary override.
 
 Every state projection prints the active mode as `MODE:`, so a skill reads it there rather than asking you.
 

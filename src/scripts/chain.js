@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 "use strict";
 
-/** Store approved remaining actions and explicit skips in local Git config.
+/** Store approved remaining actions and explicit skips in portable owner JSON.
  * Artifact existence cannot reconstruct approval order or human additions.
  */
 
 const path = require("node:path");
 const fs = require("node:fs");
-const childProcess = require("node:child_process");
+const Settings = require("./settings.js");
 const { parsePhaseDirName, resolveConfiguredMode } = require("./phase.js");
 
 // The planning actions a chain can contain, and therefore the only ones a human
@@ -35,9 +35,10 @@ skip     record that the human removed these actions when they approved the
 show     print the saved run and skips for one phase, or skips for every phase.
 clear    forget skips and repair attempts on fresh scope approval; retain actions.
 
-Approved remaining actions are stored separately as mano.run.<phase-id>.
-Missing run records require recovering approval from chat or asking the human.
-It is stored in local Git config as mano.chain.<phase-id> and is not committed.`;
+Approved actions, skips, and repair attempts are grouped by phase inside
+_mano_output/[owner].json (or .default.json without an owner). Commit this
+file with the phase artifacts to resume on another computer.
+Missing run records require recovering approval from chat or asking the human.`;
 
 function fail(message) {
   process.stderr.write(`[mano chain] ${message}\n`);
@@ -63,15 +64,6 @@ function parseArgs(argv) {
   args.command = positional[0] || "show";
   args.root = path.resolve(positional[1] || process.cwd());
   return args;
-}
-
-function runGit(root, gitArgs, allowMissing = false) {
-  const result = childProcess.spawnSync("git", gitArgs, { cwd: root, encoding: "utf8" });
-  if (result.status === 0) return result;
-  // 1 is "key not found" on --get, 5 is "no such section" on --unset.
-  if (allowMissing && (result.status === 1 || result.status === 5)) return result;
-  const detail = String(result.stderr || result.stdout || "git command failed").trim();
-  fail(`${detail}. Chain records require a Git checkout.`);
 }
 
 function validatePhaseId(value) {
@@ -106,29 +98,15 @@ function validateActions(value) {
 
 /** Read one phase's recorded skips. Returns [] when nothing is recorded. */
 function readSkipped(root, phaseId) {
-  const result = childProcess.spawnSync(
-    "git",
-    ["config", "--local", "--get", `mano.chain.${phaseId}`],
-    { cwd: root, encoding: "utf8" },
-  );
-  if (result.status !== 0) return [];
-  return String(result.stdout || "")
-    .trim()
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean);
+  return Settings.readPhase(root, phaseId).skipped ?? [];
 }
 
 /** null means no saved approval; actions: [] means the run completed. */
 function readRun(root, phaseId) {
-  const result = childProcess.spawnSync("git",
-    ["config", "--local", "--get", `mano.run.${phaseId}`],
-    { cwd: root, encoding: "utf8" });
-  if (result.status === 1) return null;
-  if (result.status !== 0) throw new Error("Unable to read approved chain record");
-  const value = JSON.parse(result.stdout);
+  const value = Settings.readPhase(root, phaseId).run;
+  if (value == null) return null;
   // Existing array records remain readable; new records keep the retry budget
-  // in the same atomic Git config write as the inserted action.
+  // in the same atomic JSON write as the inserted action.
   const run = Array.isArray(value) ? { actions: value, repairs: [] } : value;
   if (!run || !Array.isArray(run.repairs) ||
       run.repairs.some(a => !REPAIRABLE.includes(a)) ||
@@ -144,7 +122,7 @@ function readRemaining(root, phaseId) {
 }
 
 function writeRun(root, phaseId, run) {
-  runGit(root, ["config", "--local", `mano.run.${phaseId}`, JSON.stringify(run)]);
+  Settings.writePhase(root, phaseId, { run });
 }
 
 function validateRemaining(actions) {
@@ -158,20 +136,7 @@ function validateRemaining(actions) {
 
 /** Every phase with a record, as { phaseId, skipped } rows. */
 function readAll(root) {
-  const result = childProcess.spawnSync(
-    "git",
-    ["config", "--local", "--get-regexp", "^mano\\.chain\\."],
-    { cwd: root, encoding: "utf8" },
-  );
-  if (result.status !== 0) return [];
-  const rows = [];
-  for (const line of String(result.stdout || "").split("\n")) {
-    const match = /^mano\.chain\.(\S+)\s+(.*)$/.exec(line.trim());
-    if (!match) continue;
-    const skipped = match[2].split(",").map((p) => p.trim()).filter(Boolean);
-    if (skipped.length) rows.push({ phaseId: match[1], skipped });
-  }
-  return rows;
+  return Settings.allPhases(root).filter(row => row.skipped?.length);
 }
 
 function main() {
@@ -220,24 +185,21 @@ function main() {
   if (args.command === "skip") {
     const phaseId = validatePhaseId(args.phase);
     const actions = validateActions(args.actions);
-    runGit(args.root, ["rev-parse", "--git-dir"]);
-    runGit(args.root, ["config", "--local", `mano.chain.${phaseId}`, actions.join(",")]);
+    Settings.writePhase(args.root, phaseId, { skipped: actions });
     process.stdout.write(`[mano chain] ${phaseId} — skipped: ${actions.join(", ")}\n`);
-    process.stdout.write("  Recorded so a later session does not re-propose them. Not committed.\n");
+    process.stdout.write("  Recorded so a later session does not re-propose them. Commit the owner JSON to carry this record to another computer.\n");
     return;
   }
 
   if (args.command === "clear") {
     const phaseId = validatePhaseId(args.phase);
-    runGit(args.root, ["rev-parse", "--git-dir"]);
     const run = readRun(args.root, phaseId);
     if (run) writeRun(args.root, phaseId, { actions: run.actions, repairs: [] });
-    runGit(args.root, ["config", "--local", "--unset-all", `mano.chain.${phaseId}`], true);
+    Settings.writePhase(args.root, phaseId, { skipped: [] });
     process.stdout.write(`[mano chain] ${phaseId} — record cleared\n`);
     return;
   }
 
-  runGit(args.root, ["rev-parse", "--git-dir"]);
   if (args.phase) {
     const phaseId = validatePhaseId(args.phase);
     const run = readRun(args.root, phaseId);

@@ -22,7 +22,7 @@ mano start from track "billing-rewrite"
 
 ### Where the track lives
 
-The track lives in repository-local git config (`mano.track`), isn't committed, and `MANO_TRACK` overrides it per shell — so linked worktrees can differ.
+Mode, track, remaining approved actions, skips, and repair attempts live in committed `_mano_output/[owner].json` files. Without an owner, they use `_mano_output/.default.json`. Only the selected owner stays in ignored `_mano_output/.local.json`. Environment variables override the stored values for a shell or worktree. See [Owner JSON files](/features/#owner-json-files) for the file structure, commands, and steps to resume on another computer.
 
 In chat:
 
@@ -35,13 +35,13 @@ mano track clear            # back to untracked planning
 From a terminal:
 
 ```bash
-git config --local mano.track       # read it
+node _mano/scripts/track.js show   # read it
 export MANO_TRACK="offline-mode"    # override, for agents launched from this shell
 ```
 
 A track is 1–120 printable characters on one line — a label you'd recognise, not a slug.
 
-The *setting* isn't committed, but its effect is: `mano start` records `**Track:** [name]` in the phase brief, so the phase itself carries the track into review even on a clone that has none configured. It also tags new imports and conversational Start items.
+The setting travels with the owner JSON, and `mano start` records `**Track:** [name]` in the phase brief, so the phase itself carries the track into review even on a clone that has none configured. It also tags new imports and conversational Start items.
 
 ## By where an item came from
 

@@ -41,7 +41,7 @@ test("configuration scripts import without executing their command entry points"
   assert.equal(typeof mode.main, "function");
   assert.equal(typeof owner.main, "function");
   assert.equal(typeof track.main, "function");
-  assert.equal(typeof mode.runGit, "function");
-  assert.equal(typeof owner.runGit, "function");
-  assert.equal(typeof track.runGit, "function");
+  assert.equal(typeof mode.main, "function");
+  assert.equal(typeof owner.main, "function");
+  assert.equal(typeof track.main, "function");
 });

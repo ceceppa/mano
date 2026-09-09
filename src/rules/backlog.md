@@ -11,6 +11,18 @@ Apart from import’s document-merge boundary above, other skills should not edi
 - `mano rules` must run `node _mano/scripts/state.js --gaps rule-gap`; that projection is its only backlog read. After updating project rules, it may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type rule-gap --title "..."`.
 - `mano ux` and `mano ui` must run `node _mano/scripts/state.js --gaps ux-gap` / `--gaps ui-gap`; that projection is their only backlog read. After updating `ux-flow.md` / `design-brief.md`, each may mark only a fully addressed projected item resolved via `backlog.js resolve-gap --type ux-gap|ui-gap --title "..."`.
 
+## Artifact gaps versus implementation work
+
+Classify by what completes the item, not by whether it concerns UI or UX. A `ui-gap` or `ux-gap` is complete when the owning planning artifact is corrected or a genuinely missing decision is settled. A requested product change that still needs implementation is `refinement`, `feature`, or `bug` and remains eligible for phase scope. Updating a brief or flow does not implement that change.
+
+- “Make the floating browser panel anchor to the viewport's right edge, outside the app's max-width container” → `refinement` (or `bug` if this violates the agreed contract). Preserve the requested behavior in its context; the implementation phase runs the required UI/UX planning.
+- “The panel was already corrected to anchor to the viewport, but the design brief still specifies the app container” → `ui-gap` to reconcile the artifact with the accepted correction.
+- “The current design contract contradicts itself about panel anchoring, and no decision exists” → `ui-gap` to settle the contract.
+
+Do not turn an explicit desired behavior into an “Open decision” merely because its implementation is deferred or its future phase has not updated the artifacts yet. Create both a work item and a gap only when there is also an independent defect in the current artifact; cross-reference them, and resolving the gap never resolves the implementation item. Project-wide directives with no owning work item still follow intake B1, but a requested change to an existing product is work, even when it affects many screens.
+
+For a legacy gap that actually requests unimplemented work, review proposes a scopeable replacement carrying the original request and provenance, plus rejection of the misclassified gap with a reference to that replacement. Use the existing human-confirmed addition/rejection flow; never mark the gap resolved to imply the product change shipped. Reuse an existing work item when one already owns the request. Start continues to honor STOP until that correction is recorded.
+
 **An open gap is not a note — it is a stop.** While any gap item of any type is unresolved, `state.js` returns `DECISION: STOP` for a new phase and no scope is proposed. That is deliberate: a gap is an artifact decision that a review or a rework already proved missing, and scoping the next phase on top of one is how a spec, rule set, UX flow, or design brief stays wrong for phases at a time. The cost of clearing it is one command per route, named in the projection's `OPEN_GAPS:` line.
 
 No gap-owning skill opens `backlog.md`, even when the user asks it to handle backlog gaps; the read-only projection and targeted writer are the complete interface. Skills should not inspect the backlog for general project memory unless their role explicitly owns that context.

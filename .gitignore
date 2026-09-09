@@ -16,3 +16,4 @@ node_modules
 # VitePress build output and cache
 site/.vitepress/dist
 site/.vitepress/cache
+site/.vitepress/.temp

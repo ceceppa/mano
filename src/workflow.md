@@ -79,7 +79,7 @@ When a user types a Mano command in chat, the agent should execute that Mano wor
 
 ## Run Mode: manual and auto
 
-Mano runs in one of two modes, stored per repository clone in local Git config (`mano.mode`, not committed) and overridable for a shell with `MANO_MODE`. Every `state.js` projection prints the active mode as `MODE:`; read it there rather than asking or assuming. `mano mode` shows it, `mano mode auto` / `mano mode manual` set it, `mano mode clear` returns to the default.
+Mano runs in one of two modes, stored in `_mano_output/[owner].json` (or `.default.json` without an owner) and overridable for a shell with `MANO_MODE`. Every `state.js` projection prints the active mode as `MODE:`; read it there rather than asking or assuming. `mano mode` shows it, `mano mode auto` / `mano mode manual` set it, `mano mode clear` returns to the default.
 
 **`manual` is the default and the behaviour every existing project keeps.** Each command finishes, prints its log, and hands back. The absence of configuration is never an opt-in — an unreadable or missing setting resolves to `manual`.
 
@@ -191,9 +191,9 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | Command | Role | Reads | Produces |
 |---------|------|-------|----------|
 | **`mano import`** | Turns an existing PRD or document into a backlog. Decomposes the document into items, then stops. Does not scope phases. | A PRD/document (path or pasted), existing backlog | Backlog (items `Status: backlog`) |
-| **`mano owner`** | Opts this repository clone into an owner namespace, shows it, or clears it. | Repository-local Git config / `MANO_OWNER` | Local Git config only; no planning artifacts |
-| **`mano mode`** | Shows or sets whether finished actions chain automatically (`auto`) or hand back (`manual`, the default). | Repository-local Git config / `MANO_MODE` | Local Git config only; no planning artifacts |
-| **`mano track`** | Shows, sets, or clears the optional local experiment/work track. | Repository-local Git config / `MANO_TRACK` | Local Git config only; no planning artifacts |
+| **`mano owner`** | Opts this repository clone into an owner namespace, shows it, or clears it. | Ignored `_mano_output/.local.json` / `MANO_OWNER` | Settings JSON only; no planning artifacts |
+| **`mano mode`** | Shows or sets whether finished actions chain automatically (`auto`) or hand back (`manual`, the default). | Owner JSON / `MANO_MODE` | Settings JSON only; no planning artifacts |
+| **`mano track`** | Shows, sets, or clears the optional local experiment/work track. | Owner JSON / `MANO_TRACK` | Settings JSON only; no planning artifacts |
 | **`mano start`** | Scopes projects and phases. Populates the backlog (from conversation), suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews | Phase brief, backlog updates |
 | **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, filtered unresolved spec-gap projection | Tech spec; targeted spec-gap status updates |
 | **`mano ux`** | Defines the current phase's new or changed screens, navigation, in-world interactions, and recovery paths in one pass. | Phase brief, UX flow, tech spec, project rules | UX flow |

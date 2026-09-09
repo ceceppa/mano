@@ -1,0 +1,19 @@
+{
+  "name": "review-ui-ux-implementation-requests",
+  "description": "Explicit future UI and UX changes remain scopeable implementation work, not blocking artifact gaps.",
+  "fixture": "review-build-finding",
+  "phase": 1,
+  "steps": [
+    {
+      "prompt": "mano review",
+      "session": "fresh"
+    },
+    {
+      "prompt": "Everything in this phase worked; all questions confirmed. For a future phase I want two refinements: make the floating browser panel anchor to the viewport right edge outside the app max-width container, and add a confirmation step before deleting a saved item. These are new requested behaviors, not failures of the current contract. Neither has been implemented. Close it.",
+      "session": "continue"
+    }
+  ],
+  "assertions": [
+    "review_ui_ux_requests_remain_scopeable"
+  ]
+}

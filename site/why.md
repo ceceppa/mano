@@ -14,9 +14,9 @@ That correction cost one paragraph in a brief. Discovered three days later, it c
 
 ## What Mano is not
 
-**It's not a compiled tool.** There's no binary, no daemon, no deterministic engine. Mano is skills, templates, and instructions that run entirely inside your agent's context window. The installer is the only code that executes on your machine.
+**It runs through your coding agent.** Mano provides skills, templates, and instructions the agent reads, plus local helper scripts that validate project state and maintain progress records. There is no `mano` terminal command or background daemon.
 
-**It's not an autonomous planner.** It won't scope a phase without your approval, won't close one without your judgement, and won't decide to batch-implement on your behalf. `mano dev yolo` exists, and it is something *you* type.
+**You control the scope and closure.** Mano waits for your approval before writing a phase's scope and for your judgement before closing it. You can run commands individually, request batch implementation with `mano dev yolo`, or enable auto mode to chain approved work. An approved auto chain can run `mano dev yolo` when the phase already has stories.
 
 **It's not a guarantee.** You are the enforcer of scope, context, and quality. Mano makes the seams visible and cheap to correct; it does not remove your judgement from the loop, and it isn't trying to.
 
@@ -54,4 +54,4 @@ There are a lot of spec-driven development tools now. The honest differences:
 
 ---
 
-Convinced enough to try it? [Your first phase](/first-phase) walks through a real one, start to finish.
+Ready to try it? [Get started](/getting-started) walks through installation and your first change. [A real phase walkthrough](/first-phase) shows the resulting artifacts.

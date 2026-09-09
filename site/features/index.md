@@ -13,16 +13,71 @@ The loop — `start → spec → rules → stories → dev → review` — is th
 
 Everything here is optional. Nothing is on by default, and nothing arms itself.
 
-## Local settings
+## Owner JSON files
 
-Three of them are settings rather than actions, and all three live the same way: in **repository-local git config**, uncommitted, overridable per shell.
+Mano saves portable settings and chain state in `_mano_output/[owner].json`. Each owner has a separate file that you can commit with the project.
 
-| Command | Git config key | Shell override | Default |
-| --- | --- | --- | --- |
-| [`mano owner`](/features/owners) | `mano.owner` | `MANO_OWNER` | unset — `phase-N/` routing |
-| [`mano mode`](/features/auto-mode) | `mano.mode` | `MANO_MODE` | `manual` |
-| [`mano track`](/features/tracks) | `mano.track` | `MANO_TRACK` | unset — untracked planning |
+| File | What it contains | Commit it? |
+| --- | --- | --- |
+| `_mano_output/alice.json` | Alice's mode, track, and chain records by phase | Yes, to resume elsewhere |
+| `_mano_output/.default.json` | The same settings for work without an owner | Yes, if used |
+| `_mano_output/.local.json` | The owner selected in this checkout | No; Mano adds it to `_mano_output/.gitignore` |
 
-None of them write a planning artifact, and none of them travel with the repo: a teammate who clones it gets the defaults until they set their own. Each has a `show` (the bare command) and a `clear`.
+Use these commands in your agent's chat to create or update the files:
 
-Because the value is per-clone and the `MANO_*` variable wins over git config, a linked worktree — or a second agent launched from a different shell — can run under a different owner, mode, or track than the checkout beside it.
+```text
+mano owner alice
+mano mode auto
+mano track "Option B"
+```
+
+A new owner starts in `manual` mode with no track. Selecting an existing owner restores that owner's saved settings. Bare `mano owner`, `mano mode`, and `mano track` show the effective values. `mano mode clear` resets the mode to `manual`; `mano track clear` resets the track to `null`. `mano owner clear` selects the unowned `.default.json` settings without deleting any owner's file.
+
+An owner file with an approved chain in progress looks like this:
+
+```json
+{
+  "version": 1,
+  "owner": "alice",
+  "mode": "auto",
+  "track": "Option B",
+  "phases": {
+    "alice-phase-1": {
+      "skipped": ["ux"],
+      "run": {
+        "actions": ["ui", "build"],
+        "repairs": []
+      }
+    }
+  }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `version` | Settings format version; currently `1` |
+| `owner` | Owner slug matching the filename; `null` in `.default.json` |
+| `mode` | `manual` or `auto` |
+| `track` | Active work track, or `null` for none |
+| `phases` | Chain records keyed by the exact phase ID |
+| `skipped` | Planning actions the human explicitly removed from this phase's chain |
+| `run.actions` | Remaining approved actions, in order; a nonempty list ends with `build` or `dev` |
+| `run.repairs` | Artifact actions already given an automatic repair attempt in this run |
+
+`run: null` means there is no saved approval. A run with `"actions": []` means the approved chain has finished. These records accompany the phase artifacts and implementation ledgers; they do not replace them. Mano updates the chain fields as approved actions finish, so use the commands to manage them rather than reconstructing approval by editing JSON.
+
+The local selection contains only:
+
+```json
+{ "owner": "alice" }
+```
+
+To continue on another computer:
+
+1. Commit and push the owner JSON together with the phase artifacts and code.
+2. Clone or pull the project on the other computer.
+3. Run `mano owner alice` once in that checkout, then `mano continue`.
+
+`MANO_OWNER`, `MANO_MODE`, and `MANO_TRACK` override the stored values for a shell or worktree without saving those overrides. Empty overrides are errors. Settings work without a Git repository; Git is only needed when you want to commit and share them.
+
+Existing settings from older Mano versions migrate automatically when corresponding JSON state is missing. Existing JSON values win, including cleared settings and completed chains.

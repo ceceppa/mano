@@ -23,7 +23,7 @@ This skill activates when the user types `mano import` (optionally with a path: 
 Read this file plus `_mano/rules/core.md`, `_mano/rules/artifact.md`, `_mano/rules/intake.md`, and `_mano/rules/backlog.md` first — before the state projection, then the document — and read only those rule files; never open `_mano/workflow.md` mid-skill.
 
 On activation:
-1. Run `node _mano/scripts/state.js` and record `TRACK:`. This is the only active-track source; do not read Git config yourself. A missing track is `TRACK: none`.
+1. Run `node _mano/scripts/state.js` and record `TRACK:`. This is the only active-track source; do not read settings storage yourself. A missing track is `TRACK: none`.
 2. Create `_mano_output/` if it doesn't exist.
 3. Read `_mano_output/backlog.md` if it already exists. If it does and already has items, this is not a fresh import — tell the user the backlog already exists and ask whether to merge this document or stop, unless they already requested a merge or an update to the existing backlog. Do not silently overwrite or duplicate.
 

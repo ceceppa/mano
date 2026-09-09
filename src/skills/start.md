@@ -495,7 +495,7 @@ Rules:
 
 `Type`, `Context`, and `Status` are required. **`Source` is optional** — it is provenance only and no skill reads it, so omit the line entirely when there is no meaningful source (e.g. a hand-added item). When a skill writes an item and the source is obvious (a review, a document), include it; never invent one to fill the field.
 
-**Type values:**
+**Type values:** Apply `_mano/rules/backlog.md` → **Artifact gaps versus implementation work**: a UI/UX request that needs implementation is scopeable work, not an artifact gap.
 - `bug` — something broken
 - `refinement` — works but could be better
 - `feature` — new capability

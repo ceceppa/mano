@@ -4595,7 +4595,23 @@ def ui_gap_only_repaired_the_brief(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
+    name = "review_ui_ux_requests_remain_scopeable"
+    out = []
+    blocks = _backlog_blocks(ctx)
+    for subject in ("panel", "confirmation"):
+        matches = [(kind, body) for title, kind, body in blocks
+                   if subject in (title + " " + body).lower()]
+        if not any(kind in ("refinement", "feature", "bug")
+                   and "**Status:** backlog" in body for kind, body in matches):
+            out.append(Failure(name, f"{subject} request has no open implementation item"))
+        if any(kind in ("ui-gap", "ux-gap") for kind, _ in matches):
+            out.append(Failure(name, f"{subject} request was misclassified as artifact drift"))
+    return out
+
+
 REGISTRY = {
+    "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
     "filenames_have_slug": filenames_have_slug,

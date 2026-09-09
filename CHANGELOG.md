@@ -2,6 +2,12 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## Unreleased
+
+### Fixed
+
+- **UI/UX change requests remain implementation work.** Build deferral, review triage, and intake distinguish scopeable product changes from artifact gaps. Rework harvesting no longer treats deferred requests as implemented corrections. Genuine gaps still block Start; updating a design brief or UX flow does not complete an implementation request.
+
 ## 1.6.2 — September 7, 2026
 
 Workflow rules now agree on who approves phase scope, how an approved auto chain survives a session reset, and which commands can run during an existing phase.

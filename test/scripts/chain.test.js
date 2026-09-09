@@ -144,7 +144,7 @@ test("each artifact owner can be inserted once, with durable attempts across sav
 test("repair refusals preserve both the plan and retry budget", () => {
   const scenarios = [
     ["explicit skip", ({ root }) => run(root, ["skip", "--phase", "phase-1", "--actions", "spec"])],
-    ["manual mode", ({ root }) => childProcess.spawnSync("git", ["config", "mano.mode", "manual"], { cwd: root })],
+    ["manual mode", ({ root }) => require("../../src/scripts/settings.js").writeSetting(root, "mode", "manual")],
     ["missing brief", ({ dir }) => fs.unlinkSync(path.join(dir, "phase-brief.md"))],
     ["build ledger", ({ dir }) => fs.writeFileSync(path.join(dir, "progress.md"), "invalid also blocks")],
     ["stories ledger", ({ dir }) => {
@@ -152,7 +152,7 @@ test("repair refusals preserve both the plan and retry budget", () => {
       fs.writeFileSync(path.join(dir, "stories", "README.md"), "ledger");
     }],
     ["remaining planning", ({ root }) => run(root, ["save", "--phase", "phase-1", "--actions", "ui,build"])],
-    ["missing approval", ({ root }) => childProcess.spawnSync("git", ["config", "--unset", "mano.run.phase-1"], { cwd: root })],
+    ["missing approval", ({ root }) => require("../../src/scripts/settings.js").writePhase(root, "phase-1", { run: null })],
     ["completed run", ({ root }) => run(root, ["save", "--phase", "phase-1", "--actions", ""])],
   ];
   for (const [name, setup] of scenarios) {
