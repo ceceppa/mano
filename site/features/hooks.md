@@ -1,3 +1,8 @@
+---
+title: "Review hooks for your planning workflow"
+description: "Add project-specific checks, suggested reviews, or shell commands after Mano planning actions. Learn how hook modes and findings triage work."
+---
+
 # Hooks
 
 Wiring your own review — or your own script — into the loop.

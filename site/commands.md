@@ -1,3 +1,8 @@
+---
+title: "Command reference"
+description: "Find every Mano chat command for planning, implementation, and review, with guidance on artifact ownership, build paths, and workflow modifiers."
+---
+
 # Commands
 
 Type these in your AI IDE's chat, not a terminal. Mano is a set of skills your agent reads — there is no `mano` binary.

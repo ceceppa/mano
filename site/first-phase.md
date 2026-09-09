@@ -1,3 +1,8 @@
+---
+title: "A real AI development planning walkthrough"
+description: "Follow a real Mano phase from approved scope to implementation and review, with actual briefs, story criteria, technical discoveries, and verification gaps."
+---
+
 # A real phase walkthrough
 
 New to Mano? [Install it and start your own phase first](/getting-started), or read on to see what the workflow produces.

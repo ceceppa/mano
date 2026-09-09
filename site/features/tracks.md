@@ -1,3 +1,8 @@
+---
+title: "Tracks and filters for focused phase scope"
+description: "Use Mano tracks and source filters to focus phase planning on an experiment or imported document while keeping the rest of your backlog available."
+---
+
 # Tracks & filters
 
 A backlog that has absorbed three imported documents and two rounds of review feedback will happily offer `mano start` fifty candidates. Two filters cut that down.

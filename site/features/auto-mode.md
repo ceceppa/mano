@@ -1,3 +1,8 @@
+---
+title: "Auto mode for approved development workflows"
+description: "Chain Mano planning and implementation actions after approving a phase. Learn when auto mode pauses, how readiness repairs work, and how to return to manual."
+---
+
 # Auto mode
 
 ```

@@ -1,3 +1,8 @@
+---
+title: "Team owners for parallel project planning"
+description: "Give each teammate a separate Mano phase namespace in the same repository. Configure owners and keep parallel planning work from colliding."
+---
+
 # Team owners
 
 ```

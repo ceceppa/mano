@@ -1,3 +1,8 @@
+---
+title: "Import requirements into a development backlog"
+description: "Turn an existing PRD or requirements document into a Mano backlog, preserving source requirements before you choose and approve a phase to build."
+---
+
 # Import a document
 
 ```

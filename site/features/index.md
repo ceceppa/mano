@@ -1,3 +1,8 @@
+---
+title: "Planning and implementation features"
+description: "Explore Mano build mode, auto mode, document imports, team owners, tracks, and hooks, and learn when each option helps your development workflow."
+---
+
 # Features
 
 The loop — `start → spec → rules → stories → dev → review` — is the default and covers most phases. These are the parts you reach for when a project grows past it.

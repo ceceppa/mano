@@ -1,3 +1,8 @@
+---
+title: "Why Mano for AI-assisted development?"
+description: "Learn why Mano uses small phases, readable planning artifacts, and human approval to catch wrong assumptions before your coding agent implements them."
+---
+
 # Why Mano
 
 ## The assumption underneath it

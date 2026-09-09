@@ -1,5 +1,8 @@
 ---
 layout: home
+title: Mano — Planning for AI-assisted development
+titleTemplate: false
+description: Plan and build software in small, approved phases with your coding agent. Mano keeps scope, technical decisions, and implementation progress in your repository.
 
 hero:
   name: Mano

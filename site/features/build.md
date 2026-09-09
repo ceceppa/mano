@@ -1,3 +1,8 @@
+---
+title: "Build an approved phase without story files"
+description: "Use mano build to implement approved phase scope directly, track work and verification in a ledger, and correct a running build without losing progress."
+---
+
 # Build mode
 
 ```
