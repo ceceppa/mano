@@ -174,7 +174,9 @@ function main() {
   if (args.command === "save") {
     const phaseId = validatePhaseId(args.phase);
     if (args.actions == null) fail("save requires --actions (empty after completion)");
-    const actions = args.actions === "" ? [] : args.actions.split(",").map(a => a.trim());
+    const actions = args.actions === ""
+      ? []
+      : args.actions.split(",").map(a => a.trim().toLowerCase()).filter(Boolean);
     validateRemaining(actions);
     const previous = readRun(args.root, phaseId);
     writeRun(args.root, phaseId, { actions, repairs: previous?.repairs ?? [] });
