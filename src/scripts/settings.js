@@ -98,7 +98,18 @@ function readOwner(root, owner = selectedOwner(root)) {
     }
     if (!own(record, "run")) {
       const run = legacy(root, `mano.run.${id}`);
-      record.run = run === null ? null : JSON.parse(run);
+      if (run === null) record.run = null;
+      else {
+        try {
+          const parsed = JSON.parse(run);
+          if (!(Array.isArray(parsed) || (object(parsed) && Array.isArray(parsed.actions) && Array.isArray(parsed.repairs)))) {
+            throw new Error("expected an array or {actions, repairs} object");
+          }
+          record.run = parsed;
+        } catch (error) {
+          throw new Error(`Invalid legacy Mano run record in ${file}: ${id}: ${error.message}`);
+        }
+      }
       migrated = true;
     }
     data.phases[id] = record;
