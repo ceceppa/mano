@@ -18,6 +18,8 @@ Intake asks *what the product does and for whom*, never *how it's built*. Before
   - `ux-gap` → `ux-flow.md`, resolved by `mano ux`: a stated screen, step, navigation path, or required empty/error state.
   - `ui-gap` → `design-brief.md`, resolved by `mano ui`: a stated palette, typeface, spacing scale, or component treatment.
 
+  This homing rule covers directives with no owning work item. Requested UI/UX product changes belong to scopeable work items; carry their design requirements in that context rather than replacing them with gaps (see `_mano/rules/backlog.md` → **Artifact gaps versus implementation work**).
+
   The title names the directive (`Stated: project directory structure`); the context carries it verbatim. The gap type here is a **routing address, not a verdict** — intake still evaluates and decides nothing, and these items are the only channel that puts an unattached directive in front of `mano spec` / `mano rules` instead of nowhere. `state.js --scope` excludes gap items from phase-scope selection, so homing one never inflates a phase.
 
   **Verbatim, within the 5-line context budget.** Quote the source sentence unchanged when it fits. When the directive is a block the budget cannot hold — a directory tree, a table, a fenced list — name its exact source heading and transcribe on one line the literal values it states (the paths, names, versions), unchanged. Never paraphrase a value, and never summarise the block away.

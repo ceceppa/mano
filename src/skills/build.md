@@ -21,7 +21,7 @@ This file plus `_mano/rules/implement.md` are the **complete contract** for `man
 **An argument is a correction, never new scope.** `mano build "[what changed]"` is accepted **only when a valid ledger exists** — the ledger is the thing the text corrects, and this design still rests on the ledger itself being derivable from the brief alone. The invocation is only a channel; the classification, the write rules, and the stops are the same ones a correction typed mid-run goes through (**Mid-phase corrections**). The exact wording is the human's contract: pass it through verbatim, never paraphrase it into scope-ese, and never treat it as licence to widen a row.
 
 - **A pending `R…` rework event wins over the argument.** Durable state outranks a new sentence. This is read from the projection at invocation, so it governs events that were already there — never one this run recorded itself under case (A). When the projection reports `REWORK: [n] pending`, a plain `mano build` resumes the first event as normal, and `mano build "[new text]"` **refuses without mutation** — no row, no code, no queue, no ledger change of any kind. Name the pending event, show its exact text, and ask the human to resolve or dismiss it first. An approval or a rejection of a pending event is a response *inside that event's deviation flow*; it is never reinterpreted as a new correction argument, and never stored as scope for later.
-- **With no pending rework, the argument enters the A/B/C classifier** below, before any normal row resumes. **(A)** a defect in work an existing row or `E` leaf already promised → guarded reopen **before any code**, then fix, in the same run; **no row is appended**, and no stop fires unless the reopen reaches past what the report named. **(B)** a distinct outcome the phase does not contain → refuse; no row, no code, and offer the explicit backlog-defer choice. Auto mode does not soften this. **(C)** an in-goal nuance no row covers → allocate a `+N` row from the *exact* text, link an existing `E` leaf or obtain approval for a new one, persist scope, criterion, and link in one write, re-run the gap gates against the new row, fire the deviation stop, and wait — code only after the human approves.
+- **With no pending rework, the argument enters the A/B/C classifier** below, before any normal row resumes. **(A)** a defect in work an existing row or `E` leaf already promised → guarded reopen **before any code**, then fix, in the same run; **no row is appended**, and no stop fires unless the reopen reaches past what the report named. **(B)** a distinct outcome the phase does not contain → refuse; no row, no code, and offer the explicit backlog-defer choice. Auto mode does not soften this. **(C)** an in-goal nuance no row covers → allocate a `+N` row from the *exact* text, link an existing `E` leaf or obtain approval for a new one, persist scope, criterion, and link in one write, re-run the gap gates against the new row, then implement and verify in the same run without a second approval when the gates pass.
 - **With no ledger, the argument is rejected without running pre-flight and without `init`.** Nothing exists to correct, so nothing is created to hold it. Say that a plain `mano build` builds the approved brief as written, and that changing that brief goes through `mano start "[the change]"` and a fresh scope approval — not an implicit correction row. Write no ledger, no source, and no backlog item. An approval that armed an auto chain covered the brief as approved; it is not consumed, spent, or reused by this refusal, and the chain resumes only when the human answers.
 
 ## Flow
@@ -34,7 +34,7 @@ Branch on `PROGRESS_STATUS`, and on nothing else:
 - **`missing`** → go to step 1.
 - **`present`** → go to step 2.
 
-**1. No ledger yet → run pre-flight once, against the whole brief, and write nothing until it passes.** This is the cheapest place in the whole phase to catch a gap: nothing has been written and nothing has been built. Run **Step 0 pre-flight** below, in its stated order. A hard gate, an unresolved artifact gap, an unmapped project-rule obligation, or an unproven `Phase Goal` outcome **stops the run and writes no ledger** — route it to the owning skill and stop.
+**1. No ledger yet → run pre-flight once, against the whole brief, and write nothing until it passes.** This is the cheapest place in the whole phase to catch a gap: nothing has been written and nothing has been built. Run **Step 0 pre-flight** below, in its stated order. A hard gate, an unresolved artifact gap, an unmapped project-rule obligation, or an unproven `Phase Goal` outcome **stops the run and writes no ledger** — route it to the owning skill and stop implementation. Before handing back, apply **Automatic pre-flight repair** below; only an eligible armed auto chain continues through the owner.
 
 Only once pre-flight is clean: re-run `state.js --next`, confirm `OWNER` and `PHASE_ID` still match what pre-flight ran against, and create the ledger with one command. It takes no content:
 
@@ -92,9 +92,30 @@ The order is the point. Every one of these can only stop the run cheaply while n
 2. **0a, 0c–0e** — the hard gates and the artifact-gap check.
 3. **0g** — map every applicable project-rule obligation to a Scope leaf.
 4. **0f** — prove the `Phase Goal` → Scope → Exit chain.
-5. Any gap or contradiction: **stop, with no ledger written.**
+5. Any gap or contradiction: **stop, with no ledger written.** Apply **Automatic pre-flight repair** before deciding whether the chain must hand back.
 6. Re-check identity, then `init --expect-phase-id`.
 7. Verify the emitted rows are the brief you ran pre-flight against.
+
+### Automatic pre-flight repair
+
+This is the sole exception to handing back for an artifact readiness gap. It stops implementation while the owning planning skill repairs its artifact; it never lets build invent or edit an input contract. It applies only to the initial whole-brief pre-flight, never per-row gates, corrections, terminal sweeps, or `mano dev`.
+
+**All conditions must hold:**
+
+- Fresh `state.js --next` reports `MODE: auto`, the same `OWNER` and `PHASE_ID`, and neither implementation ledger exists. No script failure, refusal, review gate, or user stop is pending.
+- `chain.js show --phase [PHASE_ID]` recovers an approved run with only `build` remaining. Missing approval, completed runs, and other remaining actions are not permission to reorder a plan.
+- The approved brief clearly determines the intended behavior. The gap is missing guidance or an obsolete supporting contract, with exactly one owning skill identifiable: `spec` for technical/data/API/state, `ux` for interaction paths, `ui` for visual contracts, or `rules` for implementation conventions. A technical representation may be chosen by spec within that approved behavior.
+- Repair needs no scope or Exit Criteria change, no choice between competing product outcomes, and no override of an applicable project rule or stated technical preference. An overloaded-screen choice, unmapped scope/exit obligation, or ambiguous authority between artifacts still needs the human.
+- The owner was not explicitly skipped and is absent from `CHAIN_REPAIRS`. One automatic attempt per owner per approved run bounds retries, even if the next gap looks different or the session restarts. A failed repair or conflicting repair output pauses; never cycle among owners to settle contradictory decisions.
+
+**If eligible, execute the handoff in this turn:**
+
+1. Report the readiness gap with its scope references and both conflicting statements (or the missing guidance). State the owning action being inserted; this is the build action's gap log, not a closing pause block.
+2. Run `node _mano/scripts/chain.js repair --phase [PHASE_ID] --actions [owner]`. This atomically persists `[owner],build` and consumes that owner's attempt before execution. A failure stops; never substitute `save` to bypass it.
+3. End the build action and invoke the exact owning Mano skill now, loading that skill's own contract and required rules. Pass the gap and approved phase references. Build's self-contained read/write restrictions apply to build, not to this separate planning action. The owner retains all its decision gates, artifact ownership, and hook triage; a `❓ Decide:` or other genuine question pauses the chain normally.
+4. After the owner and its hook triage finish, save `build` as remaining, refresh mode and phase identity, and invoke plain `mano build` in this turn. Rerun the entire pre-flight against the updated artifacts before any ledger or code. A remaining gap for an attempted owner pauses with the unresolved evidence and a concrete question.
+
+If any condition fails, retain the original gap's stop and ask the actual unresolved question. Do not offer a hard-gate bypass. An explicit skip stays effective where an existing gate permits it; it never authorizes an automatic repair or waives a non-continuable conflict. Never ask merely “run spec?” when this recovery is eligible. Never print “waiting on a question” while actually performing the repair.
 
 **0⊘. Ledger-and-source gate (hard stop).** The only files this skill writes are source code, the exact projected `PHASE_DIR/progress.md` (through `progress.js` only), and files a row's own work requires. If you are about to Edit, Write, or shell-modify **another Mano artifact** — the phase brief, tech spec, UX flow, design brief, project rules, backlog, or another owner's phase — **stop immediately**. That belongs to the skill that owns it. This applies even when the user just told you an input artifact is wrong: flag it and route it, do not edit it.
 
@@ -176,7 +197,7 @@ Use the relevant Mano action for the gap type:
 
 Do not invent final design, UX, rules, or technical contracts while building. There is no story file on this path to hold a temporary note: if the human sanctions a temporary choice, it lives in the chat log for this run and nowhere else. Never write it into an artifact you do not own, and never treat it as a substitute for the answer this gate is asking for.
 
-**The options require a human answer.** After presenting a material gap, stop. Never choose option 2 yourself because the artifact is optional, the approved auto chain omitted it, the control is familiar/canonical, or enough implementation can be guessed. In an armed auto chain this is a named pause with the remaining chain preserved. Continue without the owning artifact only after the human explicitly chooses that path; an explicit `skip ux` / `skip ui` in the approved chain already counts as that choice.
+**The options require a human answer unless Automatic pre-flight repair applies.** Check that exception before presenting options; when eligible, invoke the owner instead. Otherwise, after presenting a material gap, stop. Never choose option 2 yourself because the artifact is optional, the approved auto chain omitted it, the control is familiar/canonical, or enough implementation can be guessed. In an armed auto chain this is a named pause with the remaining chain preserved. Continue without the owning artifact only after the human explicitly chooses that path; an explicit `skip ux` / `skip ui` in the approved chain already counts as that choice.
 
 If sufficient guidance exists, do not warn — read that section when you reach the row that needs it, for example:
 
@@ -233,12 +254,12 @@ Do not invent a scope item to cover an orphan criterion, and do not quietly wide
 
 ## The human gate: stop on deviation only
 
-Build runs straight through while the ledger is a copy of the human's own list — asking them to confirm their own approved brief carries no information and buys nothing. It **stops and asks** when, and only when, it deviated:
+Build runs straight through while the ledger follows the approved brief or the human's clear in-goal correction — asking them to confirm their own approved brief carries no information and buys nothing. It **stops and asks** when, and only when, it deviated:
 
 - pre-flight found a hard gate, an unresolved artifact gap, an unmapped project-rule obligation, or a `Phase Goal` outcome the brief does not close (routes out, no ledger);
 - gate 6.4 fired — the work conflicts with `Phase goal` / `Phase scope` / `Not this phase`;
 - a sub-row split was needed;
-- a correction row was appended, or a reopen reached past what the human's own report named — see **Reopening without a stop**;
+- a correction needs clarification or approval of a new Exit Criterion, or a reopen reached past what the human's own report named — see **Mid-phase corrections**;
 - a distinct outcome needs a backlog item — the preview and its approval;
 - the terminal sweep reopened a leaf, or left one `needs-human`.
 
@@ -252,7 +273,7 @@ A **pass** is one implement-then-verify cycle, and by default it is one row. Whe
 
 1. **Start at the first actionable non-`done` normal brief leaf** — the row the projection named, never a later one.
 2. **Take only contiguous normal brief leaves with the same numeric category.** `S1a`, `S1b`, `S1c` may form a pass; `S1c` followed by `S2a` may not. A leaf already `done` breaks contiguity.
-3. **Never include a `+N` correction or a dotted split row.** Each of those is built alone. A correction carries the human's own words and fires a deviation stop; a split exists because one row already overflowed a pass.
+3. **Never include a `+N` correction or a dotted split row.** Each of those is built alone. A correction carries the human's own words and is verified separately; a split exists because one row already overflowed a pass.
 4. **Stop before a leaf whose real implementation surface differs from the pass being formed.** Judge the surface you are actually about to edit — the same file, module, command, or screen — not the fact that two labels sound related.
 5. **Stop before any per-row gate failure.**
 6. **The whole candidate can be implemented and verified as one unit.** If you are not confident you can prove every leaf in it, the pass is smaller.
@@ -272,7 +293,7 @@ A **flat** brief has no categories, so every row is its own pass. Do not group f
 7. Leave any failing or unproven row open, and resume at the first unresolved leaf. A partial pass closes what it proved and nothing else — never close a row on the strength of its neighbour.
 8. One state and identity post-check for the pass, not one per row.
 
-The close line may name the row range — `S1a–S1c done`. A split or a correction remains a **deviation stop**, and none of the three — split, reopen, correction — ever appears inside a group.
+The close line may name the row range — `S1a–S1c done`. A split remains a **deviation stop**; a clear correction needs no second approval. None of the three — split, reopen, correction — ever appears inside a group.
 
 ## Sub-rows: the one text build composes
 
@@ -353,7 +374,9 @@ Five constraints, all load-bearing:
 2. **The Exit side is human-authored or human-approved, never both derived from one sentence.** Either link an existing leaf with `--exit E2c` alone, or — when no existing leaf can prove it — show the user the complete proposed criterion wording and get explicit approval, then pass it as `--exit E2c --exit-text-file /tmp/criterion.txt`. Deriving a scope contract *and* the promise that proves it from one sentence is the model marking its own homework.
 3. **`S`, `E`, and the link persist in one write.** The script does this; do not split it into two calls, and do not implement between them.
 4. **The gap check runs against the new row before any code** — 0c.0–0d and 0g, then 6.2 / 6.3. If the addition needs a spec-owned default no artifact states, route to `mano spec` and **STOP**, exactly as at ledger creation. The row may exist; no code is written.
-5. **The deviation stop fires**, showing the appended row and its Exit link against the phase goal, before implementation. Then wait.
+5. **The request authorizes implementation.** A clear in-goal correction with an existing Exit link is not a deviation to approve. Record it, run the gates, implement, and verify in the same run, in both manual and auto mode. Show the row and link as progress, never as a permission question or a terminal “correction recorded” handoff. Do not ask the user to approve their own request again.
+
+**Ask only for the missing decision.** If the intended behavior is ambiguous, conflicts with an existing contract, or needs a new Exit Criterion, name the specific issue and ask a concrete question before dependent implementation. Once the user clarifies or approves that decision, continue with the agreed correction and verification without another “Approve to implement” exchange. Preserve the original request verbatim; record any user-authored follow-up through the same ledger flow when it changes the row contract. An unresolved artifact gap still follows constraint 4, and a distinct outcome still follows case (B).
 
 **(D) Nothing is built yet and the brief itself is wrong.** With **no ledger** in this phase, the brief is still amendable: tell the user to run `mano start "[what changed]"`, which shows the complete proposed revised scope and writes nothing until they approve it. That approval is the fresh approval of the revised contract. Once a ledger exists this route is closed — that is case (E), not this one.
 
@@ -377,6 +400,8 @@ The boundary to watch is (B) misclassified as (C): new scope smuggled in as a nu
 
 The one narrow exception to the ledger-and-source write gate (0⊘): build may write **exactly one** backlog item, and only through this flow.
 
+Classify using `_mano/rules/backlog.md` → **Artifact gaps versus implementation work**. A deferred UI/UX implementation change is `refinement`, `feature`, or `bug`, not a gap simply because the brief or flow would need updating. This flow writes only one item: it must preserve the requested implementation work rather than substitute an artifact-only task.
+
 1. Offer the choice explicitly. Do not proceed on silence, on "sure", or on an approved auto chain — an auto chain removes typing, not decisions.
 2. On an affirmative answer, **show the complete proposed item and stop**:
 
@@ -384,7 +409,7 @@ The one narrow exception to the ledger-and-source write gate (0⊘): build may w
 [mano build]: That's a distinct outcome, so it's not this phase. Defer it to the backlog?
 
   Title:   [the exact title]
-  Type:    [feature | bug | chore | spec-gap | rule-gap | ux-gap | ui-gap]
+  Type:    [feature | refinement | bug | tech-debt | test | spec-gap | rule-gap | ux-gap | ui-gap]
   Context: [the exact context, in the user's own terms]
   Source:  [PHASE_ID]
   Track:   [the phase brief's track, or "none"]
@@ -456,7 +481,7 @@ The terminal line is followed by the **`Validate now:`** block — the brief's o
 
 Three suffixes are permitted, and only when one genuinely applies: a run that reopened rows names them and the event it closed — `Reworked: S2, E2c reopened and rebuilt (R1 resolved).` — ; a short note about a non-acceptance deviation that did not weaken verification; and a project-relevant decision worth preserving, offered for capture in the artifact that owns it. An unmet Exit Criterion is never a permitted suffix — gate 10.1 leaves the row open instead.
 
-When `mano build` is the terminal action of an armed `mano mode auto` chain, the aggregate or deviation line is the build action's log, followed by the required `[mano auto]` closing block from `_mano/rules/implement.md` → **Closing an armed auto chain**. That block is the only permitted content after the line.
+When `mano build` is the terminal action of an armed `mano mode auto` chain, the aggregate or deviation line is the build action's log, followed by the required `[mano auto]` closing block from `_mano/rules/implement.md` → **Closing an armed auto chain**. That block is the only permitted content after the line. An eligible **Automatic pre-flight repair** is a handoff within the running chain, not a deviation stop: its gap log is followed by the owning skill's execution, and the closing block waits until the chain actually stops.
 
 ## Forbidden
 

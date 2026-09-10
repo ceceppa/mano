@@ -1301,12 +1301,12 @@ class ManoScriptTests(unittest.TestCase):
         self.assertEqual(enabled.returncode, 0, enabled.stderr)
         self.assertIn("auto", enabled.stdout)
         self.assertIn("Never runs mano review", enabled.stdout)
-        self.assertIn("auto (git config --local mano.mode)", self.run_mode("show", str(self.root)).stdout)
+        self.assertIn("auto (_mano_output/.default.json)", self.run_mode("show", str(self.root)).stdout)
 
         cleared = self.run_mode("clear", str(self.root))
         self.assertEqual(cleared.returncode, 0, cleared.stderr)
         self.assertIn("manual is active", cleared.stdout)
-        self.assertIn("manual (default)", self.run_mode("show", str(self.root)).stdout)
+        self.assertIn("manual (_mano_output/.default.json)", self.run_mode("show", str(self.root)).stdout)
 
         for bad in ("turbo", "yolo", "AUTO-ish"):
             with self.subTest(bad=bad):
@@ -1314,7 +1314,7 @@ class ManoScriptTests(unittest.TestCase):
                 self.assertNotEqual(invalid.returncode, 0)
                 self.assertIn("invalid Mano mode", invalid.stderr)
         # Still manual after every rejected value — a failed set never opts in.
-        self.assertIn("manual (default)", self.run_mode("show", str(self.root)).stdout)
+        self.assertIn("manual (_mano_output/.default.json)", self.run_mode("show", str(self.root)).stdout)
 
     def test_track_command_is_explicit_local_opt_in_and_can_be_cleared(self):
         initialized = subprocess.run(
@@ -1328,7 +1328,7 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn('track set to "Option B"', enabled.stdout)
         shown = self.run_track("show", str(self.root))
         self.assertEqual(shown.returncode, 0, shown.stderr)
-        self.assertIn('"Option B" (git config --local mano.track)', shown.stdout)
+        self.assertIn('"Option B" (_mano_output/.default.json)', shown.stdout)
         self.assertIn("TRACK: Option B", self.run_state().stdout)
 
         overridden = self.run_track("show", str(self.root), env_track="Option A")
@@ -1387,7 +1387,7 @@ class ManoScriptTests(unittest.TestCase):
         self.assertIn("owner set to alice", set_owner.stdout)
         shown = self.run_owner("show", str(self.root))
         self.assertEqual(shown.returncode, 0, shown.stderr)
-        self.assertIn("alice (git config --local mano.owner)", shown.stdout)
+        self.assertIn("alice (_mano_output/.local.json)", shown.stdout)
         current = self.run_state("--current")
         self.assertIn("PHASE_ID: alice-phase-1", current.stdout)
         overridden = self.run_state_as("bob", "--current")

@@ -1,3 +1,8 @@
+---
+title: "Command reference"
+description: "Find every Mano chat command for planning, implementation, and review, with guidance on artifact ownership, build paths, and workflow modifiers."
+---
+
 # Commands
 
 Type these in your AI IDE's chat, not a terminal. Mano is a set of skills your agent reads — there is no `mano` binary.
@@ -42,7 +47,7 @@ Every artifact has exactly one owning command. This is the rule that keeps a val
 
 ### The three that own no artifact
 
-`mano owner`, `mano mode` and `mano track` write nothing under `_mano_output/`. They live in repository-local git config (`mano.owner`, `mano.mode`, `mano.track`), aren't committed, and are overridable per shell with `MANO_OWNER` / `MANO_MODE` / `MANO_TRACK`. [Details →](/features/#local-settings)
+Mode, track, remaining approved actions, skips, and repair attempts live in committed `_mano_output/[owner].json` files. Without an owner, they use `_mano_output/.default.json`. Only the selected owner stays in ignored `_mano_output/.local.json`. Environment variables override the stored values for a shell or worktree. [Details →](/features/#owner-json-files)
 
 The split between spec and rules catches people out. A concrete file path in `tech-spec.md` is a leak: the spec records the *decision* ("Prisma + SQLite"), while *where things live* belongs to `project-rules.md`.
 
@@ -60,13 +65,13 @@ A phase holding both ledgers is refused. Pick one and delete the other. [More on
 
 `mano dev yolo` implements every currently pending story in order instead of stopping after one. It keeps every per-story gate and hard stop — it only changes how many stories one invocation covers.
 
-It is deliberately something you type. Mano will never choose it for you.
+In manual mode, you request it explicitly. An approved [auto-mode chain](/features/auto-mode) also uses `mano dev yolo` when the phase already has a stories index.
 
 `mano start from source "<text>"` narrows the candidate phase items to those whose backlog `Source` matches — useful after importing several documents. `mano start from track "<name>"` does the same for a named experiment. [More on tracks & filters →](/features/tracks)
 
 ## If a command doesn't resolve
 
-Mano's skills are named `mano-spec`, `mano-review`, `mano-dev` — hyphenated. The spaced form is a friendlier spelling of the same thing. If your agent says a command isn't available, type the hyphenated name directly: `mano-review`. The colon form (`mano:review`) is plugin-namespace syntax and matches nothing.
+Ask your agent to read the project's `AGENTS.md` and follow the corresponding `_mano/skills/` file. Mano commands use repo-local instructions; a missing external skill does not mean Mano is unavailable. Skill names use hyphens (`mano-review`), not plugin-namespace colons (`mano:review`). See [setup and troubleshooting](/getting-started#my-agent-says-mano-isn-t-available).
 
 ---
 

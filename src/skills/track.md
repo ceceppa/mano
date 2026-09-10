@@ -15,12 +15,12 @@ This optional setting groups a person's related experiments. It does not create 
 - `mano track "[name]"` or `mano track set "[name]"` → run `node _mano/scripts/track.js set "[name]"`.
 - `mano track clear` → run `node _mano/scripts/track.js clear`.
 
-Relay the script result and stop. If it fails, report the exact error; do not edit Git config, backlog items, or phase folders by hand.
+Relay the script result and stop. If it fails, report the exact error; do not edit settings JSON, backlog items, or phase folders by hand.
 
 ## Contract
 
-- Track is opt-in and repository-local (`mano.track`); it is not committed. `MANO_TRACK` overrides it for one shell/worktree.
-- Setting or clearing Track requires a Git checkout. In a new directory, run `git init` first or use `MANO_TRACK` as a shell-only override. Mano never initializes Git automatically.
+- Mode, track, remaining approved actions, skips, and repair attempts live in committed `_mano_output/[owner].json` files. Without an owner, they use `_mano_output/.default.json`. Only the selected owner stays in ignored `_mano_output/.local.json`. Environment variables override the stored values for a shell or worktree.
+- Settings work without a Git checkout. Existing local Git config values migrate automatically when JSON state is missing; JSON takes precedence.
 - `Source` remains provenance (document, review, or phase); `Track` is the direction or experiment (for example, `Option B`). Never replace one with the other.
 - An active track tags newly imported backlog items and new items from `mano start`'s conversational intake. `mano start` considers only matching-track backlog items and records the track in its approved phase brief. Every review-created item copies that recorded phase track, even if the local setting changes later.
 - Track is a candidate filter, not scope authority. Start still requires approval, and stories/dev still stop on phase, artifact, or contract conflicts.

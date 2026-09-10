@@ -804,6 +804,49 @@ def import_wrote_only_backlog(ctx: Ctx) -> list[Failure]:
     return []
 
 
+def _import_existing_items_preserved(ctx: Ctx, name: str, reject: bool) -> list[Failure]:
+    failures = []
+    original = ctx.fixture_snapshot.get("backlog.md", "")
+    blocks = {title: block for title, _, block in _backlog_blocks(ctx)}
+    for chunk in original.split("\n### ")[1:]:
+        title = chunk.split("\n", 1)[0].strip()
+        before = "### " + chunk
+        after = blocks.get(title, "")
+        if reject and title == "Panel dock presets":
+            if _backlog_status_of(ctx.backlog() or "", title) != "rejected":
+                failures.append(Failure(name, "authorized obsolete backlog item was not rejected"))
+            if not all(value in after for value in ("original-brief.md", "product-brief.md")) or not re.search(r"timeline|supersed|replac", after, re.I):
+                failures.append(Failure(name, "rejected item lost provenance or lacks the new source and reason"))
+        elif after.strip() != before.strip():
+            failures.append(Failure(name, f"existing item changed without authorization: {title}"))
+    titles = [title for title, _, _ in _backlog_blocks(ctx)]
+    if len(titles) != len(set(titles)):
+        failures.append(Failure(name, "duplicate item titles introduced"))
+    return failures
+
+
+def import_applied_authorized_rejection(ctx: Ctx) -> list[Failure]:
+    name = "import_applied_authorized_rejection"
+    failures = _import_existing_items_preserved(ctx, name, reject=True)
+    new = [block for title, _, block in _backlog_blocks(ctx)
+           if title not in _backlog_titles(ctx.fixture_snapshot.get("backlog.md", ""))]
+    if not new or not any(re.search(r"timeline", block, re.I) for block in new):
+        failures.append(Failure(name, "replacement timeline work was not captured"))
+    for block in new:
+        if not re.search(r"\*\*Status:\*\*\s*backlog\s*$", block, re.M):
+            failures.append(Failure(name, "new item is not Status: backlog"))
+    return failures
+
+
+def import_waited_on_conflict(ctx: Ctx) -> list[Failure]:
+    name = "import_waited_on_conflict"
+    failures = _import_existing_items_preserved(ctx, name, reject=False)
+    response = ctx.all_responses().lower()
+    if not all(word in response for word in ("panel dock presets", "timeline")) or not re.search(r"\?|decid|confirm|approval|which direction", response):
+        failures.append(Failure(name, "did not surface the exact conflicting item and product decision"))
+    return failures
+
+
 def backlog_covers_document_features(ctx: Ctx) -> list[Failure]:
     # The fixture PRD lists four features. Their key nouns should each surface
     # somewhere in the backlog (coverage, not exact wording).
@@ -2316,6 +2359,16 @@ def start_honoured_combined_scope(ctx: Ctx) -> list[Failure]:
             break
 
     return failures
+
+
+def start_no_routine_mix_warning(ctx: Ctx) -> list[Failure]:
+    """This fixture's presentation change and label defect have no coupling cost."""
+    for line in ctx.transcript.splitlines():
+        if re.search(r"⚠|\bwarning\b|\btrade.?off\b|\badvisory\b", line, re.IGNORECASE) and re.search(
+            r"unrelated|combin|mixed|\bverdict\b|outcomes|review.*both", line, re.IGNORECASE
+        ):
+            return [Failure("start_no_routine_mix_warning", f"routine mixed-scope warning: {line.strip()!r}")]
+    return []
 
 
 SURFACE_WORDS = (
@@ -4542,7 +4595,23 @@ def ui_gap_only_repaired_the_brief(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
+    name = "review_ui_ux_requests_remain_scopeable"
+    out = []
+    blocks = _backlog_blocks(ctx)
+    for subject in ("panel", "confirmation"):
+        matches = [(kind, body) for title, kind, body in blocks
+                   if subject in (title + " " + body).lower()]
+        if not any(kind in ("refinement", "feature", "bug")
+                   and "**Status:** backlog" in body for kind, body in matches):
+            out.append(Failure(name, f"{subject} request has no open implementation item"))
+        if any(kind in ("ui-gap", "ux-gap") for kind, _ in matches):
+            out.append(Failure(name, f"{subject} request was misclassified as artifact drift"))
+    return out
+
+
 REGISTRY = {
+    "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
     "filenames_have_slug": filenames_have_slug,
@@ -4568,6 +4637,8 @@ REGISTRY = {
     "all_items_status_backlog": all_items_status_backlog,
     "no_phase_brief_written": no_phase_brief_written,
     "import_wrote_only_backlog": import_wrote_only_backlog,
+    "import_applied_authorized_rejection": import_applied_authorized_rejection,
+    "import_waited_on_conflict": import_waited_on_conflict,
     "backlog_covers_document_features": backlog_covers_document_features,
     "stated_tech_preference_preserved": stated_tech_preference_preserved,
     # B1 homing: directives no feature item owns
@@ -4624,6 +4695,7 @@ REGISTRY = {
     "start_flagged_the_near_duplicate": start_flagged_the_near_duplicate,
     # start: the human owns the phase boundary
     "start_honoured_combined_scope": start_honoured_combined_scope,
+    "start_no_routine_mix_warning": start_no_routine_mix_warning,
     # start: ARTIFACTS: existence is not coverage
     "start_armed_ux_and_ui_for_user_facing_scope": start_armed_ux_and_ui_for_user_facing_scope,
     "start_try_is_performable": start_try_is_performable,

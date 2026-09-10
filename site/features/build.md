@@ -1,3 +1,8 @@
+---
+title: "Build an approved phase without story files"
+description: "Use mano build to implement approved phase scope directly, track work and verification in a ledger, and correct a running build without losing progress."
+---
+
 # Build mode
 
 ```
@@ -42,6 +47,8 @@ Report a defect while build is running and the correction is recorded as a durab
 ```
 mano build "the selector doesn't survive a reload"
 ```
+
+A clear correction inside the phase goal is recorded, implemented, and verified in the same run, without asking you to approve it again. This also applies when the correction needs a new scope row linked to an existing exit criterion. If the request is ambiguous, conflicts with an existing contract, or needs a new exit criterion, build asks for the missing decision, then continues once you answer. A distinct new outcome belongs in the backlog or a later phase.
 
 Your words go into the ledger, not just the conversation. A conversation doesn't survive a compaction, a restart, or an interleaved command.
 

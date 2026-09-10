@@ -198,12 +198,15 @@ Ask: "At the end of this phase, can someone demonstrate the capability or verify
 **Size against effort, not item count.** One or two items when they are complex, several when they are small. A cluster of small items is not over-scoped by virtue of being a cluster, and a single large item is not right-sized by virtue of being alone. When in doubt, err on fewer items. A phase that's too small ships fast; a phase that's too big never ships.
 
 <!-- mano-rule: id=phase-scope-is-a-proposal; incident=start-refused-a-human-approved-combination; model=chatgpt-terra; date=2026-08-24; eval=start-combines-unrelated-small-items -->
-**The scope shape governs what you propose, never what the human may approve.** When the human asks for a combination you would not have suggested — two unrelated items, a small rider on top of the main outcome — take it and continue in the same turn. Say the cost once, as an advisory line, and move on:
+**The scope shape governs what you propose, never what the human may approve.** When the human approves a combination you would not have suggested — two unrelated items, a small rider on top of the main outcome — accept it and continue to Step 7 in the same turn. Never answer with a refusal, a "pick one" menu, or another request to approve the same combination.
 
-`⚠ [Item A] and [Item B] are unrelated outcomes; the phase review will return one verdict covering both.`
-
-Then draft the brief for the approved scope. Never answer a scope request with a refusal, a "pick one" menu, or the same question again. "I won't combine them" is not a move `mano start` has — the human owns the phase boundary, and you owe them the trade-off once, not a gate. This is a `⚠ Verify`, never a `❓ Decide` (`_mano/rules/core.md` → **Canonical execution-log format**).
 <!-- /mano-rule: phase-scope-is-a-proposal -->
+
+<!-- mano-rule: id=scope-advisories-need-a-consequence; incident=piano-start-warned-about-a-defect-rider-without-a-practical-cost; model=not-recorded; date=2026-09-07; eval=start-combines-defect-with-feature -->
+Do not warn merely because the items are unrelated or receive one phase-review verdict. Raise an advisory only when the combination has a concrete consequence for this work — for example, a time-sensitive fix would wait on a substantial feature. State that consequence once and continue; it is not another scope-approval gate. A small defect alongside feature work needs no special ceremony.
+
+Accepting the combination does not answer missing product questions. Step 7 may still ask a focused question that changes the requested behaviour or resolves a conflict with an earlier decision; do not use that question to reopen the approved item selection.
+<!-- /mano-rule: scope-advisories-need-a-consequence -->
 
 Prioritise:
 1. 🐛 Defects first — bugs always take priority
@@ -259,6 +262,8 @@ In auto mode, replace option 1's description with `Approve this scope and run th
 
 Before proposing that line, decide whether this candidate scope requires `spec`, `ux`, `rules`, or `ui` from the projection's `ARTIFACTS:` line — it reports whether `tech-spec.md`, `ux-flow.md`, `project-rules.md`, and `design-brief.md` exist, so do not open any of them for this check. Never open the backlog, reviews, source, a prior phase folder, or another phase's preview either. An artifact that exists is only skipped when the candidate scope plainly adds nothing in its area; when its coverage of this phase is genuinely uncertain, include the action and let the human strike it in the approval reply.
 
+**State removal and replacement require spec coverage.** Include `spec` in the proposed chain when scope removes or replaces selection state, filtering modes, state ownership, or an existing data representation, even without a new API or dependency. Removing a focus-chord picker/context filter and adding last-clicked-chord plus inversion state is a model change, not merely UI cleanup. Apply this from the candidate scope; do not open supporting artifacts during Start to prove it. The human may explicitly skip it.
+
 <!-- mano-rule: id=artifact-presence-is-not-coverage; incident=start-armed-no-ux-ui-for-a-new-selector-category; model=chatgpt-terra; date=2026-08-24; eval=start-arms-ux-ui-for-existing-surface -->
 **`ARTIFACTS:` reports existence, never coverage — and you may not open the files to find out.** `ux-flow=present` means a flow document exists, not that it describes this phase's interaction; `design-brief=present` means a brief exists, not that it covers this phase's screen. Both are project-lifetime artifacts: once written they read `present` for every phase that follows, so presence can never distinguish a covered phase from an uncovered one. Presence is therefore not a reason to omit an action.
 
@@ -269,13 +274,13 @@ You are blind here by design, so resolve the uncertainty toward including the ac
 
 Propose only the actions the phase genuinely needs, applying `_mano/rules/artifact.md` → **Planning coverage for user-facing phases** before showing the chain. In auto mode, a missing exact UX flow or design/preview for material new interaction or visual work means include `ux` / `ui`; do not reinterpret “optional” as “omit unless forced.” The human may explicitly remove either in the approval reply. That reply arms the exact ordered chain; preserve its remaining actions across pauses rather than recomputing optional branches after each action. See `_mano/workflow.md` → **Run Mode: manual and auto** and `_mano/rules/auto.md` for the rest of the chain contract.
 
-**A removal is recorded; the rest of the chain is not.** Everything else about an armed chain is derivable at any moment — the artifacts on disk say which planning actions have run, and the ledger says whether implementation is done — so a chain needs no file to survive a dead session. One thing is not derivable: that the human looked at the proposal and struck an action. Recompute that and you re-propose what they just declined. So when, and **only** when, the approval reply removes an action (`go, skip ux`), record the subtraction once, immediately after the brief is written and the phase id is final:
+**Persist the approved run plan.** After writing the approved brief, record every remaining action in its approved order, including human additions:
 
 ```
-node _mano/scripts/chain.js skip --phase [PHASE_ID] --actions ux,ui
+node _mano/scripts/chain.js save --phase [PHASE_ID] --actions spec,rules,build
 ```
 
-A chain approved as proposed writes nothing. Never record an action the human added, never record `build` or `dev` (implementation is a chain's terminal action and is not optional), and never treat the record as the chain itself — it is a subtraction from a chain that is otherwise recomputed fresh every time it is read.
+Use the actual approved list, not the example. When the human removed actions, also record those with `chain.js skip --phase [PHASE_ID] --actions ux,ui`; run `chain.js clear --phase [PHASE_ID]` on fresh scope approval before saving the new plan and recording its skips; this resets prior skips and automatic repair attempts. Never clear on a routine handoff or a reply to a paused question. At each handoff, save the remaining list through `chain.js save`; use `--actions ""` after implementation completes. Never infer approved order or completion of planning actions from artifact existence. See `_mano/rules/auto.md` for recovery and pause handling.
 
 ### Step 7 — Validate, clarify, and draft brief
 
@@ -490,7 +495,7 @@ Rules:
 
 `Type`, `Context`, and `Status` are required. **`Source` is optional** — it is provenance only and no skill reads it, so omit the line entirely when there is no meaningful source (e.g. a hand-added item). When a skill writes an item and the source is obvious (a review, a document), include it; never invent one to fill the field.
 
-**Type values:**
+**Type values:** Apply `_mano/rules/backlog.md` → **Artifact gaps versus implementation work**: a UI/UX request that needs implementation is scopeable work, not an artifact gap.
 - `bug` — something broken
 - `refinement` — works but could be better
 - `feature` — new capability
@@ -646,7 +651,7 @@ This list is the negative restatement of rules defined in full elsewhere. Where 
 - Do not create optional project-rule, technical, UX, or UI design artifacts during `mano start`.
 - Do not write a phase brief, create the projected phase folder, create stories, or stamp the projected in-phase status before explicit human approval of the phase scope.
 - Do not put implementation tokens in the phase brief — specific hex values, pixel sizes, animation durations, function signatures, API contracts, file paths, or data-model decisions (schema fields, column names, storage shape). Applies everywhere in the brief, including the Assumption Log and Acknowledged Risks. Express the *constraint or intent*, not the *mechanism*. (This is the brief-output face of B1.) **Sole exemption:** the `## Stated Technical Preferences` pass-through block, which is a verbatim quoted record of a directive the user themselves stated — not `mano start` introducing or deciding tech. The exemption covers only verbatim transcription there; everywhere else, including paraphrasing those preferences into other sections, remains forbidden.
-- Do not skip scope sizing. Enforce one independently verifiable outcome even if the user asks for a larger dump.
+- Do not skip scope sizing. Propose one independently verifiable outcome. If the human explicitly approves multiple outcomes, honour that scope under Step 6; advise only on a concrete consequence.
 - Do not accept one-liners without pushing back.
 - Do not produce more than one phase of scope.
 - Do not ask about market positioning or business metrics for small projects.

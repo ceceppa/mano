@@ -7,18 +7,18 @@ Shared execution rules for the planning skills. A skill's front-matter names the
 Phase ownership is opt-in and local to a repository clone:
 
 - No owner configured: preserve the original `_mano_output/phase-N/`, `in-phase-N`, and `## Phase N Review — date` behavior. Never migrate or rename these artifacts automatically, even when owned folders also exist.
-- `mano owner alice`: store the stable lowercase slug in repository-local Git config and route this clone to `_mano_output/alice-phase-N/`, `in-alice-phase-N`, and `## Phase N Review — Owner: alice — date`. Numbering is independent per owner.
+- `mano owner alice`: store the stable lowercase slug in ignored `_mano_output/.local.json` and route this clone to `_mano_output/alice-phase-N/`, `in-alice-phase-N`, and `## Phase N Review — Owner: alice — date`. Numbering is independent per owner.
 - `mano owner clear`: return this clone to legacy `phase-N` routing without touching owned folders.
-- Linked worktrees share repository-local Git config. `MANO_OWNER` may override it for a shell or worktree when those worktrees need different owners. Never infer an owner from `whoami`, an OS account, or an email address.
+- Each checkout or worktree has its own ignored owner selection. `MANO_OWNER` may override it for a shell or worktree when those worktrees need different owners. Never infer an owner from `whoami`, an OS account, or an email address.
 - Two people may configure the same slug to hand over or pair on one phase. Different slugs select separate active phase sequences. Another owner's unfinished phase does not block `mano start` for the configured owner.
 
 Ownership is routing, not merge isolation. The backlog and cumulative tech spec, UX flow, design brief, project rules, and reviews remain shared files. Teammates still need branches/worktrees, disjoint phase scope, and normal merge coordination.
 
 ## Optional Work Tracks
 
-Tracks group one person's parallel experiments or product directions without replacing phase scope. They are opt-in and local to a repository clone:
+Tracks group one person's parallel experiments or product directions without replacing phase scope. They are opt-in and saved in the selected owner’s portable JSON:
 
-- `mano track "Option B"` stores the current track in repository-local Git config (`mano.track`); `mano track clear` removes it. `MANO_TRACK` overrides Git config for one shell/worktree.
+- `mano track "Option B"` stores the current track in `_mano_output/[owner].json` (or `.default.json` without an owner); `mano track clear` removes it. `MANO_TRACK` overrides the owner JSON for one shell/worktree.
 - `Source` remains provenance—where an item came from. `Track` is the experiment/direction it belongs to. One backlog item may carry both.
 - An active track is applied to new imports and conversation-created backlog items. It filters `mano start` to matching-track candidates and is copied into the approved phase brief. Every review-created item copies the **phase brief** track, not whatever track happens to be active when the review runs.
 - Track never selects scope, bypasses approval, or overrides stories/spec/UX/rules/phase conflict gates. `mano track clear` changes only future commands; it never rewrites existing backlog items or briefs.

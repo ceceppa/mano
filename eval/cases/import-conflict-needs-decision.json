@@ -1,0 +1,11 @@
+{
+  "name": "import-conflict-needs-decision",
+  "description": "Import reconciles conflicting documents while respecting rejection authorization and existing item statuses.",
+  "fixture": "import-existing-conflict",
+  "prompt": "mano import product-brief.md. Merge it into the existing backlog, but I have not decided whether the new timeline direction should replace the old panel dock direction. Surface that decision before changing the conflicting items.",
+  "assertions": [
+    "import_waited_on_conflict",
+    "no_phase_brief_written",
+    "import_wrote_only_backlog"
+  ]
+}

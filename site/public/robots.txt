@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mano.ceceppa.me/sitemap.xml

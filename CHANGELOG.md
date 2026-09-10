@@ -2,6 +2,37 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## 1.6.2 — September 10, 2026
+
+Workflow rules now agree on who approves phase scope, how an approved auto chain survives a session reset, and which commands can run during an existing phase. The three local settings stopped being Git config, and a correction you type mid-build stopped asking you to approve your own sentence.
+
+### Changed
+
+- **Auto chains repair clear artifact gaps before build.** Before either ledger exists, an unambiguous repair can insert `spec`, `ux`, `ui`, or `rules`, then rerun full build readiness. The chain persists one attempt per owner; explicit skips, product decisions, scope changes, and unsuccessful repairs still pause. Start now explicitly includes spec for state removal or replacement.
+
+- **Auto chains retain the approved run plan.** `chain.js save` stores the remaining actions in their approved order in the owner's settings file, including human-added actions. `chain.js show --phase` and the state projection expose that plan. Planning and implementation handoffs save progress; an empty plan records completion. If a previous session left no plan, Mano recovers approval from chat or asks the human instead of inferring it from artifact existence. Explicit skips remain separately recorded.
+
+- **`mano owner`, `mano mode`, and `mano track` no longer live in Git config.** Preferences and chain records are plain JSON in `_mano_output/[owner].json` (`.default.json` with no owner configured), which you can commit alongside the phase artifacts and pick up on another machine — `mano owner alice`, then `mano continue`. Only the per-checkout owner *selection* stays local, in `_mano_output/.local.json`, which Mano adds to `_mano_output/.gitignore` itself. The new `src/scripts/settings.js` owns reading, validating, and atomically writing those files; `chain.js`, `mode.js`, `owner.js`, `phase.js`, and `track.js` all shed their own `git config` calls and go through it. Two consequences worth naming: **settings no longer require a Git checkout at all** — `mano mode auto` in a fresh directory just works, and the old "run `git init` first" instruction is gone — and an owner's mode, track, skips, and approved run plan now travel with the project instead of dying with the clone. `MANO_OWNER` / `MANO_MODE` / `MANO_TRACK` still override for one shell or worktree without being saved. Existing `mano.owner`, `mano.mode`, `mano.track`, `mano.chain.*`, and `mano.run.*` keys migrate on first read, per owner, and only where the JSON has no value for them: a written value always wins, including a cleared setting and a finished chain, so a migration never reopens something you closed.
+
+- **A clear in-goal correction is implemented, not re-approved.** `mano build "[what changed]"` case (C) used to append the `+N` row, fire the deviation stop, and wait — which asked the human to approve the sentence they had just typed. It now records the row, runs the gap gates against it, then implements and verifies in the same run, in both manual and auto mode, and shows the row and its Exit link as progress rather than as a permission question. The gates are untouched and still stop first: an unresolved artifact gap still routes to the owning skill with no code, a distinct outcome is still case (B), and a correction that is ambiguous, conflicts with an existing contract, or needs a new Exit Criterion still asks — but it asks the specific question, once, and continues on the answer instead of demanding a second "approve to implement". Splits and out-of-report reopens remain deviation stops.
+
+### Fixed
+
+- **Import can retire superseded backlog work.** Document merges can reject existing `Status: backlog` items when the human authorizes replacing their direction, preserving the reason and source. Scoped and closed items stay unchanged; merge permission alone does not authorize rejection.
+
+- **Human-approved scope overrides are consistent.** Start still proposes one independently verifiable outcome, but its forbidden list no longer contradicts the rule allowing a human to approve multiple outcomes without a routine warning about mixed scope. Advisories require a concrete consequence for the selected work; necessary product questions still apply.
+- **Planning reruns respect the existing ledger.** Next-action guidance uses validated state instead of assuming planning always happens before implementation. A rerun no longer selects a different implementation path merely because of the current mode.
+- **UI gaps can be repaired without a phase brief.** The dispatcher now recognises UI's gap-only mode, avoiding a redirect to Start when unresolved gaps prevent Start from scoping a phase.
+- **Follow-up review's backlog exception is explicit.** Shared backlog rules now match the existing permission to mark exact, human-confirmed open items resolved during a follow-up review. The exception does not close phases or change unrelated statuses.
+- **UI/UX change requests remain implementation work.** Build deferral, review triage, and intake distinguish scopeable product changes from artifact gaps. Rework harvesting no longer treats deferred requests as implemented corrections. Genuine gaps still block Start; updating a design brief or UX flow does not complete an implementation request.
+- **Regression coverage.** Chain tests cover preserved ordering, phase isolation, partial progress, invalid-plan rejection, and the distinction between completed runs and missing approval records. New settings tests cover resuming from a committed clone, per-owner isolation, the excluded local selection, working with no Git repository, transient environment overrides, refusing to overwrite invalid JSON, and the migration cases — including that existing JSON preferences, cleared state, and completed runs are never resurrected by a legacy Git config key.
+
+### Documentation
+
+- **The settings docs describe the files, not the Git commands.** README's "The three local settings are plain Git config" section is gone, replaced by the file table (`[owner].json`, `.default.json`, `.local.json`, and which to commit), an annotated owner file with a chain in progress, a field-by-field reference, and the three steps for continuing on another computer. `workflow.md`, `_mano/rules/core.md`, and the site's owners, tracks, and auto-mode pages carry the same correction.
+- **A Get started page.** `site/getting-started.md` walks a new project from `npx mano-plan install` to a scoped first change and the choice of implementation path; the features index and landing page were reworked around it. The site also grew a sitemap, per-page canonical and Open Graph/Twitter metadata, page descriptions, `robots.txt`, and a `noindex` 404.
+- **Mano plans Mano.** The repository now carries its own installed `AGENTS.md` and `CLAUDE.md` entry points, so the framework is developed under the contract it ships.
+
 ## 1.6.1 — September 1, 2026
 
 `mano review` closed a phase and reopened it in the same turn, and left behind the one state no command could read back.

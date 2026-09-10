@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
+
+from assertions import start_no_routine_mix_warning
 from pathlib import Path
 
 
@@ -12,6 +15,14 @@ def _read(relative: str) -> str:
 
 
 class PhaseScopeContractTests(unittest.TestCase):
+    def test_small_defect_mix_rejects_routine_warning(self) -> None:
+        ctx = SimpleNamespace(transcript="⚠ Combining an isolated defect with an unrelated outcome; one review verdict covers both.")
+        self.assertTrue(start_no_routine_mix_warning(ctx))
+
+    def test_small_defect_mix_allows_product_question(self) -> None:
+        ctx = SimpleNamespace(transcript="Scope accepted. Where should the preset groups appear?")
+        self.assertEqual(start_no_routine_mix_warning(ctx), [])
+
     def test_dev_stops_instead_of_hiding_a_scope_expansion(self) -> None:
         dev = _read("src/skills/dev.md") + _read("src/rules/implement.md")
 

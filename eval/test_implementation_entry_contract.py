@@ -249,7 +249,7 @@ class GroupingTests(unittest.TestCase):
         build = _read("src/skills/build.md")
         self.assertIn("It composes no scope text, invents no row, and needs no human confirmation", build)
         self.assertIn(
-            "A split or a correction remains a **deviation stop**, and none of the three "
+            "A split remains a **deviation stop**; a clear correction needs no second approval. None of the three "
             "\u2014 split, reopen, correction \u2014 ever appears inside a group",
             build,
         )
@@ -348,7 +348,7 @@ class EvalCoverageTests(unittest.TestCase):
         ("build-defect-reopen", "invocation A reopens before code and adds no row"),
         ("build-arg-distinct-outcome", "invocation B adds no row and no code, in manual"),
         ("build-scope-refusal-auto", "invocation B adds no row and no code, in auto"),
-        ("build-nuance-row", "invocation C keeps the exact text and stops before code"),
+        ("build-nuance-row", "invocation C keeps the exact text and implements without a second approval"),
         ("build-nuance-spec-gap", "invocation C with a missing spec-owned default writes no code"),
         ("build-arg-rework-precedence", "a pending R… event outranks an invocation argument"),
         ("build-arg-no-ledger", "a no-ledger argument writes no ledger and re-routes to start"),

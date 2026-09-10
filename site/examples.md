@@ -1,3 +1,8 @@
+---
+title: "AI development workflow examples"
+description: "Explore three real Mano workflows: a small manual phase, a document-led project, and parallel owners, with public planning artifacts from working projects."
+---
+
 # Examples
 
 Three ways to run Mano, from the default loop to the parts you only need once a project grows. All artifact excerpts are real, from [react-native-ama](https://github.com/FormidableLabs/react-native-ama) and [anima](https://github.com/ceceppa/anima).

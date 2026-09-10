@@ -1,6 +1,6 @@
 {
   "name": "start-combines-unrelated-small-items",
-  "description": "The one-outcome shape governs what mano start proposes, not what the human may approve: asked for two unrelated items in one phase, it takes the scope, flags the review cost once, and drafts the brief — it never answers with a refusal or a pick-one menu.",
+  "description": "The one-outcome shape governs what mano start proposes, not what the human may approve: asked for two unrelated items in one phase, it takes the scope and drafts the brief — it never answers with a refusal or a pick-one menu.",
   "fixture": "start-combine-small",
   "phase": 1,
   "prompt": "mano start. I want both remaining backlog items in Phase 1 — approve that scope and draft the brief.",

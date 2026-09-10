@@ -186,6 +186,8 @@ When the user replies with their feedback, or when substantive feedback was alre
 - 🎨 UI gaps — missing or unclear design brief (if applicable)
 - ❌ Rejected scope — open backlog items whose premise this feedback invalidates (if applicable)
 
+**Classify by completion, not subject matter.** Apply `_mano/rules/backlog.md` → **Artifact gaps versus implementation work** before choosing a bucket. UI/UX change requests needing code are defects, refinements, or new ideas. A human who specifies viewport anchoring has supplied the desired behavior; do not replace their implementation request with an “Open decision” `ui-gap`. A separate gap requires an independent current-artifact defect.
+
 **Validation rule:** Track validation separately from feedback triage. Validation records what happened. Optional context records where or how the human checked it. Neither becomes a backlog item by itself.
 
 - `Result` — what the human reports. A clear summary result is enough.
@@ -311,7 +313,9 @@ Read the **Rework** table and its **Row Contracts** in the exact projected `PROG
 
 > Does this correction teach something an artifact should have stated?
 
-That is the whole test. **Do not** ask whether it was "architectural", whether the artifact already covers it, or whether it is worth a phase — those are the owning skill's judgements, made later with better information, and guessing at them here is how the harvest goes quiet.
+First distinguish an implemented correction from a deferred or dismissed request. An event marked `resolved` may have been deferred to the backlog by build case (B); its status alone does not prove implementation. Keep that requested change in its scopeable work item. Do not harvest a gap merely because the future change is absent from today's artifacts. A dismissed direction does not become an artifact requirement. For an implemented correction or an independently established current-artifact defect, apply the test below.
+
+**Do not** ask whether it was "architectural", whether the artifact already covers it, or whether it is worth a phase — those are the owning skill's judgements, made later with better information, and guessing at them here is how the harvest goes quiet.
 
 - **Yes, or unsure → emit a gap item.** Erring loud is deliberate. A false positive costs the owning skill one `resolve-gap` call on its next run. A false negative costs a wrong artifact for as long as nobody notices — which this phase's own history shows is measured in phases, not hours.
 - **No → emit nothing.** A correction that a rule or spec *already* covered, and the code simply got wrong, taught nothing new. Reserve this for events you can name the existing coverage for.

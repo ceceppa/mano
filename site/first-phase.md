@@ -1,4 +1,11 @@
-# Your first phase
+---
+title: "A real AI development planning walkthrough"
+description: "Follow a real Mano phase from approved scope to implementation and review, with actual briefs, story criteria, technical discoveries, and verification gaps."
+---
+
+# A real phase walkthrough
+
+New to Mano? [Install it and start your own phase first](/getting-started), or read on to see what the workflow produces.
 
 This is a real phase from [react-native-ama](https://github.com/FormidableLabs/react-native-ama), an accessibility library for React Native. Phase 13, three stories, fixing two regressions and one longstanding annoyance. Nothing here is invented for the docs.
 
@@ -62,7 +69,7 @@ mano stories
 | 3 | Document the LogBox limitation            | done   |
 ```
 
-Each story is self-contained — an implementing agent opens one file and needs nothing else:
+Each story records its acceptance criteria, boundaries, and implementation references. The agent reads it alongside Mano's implementation contract and the project's rules:
 
 ```markdown
 ### STORY-1: Fix accessibility state-change detection

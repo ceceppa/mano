@@ -1,16 +1,62 @@
 import { defineConfig } from 'vitepress'
 
+const siteUrl = 'https://mano.ceceppa.me'
+
 export default defineConfig({
   title: 'Mano',
   description: 'A fast planning loop for AI-assisted development. Plan in small phases and validate each assumption before it becomes code.',
   cleanUrls: true,
   lastUpdated: true,
+  sitemap: { hostname: siteUrl },
+  transformHead({ pageData }) {
+    // VitePress creates the fallback page without running transformPageData.
+    if (pageData.relativePath === '404.md') {
+      return [['meta', { name: 'robots', content: 'noindex' }]]
+    }
+  },
+
+  transformPageData(pageData) {
+    const head = pageData.frontmatter.head ??= []
+    if (pageData.relativePath === '404.md') {
+      return
+    }
+
+    // Match the clean URLs emitted by VitePress and its sitemap.
+    const path = pageData.relativePath
+      .replace(/(^|\/)index\.md$/, '$1')
+      .replace(/\.md$/, '')
+    const url = new URL(path, `${siteUrl}/`).href
+    const title = pageData.frontmatter.titleTemplate === false
+      ? pageData.title
+      : `${pageData.title} | Mano`
+
+    head.push(
+      ['link', { rel: 'canonical', href: url }],
+      ['meta', { property: 'og:url', content: url }],
+      ['meta', { property: 'og:title', content: title }],
+      ['meta', { property: 'og:description', content: pageData.description }],
+      ['meta', { name: 'twitter:title', content: title }],
+      ['meta', { name: 'twitter:description', content: pageData.description }]
+    )
+
+    if (pageData.relativePath === 'index.md') {
+      head.push(['script', { type: 'application/ld+json' }, JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Mano',
+        url: `${siteUrl}/`,
+        description: pageData.description
+      })])
+    }
+  },
 
   head: [
     ['link', { rel: 'icon', href: '/mano.svg', type: 'image/svg+xml' }],
-    ['meta', { property: 'og:title', content: 'Mano — a fast planning loop for AI-assisted development' }],
-    ['meta', { property: 'og:description', content: 'Plan in small phases and validate each assumption before it becomes code. You stay in control of the direction.' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: 'Mano' }],
     ['meta', { property: 'og:image', content: 'https://mano.ceceppa.me/mano.jpg' }],
+    ['meta', { property: 'og:image:alt', content: 'Mano — a fast planning loop for AI-assisted development' }],
+    ['meta', { name: 'twitter:image', content: 'https://mano.ceceppa.me/mano.jpg' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }]
   ],
 
@@ -18,7 +64,7 @@ export default defineConfig({
     logo: '/mano.svg',
 
     nav: [
-      { text: 'First phase', link: '/first-phase' },
+      { text: 'Get started', link: '/getting-started' },
       {
         text: 'Features',
         items: [
@@ -40,7 +86,8 @@ export default defineConfig({
       {
         text: 'Start here',
         items: [
-          { text: 'Your first phase', link: '/first-phase' },
+          { text: 'Get started', link: '/getting-started' },
+          { text: 'A real phase walkthrough', link: '/first-phase' },
           { text: 'Commands', link: '/commands' }
         ]
       },
