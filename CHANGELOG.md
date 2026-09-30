@@ -2,6 +2,12 @@
 
 A history of Mano's releases — what each version changes and why.
 
+## Unreleased
+
+### Added
+
+- **Separate language for planning artifacts.** Owner settings now accept `language.artefacts` alongside `chat` and `build`. When absent or `null`, it falls back to `build`, then `chat`; if none is set, existing behaviour is preserved. Every skill and the workflow dispatcher use the resolved language for new planning prose while conversation follows `chat` and implementation content follows `build`. Existing two-language settings remain valid, and required labels, exact quotations, and existing artifacts stay unchanged.
+
 ## 1.6.2 — September 10, 2026
 
 Workflow rules now agree on who approves phase scope, how an approved auto chain survives a session reset, and which commands can run during an existing phase. The three local settings stopped being Git config, and a correction you type mid-build stopped asking you to approve your own sentence.

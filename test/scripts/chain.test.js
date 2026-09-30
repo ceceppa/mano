@@ -118,6 +118,45 @@ function repairProject() {
   return { root, dir };
 }
 
+test("auto saves and projects build instead of stories and dev before a ledger exists", t => {
+  const previous = process.env.MANO_MODE;
+  process.env.MANO_MODE = "auto";
+  const { root, dir } = repairProject();
+  t.after(() => {
+    fs.rmSync(root, { recursive: true, force: true });
+    if (previous === undefined) delete process.env.MANO_MODE;
+    else process.env.MANO_MODE = previous;
+  });
+  const settings = require("../../src/scripts/settings.js");
+  const actions = ["ui", "rules", "stories", "dev"];
+  settings.writePhase(root, "phase-1", { run: { actions, repairs: ["spec"] } });
+  assert.deepEqual(chain.readRun(root, "phase-1"), {
+    actions: ["ui", "rules", "build"], repairs: ["spec"],
+  });
+  assert.match(run(root, ["show", "--phase", "phase-1"]).stdout,
+    /CHAIN_REMAINING: ui, rules, build/);
+  assert.deepEqual(settings.readPhase(root, "phase-1").run.actions, actions, "reads do not write");
+  const saved = run(root, ["save", "--phase", "phase-1", "--actions", actions.join(",")]);
+  assert.equal(saved.status, 0, saved.stderr);
+  assert.match(saved.stdout, /remaining: ui, rules, build/);
+  assert.deepEqual(settings.readPhase(root, "phase-1").run, {
+    actions: ["ui", "rules", "build"], repairs: ["spec"],
+  });
+  process.env.MANO_MODE = "manual";
+  run(root, ["save", "--phase", "phase-1", "--actions", actions.join(",")]);
+  assert.deepEqual(chain.readRemaining(root, "phase-1"), actions, "manual stays unchanged");
+  process.env.MANO_MODE = "auto";
+  for (const ledger of ["progress.md", "stories/README.md"]) {
+    const file = path.join(dir, ledger);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, "Even an invalid ledger must not be replaced\n");
+    assert.deepEqual(chain.readRemaining(root, "phase-1"), actions);
+    fs.unlinkSync(file);
+  }
+  run(root, ["save", "--phase", "phase-1", "--actions", ""]);
+  assert.deepEqual(chain.readRemaining(root, "phase-1"), [], "completion stays complete");
+});
+
 function repair(root, action) {
   return run(root, ["repair", "--phase", "phase-1", "--actions", action]);
 }

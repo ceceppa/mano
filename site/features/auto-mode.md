@@ -27,6 +27,8 @@ You can edit the chain in the same breath as approving it: `go, skip rules`, `1,
 - It stops at any open question. Before implementation begins, a missing or stale artifact with a clear repair route can be repaired automatically.
 - "stop" or "wait" ends it immediately.
 
+Auto never runs `mano stories`. Before either ledger exists, older saved `stories → dev` plans also go directly to build, preserving the other approved planning actions in order. A phase with an existing stories ledger retains `mano dev yolo` so that it keeps a single ledger.
+
 The chain ends at [`mano build`](/features/build) — but that pairing is a convenience, not a coupling. Build is one of the two ways into code and you can type it yourself in `manual` mode any time a phase doesn't need story files.
 
 ## Repairing a readiness gap

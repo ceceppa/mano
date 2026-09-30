@@ -4,7 +4,7 @@ Shared rules for skills that write planning artifacts. A skill's front-matter na
 
 ## Artifact Quality
 
-Planning artifacts are written for human readers — people who will read, discuss, edit, and act on them. They are not structured inputs for AI models.
+Planning artifacts are written for human readers — people who will read, discuss, edit, and act on them. They are not structured inputs for AI models. Write new planning prose in the resolved `language.artefacts` returned by the language command (`artefacts` → `build` → `chat` → `null`). Keep required headings, schema keys, status labels, commands, paths, and verbatim quotations unchanged. Product/UI copy, including copy in design previews, follows `language.build`.
 
 ### Plain-language contract
 
@@ -204,7 +204,8 @@ Planning artifacts remain optional to the human; auto mode must not silently ski
 
 - Do not suggest a command just because it usually comes next if its artifact already exists and is still usable.
 - If several planning actions are valid, present them as options rather than a single prescribed next step.
-- **Choose implementation from validated state at every handoff, including planning reruns during implementation.** Read `IMPLEMENTATION_ENTRY` and the review/refusal route from `state.js`; never replace an existing ledger's path with a mode-based choice. Only with no ledger and cleared planning gates does mode decide: in `manual`, offer both `mano stories` and `mano build`; in `auto`, the approved chain terminates at `mano build`. A stories ledger keeps `mano dev`, a progress ledger keeps `mano build`, and completed or invalid ledgers follow the projection's review or repair route.
+- In an armed auto chain, follow `CONTINUE_ACTION` and the saved `CHAIN_REMAINING` order before using this decision tree. Existing artifacts do not remove approved reruns; with neither ledger present, the projection replaces a saved `stories → dev` suffix with `build`. Auto never runs `mano stories`. Never replace pending planning with `IMPLEMENTATION_ENTRY`.
+- **Choose implementation from validated state at every handoff, including planning reruns during implementation.** Read `IMPLEMENTATION_ENTRY` and the review/refusal route from `state.js`; never replace an existing ledger's path with a mode-based choice. Only with no ledger and cleared planning gates does mode decide: in `manual`, offer both `mano stories` and `mano build`; in `auto`, every chain without a ledger terminates at `mano build`. A saved approved chain keeps its artifact planning order, with `stories` removed and terminal `dev` replaced by `build`. A stories ledger keeps `mano dev`, a progress ledger keeps `mano build`, and completed or invalid ledgers follow the projection's review or repair route.
 - Use this decision tree when evaluating next steps for the planning stage. Where it says **implementation**, substitute the rule above:
   ```
   Phase introduces a new category of file/example/module/component

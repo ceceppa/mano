@@ -7,6 +7,12 @@ requires-in-auto: [auto]
 
 # `mano ui` — UI Skill
 
+## Language check — before any response
+
+After loading this contract and its required rules, run `node _mano/scripts/settings.js language` from the project root **before the first user-facing message or any project write**. Use the returned `language.chat` for all conversation, including progress, questions, errors, and the final response; use `language.artefacts` for new planning artifacts and `language.build` for new implementation content (code, tests, product documentation, and product/UI text, including preview copy). The command resolves missing or `null` `artefacts` through `build`, then `chat`, then `null`. Never read settings JSON directly or infer languages from the prompt, source files, or this skill's English examples. A `null` value preserves existing behaviour for that channel only. If the command fails or any of the three fields is absent, report the failure and stop; do not guess.
+
+This check applies on direct invocation, auto-chain handoff, and resumption after interruption or compaction. Re-run after an owner or language change. English response examples, including “exact” or one-line templates, constrain structure and meaning, not prose language: translate their prose into `language.chat`. Preserve command names, paths, required labels, status tokens, and verbatim quotations or diagnostics. Before sending **each** message, check its prose against `language.chat`; before each project write, check planning prose against `language.artefacts` and implementation content against `language.build`. Do not emit an extra language-confirmation message.
+
 ## Optionality boundary
 
 This action is optional. Run it only when the current phase needs this kind of clarity or when existing artifacts are stale, missing, or too vague to support good stories. Reuse existing project context when it is still good enough; do not regenerate work just to follow a pipeline.
@@ -204,7 +210,7 @@ Next:
 - `mano continue` — if you want Mano to pick only when there is a single obvious next step
 ```
 
-**Show both implementation paths in `manual`, and only `mano build` in `auto`.** `_mano/rules/artifact.md` → **Next-step suggestion rule** owns this: at the no-ledger planning stage the mode decides, so read `MODE:` from the projection rather than defaulting to whichever path the examples use most.
+For new suggestions outside a saved chain: **Show both implementation paths in `manual`, and only `mano build` in `auto`.** In an armed chain, follow `CONTINUE_ACTION` and preserve `CHAIN_REMAINING`, which omits `stories` and ends at `build` when neither ledger exists; never skip its pending artifact actions. Only an existing stories ledger retains `dev`. `_mano/rules/artifact.md` → **Next-step suggestion rule** owns this: at the no-ledger planning stage the mode decides, so read `MODE:` from the projection rather than defaulting to whichever path the examples use most.
 
 If the phase has no design work to perform, use a skip log instead:
 

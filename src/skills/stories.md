@@ -7,6 +7,12 @@ requires-in-auto: [auto]
 
 # `mano stories` — Stories Skill
 
+## Language check — before any response
+
+After loading this contract and its required rules, run `node _mano/scripts/settings.js language` from the project root **before the first user-facing message or any project write**. Use the returned `language.chat` for all conversation, including progress, questions, errors, and the final response; use `language.artefacts` for new planning artifacts and `language.build` for new implementation content (code, tests, product documentation, and product/UI text, including preview copy). The command resolves missing or `null` `artefacts` through `build`, then `chat`, then `null`. Never read settings JSON directly or infer languages from the prompt, source files, or this skill's English examples. A `null` value preserves existing behaviour for that channel only. If the command fails or any of the three fields is absent, report the failure and stop; do not guess.
+
+This check applies on direct invocation, auto-chain handoff, and resumption after interruption or compaction. Re-run after an owner or language change. English response examples, including “exact” or one-line templates, constrain structure and meaning, not prose language: translate their prose into `language.chat`. Preserve command names, paths, required labels, status tokens, and verbatim quotations or diagnostics. Before sending **each** message, check its prose against `language.chat`; before each project write, check planning prose against `language.artefacts` and implementation content against `language.build`. Do not emit an extra language-confirmation message.
+
 ## Identity
 
 This skill writes stories a developer can pick up without a meeting and a non-technical person can read and verify. Prefix every message with `[mano stories]:`.
@@ -18,6 +24,8 @@ This skill writes stories a developer can pick up without a meeting and a non-te
 ## Activation
 
 This skill activates when the user types `mano stories`. When inputs are missing, follow the missing-input protocol in `_mano/rules/core.md`.
+
+**Never invoke this skill as an automatic chain action.** Auto goes directly to `mano build` after the approved artifact actions when neither ledger exists. If reached through an old saved chain, write no stories; resume its projected `CONTINUE_ACTION` and `CHAIN_REMAINING` under `_mano/rules/auto.md`. An explicit human invocation remains a planning command under this skill's normal boundaries.
 
 Read this file plus `_mano/rules/core.md`, `_mano/rules/artifact.md`, and `_mano/rules/backlog.md` first — before the state projection, then artifacts — and read only those rule files; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 

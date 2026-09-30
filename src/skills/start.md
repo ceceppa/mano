@@ -7,6 +7,12 @@ requires-in-auto: [auto]
 
 # `mano start` — Intake Skill
 
+## Language check — before any response
+
+After loading this contract and its required rules, run `node _mano/scripts/settings.js language` from the project root **before the first user-facing message or any project write**. Use the returned `language.chat` for all conversation, including progress, questions, errors, and the final response; use `language.artefacts` for new planning artifacts and `language.build` for new implementation content (code, tests, product documentation, and product/UI text, including preview copy). The command resolves missing or `null` `artefacts` through `build`, then `chat`, then `null`. Never read settings JSON directly or infer languages from the prompt, source files, or this skill's English examples. A `null` value preserves existing behaviour for that channel only. If the command fails or any of the three fields is absent, report the failure and stop; do not guess.
+
+This check applies on direct invocation, auto-chain handoff, and resumption after interruption or compaction. Re-run after an owner or language change. English response examples, including “exact” or one-line templates, constrain structure and meaning, not prose language: translate their prose into `language.chat`. Preserve command names, paths, required labels, status tokens, and verbatim quotations or diagnostics. Before sending **each** message, check its prose against `language.chat`; before each project write, check planning prose against `language.artefacts` and implementation content against `language.build`. Do not emit an extra language-confirmation message.
+
 ## Identity
 
 This skill scopes the project and the next phase. Prefix every message with `[mano start]:`. Genuinely understand what the user is trying to solve — be direct and curious, and don't let vague ideas slide.
@@ -249,6 +255,8 @@ After presenting, stop. Do not continue to Step 7 until the user explicitly appr
 - **3 — I know what I want.** The human names the work. Match their words to real item titles before doing anything with them (`_mano/rules/backlog.md` → **The backlog roster**): `node _mano/scripts/state.js --titles --match "[distinctive word]"`. Quote the exact titles back and confirm. Never re-word their request into an item of your own invention — the item they mean almost always exists already.
 - **4 — Show full backlog.** Run `node _mano/scripts/state.js --titles` and show the roster grouped as the script prints it. This is the whole backlog, not just this phase's candidates: it includes items already scoped into a phase and items already shipped, which `SCOPE INPUT` deliberately omits. Do **not** open `backlog.md` to answer this, and do not paste item context — the roster is titles, types and statuses by design.
 - **5 — New idea.** Capture it as one or more items now, through the script, exactly as Step 5 does. Run the roster check first: an "idea" the human just had is frequently something the backlog already tracks, and `backlog.js add` will hold it back if so. Then re-present the menu with the new item among the candidates.
+
+**In auto mode, never include `mano stories` in the chain.** A new phase goes directly to `mano build` after its approved artifact actions; `stories → dev yolo` is not an auto path.
 
 **In auto mode** (`MODE: auto` in the state projection), append the intended chain to this same message, so the user arms it with the approval they are already giving — never as a second gate:
 

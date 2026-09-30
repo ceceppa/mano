@@ -6,6 +6,12 @@ requires: [implement]
 
 # `mano build` — build the phase from its brief
 
+## Language check — before any response
+
+After loading this contract and its required rules, run `node _mano/scripts/settings.js language` from the project root **before the first user-facing message or any project write**. Use the returned `language.chat` for all conversation, including progress, questions, errors, and the final response; use `language.artefacts` for new planning artifacts and `language.build` for new implementation content (code, tests, product documentation, and product/UI text, including preview copy). The command resolves missing or `null` `artefacts` through `build`, then `chat`, then `null`. Never read settings JSON directly or infer languages from the prompt, source files, or this skill's English examples. A `null` value preserves existing behaviour for that channel only. If the command fails or any of the three fields is absent, report the failure and stop; do not guess.
+
+This check applies on direct invocation, auto-chain handoff, and resumption after interruption or compaction. Re-run after an owner or language change. English response examples, including “exact” or one-line templates, constrain structure and meaning, not prose language: translate their prose into `language.chat`. Preserve command names, paths, required labels, status tokens, and verbatim quotations or diagnostics. Before sending **each** message, check its prose against `language.chat`; before each project write, check planning prose against `language.artefacts` and implementation content against `language.build`. Do not emit an extra language-confirmation message.
+
 This file plus `_mano/rules/implement.md` are the **complete contract** for `mano build`. Read both completely before writing any code, including when the user asks in plain words ("now build the phase"). Together they are self-contained: no other `_mano/` file is required, and `_mano/workflow.md` is never opened mid-skill.
 
 **The unit of work is the `## Phase Scope` leaf the human already approved** — a lettered leaf of a numbered category in a two-level brief, the numbered item itself in a flat one, and never a unit this skill invents. That single property is what the rest of this file protects. A row that is a copy of the brief cannot drift from it, so build needs no story format, no filename law, no acceptance-criteria authoring, and no quality rules for text it never writes. What it does need, unchanged and in full, are the gates that decide whether the brief is ready to build at all.
@@ -16,7 +22,7 @@ This file plus `_mano/rules/implement.md` are the **complete contract** for `man
 **One invocation builds the whole phase.** `mano build` is `mano dev yolo` with no opt-in word: there is no one-row variant to fall back to, so *every* invocation runs from wherever the ledger stands to the terminal sweep. That holds in `manual` as much as in `auto` — the mode decides whether planning actions chain into this one, never how much of the phase this one finishes. The ledger is what makes it safe: it is written as each row closes, so an interrupted run resumes from disk in a fresh session with nothing carried in the conversation. Resumability is why the run may be long, not permission to leave it half-run — **`_mano/rules/implement.md` → Never end a turn on an announcement** governs every stop.
 <!-- /mano-rule: implementation-run-to-completion -->
 
-**Read order — keep the prefix stable.** Read this contract and `_mano/rules/implement.md` first (they are identical on every run, so they cache as a stable prompt prefix), then the state projection, then the phase brief, then the artifact sections a row needs, then source.
+**Read order — keep the prefix stable.** Read this contract and `_mano/rules/implement.md` first (they are identical on every run, so they cache as a stable prompt prefix), then the language command, then the state projection, then the phase brief, then the artifact sections a row needs, then source.
 
 **An argument is a correction, never new scope.** `mano build "[what changed]"` is accepted **only when a valid ledger exists** — the ledger is the thing the text corrects, and this design still rests on the ledger itself being derivable from the brief alone. The invocation is only a channel; the classification, the write rules, and the stops are the same ones a correction typed mid-run goes through (**Mid-phase corrections**). The exact wording is the human's contract: pass it through verbatim, never paraphrase it into scope-ese, and never treat it as licence to widen a row.
 
@@ -468,6 +474,8 @@ node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_I
 `met` is implementer evidence and `needs-human` is an explicit handoff. Neither is the human's verdict — that is what `mano review` is for.
 
 ## Chat output
+
+Apply the language check to every line below: render the explanatory prose in `language.chat`, including the terminal response. Keep `[mano build]`, phase IDs, paths, commands, and required status labels unchanged.
 
 `_mano/rules/implement.md` → **Implementation Output Discipline** applies in full. Build's own shape: one closing line per invocation — the **Terminal** line below, a **Deviation stop**, or a **Repair-limit stop** — never an interim report between passes. `Next:` names a command; never instruct the human to start a fresh session or manage their context.
 

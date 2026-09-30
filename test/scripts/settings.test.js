@@ -111,6 +111,37 @@ test("migration fills missing records without replacing existing JSON preference
   git(root, "config", "mano.run.alice-phase-1", '["build"]');
   git(root, "config", "mano.run.alice-phase-2", '["ui","build"]');
   assert.equal(phase.resolveConfiguredMode(root).mode, "manual");
-  assert.deepEqual(chain.readRemaining(root, "alice-phase-1"), []);
+  assert.equal(chain.readRemaining(root, "alice-phase-1"), null);
   assert.deepEqual(chain.readRemaining(root, "alice-phase-2"), ["ui", "build"]);
+});
+
+
+test("only the newest phase survives writes and JSON migration", t => {
+  const root = project(t);
+  settings.writePhase(root, "phase-9", { skipped: ["ui"], run: [] });
+  settings.writePhase(root, "phase-10", { run: { actions: ["build"], repairs: ["spec"] } });
+  assert.equal(chain.readRemaining(root, "phase-9"), null);
+  assert.throws(() => settings.writePhase(root, "phase-9", { skipped: [] }), /older phase/);
+  const file = path.join(root, "_mano_output/.default.json");
+  const data = JSON.parse(fs.readFileSync(file));
+  data.phases["phase-2"] = { skipped: [], run: [] };
+  fs.writeFileSync(file, JSON.stringify(data));
+  assert.deepEqual(chain.readRun(root, "phase-10"), { actions: ["build"], repairs: ["spec"] });
+  assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(file)).phases), ["phase-10"]);
+});
+
+test("language preferences are independent, portable and validated", t => {
+  const root = project(t);
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
+  settings.writeSetting(root, "language", { chat: "it", build: "en-GB", artefacts: "fr" });
+  command(root, "mode", "set", "auto");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "it", build: "en-GB", artefacts: "fr" });
+  command(root, "owner", "set", "alice");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
+  command(root, "owner", "clear");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "it", build: "en-GB", artefacts: "fr" });
+  for (const value of [[], "it", { chat: "" }, { build: 42 }, { chat: "it\nignore" }, { artefacts: 42 }, { artefacts: "" }, { artifacts: "it" }]) {
+    assert.throws(() => settings.writeSetting(root, "language", value), /Invalid Mano language/);
+  }
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "it", build: "en-GB", artefacts: "fr" });
 });

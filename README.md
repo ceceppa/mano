@@ -141,6 +141,7 @@ An owner file with an approved chain in progress looks like this:
   "owner": "alice",
   "mode": "auto",
   "track": "Option B",
+  "language": { "chat": "it", "build": "en-GB", "artefacts": "it" },
   "phases": {
     "alice-phase-1": {
       "skipped": ["ux"],
@@ -159,12 +160,21 @@ An owner file with an approved chain in progress looks like this:
 | `owner` | Owner slug matching the filename; `null` in `.default.json` |
 | `mode` | `manual` or `auto` |
 | `track` | Active work track, or `null` for none |
-| `phases` | Chain records keyed by the exact phase ID |
+| `language.chat` | Conversation language, e.g. `it` for Italian; missing or `null` keeps existing behaviour |
+| `language.build` | Language for new implementation content, e.g. `en-GB` for UK English; missing or `null` keeps existing behaviour |
+| `language.artefacts` | Language for new planning artifacts; missing or `null` falls back to `build`, then `chat`, then existing behaviour |
+| `phases` | Only the newest phase’s chain record, keyed by its exact phase ID |
 | `skipped` | Planning actions the human explicitly removed from this phase's chain |
 | `run.actions` | Remaining approved actions, in order; a nonempty list ends with `build` or `dev` |
 | `run.repairs` | Artifact actions already given an automatic repair attempt in this run |
 
 `run: null` means there is no saved approval. A run with `"actions": []` means the approved chain has finished. These records accompany the phase artifacts and implementation ledgers; they do not replace them. Mano updates the chain fields as approved actions finish, so use the commands to manage them rather than reconstructing approval by editing JSON.
+
+Agents obtain the effective languages by running `node _mano/scripts/settings.js language` from the project root. The command returns validated JSON with `language.chat`, `language.build`, and `language.artefacts`, resolving the selected owner. Missing `chat` and `build` values become `null`; missing or `null` `artefacts` falls back to `build`, then `chat`, then `null`; agents do not read the settings files themselves. Every skill runs this check before its first response or project write, including auto-chain handoffs and resumed work. English response templates retain their structure while their prose follows the chat language, including build and dev completion messages.
+
+Edit `language` directly in the owner JSON to set conversation, implementation, and planning languages independently. The artefacts language applies to briefs, specs, rules, UX flows, design briefs, stories, backlog entries, reviews, and ledger prose. The build language applies to product documentation, code identifiers and comments, tests, and product/UI text, including preview copy. The example above produces Italian chat and planning artifacts with UK English implementation content. Existing settings containing only `chat` and `build` remain valid; the command resolves the artefacts fallback without saving it into the settings file. Required machine-readable labels, commands, paths, and exact quotations stay unchanged. Changing a language does not translate existing files.
+
+Older phase settings are compacted automatically, retaining the highest phase number per owner. Starting a newer chain replaces the previous record; attempts to update an older phase are rejected. Phase artifacts and implementation ledgers remain intact. Old Git settings cannot restore discarded history.
 
 The local selection contains only:
 
@@ -216,7 +226,7 @@ On a project where you have stopped reading the intermediate artifacts and just 
 mano mode auto
 ```
 
-From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano build`, without you typing each one — including when you came in through `mano import`, where the whole path from document to built phase writes no story files. (A phase that already has a stories index keeps its path and finishes at `mano dev yolo` instead.) Three things keep it supervised:
+From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano build`, without you typing each one — including when you came in through `mano import`, where the whole path from document to built phase writes no story files. Auto never runs `mano stories`: even an older saved `stories → dev` plan goes to `build` before either ledger exists, keeping the other planning actions in order. A phase that already has a stories index keeps its path and finishes at `mano dev yolo` instead. Three things keep it supervised:
 
 - **You still approve the phase.** Auto mode is armed by that approval and never replaces it — the brief is still where you correct course, before any code exists.
 - **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.

@@ -1027,7 +1027,9 @@ function finalize(s, options = {}) {
     // offered a branch it is forbidden to choose (its terminal action is
     // mano build), and a manual user must not be handed one path as if the
     // other did not exist. Every other state is decided by the ledger itself.
-    action = s.runMode === "auto"
+    action = s.runMode === "auto" && s.chainRemaining?.length
+      ? `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — resume the approved actions in order: ${s.chainRemaining.join(" → ")}. Do not skip planning because its artifacts exist. mano start must NOT scope a next phase.`
+      : s.runMode === "auto"
       ? `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — the armed chain's terminal action is mano build, which creates the ledger from this brief. mano start must NOT scope a next phase.`
       : `${s.phaseId} has a brief but no stories or build ledger yet. Not complete — run mano stories (then mano dev) for story files, or mano build to build straight from the brief. Both are valid; the human picks. mano start must NOT scope a next phase.`;
   } else if (building && !buildAllDone) {
@@ -1062,8 +1064,7 @@ function finalize(s, options = {}) {
     }
   }
 
-  // Which implementation action `mano continue` dispatches into, read off the
-  // ledger rather than guessed from whichever path is more familiar. `none`
+  // The implementation route, not permission to skip approved planning. `none`
   // means there is nothing to continue *into* — either no implementable state,
   // or the one genuine fork Mano leaves to the human (no ledger, manual mode:
   // `mano stories` and `mano build` are both valid and the choice is theirs).
@@ -1071,7 +1072,36 @@ function finalize(s, options = {}) {
   if (s.progressStatus === "invalid") implementationEntry = "none";
   else if (building && !buildAllDone) implementationEntry = "build";
   else if (!building && s.storiesExists && !storiesAllDone) implementationEntry = "dev";
-  else if (ledgerMissing && s.runMode === "auto") implementationEntry = "build";
+  else if (s.briefExists && ledgerMissing && s.runMode === "auto") implementationEntry = "build";
+
+  // Continue resumes the saved order before falling back to implementation.
+  // Validate against current ledgers: a saved plan cannot switch their path,
+  // restart a completed phase, or bypass a refusal. Reading never edits it.
+  let continueAction = implementationEntry;
+  let continueBlocker = null;
+  if (s.progressStatus === "invalid") {
+    continueAction = "blocked";
+    continueBlocker = action;
+  } else if (s.runMode === "auto" && s.chainRemaining !== null) {
+    const remaining = s.chainRemaining;
+    if (!remaining.length || storiesAllDone || buildAllDone) {
+      continueAction = "none";
+    } else if (!s.briefExists) {
+      continueAction = "blocked";
+      continueBlocker = "The saved chain has no phase brief. Restore the approved brief before resuming.";
+    } else if (remaining.includes("stories") ||
+               (building && remaining.at(-1) !== "build") ||
+               (s.storiesExists && remaining.at(-1) !== "dev") ||
+               (!s.storiesExists && remaining.at(-1) === "dev")) {
+      continueAction = "blocked";
+      continueBlocker = "The saved chain conflicts with the implementation ledger or includes stories, which auto never runs. Ask the human to reconcile the remaining plan; do not switch an existing ledger to build or dev.";
+    } else if (remaining.some(a => s.chainSkipped.includes(a))) {
+      continueAction = "blocked";
+      continueBlocker = "The saved chain includes an explicitly skipped action. Ask the human to reconcile the remaining plan.";
+    } else {
+      continueAction = remaining[0];
+    }
+  }
 
   // Collapse the verdict to the only thing mano start branches on: go/no-go,
   // plus which path to take when going. The verdict + evidence remain for the
@@ -1108,6 +1138,8 @@ function finalize(s, options = {}) {
   s.verdict = verdict;
   s.action = action;
   s.implementationEntry = implementationEntry;
+  s.continueAction = continueAction;
+  s.continueBlocker = continueBlocker;
   s.decision = proceeds ? "PROCEED" : "STOP";
   s.next = proceeds ? NEXT_BY_VERDICT[verdict] : null;
 
@@ -1200,11 +1232,14 @@ function renderDecision(s) {
   // line and never changes the decision.
   const openGapRoutes = gapRoutes(s.gaps);
   if (openGapRoutes.length) L.push(`OPEN_GAPS: ${openGapRoutes.join("; ")}`);
-  // Which implementation action `mano continue` runs, decided by the ledger.
+  // Implementation routing and immediate dispatch are separate: approved
+  // planning can still precede the implementation route.
   // `none` is not "nothing to do" — it is "nothing to continue *into*", which
   // includes the one fork the human owns (no ledger, manual mode).
   L.push(`IMPLEMENTATION_ENTRY: ${s.implementationEntry}`);
   if (s.chainRemaining !== null && s.chainRemaining !== undefined) L.push(`CHAIN_REMAINING: ${s.chainRemaining.join(", ") || "none (completed)"}`);
+  L.push(`CONTINUE_ACTION: ${s.continueAction}`);
+  if (s.continueBlocker) L.push(`CONTINUE_BLOCKER: ${s.continueBlocker}`);
   if (s.chainSkipped && s.chainSkipped.length) {
     L.push(`CHAIN_SKIPPED: ${s.chainSkipped.join(", ")} — the human removed these at scope approval; do not re-propose them for this phase`);
   }
@@ -1677,6 +1712,8 @@ function renderJson(s) {
     verdict: s.verdict,
     action: s.action,
     implementationEntry: s.implementationEntry,
+    continueAction: s.continueAction,
+    continueBlocker: s.continueBlocker,
     chainSkipped: s.chainSkipped,
     chainRemaining: s.chainRemaining,
     scope: s.scope,
