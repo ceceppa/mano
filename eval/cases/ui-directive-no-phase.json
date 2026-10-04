@@ -1,0 +1,9 @@
+{
+  "name": "ui-directive-no-phase",
+  "description": "No phase and no open ui-gap, but the human hands mano ui a project-wide visual rule with the command. mano ui writes it straight into design-brief.md, adds no gap item, writes no preview, and creates no phase.",
+  "fixture": "ui-directive-no-phase",
+  "prompt": "mano ui \"Every button uses the pill shape: fully rounded corners.\"",
+  "assertions": [
+    "ui_directive_written_without_a_gap"
+  ]
+}

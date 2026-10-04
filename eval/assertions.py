@@ -4637,6 +4637,67 @@ def ui_gap_only_repaired_the_brief(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def _directive_no_phase(ctx: Ctx, name: str, artifact: str, needles: tuple[str, ...],
+                        foreign: tuple[str, ...]) -> list[Failure]:
+    out = []
+    path = ctx.output_dir / artifact
+    text = path.read_text(encoding="utf-8").lower() if path.is_file() else ""
+    missing = [n for n in needles if n not in text]
+    if missing:
+        out.append(Failure(name, f"{artifact} does not adopt the directive written with the "
+                                 f"command (missing {missing}) — a project-wide decision "
+                                 f"must not need a phase or a gap row to land"))
+    if (ctx.backlog() or "").strip() != ctx.fixture_snapshot.get("backlog.md", "").strip():
+        out.append(Failure(name, "backlog.md changed — the directive's home is the artifact; "
+                                 "recording it as a gap row makes the human approve their own sentence"))
+    for other in foreign:
+        if (ctx.output_dir / other).is_file():
+            out.append(Failure(name, f"{other} was written — directive mode writes only "
+                                     f"its own artifact"))
+    if ctx.phase_dirs():
+        out.append(Failure(name, "a phase directory was created — a project-wide directive "
+                                 "needs no phase"))
+    return out
+
+
+def rules_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    return _directive_no_phase(ctx, "rules_directive_written_without_a_gap", "project-rules.md",
+                               (".test",), ("tech-spec.md", "ux-flow.md", "design-brief.md"))
+
+
+def spec_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    return _directive_no_phase(ctx, "spec_directive_written_without_a_gap", "tech-spec.md",
+                               ("sqlite",), ("project-rules.md", "ux-flow.md", "design-brief.md"))
+
+
+def ux_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    return _directive_no_phase(ctx, "ux_directive_written_without_a_gap", "ux-flow.md",
+                               ("confirm",), ("tech-spec.md", "project-rules.md", "design-brief.md"))
+
+
+def ui_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    name = "ui_directive_written_without_a_gap"
+    out = _directive_no_phase(ctx, name, "design-brief.md", ("pill",),
+                              ("tech-spec.md", "project-rules.md", "ux-flow.md"))
+    if list(ctx.output_dir.rglob("design-preview.html")):
+        out.append(Failure(name, "a design preview was written with no phase to own it"))
+    return out
+
+
+def start_routed_the_directive_to_its_owner(ctx: Ctx) -> list[Failure]:
+    name = "start_routed_the_directive_to_its_owner"
+    out = []
+    if ctx.phase_dirs():
+        out.append(Failure(name, "a phase directory was created — a project-wide convention "
+                                 "is not phase work"))
+    if (ctx.backlog() or "").strip() != ctx.fixture_snapshot.get("backlog.md", "").strip():
+        out.append(Failure(name, "backlog.md changed — a directive with no work attached is "
+                                 "routed to its owner, not homed as a gap"))
+    if "mano rules" not in ctx.transcript.lower():
+        out.append(Failure(name, "the reply did not route the convention to `mano rules`"))
+    return out
+
+
 def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
     name = "review_ui_ux_requests_remain_scopeable"
     out = []
@@ -4820,4 +4881,9 @@ REGISTRY = {
     "spec_gap_only_settled_the_directive": spec_gap_only_settled_the_directive,
     "rules_gap_only_settled_the_directive": rules_gap_only_settled_the_directive,
     "ui_gap_only_repaired_the_brief": ui_gap_only_repaired_the_brief,
+    "rules_directive_written_without_a_gap": rules_directive_written_without_a_gap,
+    "spec_directive_written_without_a_gap": spec_directive_written_without_a_gap,
+    "ux_directive_written_without_a_gap": ux_directive_written_without_a_gap,
+    "ui_directive_written_without_a_gap": ui_directive_written_without_a_gap,
+    "start_routed_the_directive_to_its_owner": start_routed_the_directive_to_its_owner,
 }

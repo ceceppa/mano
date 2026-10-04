@@ -27,6 +27,9 @@ Intake asks *what the product does and for whom*, never *how it's built*. Before
   - ❌ Don't: read a stated minimum runtime version and a `Project Directory Structure` tree, conclude neither belongs to any feature item, and write the backlog without them — the implementer then invents its own layout and the human finds out after the code exists.
   - ✅ Do: emit a `spec-gap` item carrying the runtime line verbatim, and a `rule-gap` item carrying the exact source paths that tree states.
 <!-- /mano-rule: stated-directive-homing -->
+<!-- mano-rule: id=project-directive-no-phase; incident=project-directive-needed-a-gap; model=not-recorded; date=2026-10-05; eval=rules-directive-no-phase,spec-directive-no-phase,ux-directive-no-phase,ui-directive-no-phase,start-routes-project-directive -->
+- **A command that is only a directive is not intake.** When the human's whole input to `mano start` is one project-wide directive with no work attached, `mano start` routes it to the owning skill (`mano spec` / `rules` / `ux` / `ui` with the words verbatim), and that skill writes it directly into its artifact. No gap item is homed: the gap exists to carry a directive that arrived *alongside* work, not to queue one the human can hand to its owner directly.
+<!-- /mano-rule: project-directive-no-phase -->
 
 ## B2 — Closed-scope (every question, every path)
 

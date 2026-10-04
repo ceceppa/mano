@@ -1,0 +1,9 @@
+{
+  "name": "rules-directive-no-phase",
+  "description": "No phase and no open rule-gap, but the human hands mano rules a project-wide convention with the command. The convention needs no phase and no backlog row: mano rules writes it straight into project-rules.md, adds no gap item, and creates no phase.",
+  "fixture": "rules-directive-no-phase",
+  "prompt": "mano rules \"Every source file has a matching test file next to it, named with a .test suffix.\"",
+  "assertions": [
+    "rules_directive_written_without_a_gap"
+  ]
+}

@@ -130,6 +130,7 @@ This means:
 - You can skip `mano spec` and go straight from `mano start` to `mano stories`.
 - You can skip `mano ui` entirely if you have your own design direction.
 - You can run `mano stories` without running `mano rules` first.
+- You can fix a project-wide decision without a phase: `mano spec`, `mano rules`, `mano ux`, and `mano ui` each accept one written with the command (`mano rules "every source file has a test"`) and write it straight into their artifact, with no backlog row.
 - Each skill adapts to what's available instead of assuming the full pipeline already exists.
 
 In installed projects, Mano framework files live under `_mano/skills`, `_mano/rules`, and `_mano/templates`. The framework source repository may store these files at the root, but the runtime contract presented to coding agents uses `_mano/...` paths.
@@ -137,7 +138,7 @@ In installed projects, Mano framework files live under `_mano/skills`, `_mano/ru
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
 `mano ui` begins with `node _mano/scripts/state.js --ui`; that projection is its only phase-directory discovery and supplies the exact owner-aware current `BRIEF`, `PHASE_DIR`, and `PREVIEW` paths plus legacy-root presence without exposing the backlog. It then applies two output lifecycles. `_mano_output/design-brief.md` is the cumulative, canonical visual contract; preserve its established tokens, components, and phase-identity-namespaced Screen Composition entries while extending it for the current phase. The HTML is a non-canonical phase snapshot at the exact projected `PREVIEW`. A same-phase re-run may read and update that file, but a later or differently owned phase must not read or write another phase's preview. Never read, overwrite, move, or infer ownership for a legacy `_mano_output/design-preview.html`; leave it untouched.
 
-The exact projected current phase brief is a blocking input for `mano ui`: if `BRIEF` is missing and there are no projected UI gaps, stop and route to `mano start`. With projected UI gaps, run `mano ui` in gap-only mode to repair the cumulative design brief without creating a preview or requiring a phase. When the brief exists, a missing current-phase preview keeps `mano ui` useful even when the phase reuses components already documented in the design brief; a new screen composition still deserves its own phase snapshot.
+The exact projected current phase brief is a blocking input for `mano ui`: if `BRIEF` is missing, there are no projected UI gaps, and the command carries no directive, stop and route to `mano start`. With projected UI gaps, run `mano ui` in gap-only mode to repair the cumulative design brief without creating a preview or requiring a phase. A project-wide visual rule written with the command (`mano ui "[the treatment]"`) is written the same way, also without a phase. When the brief exists, a missing current-phase preview keeps `mano ui` useful even when the phase reuses components already documented in the design brief; a new screen composition still deserves its own phase snapshot.
 <!-- /mano-rule: ui-phase-preview-ownership -->
 
 ## Rules

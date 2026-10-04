@@ -33,7 +33,7 @@ On activation:
 <!-- mano-rule: id=ui-phase-preview-ownership; incident=cross-phase-preview-overwrite; model=codex; date=2026-08-03; eval=ui-phase-preview,ui-no-phase-preview -->
 1. Run `node _mano/scripts/state.js --gaps ui-gap`. Its `GAP INPUT` is the complete backlog-derived context for open UI gaps: only unresolved `ui-gap` items are exposed. **Do not open `_mano_output/backlog.md` before or after this command.** If the command fails or its output lacks the `GAP INPUT`, exact `MODE:`, `TYPE: ui-gap`, `STATUS: backlog`, and `COUNT:` lines, stop and report the exact failure.
 2. Run `node _mano/scripts/state.js --ui`. Its `UI INPUT` is the only phase-directory discovery for this skill. Do not list or scan phase folders yourself. If the command fails or its output lacks the `UI INPUT`, `STATUS`, `MODE`, `OWNER`, `PHASE`, `PHASE_ID`, `PHASE_DIR`, `BRIEF`, and `PREVIEW` lines, stop and report the exact failure. Use the exact projected paths; never construct `phase-N` from the number.
-3. `STATUS: BLOCKED` → check `COUNT:` from step 1. `COUNT: 0` → relay the script's route and stop without writing anything; a phase preview requires an unambiguous phase owner, so do not offer to continue without one. `COUNT:` above zero → run **Gap-only mode** below, which writes no preview and therefore needs no phase owner.
+3. `STATUS: BLOCKED` → check `COUNT:` from step 1. `COUNT: 0` and no directive written with the command → relay the script's route and stop without writing anything; a phase preview requires an unambiguous phase owner, so do not offer to continue without one. `COUNT:` above zero → run **Gap-only mode** below, which writes no preview and therefore needs no phase owner. A directive written with the command → run **Directive mode** below, which writes no preview either.
 4. `STATUS: READY` → read the exact `BRIEF` path printed by the script.
 5. Read `_mano_output/ux-flow.md` if it exists — know what screens and navigation exist before designing components.
 6. Read `_mano_output/tech-spec.md` if it exists — constrain component library choices.
@@ -63,6 +63,19 @@ node _mano/scripts/backlog.js resolve-gap --type ui-gap --title "[exact projecte
 - Resolve an item only once `design-brief.md` actually adopts or explicitly overrides it. If a projected gap needs a decision only the human can make, leave it open and surface it as a `❓ Decide:` line — an unresolved gap keeps `mano start` blocked, which is correct while a design decision is genuinely pending.
 - Close with the canonical execution log, then `Next:` — `mano start` when no gap remains, otherwise the skills the remaining routes name.
 <!-- /mano-rule: ui-gap-needs-no-phase -->
+
+<!-- mano-rule: id=project-directive-no-phase; incident=project-directive-needed-a-gap; model=not-recorded; date=2026-10-05; eval=rules-directive-no-phase,spec-directive-no-phase,ux-directive-no-phase,ui-directive-no-phase,start-routes-project-directive -->
+## Directive mode
+
+A project-wide visual rule the human writes with the command — `mano ui "every button uses the pill shape, no square corners"` — is input this skill owns, with or without a phase. `design-brief.md` is cumulative, so the visual rule needs no phase brief to justify it, and it needs no backlog item to survive a context reset: once written here, this file is its home. Recording it as a `ui-gap` first would only make the human approve a row restating what they just said.
+
+- **It is a directive when** it states a rule this file owns that holds across the whole product: a palette, typeface, spacing scale, icon set, or a treatment every component of a kind must use. It is authoritative intent: adopt it as written, or override it explicitly with the reason in the completion log and a `❓ Decide:` line — never silently.
+- **Not this skill's → route it verbatim and write nothing.** A folder, naming, or code convention → `mano rules "[the directive]"`; a stack or library decision → `mano spec "[the directive]"`; a screen or navigation flow → `mano ux "[the directive]"`. A new or changed screen, feature, or behaviour is work, not a directive (`_mano/rules/backlog.md` → **Artifact gaps versus implementation work**) → `mano start`.
+- **With no phase**, it runs under every Gap-only mode bound above: write only what the directive decides, nothing phase-scoped, no phase directory. Write **no** `design-preview.html` and skip the Step 1 preference checkpoint: the directive is the preference, and anything it leaves open stays open. Settle any projected `ui-gap` items in the same run. With a phase, the directive is applied alongside the phase's own work, as a project-wide rule.
+- **No backlog write for the directive.** Create no gap item for it and resolve none on its behalf; a projected gap it happens to settle is resolved the normal way.
+- **Contract, not code.** Writing the treatment does not restyle what is already built. When it changes components earlier phases shipped, add one `⚠ Verify:` line: existing surfaces are not retrofitted by this run, and bringing them in line is implementation work → `mano start`. Do not read source to find them.
+- **Bare `mano ui` with no phase, no projected gap, and no directive** → stop and write nothing. Say there is no phase to work on, and name both ways in: `mano start` for phase work, or `mano ui "[the treatment]"` to fix a project-wide visual rule now.
+<!-- /mano-rule: project-directive-no-phase -->
 
 **With a phase brief present, projected `ui-gap` items are still in scope.** Address them in the same run as the phase's own design work and resolve each one the same way. A gap left open blocks the next `mano start`, so never defer one on the grounds that the phase's own work came first.
 

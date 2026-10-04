@@ -28,14 +28,14 @@ This skill activates when the user types `mano rules`. When inputs are missing, 
 Read this file plus `_mano/rules/core.md` and `_mano/rules/artifact.md` first — before the state projection, then artifacts — and read only those rule files; never open `_mano/workflow.md` mid-skill. Keeping that order stable keeps the contract prefix cacheable.
 
 On activation:
-1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails or lacks `STATUS`, `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, stop and report the exact failure. `STATUS: NO_PHASE` is allowed for a gap-only rules update; in that case there is no phase brief to read. Never construct `phase-N` from the number.
+1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails or lacks `STATUS`, `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, stop and report the exact failure. `STATUS: NO_PHASE` is allowed for a gap-only or directive rules update; in that case there is no phase brief to read. Never construct `phase-N` from the number.
 2. Run `node _mano/scripts/state.js --gaps rule-gap`. Its `GAP INPUT` is the complete backlog-derived context for this skill: only unresolved `rule-gap` items are exposed. **Do not open `_mano_output/backlog.md` before or after this command.** If the command fails or its output lacks the `GAP INPUT`, exact `MODE:`, `TYPE: rule-gap`, `STATUS: backlog`, and `COUNT:` lines, stop and report the exact failure; do not inspect the script source, another skill such as `start.md`, or the backlog to reconstruct its result.
 3. Read `_mano_output/tech-spec.md` if it exists. If it doesn't and a phase exists, warn the user that the rules will be higher-level and offer to proceed from the phase brief or run `mano spec` first. In **Gap-only mode** never offer `mano spec` first: with no brief, `mano spec` routes to `mano start`, which the open rule-gap blocks — straight back here. Proceed without the spec.
 4. Read `_mano_output/ux-flow.md` and `_mano_output/design-brief.md` if they exist.
 5. Read `_mano_output/project-rules.md` if it exists.
 6. **Read the exact projected `BRIEF` path** whenever `state.js --current` reports a phase. The brief is what the rules are being written *for*: it carries the phase's scope, its product principles, and the work about to be implemented, and a session that starts at `mano rules` has no other way to know any of it. Only a gap-only run (`STATUS: NO_PHASE`) proceeds without it.
 <!-- mano-rule: id=rule-gap-needs-no-phase; incident=gap-block-deadlock; model=codex; date=2026-10-02; eval=rules-gap-only-mode -->
-7. **No phase → gap-only mode, or stop.** If `STATUS: NO_PHASE`, check `COUNT:` from step 2. `COUNT: 0` → stop and route to `mano start`; there is nothing to do and nothing to write. `COUNT:` above zero → run **Gap-only mode** below.
+7. **No phase → gap-only mode, or stop.** If `STATUS: NO_PHASE`, check `COUNT:` from step 2. `COUNT: 0` and no directive written with the command → stop; there is nothing to do and nothing to write (see **Directive mode** for the stop message). `COUNT:` above zero → run **Gap-only mode** below. A directive written with the command → run **Directive mode** below.
 <!-- /mano-rule: rule-gap-needs-no-phase -->
 
 Do not read the project `README.md` or source files to discover additional context. The listed planning artifacts, projected gaps, and literal context supplied by the user are the activation boundary.
@@ -54,6 +54,19 @@ In gap-only mode:
 - Resolve each item the rules now adopt or explicitly override with `backlog.js resolve-gap`, one call per item. If a gap needs a decision only the human can make, leave it open and surface it as `❓ Decide:` — the gap keeps `mano start` blocked, which is correct while that decision is pending.
 - Write nothing phase-scoped and create no phase directory. Close with the canonical execution log, then `Next:` — `mano start` when no rule-gap remains, otherwise the remaining routes.
 <!-- /mano-rule: rule-gap-needs-no-phase -->
+
+<!-- mano-rule: id=project-directive-no-phase; incident=project-directive-needed-a-gap; model=not-recorded; date=2026-10-05; eval=rules-directive-no-phase,spec-directive-no-phase,ux-directive-no-phase,ui-directive-no-phase,start-routes-project-directive -->
+## Directive mode
+
+A project-wide convention the human writes with the command — `mano rules "every source file has a matching test file"` — is input this skill owns, with or without a phase. `project-rules.md` is cumulative, so the convention needs no phase brief to justify it, and it needs no backlog item to survive a context reset: once written here, this file is its home. Recording it as a `rule-gap` first would only make the human approve a row restating what they just said.
+
+- **It is a directive when** it states or asks for a convention this file owns: folder structure, file layout and naming, code conventions, component patterns, where tests live, what every file of a kind must have. It is authoritative intent: adopt it as written, or override it explicitly with the reason in the completion log and a `❓ Decide:` line — never silently.
+- **Not this skill's → route it verbatim and write nothing.** A stack, library, runtime, or value decision → `mano spec "[the directive]"`; a screen or navigation flow → `mano ux "[the directive]"`; a visual treatment → `mano ui "[the directive]"`. A change to what the product does (a feature, a fix, a behaviour) is work, not a directive → `mano start`.
+- **With no phase**, it runs under every Gap-only mode bound above: write only what the directive decides, ask neither Step 1 question, write nothing phase-scoped, create no phase directory. Settle any projected `rule-gap` items in the same run. With a phase, the directive is applied alongside the phase's own rules, as a project-wide rule rather than a phase-scoped one.
+- **No backlog write for the directive.** Create no gap item for it and resolve none on its behalf; a projected gap it happens to settle is resolved the normal way.
+- **Contract, not code.** Writing a rule does not bring existing code in line with it. When the directive constrains something earlier work may already have produced (an existing layout, files written before a test rule), add one `⚠ Verify:` line: code written before this rule is not retrofitted by this run, and bringing it in line is implementation work → `mano start`. Do not read source to count what breaks the rule.
+- **Bare `mano rules` with no phase, no projected gap, and no directive** → stop and write nothing. Say there is no phase to write rules for, and name both ways in: `mano start` for phase work, or `mano rules "[the convention]"` to fix a project-wide rule now.
+<!-- /mano-rule: project-directive-no-phase -->
 
 ## When to use
 

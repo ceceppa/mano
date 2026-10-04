@@ -1,0 +1,9 @@
+{
+  "name": "spec-directive-no-phase",
+  "description": "No phase and no open spec-gap, but the human hands mano spec a project-wide technical decision with the command. mano spec writes it straight into tech-spec.md, adds no gap item, drafts nothing a brief would have to justify, and creates no phase.",
+  "fixture": "spec-directive-no-phase",
+  "prompt": "mano spec \"Use SQLite for local storage.\"",
+  "assertions": [
+    "spec_directive_written_without_a_gap"
+  ]
+}

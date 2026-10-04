@@ -23,6 +23,16 @@ Read this file plus the `_mano/rules/` files named in `requires:` (core, artifac
 
 This skill activates when the user types `mano start`. A user may narrow returning backlog candidates by provenance: `mano start from source "[text]"` (or `mano start source "[text]"`), or by experiment: `mano start from track "[name]"`. They may combine them, for example `mano start from source "Piano brief" and track "Option B"`; that is an intersection, never a fallback. Source is a case-insensitive substring search; Track is case-insensitive exact matching. Both only narrow candidates and still require normal approval. With an active `mano track`, Start applies that track automatically unless the command gives an explicit track.
 
+<!-- mano-rule: id=project-directive-no-phase; incident=project-directive-needed-a-gap; model=not-recorded; date=2026-10-05; eval=rules-directive-no-phase,spec-directive-no-phase,ux-directive-no-phase,ui-directive-no-phase,start-routes-project-directive -->
+**A project-wide directive is not phase work — route it, don't scope it.** When the whole text with the command is a rule for how the entire project is built or looks, and it names no work to scope and no change to the current brief, it belongs to the artifact that owns it. Examples: `mano start "every source file has a test assigned"`, `mano start "use SQLite"`. Run nothing, write nothing (no backlog item, no gap, no brief), ask nothing. Reply with one line routing the human's words, verbatim, to the owner:
+- a folder, naming, test-layout, or code convention → `mano rules "[their words]"`
+- a language, runtime, library, package manager, storage, or behaviour-driving value → `mano spec "[their words]"`
+- a navigation rule or a required state every flow must have → `mano ux "[their words]"`
+- a palette, typeface, or component treatment → `mano ui "[their words]"`
+
+Those skills write a directive straight into their artifact with or without a phase. Text that mixes a directive with work to scope, or with a change to the current brief, stays on the normal path below, and **B1 → Every stated directive gets a home** carries the directive.
+<!-- /mano-rule: project-directive-no-phase -->
+
 On activation:
 1. **Run the state script and obey its decision — do not scan `_mano_output/` yourself** (don't `ls` the phase folders or stat the dir; the script reports the state you need). Don't create `_mano_output/` here — it's made when the phase actually starts (the first backlog write, or the phase folder at finalisation):
    ```
