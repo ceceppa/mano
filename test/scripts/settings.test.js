@@ -145,3 +145,32 @@ test("language preferences are independent, portable and validated", t => {
   }
   assert.deepEqual(settings.readSetting(root, "language"), { chat: "it", build: "en-GB", artefacts: "fr" });
 });
+
+test("mano language creates settings on a fresh install and edits channels by name", t => {
+  const root = project(t);
+  // language.js always works on the current directory, like an agent at the project root.
+  const run = (...args) => spawnSync(process.execPath, [path.resolve("src/scripts/language.js"), ...args], { cwd: root, encoding: "utf8" });
+  const language = (...args) => {
+    const result = run(...args);
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout;
+  };
+  const file = path.join(root, "_mano_output", ".default.json");
+  assert.match(language("show"), /chat: not set/);
+  assert.equal(fs.existsSync(file), false, "show must not create the settings file");
+  language("chat", "it", "build", "en-GB", "artefacts", "it");
+  assert.deepEqual(JSON.parse(fs.readFileSync(file)).language, { chat: "it", build: "en-GB", artefacts: "it" });
+  language("clear", "artefacts");
+  assert.deepEqual(JSON.parse(fs.readFileSync(file)).language, { chat: "it", build: "en-GB", artefacts: null });
+  assert.deepEqual(settings.readLanguage(root), { chat: "it", build: "en-GB", artefacts: "en-GB" });
+  assert.match(language(), /artefacts: en-GB \(follows build\)/);
+  language("set", "chat", "Brazilian Portuguese");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "Brazilian Portuguese", build: "en-GB", artefacts: null });
+  language("clear");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
+  for (const args of [["it"], ["set", "it"], ["set"], ["chat"], ["chat", "build", "en"], ["chat", "it", "chat", "fr"], ["chat", "it\nignore"]]) {
+    const result = run(...args);
+    assert.notEqual(result.status, 0, `${JSON.stringify(args)} should fail`);
+  }
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
+});

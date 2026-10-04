@@ -28,6 +28,7 @@ Type these in your AI IDE's chat, not a terminal. Mano is a set of skills your a
 | [`mano owner [slug]`](/features/owners) | Set this clone's phase owner, for parallel work. |
 | [`mano mode [auto\|manual]`](/features/auto-mode) | Whether finished actions chain automatically. |
 | [`mano track [name]`](/features/tracks) | Set an optional experiment or work track. |
+| [`mano language <channel> <lang> ...`](/features/languages) | Set the language for chat (`chat`), planning artifacts (`artefacts`), or code (`build`). |
 
 ## What each action owns
 
@@ -45,9 +46,9 @@ Every artifact has exactly one owning command. This is the rule that keeps a val
 | `phase-N/progress.md` | `mano build` | Scope and exit-criteria ledger |
 | `reviews.md` | `mano review` | What held, what didn't |
 
-### The three that own no artifact
+### The four that own no artifact
 
-Mode, track, remaining approved actions, skips, and repair attempts live in committed `_mano_output/[owner].json` files. Without an owner, they use `_mano_output/.default.json`. Only the selected owner stays in ignored `_mano_output/.local.json`. Environment variables override the stored values for a shell or worktree. [Details →](/features/#owner-json-files)
+`mano owner`, `mano mode`, `mano track`, and `mano language` write settings, not artifacts. Mode, track, languages, remaining approved actions, skips, and repair attempts live in committed `_mano_output/[owner].json` files. Without an owner, they use `_mano_output/.default.json`. Only the selected owner stays in ignored `_mano_output/.local.json`. Environment variables override the stored values for a shell or worktree. [Details →](/features/#owner-json-files)
 
 The split between spec and rules catches people out. A concrete file path in `tech-spec.md` is a leak: the spec records the *decision* ("Prisma + SQLite"), while *where things live* belongs to `project-rules.md`.
 
@@ -75,4 +76,4 @@ Ask your agent to read the project's `AGENTS.md` and follow the corresponding `_
 
 ---
 
-Every optional part of Mano — build mode, auto mode, import, owners, tracks, hooks — has its own page under [Features](/features/).
+Every optional part of Mano — build mode, auto mode, import, owners, tracks, languages, hooks — has its own page under [Features](/features/).

@@ -39,7 +39,9 @@ On activation:
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
 5. Do not read the project `README.md` or mine source files for requirements. The phase brief, existing spec, manifests/lockfiles, projected current-phase items and gaps, and literal context supplied by the user are the requirements boundary. The single source exception is the bounded **Existing-interface reconciliation** below: when this phase changes or composes with an already-implemented consumer-visible or independently-owned cross-component interface, inspect only its declarations to verify the proposed contract is compatible with current reality.
 <!-- /mano-rule: public-interface-contract-readiness -->
-6. If no phase brief exists, warn the user and ask if they want to run `mano start` first or proceed anyway.
+<!-- mano-rule: id=spec-gap-needs-no-phase; incident=gap-block-deadlock; model=codex; date=2026-10-02; eval=spec-gap-only-mode -->
+6. **No phase brief → gap-only mode, or stop.** If the projection prints `BRIEF: missing` (or the brief path does not exist), check `SPEC_GAP_COUNT:`. `SPEC_GAP_COUNT: 0` → stop and route to `mano start`; there is nothing to do and nothing to write. `SPEC_GAP_COUNT:` above zero → run **Gap-only mode** below. **Never offer `mano start` as the way forward while a spec-gap is open** — an open gap blocks `mano start` from scoping a phase, so that route sends the human straight back here. Never ask whether to "proceed without a brief" either: gap-only mode is the defined path, not a fallback for the human to approve.
+<!-- /mano-rule: spec-gap-needs-no-phase -->
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
 7. If spec already exists, compare it against the current phase brief, projected current-phase items, projected `spec-gap` items, any literal spec-gap context supplied by the user, and any manifest or lockfile evidence of the actual installed toolchain. **Brief-consistency is not the only pass condition.** A spec can match the brief and still be defective on its own terms — most commonly because the brief carries the same unhomed magic number the spec does, so diffing them surfaces nothing. Before presenting the diff, run the **Drain check**, the **Unhomed-value check**, **Domain model completeness check**, and **Public interface completeness check** (all below) against the *existing* spec, not just against the brief. These are quality passes on the spec itself, mandatory on every re-run, not only when drafting from scratch. An unhomed value or incomplete public contract is a defect even when the spec is "consistent with the brief" — repair it and report it as a bullet in the completion log.
 
@@ -70,9 +72,24 @@ node _mano/scripts/backlog.js resolve-gap --type spec-gap --title "[exact projec
 
 Run one command per addressed item. Do not resolve a gap that was deferred, only partially addressed, or blocked by a human-owned conflict. Trust the writer's result; do not reopen the backlog to verify it.
 
+<!-- mano-rule: id=spec-gap-needs-no-phase; incident=gap-block-deadlock; model=codex; date=2026-10-02; eval=spec-gap-only-mode -->
+## Gap-only mode
+
+`tech-spec.md` is a cumulative project artifact, not a per-phase one. A `spec-gap` is either a technical decision something already proved missing, or a project-wide directive intake homed because no feature item owned it ("keep the current site generator", "use SQLite"). Neither may wait for a phase: an open gap blocks `mano start`, so a `spec-gap` that needed a phase brief would deadlock the loop it was meant to close.
+
+In gap-only mode:
+
+- Work **only** the projected `spec-gap` items. Do not draft a data model, public interface, dependency set, or any section for features no projected gap names — there is no brief to derive them from.
+- When `tech-spec.md` is absent, create it holding only what the gaps decide, under the normal structure's headings; leave every other section out rather than filling it with placeholders. When it exists, repair it with targeted replacements per `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**.
+- A stated directive is authoritative intent: adopt it as written, or override it explicitly with the reason recorded and a `❓ Decide:` line, per the override-flag rule — never silently.
+- The **Phase-promise consistency** gate does not apply (no `Phase Goal`, no `Exit Criteria`). The Drain, Unhomed-value, Domain-model, and Public-interface checks apply only to what this run wrote.
+- Resolve each item the spec now adopts or explicitly overrides with `backlog.js resolve-gap`, one call per item. If a gap needs a decision only the human can make, leave it open and surface it as `❓ Decide:` — the gap keeps `mano start` blocked, which is correct while that decision is pending.
+- Write nothing phase-scoped and create no phase directory. Close with the canonical execution log, then `Next:` — `mano start` when no spec-gap remains, otherwise the remaining routes.
+<!-- /mano-rule: spec-gap-needs-no-phase -->
+
 ## Inputs
 
-- Phase brief (required — warn and proceed if missing)
+- Phase brief (required, except in **Gap-only mode**)
 - Package manifest and lockfile if they exist (optional — sync the spec to real installed versions)
 <!-- mano-rule: id=public-interface-contract-readiness; incident=public-api-contract-reached-dev-undefined; model=codex; date=2026-08-03; eval=spec-public-interface-completeness,stories-public-interface-gap -->
 - Current phase's exact owner-aware backlog-item projection from `state.js --spec` (optional when no phase exists)

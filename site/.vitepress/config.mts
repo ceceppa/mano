@@ -74,6 +74,7 @@ export default defineConfig({
           { text: 'Import', link: '/features/import' },
           { text: 'Team owners', link: '/features/owners' },
           { text: 'Tracks & filters', link: '/features/tracks' },
+          { text: 'Languages', link: '/features/languages' },
           { text: 'Hooks', link: '/features/hooks' }
         ]
       },
@@ -100,6 +101,7 @@ export default defineConfig({
           { text: 'Import a document', link: '/features/import' },
           { text: 'Team owners', link: '/features/owners' },
           { text: 'Tracks & filters', link: '/features/tracks' },
+          { text: 'Languages', link: '/features/languages' },
           { text: 'Hooks', link: '/features/hooks' }
         ]
       },

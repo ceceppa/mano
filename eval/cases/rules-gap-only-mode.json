@@ -1,0 +1,9 @@
+{
+  "name": "rules-gap-only-mode",
+  "description": "An import homed a test-layout directive as a rule-gap before any phase or tech spec exists. The open gap blocks mano start, and with no brief mano spec routes to mano start, so mano rules must settle the gap itself — adopting the directive into project-rules.md and resolving the item — instead of sending the human to mano spec first.",
+  "fixture": "rules-gap-only-mode",
+  "prompt": "mano rules",
+  "assertions": [
+    "rules_gap_only_settled_the_directive"
+  ]
+}

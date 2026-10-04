@@ -25,6 +25,7 @@ mano import [doc]       → Turn an existing PRD/document into a backlog, then s
 mano owner [slug]       → Show, set, or clear this repository clone's optional phase owner.
 mano mode [auto|manual] → Show or set whether finished actions chain automatically.
 mano track [name]       → Show, set, or clear an optional local experiment/work track.
+mano language [ch lang] → Show, set, or clear the chat, build, and artefacts languages.
 mano start              → Scope a new project or phase.
 mano continue           → Resume the approved remaining chain, implementation, or one unambiguous planning action.
 mano [action]           → Run a planning action: spec, ux, rules, ui, stories, review.
@@ -33,7 +34,7 @@ mano dev                → Implement the next pending story for the active phas
 mano help [skill]       → Show what a skill does and when to use it.
 ```
 
-`mano owner`, `mano mode`, `mano track`, and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`. `mano build` and `mano dev` are the two implementation entry points — a phase uses one or the other, never both.
+`mano owner`, `mano mode`, `mano track`, `mano language`, and `mano start` are dedicated commands. `mano [action]` covers `spec`, `ux`, `rules`, `ui`, `stories`, and `review`. `mano build` and `mano dev` are the two implementation entry points — a phase uses one or the other, never both.
 
 **Dispatch only to Mano's own skills — never a similarly-named built-in.** Every `mano <action>` resolves to the matching skill in `_mano/skills/` and to nothing else. The host environment may contain built-in, harness, plugin, or third-party skills whose names overlap a Mano action word — do **not** invoke those for a `mano` command, even if their name looks like an exact match. Resolve the command by its Mano role (the agent and contract below), not by keyword similarity to an ambient skill. Two known, high-impact collisions to call out explicitly:
 - **`mano review` → `mano review`** (`_mano/skills/review.md`): record evidence and assumption outcomes, triage feedback into the backlog, write the review log, and close the phase. It reads **only** Mano artifacts and never inspects source. It is **not** a code review / pull-request review / multi-angle diff review. If you find yourself running `git diff`, scanning the diff for bugs, or launching review *agents*, you have invoked the wrong skill — stop and run `mano review` instead.
@@ -200,6 +201,7 @@ Show a brief description of the skill — what it does, when to use it, what it 
 | **`mano owner`** | Opts this repository clone into an owner namespace, shows it, or clears it. | Ignored `_mano_output/.local.json` / `MANO_OWNER` | Settings JSON only; no planning artifacts |
 | **`mano mode`** | Shows or sets whether finished actions chain automatically (`auto`) or hand back (`manual`, the default). | Owner JSON / `MANO_MODE` | Settings JSON only; no planning artifacts |
 | **`mano track`** | Shows, sets, or clears the optional local experiment/work track. | Owner JSON / `MANO_TRACK` | Settings JSON only; no planning artifacts |
+| **`mano language`** | Shows, sets, or clears the conversation (`chat`), implementation (`build`), and planning-artifact (`artefacts`) languages; creates the settings file if needed. | Owner JSON | Settings JSON only; no planning artifacts |
 | **`mano start`** | Scopes projects and phases. Populates the backlog (from conversation), suggests phase scope, drafts the phase brief. | Backlog, previous phase brief, reviews | Phase brief, backlog updates |
 | **`mano spec`** | Translates the phase brief into a tech spec. Recommends libraries, defines data model, flags cross-environment boundaries. | Phase brief, existing tech spec, package manifest/lockfile, filtered unresolved spec-gap projection | Tech spec; targeted spec-gap status updates |
 | **`mano ux`** | Defines the current phase's new or changed screens, navigation, in-world interactions, and recovery paths in one pass. | Phase brief, UX flow, tech spec, project rules | UX flow |

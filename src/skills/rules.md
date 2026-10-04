@@ -30,12 +30,30 @@ Read this file plus `_mano/rules/core.md` and `_mano/rules/artifact.md` first �
 On activation:
 1. Run `node _mano/scripts/state.js --current`. This is the only phase-directory discovery. If it fails or lacks `STATUS`, `MODE`, `OWNER`, `PHASE_ID`, `PHASE_DIR`, and `BRIEF`, stop and report the exact failure. `STATUS: NO_PHASE` is allowed for a gap-only rules update; in that case there is no phase brief to read. Never construct `phase-N` from the number.
 2. Run `node _mano/scripts/state.js --gaps rule-gap`. Its `GAP INPUT` is the complete backlog-derived context for this skill: only unresolved `rule-gap` items are exposed. **Do not open `_mano_output/backlog.md` before or after this command.** If the command fails or its output lacks the `GAP INPUT`, exact `MODE:`, `TYPE: rule-gap`, `STATUS: backlog`, and `COUNT:` lines, stop and report the exact failure; do not inspect the script source, another skill such as `start.md`, or the backlog to reconstruct its result.
-3. Read `_mano_output/tech-spec.md` if it exists. If it doesn't, warn the user that the rules will be higher-level and offer to proceed from the phase brief or run `mano spec` first.
+3. Read `_mano_output/tech-spec.md` if it exists. If it doesn't and a phase exists, warn the user that the rules will be higher-level and offer to proceed from the phase brief or run `mano spec` first. In **Gap-only mode** never offer `mano spec` first: with no brief, `mano spec` routes to `mano start`, which the open rule-gap blocks — straight back here. Proceed without the spec.
 4. Read `_mano_output/ux-flow.md` and `_mano_output/design-brief.md` if they exist.
 5. Read `_mano_output/project-rules.md` if it exists.
 6. **Read the exact projected `BRIEF` path** whenever `state.js --current` reports a phase. The brief is what the rules are being written *for*: it carries the phase's scope, its product principles, and the work about to be implemented, and a session that starts at `mano rules` has no other way to know any of it. Only a gap-only run (`STATUS: NO_PHASE`) proceeds without it.
+<!-- mano-rule: id=rule-gap-needs-no-phase; incident=gap-block-deadlock; model=codex; date=2026-10-02; eval=rules-gap-only-mode -->
+7. **No phase → gap-only mode, or stop.** If `STATUS: NO_PHASE`, check `COUNT:` from step 2. `COUNT: 0` → stop and route to `mano start`; there is nothing to do and nothing to write. `COUNT:` above zero → run **Gap-only mode** below.
+<!-- /mano-rule: rule-gap-needs-no-phase -->
 
 Do not read the project `README.md` or source files to discover additional context. The listed planning artifacts, projected gaps, and literal context supplied by the user are the activation boundary.
+
+<!-- mano-rule: id=rule-gap-needs-no-phase; incident=gap-block-deadlock; model=codex; date=2026-10-02; eval=rules-gap-only-mode -->
+## Gap-only mode
+
+`project-rules.md` is a cumulative project artifact, not a per-phase one. A `rule-gap` is either a convention a review proved missing, or a project-wide directive intake homed because no feature item owned it (a folder structure, a file-naming scheme, where tests live). Neither may wait for a phase: an open gap blocks `mano start`, so a `rule-gap` that needed a phase brief would deadlock the loop it was meant to close.
+
+In gap-only mode:
+
+- Work **only** the projected `rule-gap` items. Do not generate sections or conventions no projected gap names — there is no brief to derive them from.
+- When `project-rules.md` is absent, create it holding only what the gaps decide; leave every other section out rather than filling it with placeholders. When it exists, repair it with targeted replacements per `_mano/rules/core.md` → **Writing artifacts: create once, edit thereafter**.
+- Ask neither Step 1 question (accessibility level, testing posture): both depend on the current phase's surfaces, and there is none.
+- A stated directive is authoritative intent: adopt it as written, or override it explicitly with the reason in the completion log — never silently.
+- Resolve each item the rules now adopt or explicitly override with `backlog.js resolve-gap`, one call per item. If a gap needs a decision only the human can make, leave it open and surface it as `❓ Decide:` — the gap keeps `mano start` blocked, which is correct while that decision is pending.
+- Write nothing phase-scoped and create no phase directory. Close with the canonical execution log, then `Next:` — `mano start` when no rule-gap remains, otherwise the remaining routes.
+<!-- /mano-rule: rule-gap-needs-no-phase -->
 
 ## When to use
 

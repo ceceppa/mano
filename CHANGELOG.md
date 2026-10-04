@@ -8,6 +8,16 @@ A history of Mano's releases — what each version changes and why.
 
 - **Separate language for planning artifacts.** Owner settings now accept `language.artefacts` alongside `chat` and `build`. When absent or `null`, it falls back to `build`, then `chat`; if none is set, existing behaviour is preserved. Every skill and the workflow dispatcher use the resolved language for new planning prose while conversation follows `chat` and implementation content follows `build`. Existing two-language settings remain valid, and required labels, exact quotations, and existing artifacts stay unchanged.
 
+- **`mano language` sets the languages for you.** Before this, the docs told you to edit `language` in the owner JSON by hand, but on a fresh install that file doesn't exist and no command created it just to hold languages. You had to run `mano mode manual` first to make the file appear. `mano language chat it build en-GB artefacts it` now sets any mix of the three channels in one go, `mano language build en-GB` sets one, `mano language clear [channel ...]` unsets them, and bare `mano language` shows what's in effect, including which channel an unset `artefacts` is following. The new `src/scripts/language.js` writes through `settings.js`, so values get the same validation as every other setting, and it creates `_mano_output/[owner].json` (or `.default.json`) when it is missing. `show` never creates the file. Every value needs its channel: a bare `mano language it` is refused rather than guessed. Like the other config commands, it writes settings only: it never translates existing artifacts or code.
+
+### Fixed
+
+- **`mano spec` no longer sends you back to a blocked `mano start`.** When an import homed a project-wide directive as a `spec-gap` before any phase existed, `mano start` refused to scope until the gap was resolved, and `mano spec`, finding no brief, offered `mano start` as the way forward. Nothing could move. `mano spec` now has the same gap-only mode as `mano ux` and `mano ui`: with no brief and at least one open spec-gap, it settles only those gaps in `tech-spec.md`, resolves them, creates no phase, and points to `mano start`. With no brief and no gaps it still routes to `mano start`. `mano rules` had the same hole: it accepted a no-phase run but set no bounds on it, and with no tech spec yet it offered `mano spec` first. With no brief, `mano spec` routes to `mano start`, which the open rule-gap blocks, so you ended up back at `mano rules`. It now has the same gap-only mode, skips the accessibility and testing questions when there is no phase, and never sends you to `mano spec` first.
+
+### Documentation
+
+- **A Languages page.** `site/features/languages.md` covers the three channels, the `artefacts` fallback, where the values live, and what a language change does not do. The command reference, features index, README, `workflow.md`, both `AGENTS.md` files, and `cursorrules` now list `mano language`, and the owner-settings sections show the command instead of hand-editing JSON.
+
 ## 1.6.2 — September 10, 2026
 
 Workflow rules now agree on who approves phase scope, how an approved auto chain survives a session reset, and which commands can run during an existing phase. The three local settings stopped being Git config, and a correction you type mid-build stopped asking you to approve your own sentence.

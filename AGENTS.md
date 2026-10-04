@@ -30,6 +30,7 @@ Examples:
 - `mano continue` → read `_mano/workflow.md`; it runs the implementation action the projection's `IMPLEMENTATION_ENTRY:` names (`mano build`, or `mano dev` for one story), or one unambiguous planning action — it never prints a card telling the human to type the command they just typed
 - `mano mode [auto|manual]` → read `_mano/skills/mode.md`; show or set whether finished actions chain automatically
 - `mano track [name]` → read `_mano/skills/track.md`; show, set, or clear the optional local experiment/work track
+- `mano language [chat|build|artefacts] [language] ...` → read `_mano/skills/language.md`; show, set, or clear the conversation, implementation, and planning-artifact languages
 
 Note: `mano dev` and `mano build` are the two Mano commands that produce code. Every other command above is planning only. Their contracts live in `_mano/skills/dev.md` and `_mano/skills/build.md`, both of which require the shared `_mano/rules/implement.md`. A phase uses one of the two, never both: `mano dev` implements stories from `stories/README.md`, `mano build` works the Scope rows of `PHASE_DIR/progress.md`.
 

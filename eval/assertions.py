@@ -4577,6 +4577,48 @@ def ux_gap_only_repaired_the_flow(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def spec_gap_only_settled_the_directive(ctx: Ctx) -> list[Failure]:
+    name = "spec_gap_only_settled_the_directive"
+    out = []
+    spec = ctx.output_dir / "tech-spec.md"
+    text = spec.read_text(encoding="utf-8") if spec.is_file() else ""
+    if "sqlite" not in text.lower():
+        out.append(Failure(name, "tech-spec.md does not adopt or name the stated SQLite "
+                                 "directive — the spec-gap was not addressed, and it still "
+                                 "blocks mano start"))
+    if not _gap_resolved(ctx, "store notes in SQLite"):
+        out.append(Failure(name, "the spec-gap item is still Status: backlog — an unresolved "
+                                 "gap keeps mano start blocked forever"))
+    if re.search(r"\btag", text, re.IGNORECASE):
+        out.append(Failure(name, "tech-spec.md specifies the unscoped tagging feature — "
+                                 "gap-only mode settles the projected gaps and nothing else"))
+    if any(p.name.startswith("phase-") for p in ctx.output_dir.glob("phase-*")):
+        out.append(Failure(name, "a phase directory was created — gap-only mode runs "
+                                 "precisely because there is no phase"))
+    return out
+
+
+def rules_gap_only_settled_the_directive(ctx: Ctx) -> list[Failure]:
+    name = "rules_gap_only_settled_the_directive"
+    out = []
+    rules = ctx.output_dir / "project-rules.md"
+    text = rules.read_text(encoding="utf-8") if rules.is_file() else ""
+    if ".test" not in text:
+        out.append(Failure(name, "project-rules.md does not adopt or name the stated test-layout "
+                                 "directive — the rule-gap was not addressed, and it still "
+                                 "blocks mano start"))
+    if not _gap_resolved(ctx, "tests live beside their source"):
+        out.append(Failure(name, "the rule-gap item is still Status: backlog — an unresolved "
+                                 "gap keeps mano start blocked forever"))
+    if (ctx.output_dir / "tech-spec.md").is_file():
+        out.append(Failure(name, "tech-spec.md was written by mano rules — gap-only mode "
+                                 "repairs its own artifact and nothing else"))
+    if any(p.name.startswith("phase-") for p in ctx.output_dir.glob("phase-*")):
+        out.append(Failure(name, "a phase directory was created — gap-only mode runs "
+                                 "precisely because there is no phase"))
+    return out
+
+
 def ui_gap_only_repaired_the_brief(ctx: Ctx) -> list[Failure]:
     name = "ui_gap_only_repaired_the_brief"
     out = []
@@ -4775,5 +4817,7 @@ REGISTRY = {
     "review_next_named_the_drift_routes": review_next_named_the_drift_routes,
     "start_gap_block_wrote_no_brief": start_gap_block_wrote_no_brief,
     "ux_gap_only_repaired_the_flow": ux_gap_only_repaired_the_flow,
+    "spec_gap_only_settled_the_directive": spec_gap_only_settled_the_directive,
+    "rules_gap_only_settled_the_directive": rules_gap_only_settled_the_directive,
     "ui_gap_only_repaired_the_brief": ui_gap_only_repaired_the_brief,
 }

@@ -71,6 +71,7 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano owner [slug]` | Show, set, or clear this repository clone's optional phase owner. |
 | `mano mode [auto\|manual]` | Show or set whether finished actions chain automatically through to implementation. Defaults to `manual`. |
 | `mano track [name]` | Show, set, or clear an optional local experiment/work track. |
+| `mano language <chat\|build\|artefacts> <lang> ...` | Show, set, or clear the languages for conversation, implementation, and planning artifacts. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano build ["what changed"]` | Build the active phase straight from its brief — no story files. The brief's own numbered Phase Scope items are the units, tracked in `progress.md`. The optional quoted text is a mid-phase correction, accepted only once a valid ledger exists. |
@@ -119,7 +120,7 @@ Mano saves portable settings and chain state in `_mano_output/[owner].json`. Eac
 
 | File | What it contains | Commit it? |
 | --- | --- | --- |
-| `_mano_output/alice.json` | Alice's mode, track, and chain records by phase | Yes, to resume elsewhere |
+| `_mano_output/alice.json` | Alice's mode, track, languages, and chain records by phase | Yes, to resume elsewhere |
 | `_mano_output/.default.json` | The same settings for work without an owner | Yes, if used |
 | `_mano_output/.local.json` | The owner selected in this checkout | No; Mano adds it to `_mano_output/.gitignore` |
 
@@ -129,9 +130,10 @@ Use these commands in your agent's chat to create or update the files:
 mano owner alice
 mano mode auto
 mano track "Option B"
+mano language chat it build en-GB artefacts it
 ```
 
-A new owner starts in `manual` mode with no track. Selecting an existing owner restores that owner's saved settings. Bare `mano owner`, `mano mode`, and `mano track` show the effective values. `mano mode clear` resets the mode to `manual`; `mano track clear` resets the track to `null`. `mano owner clear` selects the unowned `.default.json` settings without deleting any owner's file.
+A new owner starts in `manual` mode with no track and no languages set. Selecting an existing owner restores that owner's saved settings. Bare `mano owner`, `mano mode`, `mano track`, and `mano language` show the effective values. `mano mode clear` resets the mode to `manual`; `mano track clear` resets the track to `null`; `mano language clear` resets all three languages to `null`, or only the channels you name. `mano owner clear` selects the unowned `.default.json` settings without deleting any owner's file.
 
 An owner file with an approved chain in progress looks like this:
 
@@ -172,7 +174,16 @@ An owner file with an approved chain in progress looks like this:
 
 Agents obtain the effective languages by running `node _mano/scripts/settings.js language` from the project root. The command returns validated JSON with `language.chat`, `language.build`, and `language.artefacts`, resolving the selected owner. Missing `chat` and `build` values become `null`; missing or `null` `artefacts` falls back to `build`, then `chat`, then `null`; agents do not read the settings files themselves. Every skill runs this check before its first response or project write, including auto-chain handoffs and resumed work. English response templates retain their structure while their prose follows the chat language, including build and dev completion messages.
 
-Edit `language` directly in the owner JSON to set conversation, implementation, and planning languages independently. The artefacts language applies to briefs, specs, rules, UX flows, design briefs, stories, backlog entries, reviews, and ledger prose. The build language applies to product documentation, code identifiers and comments, tests, and product/UI text, including preview copy. The example above produces Italian chat and planning artifacts with UK English implementation content. Existing settings containing only `chat` and `build` remain valid; the command resolves the artefacts fallback without saving it into the settings file. Required machine-readable labels, commands, paths, and exact quotations stay unchanged. Changing a language does not translate existing files.
+Set conversation, implementation, and planning languages independently with `mano language`. It creates the settings file if it does not exist yet, so it works on a fresh install:
+
+```text
+mano language chat it build en-GB artefacts it   # set several channels at once
+mano language build en-GB                         # or just one
+mano language clear artefacts                     # planning artifacts follow build again
+mano language                                     # show the effective values
+```
+
+From a terminal, the same commands are `node _mano/scripts/language.js show|set|clear`. Every language needs its channel — `chat`, `build`, or `artefacts` — so a bare `mano language it` is refused rather than guessed. Values are language names or locale tags; quote a name with spaces (`mano language chat "Brazilian Portuguese"`). The artefacts language applies to briefs, specs, rules, UX flows, design briefs, stories, backlog entries, reviews, and ledger prose. The build language applies to product documentation, code identifiers and comments, tests, and product/UI text, including preview copy. The owner file example above produces Italian chat and planning artifacts with UK English implementation content — `mano language chat it build en-GB artefacts it`. Existing settings containing only `chat` and `build` remain valid; the command resolves the artefacts fallback without saving it into the settings file. Required machine-readable labels, commands, paths, and exact quotations stay unchanged. Changing a language does not translate existing files.
 
 Older phase settings are compacted automatically, retaining the highest phase number per owner. Starting a newer chain replaces the previous record; attempts to update an older phase are rejected. Phase artifacts and implementation ledgers remain intact. Old Git settings cannot restore discarded history.
 
@@ -258,6 +269,7 @@ Run a Mano action again when concrete new information affects its artifact. The 
 | **`mano owner`** | Configures optional repository-local phase ownership for team work | `skills/owner.md` |
 | **`mano mode`** | Configures whether finished actions chain automatically (`auto`) or hand back (`manual`) | `skills/mode.md` |
 | **`mano track`** | Configures an optional local experiment/work track for imports, phase candidates, and review follow-ups | `skills/track.md` |
+| **`mano language`** | Configures the conversation, implementation, and planning-artifact languages | `skills/language.md` |
 | **`mano start`** | Scopes the idea, populates the backlog (from conversation), proposes phases | `skills/start.md` |
 | **`mano rules`** | Defines and updates project rules — components, patterns, architecture | `skills/rules.md` |
 | **`mano spec`** | Translates the phase brief into tech spec | `skills/spec.md` |
