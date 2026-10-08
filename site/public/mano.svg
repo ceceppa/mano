@@ -38,7 +38,7 @@
   <title
      id="mano-title">Mano phase-driven learning loop</title>
   <desc
-     id="mano-description">A living backlog is updated through import, start, review, and direct human edits, and feeds one approved small phase. Only the planning artifacts that phase needs are added; each can be created, reused, or brought in from elsewhere. Implementation then forks into two ways in, and a phase uses one: mano stories writes a stories ledger that mano dev implements one story at a time, or mano build works straight from the approved brief scope through a progress.md ledger of scope and exit-criteria rows. Whichever ledger the phase already has decides the route. A mid-phase change stays on that path: it reopens a row, adds one in the human’s own words, or is deferred to the backlog. Work is checkpointed, so a fresh session resumes from the ledger. Auto mode is optional; when enabled it starts after the human approves the scope, runs the needed planning skills, pauses for every human decision, and stops before review. The human then uses the result and runs mano review, which is mandatory and closes the phase; learning updates the backlog. Post-hooks add specialist checks and project automation. Optional owner mode supports parallel phase work over a shared backlog, and optional tracks keep parallel experiments grouped across imports, phases, and review.</desc>
+     id="mano-description">A living backlog is updated through import, start, review, mano task, and direct human edits, and feeds one approved small phase. Outside a phase, mano task takes one backlog item, or new work it writes into the backlog first, and builds it directly: no phase, no stories, no mano dev or mano build, no progress.md ledger, and no review. It closes the item on evidence or on the human's one-line check, writes the result back to the backlog, and is refused while a phase is open. Only the planning artifacts that phase needs are added; each can be created, reused, or brought in from elsewhere. Implementation then forks into two ways in, and a phase uses one: mano stories writes a stories ledger that mano dev implements one story at a time, or mano build works straight from the approved brief scope through a progress.md ledger of scope and exit-criteria rows. Whichever ledger the phase already has decides the route. A mid-phase change stays on that path: it reopens a row, adds one in the human’s own words, or is deferred to the backlog. Work is checkpointed, so a fresh session resumes from the ledger. Auto mode is optional; when enabled it starts after the human approves the scope, runs the needed planning skills, pauses for every human decision, and stops before review. The human then uses the result and runs mano review, which is mandatory for every phase and closes it; learning updates the backlog. Post-hooks add specialist checks and project automation. Optional owner mode supports parallel phase work over a shared backlog, and optional tracks keep parallel experiments grouped across imports, phases, and review.</desc>
   <path
      fill="#faf5ee"
      d="M0 0h1080v1520H0Z"
@@ -154,7 +154,7 @@
        id="tspan7">Updated through import • start •</tspan><tspan
        x="100"
        y="504"
-       id="tspan8">review • human edits</tspan></text>
+       id="tspan8">review • task • human edits</tspan></text>
   <g
      transform="translate(0 20)"
      id="g9">
@@ -192,6 +192,58 @@
      fill="#221f1d"
      d="m606 496-14-9v18z"
      id="path11" />
+  <path
+     fill="none"
+     stroke="#5b4fd4"
+     stroke-width="3"
+     stroke-dasharray="7, 6"
+     d="M474 552H540q16 0 16 16v262q0 16-16 16H224"
+     id="pathT1" />
+  <path
+     fill="#5b4fd4"
+     d="m210 846 14-9v18z"
+     id="pathT2" />
+  <text
+     x="226"
+     y="833"
+     fill="#40359f"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="12.5"
+     font-weight="700"
+     style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-family:Inter;-inkscape-font-specification:&quot;Inter Semi-Bold&quot;"
+     id="textT3"><tspan
+       x="226"
+       y="815"
+       id="tspanT3a">Builds it directly • no review</tspan><tspan
+       x="226"
+       y="833"
+       id="tspanT3b">Closes on evidence or your check</tspan></text>
+  <rect
+     width="93"
+     height="34"
+     x="509.5"
+     y="567"
+     fill="#23201e"
+     rx="17"
+     id="rectT1" />
+  <text
+     x="556"
+     y="589.5"
+     fill="#faf5ee"
+     font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+     font-size="13.5"
+     font-weight="700"
+     text-anchor="middle"
+     id="textT1">mano task</text>
+  <text
+     x="614"
+     y="589"
+     fill="#40359f"
+     font-family="Inter, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+     font-size="12.5"
+     font-weight="800"
+     letter-spacing=".4"
+     id="textT2">ONE ITEM, NO PHASE</text>
   <rect
      width="400"
      height="136"
