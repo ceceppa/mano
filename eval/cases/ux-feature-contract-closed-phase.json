@@ -1,0 +1,10 @@
+{
+  "name": "ux-feature-contract-closed-phase",
+  "description": "The last phase is reviewed and no phase is open. The human hands mano ux the flow for one future feature. mano ux writes it into ux-flow.md, adds no backlog row, and creates no phase, instead of routing a feature to mano start.",
+  "fixture": "feature-contract-closed-phase",
+  "phase": 1,
+  "prompt": "mano ux \"Batch rename: the person selects several thumbnails, then renames them all from one dialog; cancelling keeps every old name.\"",
+  "assertions": [
+    "ux_feature_contract_written_after_closed_phase"
+  ]
+}

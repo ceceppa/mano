@@ -73,6 +73,7 @@ Optional, none of it on by default:
 | | |
 | --- | --- |
 | [**Build mode**](/features/build) | Implement a phase straight from its approved brief, no story files |
+| [**Tasks**](/features/task) | Build one narrow item with no phase, after making sure it's clearly written |
 | [**Auto mode**](/features/auto-mode) | Chain the commands you'd otherwise type — armed only by your scope approval |
 | [**Import**](/features/import) | Turn an existing PRD or document into a backlog, then stop |
 | [**Team owners**](/features/owners) | Namespaced phases per person, so two people don't both scope "phase 7" |

@@ -1,6 +1,6 @@
 ---
 title: "Planning and implementation features"
-description: "Explore Mano build mode, auto mode, document imports, team owners, tracks, languages, and hooks, and learn when each option helps your development workflow."
+description: "Explore Mano build mode, tasks, auto mode, document imports, team owners, tracks, languages, and hooks, and learn when each option helps your development workflow."
 ---
 
 # Features
@@ -10,6 +10,7 @@ The loop — `start → spec → rules → stories → dev → review` — is th
 | | What it is | When you need it |
 | --- | --- | --- |
 | [Build mode](/features/build) | Implement a phase straight from its approved brief, no story files | The phase is small enough to hold in one contract |
+| [Tasks](/features/task) | Build one item with no phase, after making sure it's clearly written | You need to try one narrow idea before planning around it |
 | [Auto mode](/features/auto-mode) | Chain the commands you'd otherwise type, armed only by your scope approval | You've read enough briefs to trust their shape |
 | [Import](/features/import) | Turn an existing PRD or document into a backlog, then stop | You already wrote the requirements somewhere else |
 | [Team owners](/features/owners) | Namespace phases per person, so two people don't both scope "phase 7" | More than one person planning in one repo |

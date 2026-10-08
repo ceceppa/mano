@@ -4684,6 +4684,56 @@ def ui_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def _feature_contract_closed_phase(ctx: Ctx, name: str, artifact: str, sentinel: str,
+                                   any_of: tuple[str, ...], gone: tuple[str, ...],
+                                   untouched: str) -> list[Failure]:
+    out = []
+    text = (ctx.output_text(artifact) or "")
+    lowered = text.lower()
+    if text.strip() == (ctx.fixture_text(artifact) or "").strip():
+        out.append(Failure(name, f"{artifact} is unchanged — a feature's contract the human asks "
+                                 f"for is the owner's to write, phase or not"))
+    elif not any(word in lowered for word in any_of):
+        out.append(Failure(name, f"{artifact} changed but does not carry the request "
+                                 f"(none of {list(any_of)})"))
+    for phrase in gone:
+        if phrase in lowered:
+            out.append(Failure(name, f"{artifact} still states {phrase!r} — the request replaces it; "
+                                     f"leaving both makes the contract contradict itself"))
+    if sentinel not in text:
+        out.append(Failure(name, f"{artifact} lost its sentinel — targeted edit, not a regeneration"))
+    if (ctx.backlog() or "").strip() != ctx.fixture_snapshot.get("backlog.md", "").strip():
+        out.append(Failure(name, "backlog.md changed — writing a contract adds no gap and closes no item"))
+    if [p.name for p in ctx.phase_dirs()] != ["phase-1"]:
+        out.append(Failure(name, "a phase directory was created — a feature's contract needs no phase"))
+    seeded = {"phase-1/phase-brief.md", "phase-1/progress.md"}
+    added = sorted(f for f in ctx.output_files() if f.startswith("phase-1/") and f not in seeded)
+    if added:
+        out.append(Failure(name, f"wrote into the reviewed phase {added} — the contract is project-wide"))
+    if (ctx.output_text(untouched) or "") != (ctx.fixture_text(untouched) or ""):
+        out.append(Failure(name, f"{untouched} changed — only the owner's own artifact is written"))
+    for other in ("tech-spec.md", "project-rules.md"):
+        if (ctx.output_dir / other).is_file():
+            out.append(Failure(name, f"{other} was written — only the owner's own artifact is written"))
+    if list(ctx.output_dir.rglob("design-preview.html")):
+        out.append(Failure(name, "a design preview was written with no open phase to own it"))
+    return out
+
+
+def ui_feature_contract_written_after_closed_phase(ctx: Ctx) -> list[Failure]:
+    return _feature_contract_closed_phase(
+        ctx, "ui_feature_contract_written_after_closed_phase", "design-brief.md",
+        "sentinel: design-phase-1-must-survive", ("settleoutline", "outline"),
+        ("never shown while",), "ux-flow.md")
+
+
+def ux_feature_contract_written_after_closed_phase(ctx: Ctx) -> list[Failure]:
+    return _feature_contract_closed_phase(
+        ctx, "ux_feature_contract_written_after_closed_phase", "ux-flow.md",
+        "sentinel: ux-phase-1-must-survive", ("batch", "several", "multiple"),
+        (), "design-brief.md")
+
+
 def start_routed_the_directive_to_its_owner(ctx: Ctx) -> list[Failure]:
     name = "start_routed_the_directive_to_its_owner"
     out = []
@@ -4715,6 +4765,8 @@ def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
 
 REGISTRY = {
     "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,
+    "ui_feature_contract_written_after_closed_phase": ui_feature_contract_written_after_closed_phase,
+    "ux_feature_contract_written_after_closed_phase": ux_feature_contract_written_after_closed_phase,
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
     "filenames_have_slug": filenames_have_slug,

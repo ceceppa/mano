@@ -1,6 +1,6 @@
 ---
 title: "Auto mode for approved development workflows"
-description: "Chain Mano planning and implementation actions after approving a phase. Learn when auto mode pauses, how readiness repairs work, and how to return to manual."
+description: "Chain Mano planning and implementation actions after approving a phase or typing a task. Learn when auto mode pauses, how readiness repairs work, and how to return to manual."
 ---
 
 # Auto mode
@@ -9,7 +9,7 @@ description: "Chain Mano planning and implementation actions after approving a p
 mano mode auto
 ```
 
-Auto mode chains the commands you'd otherwise type by hand. It is armed by **one thing only** — your explicit approval of a phase scope:
+Auto mode chains the commands you'd otherwise type by hand. It is armed **only by your explicit approval**. For a phase, that's your approval of its scope:
 
 ```text
 → Auto mode: spec → rules → build
@@ -24,6 +24,7 @@ You can edit the chain in the same breath as approving it: `go, skip rules`, `1,
 
 - It never scopes a phase for you. Approval is always yours.
 - It never runs `mano review`. Closing a phase is a judgement call.
+- It never starts a [`mano task`](/features/task). You pick the item.
 - It stops at any open question. Before implementation begins, a missing or stale artifact with a clear repair route can be repaired automatically.
 - "stop" or "wait" ends it immediately.
 
@@ -36,6 +37,10 @@ The chain ends at [`mano build`](/features/build) — but that pairing is a conv
 If build finds a missing or stale supporting contract before either implementation ledger exists, auto mode can run its owner (`spec`, `ux`, `ui`, or `rules`) and retry build. The approved phase must already settle the intended behavior, and the owner must not have been explicitly skipped. The revised chain and repair attempt survive a session restart.
 
 Each owner gets one automatic repair attempt per approved run. Unresolved product choices, changes to scope, conflicts requiring a human decision, and gaps that survive that attempt still pause. The repair skill also pauses for its own questions. Build reruns full readiness before creating its ledger or writing code.
+
+## Tasks in auto mode
+
+Typing `mano task "<item>"` is the other approval, and it covers that one item. When the task stops on a missing default or an unwritten player choice, auto mode runs the `mano spec` or `mano ux` command the task would have handed you, then resumes the task and reruns its gates. A contradiction with an artifact asks you first, then runs the replacement on your answer. Each owner gets one attempt per task, questions still pause, and the chain never goes on to another task or to `mano start`. There's no phase, so nothing is saved as a chain: the backlog item is the record. [More on tasks →](/features/task#in-auto-mode)
 
 ## Back to manual
 

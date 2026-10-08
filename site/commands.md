@@ -24,6 +24,7 @@ Type these in your AI IDE's chat, not a terminal. Mano is a set of skills your a
 | `mano stories` | Decompose the phase into self-contained stories. |
 | `mano dev` | Implement the next pending story. |
 | [`mano build ["<fix>"]`](/features/build) | Build the phase straight from its brief, no story files. |
+| [`mano task "<item>"`](/features/task) | Implement one item with no phase. Writes the backlog item first; refused while a phase is open. |
 | `mano review` | Record outcomes, triage feedback, close the phase. |
 | [`mano owner [slug]`](/features/owners) | Set this clone's phase owner, for parallel work. |
 | [`mano mode [auto\|manual]`](/features/auto-mode) | Whether finished actions chain automatically. |
@@ -36,7 +37,7 @@ Every artifact has exactly one owning command. This is the rule that keeps a val
 
 | Artifact | Owned by | Holds |
 | --- | --- | --- |
-| `backlog.md` | `mano import`, `mano review` | Everything not being built now |
+| `backlog.md` | `mano import`, `mano review` | Everything not being built now (`mano task` adds and closes only the item it builds) |
 | `phase-N/phase-brief.md` | `mano start` | Goal, scope, what's excluded, exit criteria |
 | `tech-spec.md` | `mano spec` | Decisions and why — never file paths |
 | `project-rules.md` | `mano rules` | Conventions and file placement |
@@ -62,6 +63,8 @@ A phase uses one or the other, never both.
 
 A phase holding both ledgers is refused. Pick one and delete the other. [More on build mode →](/features/build)
 
+Outside a phase there is a third way: **`mano task`** builds one backlog item on its own, for an idea you need to try before planning around it. [More on tasks →](/features/task)
+
 ## Modifiers
 
 `mano dev yolo` implements every currently pending story in order instead of stopping after one. It keeps every per-story gate and hard stop — it only changes how many stories one invocation covers.
@@ -76,4 +79,4 @@ Ask your agent to read the project's `AGENTS.md` and follow the corresponding `_
 
 ---
 
-Every optional part of Mano — build mode, auto mode, import, owners, tracks, languages, hooks — has its own page under [Features](/features/).
+Every optional part of Mano — build mode, tasks, auto mode, import, owners, tracks, languages, hooks — has its own page under [Features](/features/).

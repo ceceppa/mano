@@ -85,7 +85,7 @@ function parseArgs(argv) {
     root: process.cwd(), json: false, verbose: false,
     scope: false, next: false, ui: false, current: false,
     spec: false, gaps: null, source: null, track: null, help: false,
-    amendCurrent: false, titles: false, match: null,
+    amendCurrent: false, titles: false, match: null, task: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -108,6 +108,7 @@ function parseArgs(argv) {
       else { args.track = candidate; i++; }
     }
     else if (a === "--titles") args.titles = true;
+    else if (a === "--task") args.task = true;
     else if (a === "--match") args.match = argv[++i];
     else if (a === "--gaps") {
       const candidate = argv[i + 1];
@@ -123,7 +124,7 @@ function parseArgs(argv) {
 const HELP = `mano state — read-only projections of _mano_output/
 
 Usage:
-  node state.js [projectRoot] [--scope [--source <text>] [--track <name>] | --next | --ui | --current | --spec | --gaps <type> | --titles [--match <text>]] [--verbose] [--json]
+  node state.js [projectRoot] [--scope [--source <text>] [--track <name>] | --next | --ui | --current | --spec | --gaps <type> | --titles [--match <text>] | --task] [--verbose] [--json]
 
   projectRoot   directory containing _mano_output/ (default: current dir)
   --amend-current  with --scope only: ask whether the *current* phase's brief may
@@ -159,6 +160,10 @@ Usage:
                 Never a scope-selection input: that stays SCOPE INPUT only
   --match <text>  with --titles only: case-insensitive substring filter on the
                 title, for checking one piece of work rather than listing all
+  --task        for mano task: whether a task may run now (refused while this
+                owner's latest phase is open, from a draft brief until review
+                closes it), plus every in-task item (edited, not finished)
+                and every needs-human item and its Check line
   --gaps <type> read only backlog.md and print unresolved items of exact type:
                 spec-gap, rule-gap, ux-gap, ui-gap — each skill reads its own
   --verbose     also print the evidence (phase, stories, reviewed, backlog)
@@ -635,8 +640,9 @@ function renderTitles(t) {
   L.push(`MODE: ${t.runMode}`);
   if (t.match) L.push(`MATCH: ${t.match}`);
   L.push(`COUNT: ${t.total}`);
-  const order = ["backlog", "in-phase", "resolved", "rejected"];
+  const order = ["backlog", "in-task", "needs-human", "in-phase", "resolved", "rejected"];
   const bucket = (status) => {
+    if (status === "in-task") return status;
     if (status.startsWith("in-")) return "in-phase";
     return order.includes(status) ? status : "other";
   };
@@ -665,6 +671,52 @@ function renderTitles(t) {
 
 function renderTitlesJson(t) {
   return JSON.stringify({ match: t.match, total: t.total, items: t.items }, null, 2);
+}
+
+// mano task runs outside any phase, so it must not run inside one: its edits
+// would land under stories or ledger rows planned against older code, and the
+// phase review would meet changes nobody scoped. A phase is open from the
+// moment its folder exists until review closes it.
+function scanTask(projectRoot) {
+  const s = scan(projectRoot);
+  const phaseOpen = !!s.phaseId && !s.closed;
+  const inTask = extractBacklogItems(s._backlogText, { status: "in-task" })
+    .map((block) => ((/^###\s+(.+?)\s*$/m.exec(block) || [])[1] || "?").trim());
+  const needsHuman = extractBacklogItems(s._backlogText, { status: "needs-human" }).map((block) => ({
+    title: ((/^###\s+(.+?)\s*$/m.exec(block) || [])[1] || "?").trim(),
+    check: ((/^-\s*\*\*Check:\*\*\s*(.+?)\s*$/im.exec(block) || [])[1] || "").trim() || null,
+  }));
+  return {
+    owner: s.owner,
+    runMode: s.runMode,
+    gate: phaseOpen ? "refused" : "allowed",
+    phaseId: phaseOpen ? s.phaseId : null,
+    reason: phaseOpen ? s.action : null,
+    inTask,
+    needsHuman,
+  };
+}
+
+function renderTask(t) {
+  const L = ["--- TASK GATE (from the state script — do not scan phase folders) ---"];
+  L.push(`OWNER: ${t.owner || "none (legacy phase-N mode)"}`);
+  L.push(`MODE: ${t.runMode}`);
+  L.push(`TASK: ${t.gate}`);
+  if (t.gate === "refused") {
+    L.push(`OPEN_PHASE: ${t.phaseId}`);
+    L.push(`REASON: ${t.reason}`);
+  }
+  L.push(`IN_TASK: ${t.inTask.length}`);
+  for (const title of t.inTask) L.push(`  - ${title}`);
+  L.push(`NEEDS_HUMAN: ${t.needsHuman.length}`);
+  for (const item of t.needsHuman) {
+    L.push(`  - ${item.title} — Check: ${item.check || "(missing)"}`);
+  }
+  return L.join("\n");
+}
+
+function renderTaskJson(t) {
+  return JSON.stringify(t, null, 2);
 }
 
 function scanGaps(projectRoot, type) {
@@ -1737,6 +1789,21 @@ function main() {
     process.stderr.write("[mano state] --source and --track require non-empty text and can only be used with --scope.\n");
     process.exit(1);
   }
+  if (args.task) {
+    if (args.scope || args.next || args.ui || args.current || args.spec || args.titles || args.gaps !== null || args.verbose) {
+      process.stderr.write("[mano state] --task cannot be combined with --scope, --next, --ui, --current, --spec, --titles, --gaps, or --verbose.\n");
+      process.exit(1);
+    }
+    let task;
+    try {
+      task = scanTask(args.root);
+    } catch (error) {
+      process.stderr.write(`[mano state] cannot resolve the task gate — ${error.message}\n`);
+      process.exit(1);
+    }
+    process.stdout.write((args.json ? renderTaskJson(task) : renderTask(task)) + "\n");
+    process.exit(0);
+  }
   if (args.spec) {
     if (args.scope || args.next || args.ui || args.current || args.gaps !== null || args.verbose) {
       process.stderr.write("[mano state] --spec cannot be combined with --scope, --next, --ui, --current, --gaps, or --verbose.\n");
@@ -1860,6 +1927,7 @@ module.exports = {
   scanGaps,
   scanSpec,
   scanUi,
+  scanTask,
   scan,
   renderAmendCurrent,
   amendBlocker,
@@ -1873,6 +1941,7 @@ module.exports = {
   renderSpecJson,
   renderUi,
   renderUiJson,
+  renderTask,
   renderCurrent,
   renderNext,
   renderJson,

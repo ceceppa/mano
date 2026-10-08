@@ -36,7 +36,7 @@ On activation:
 4. Read `_mano_output/ux-flow.md` if it exists.
 5. Read `_mano_output/tech-spec.md` if it exists — know what's technically possible.
 6. Read `_mano_output/project-rules.md` if it exists — respect a11y requirements (touch targets, contrast) that affect screen layout.
-7. **No phase brief → gap-only mode, or stop.** If `STATUS: NO_PHASE` or the projected brief does not exist, check `COUNT:` from step 1. `COUNT: 0` and no directive written with the command → stop; there is nothing to do and nothing to write (see **Directive mode** for the stop message). `COUNT:` above zero → run **Gap-only mode** below. A directive written with the command → run **Directive mode** below. Do not scope, invent, or extend screens for a phase that does not exist.
+7. **No phase brief → gap-only mode, or stop.** If `STATUS: NO_PHASE` or the projected brief does not exist, check `COUNT:` from step 1. `COUNT: 0` and no directive written with the command → stop; there is nothing to do and nothing to write (see **Directive mode** for the stop message). `COUNT:` above zero → run **Gap-only mode** below. A directive written with the command, including a contract for one feature, → run **Directive mode** below. Do not scope a phase, and do not invent or extend screens nobody asked for.
 
 <!-- mano-rule: id=ux-gap-needs-no-phase; incident=gap-block-deadlock; model=claude; date=2026-08-25; eval=ux-gap-only-mode -->
 ## Gap-only mode
@@ -65,12 +65,24 @@ node _mano/scripts/backlog.js resolve-gap --type ux-gap --title "[exact projecte
 A project-wide UX rule the human writes with the command — `mano ux "every destructive action asks for confirmation"` — is input this skill owns, with or without a phase. `ux-flow.md` is cumulative, so the UX rule needs no phase brief to justify it, and it needs no backlog item to survive a context reset: once written here, this file is its home. Recording it as a `ux-gap` first would only make the human approve a row restating what they just said.
 
 - **It is a directive when** it states a rule this file owns that holds across the whole product: a navigation rule, a step every flow of a kind must include, a required empty, error, or recovery state, a global interaction pattern. It is authoritative intent: adopt it as written, or override it explicitly with the reason in the completion log and a `❓ Decide:` line — never silently.
-- **Not this skill's → route it verbatim and write nothing.** A folder, naming, or code convention → `mano rules "[the directive]"`; a stack or value decision → `mano spec "[the directive]"`; a visual treatment → `mano ui "[the directive]"`. A new or changed screen, feature, or behaviour is work, not a directive (`_mano/rules/backlog.md` → **Artifact gaps versus implementation work**) → `mano start`.
+- **Not this skill's → route it verbatim and write nothing.** A folder, naming, or code convention → `mano rules "[the directive]"`; a stack or value decision → `mano spec "[the directive]"`; a visual treatment → `mano ui "[the directive]"`. The flow for one feature or screen is this skill's too: see **A contract for one feature** below.
 - **With no phase**, it runs under every Gap-only mode bound above: write only what the directive decides, nothing phase-scoped, no phase directory. Settle any projected `ux-gap` items in the same run. With a phase, the directive is applied alongside the phase's own work, as a project-wide rule.
 - **No backlog write for the directive.** Create no gap item for it and resolve none on its behalf; a projected gap it happens to settle is resolved the normal way.
 - **Contract, not code.** Writing the rule does not change screens already built. When it constrains flows earlier phases shipped, add one `⚠ Verify:` line: existing screens are not retrofitted by this run, and bringing them in line is implementation work → `mano start`. Do not read source to find them.
 - **Bare `mano ux` with no phase, no projected gap, and no directive** → stop and write nothing. Say there is no phase to work on, and name both ways in: `mano start` for phase work, or `mano ux "[the rule]"` to fix a project-wide UX rule now.
 <!-- /mano-rule: project-directive-no-phase -->
+
+<!-- mano-rule: id=feature-contract-no-phase; incident=task-route-refused-as-feature-work; model=not-recorded; date=2026-10-09; eval=ui-feature-contract-closed-phase,ux-feature-contract-closed-phase -->
+### A contract for one feature
+
+The human may hand this skill the flow for one feature or screen, to be built now, later, or never: `mano ux "batch rename: pick several items, rename them in one dialog; cancelling keeps the old names"`. Writing it is this skill's job, with or without a phase, and after the latest phase has closed. Whether and when it gets built is the human's call. Refusing it because no phase is open, because the last phase is reviewed, or because it describes a feature overrides that call.
+
+- **Write what the words decide** into the existing `ux-flow.md` structure. Settle the details a UX designer would settle inside those words (entry point, back path, empty and error states) from the flows already in the file. Ask once, numbered, only about a choice that changes what the user does and that neither the words nor the file settle.
+- **The request wins over the file.** When it contradicts what `ux-flow.md` says, it is the newer decision: replace the old statement in place, never leave both standing, and log both (`Replaced: <old> → <new>`). Raise `❓ Decide:` only when the words could equally mean replacing the old statement or sitting beside it.
+- **Same bounds as Directive mode.** No phase preview, no phase directory, no backlog write. Route any part another owner decides, verbatim.
+- **Contract, not code.** Add one `⚠ Verify:` line: this run builds nothing, and building it is work. `Next:` is `mano task "<item title>"` when the words name a backlog item, as they do when `mano task` routed here. Otherwise it is `mano task` or `mano start`, whichever the human picks to build it.
+- **Nothing to decide, nothing to write.** A request that only asks for code to change ("fix the crash on save") has no flow in it. Write nothing and route it to `mano task` or `mano start`.
+<!-- /mano-rule: feature-contract-no-phase -->
 
 **With a phase brief present, projected `ux-gap` items are still in scope.** Address them in the same run as the phase's own screens and resolve each one the same way. A gap left open blocks the next `mano start`, so never defer one on the grounds that the phase's own work came first.
 

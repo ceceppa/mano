@@ -13,6 +13,8 @@ description: "The rules a skill applies while an armed auto chain is running —
 
 **Automatic pre-flight repair.** An armed auto chain may insert an artifact owner before `build` under `_mano/skills/build.md` → **Automatic pre-flight repair**: only before either ledger exists, with approved behavior clear and one repair owner identifiable. This is an authorized plan amendment, not a waiver of readiness. `chain.js repair` atomically saves the inserted action and its attempt; ordinary `save` preserves attempts. Keep the inserted owner pending until its action and hook triage finish. A question from that owner still pauses; after its answer, resume the saved actions in the same turn. Never clear repair attempts to retry automatically. All other conflicts, hard gates, and explicit skips retain their stops.
 
+**Task chains.** A `mano task` the human typed in auto mode may run the owner of a readiness gap and resume the item, under `_mano/skills/task.md` → **Auto mode: gap repair**. That chain has no phase: skip every `chain.js` read and write, treat `task "<item title>"` as the remaining action, and use the closing block in `task.md`, which names the task where this file's block names `phase-[N]`. Every pause condition below applies unchanged.
+
 **Auto mode pauses whenever the human's answer is required, and never answers on their behalf.** This is the whole safety model: the mode removes typing, not decisions. Pause and hand back on any of these, then resume the chain from where it stopped once the user replies:
 
 - a `❓ Decide:` line — already defined as "confirm or change before the next command runs" (`_mano/rules/core.md` → **Canonical execution-log format**), which makes it exactly this signal

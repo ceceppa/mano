@@ -76,6 +76,7 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano build ["what changed"]` | Build the active phase straight from its brief — no story files. The brief's own numbered Phase Scope items are the units, tracked in `progress.md`. The optional quoted text is a mid-phase correction, accepted only once a valid ledger exists. |
 | `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
+| `mano task "<item>"` | Implement one item with no phase: a backlog item by title, or new work in plain words, which it writes into the backlog first. Asks only what the item leaves open. Refused while a phase is open. |
 | `mano continue` | Resume where the project is. With an open ledger it runs the implementation entry — `mano build` to completion, or `mano dev` for one story. Otherwise it auto-runs a planning action only when there is a single obvious next step; if several are still reasonable it shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
 
@@ -101,6 +102,18 @@ The ledger's two status vocabularies are deliberate: scope rows are `pending | d
 Because `mano build`'s ledger comes from the brief, `mano start` writes both `## Phase Scope` and `## Exit Criteria` as a numbered category with lettered leaves, and a script parses them — nothing retypes or paraphrases your text. A scope category is an outcome area you expect to be built together, not a module you are ordering; it is what gives one build pass a ceiling that came from you rather than from the model. A flat numbered scope list is still valid and builds one row at a time. A brief with a prose-only scope is refused and sent back to `mano start`, because inventing that split is the one thing this path forbids.
 
 `mano dev` is a *generic* implementer, not a language specialist. If you have a dedicated coding skill (e.g. a C++ specialist), you can have it implement instead — just point it at the contract: something like *"@cpp-pro, implement the next pending story following the 'Implementing a story' contract in `AGENTS.md`."* The specialist then writes the code under the same rules as the default implementer (AC only, one-line done, stop on a gap rather than inventing). The key is the contract reference — invoking a specialist with a bare "implement the next story" skips the discipline that keeps implementation supervised and on-scope.
+
+#### One item, no phase: `mano task`
+
+Phases suit work whose scope is known: several items land together, and a review checks the direction. Some work is the opposite: one narrow idea you can only judge by trying it, such as a game mechanic or an interaction that has to feel right before anything else gets built on it. Writing a brief and closing a review for every tweak costs more than the tweak.
+
+`mano task "the ball changes colour when it captures something"` builds that one piece. Pass an existing backlog item's title, or describe new work and it adds the item to the backlog first. Before any code it writes down the outcome the item has to deliver, and if part of that outcome would be a guess (an open detail, an undefined noun, an effect that starts but never says when it stops) it asks you, all questions at once. Your answers go into the item. When the item is already clear it asks nothing.
+
+The guardrails are the same gates as `mano dev`/`mano build`. A missing default goes to `mano spec`, an unwritten player choice to `mano ux`, and work too big for one item to `mano start`. When the item asks for the opposite of what the UX flow, design brief, or a spec value says, it stops and asks which one stands, and the command it prints writes the item's version over the old line. The item turns `in-task` before the first edit and stays that way until it's closed, so a half-built item never looks untouched. It closes the item only on evidence. When what's left can only be judged by you (how it looks, how it feels), the item becomes `needs-human`, with a one-line `Check:` saying what to try. Reply `works`, what's broken, or how you want it different. A redirect sends the item back to the backlog with your words in it, and the next run clarifies it again. The `Check:` line stays on the resolved item as the record of how it was verified.
+
+`mano task` is refused while a phase is open, because the phase's stories or ledger were planned against the code as it was. Auto mode and `mano continue` never start a task: picking what to build is yours.
+
+In auto mode, once you've typed `mano task`, a missing value or an unwritten player choice doesn't stop the run, and a contradiction stops only for your answer. It runs the `mano spec` or `mano ux` command it would otherwise have told you to type, then comes back to the item and checks its gates again. Each owner runs at most once per task, and a question from it still stops and waits for you.
 
 ### Optional phase owners
 
@@ -243,6 +256,8 @@ From then on, **once you approve a phase scope**, Mano runs the actions that pha
 - **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.
 - **It never closes the phase.** The chain stops after implementation. `mano review` is always yours to run.
 
+A `mano task` you type in auto mode gets a smaller chain of its own: it can run `mano spec` or `mano ux` for a missing value or flow, then finish the item. It never picks the next task for you.
+
 At the scope prompt, `1` and `go` are exact synonyms: both approve the scope and start the displayed auto chain. To change it and approve in one reply, use wording such as `go, skip rules` or `1, add ux`; an edit without `1` or `go` changes the proposal but does not start it.
 
 For a new interactive frontend, auto mode normally includes `ux` and `ui` when the exact flow, responsive composition, hierarchy, or visual states are not already covered. Those artifacts are still optional to you—you can explicitly skip either—but auto mode does not make that product decision on your behalf merely because the interface uses familiar controls.
@@ -279,6 +294,7 @@ Run a Mano action again when concrete new information affects its artifact. The 
 | **`mano review`** | Records evidence, triages feedback, closes the phase | `skills/review.md` |
 | **`mano build`** | Builds the active phase from its brief's own scope items, tracked in `progress.md` | `skills/build.md` |
 | **`mano dev [yolo]`** | Implements the next pending story, or the invocation-time pending set with explicit `yolo` | `skills/dev.md` |
+| **`mano task`** | Implements one backlog item, or one new idea it writes into the backlog first, with no phase | `skills/task.md` |
 | *(shared)* | The implementation contract both code paths read: gap gates, acceptance evidence, Repair Mode, read budget, output discipline | `rules/implement.md` |
 | *(shared, `auto` only)* | The chain rules a planning skill applies while an armed auto run is in flight — loaded only when the state projection reports `MODE: auto`, never on a manual run | `rules/auto.md` |
 
