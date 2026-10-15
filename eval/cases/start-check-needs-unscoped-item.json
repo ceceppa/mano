@@ -1,0 +1,11 @@
+{
+  "name": "start-check-needs-unscoped-item",
+  "description": "The human approves one item and gives a check, half of which needs a different backlog item they did not select. mano start must not draft a brief that silently cuts that half into Not This Phase, nor add the item on its own: it names the cancellation item and asks whether to add it to the phase or leave that part of the check for later.",
+  "fixture": "start-combine-small",
+  "phase": 1,
+  "prompt": "mano start. Approve \"Group presets in the picker\" for Phase 1. My check: I open the picker with forty presets and see them under headings, then I cancel an import halfway, restart, and see none of the cancelled run's values.",
+  "assertions": [
+    "start_asked_about_the_unscoped_check",
+    "start_did_not_mine_backlog"
+  ]
+}

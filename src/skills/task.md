@@ -33,10 +33,10 @@ This file is the complete contract. It carries its own copies of the `mano dev` 
 4. **Read project context before you change anything:** the item's context, the artifacts it names, and `_mano_output/project-rules.md` for the area you'll touch. Then read source.
 5. **Run the readiness gates (R2–R5) and the escalation check.** If any of them stops you, stop before you edit anything. In auto mode, check **Auto mode: gap repair** before handing back.
 6. **Mark the item `in-task`, then implement exactly this item** (see Rules). Before the first edit, run `node _mano/scripts/backlog.js task-status --title "<title>" --to in-task`; skip it only when the item is already `in-task`. The script refuses to move a `backlog` item anywhere else, so step 8 can't run without it.
-7. **Verify.** Run every build, lint, type-check, and test command through `node _mano/scripts/verify.js -- <command>`. If a failure's fix is inside this item's scope, fix it and re-run. Otherwise stop, report the failure, and leave the status alone.
-8. **Run the done gates (D1–D2), then write the status** with `node _mano/scripts/backlog.js task-status`. Never edit a status or `Check:` line by hand.
-   - Both gates pass → `--title "<title>" --to resolved`.
-   - D1's only shortfall is a human-only part (see D1) → `--title "<title>" --to needs-human --check "<what the human should try, one line>"`.
+7. **Verify.** Run every build, lint, type-check, and test command through `node _mano/scripts/verify.js -- <command>`. If a failure's fix is inside this item's scope, fix it and re-run. Otherwise document the changes being kept under D3, report the failure, and leave the status alone.
+8. **Document the changes through their owning skills (D3), then run all done gates (D1–D3) and write the status** with `node _mano/scripts/backlog.js task-status`. Never edit a status or `Check:` line by hand.
+   - All gates pass → `--title "<title>" --to resolved`.
+   - D2 and D3 pass and D1's only shortfall is a human-only part (see D1) → `--title "<title>" --to needs-human --check "<what the human should try, one line>"`.
    - Anything else → no status write; the item stays `in-task` and is reported as partial.
 9. **Report** (see Output).
 
@@ -148,7 +148,7 @@ When `state.js --task` reports `MODE: auto`, a readiness stop that routes to `ma
 
 **Pause instead** when the owner asks a question or raises `❓ Decide:`, routes the request somewhere else instead of writing it, or fails, and when the rerun gates stop again on an owner this run already ran. Print the chain's closing block (see Output) and wait. The human's answer resumes the chain in the same turn.
 
-Nothing else chains. A finished task never chains into another one, and the chain never runs `mano start` or closes a `needs-human` item. Picking what to build next is the human's call.
+Apart from the mandatory documentation handoff in D3, nothing else chains. A finished task never chains into another one, and the chain never runs `mano start` or closes a `needs-human` item. Picking what to build next is the human's call.
 
 A task chain keeps no `chain.js` record, because a task has no phase. The item in `backlog.md` is its durable state: if a session reset cuts the chain, `mano task "<item title>"` picks it up, and whatever the owner already wrote stays in its artifact.
 
@@ -157,7 +157,7 @@ A task chain keeps no `chain.js` record, because a task has no phase. The item i
 - Implement exactly one backlog item, and only after it is written in `backlog.md`.
 - Read existing project context before implementation.
 - Do not create a phase brief, stories, or a `progress.md` ledger.
-- Do not edit `tech-spec.md`, `project-rules.md`, `ux-flow.md`, or `design-brief.md`. A missing or wrong decision there goes to its owning command, as the gates say.
+- Do not edit `tech-spec.md`, `project-rules.md`, `ux-flow.md`, or `design-brief.md` directly as `mano task`. Invoke their owning skills to document implemented changes under D3; missing or conflicting decisions before implementation still follow the readiness gates.
 - Do not expand the scope of the backlog item.
 - Do not implement adjacent backlog items, even when they touch the same code.
 - Do not introduce new architecture unless the item requires it.
@@ -177,6 +177,25 @@ A failure here leaves the status `in-task` and is reported. Keep the edits, and 
 
 <!-- mirrors _mano/rules/implement.md 10.2 -->
 **D2 — Design-contract conformance.** If the item produced or changed a user-visible surface and `_mano_output/design-brief.md` names components for that surface, confirm from **this turn's edits** that the surface uses each named one: its name, or the file that defines it, appears in what you wrote. A shared theme, matching colour, copied style, or hand-built lookalike is not the component. A missing one means not done.
+
+## Document implemented changes
+
+<!-- mano-rule: id=task-documents-changes; incident=task-left-player-layer-undocumented-and-told-human-to-run-spec; model=not-recorded; date=2026-10-16; eval=task-documents-changes -->
+**D3 — Documentation through the owner.** Every task that changes implementation must document what changed before becoming `resolved` or `needs-human`, including work resumed from `in-task`. This is part of completing the requested task in **both manual and auto mode**, not an optional next step. Never say “run `mano spec` if you want this documented.”
+
+Compare the actual changes with the canonical artifacts and invoke the relevant owner with a concrete, bounded account of the implemented result:
+
+- `mano spec` → technical contracts, layers and their responsibilities (for example a new Player layer), data models, dependencies, and behaviour-driving values.
+- `mano rules` → project conventions and file-structure rules.
+- `mano ux` → user actions, flows, feedback, and recovery.
+- `mano ui` → visual treatments and component decisions.
+
+Load each selected skill's contract and required rules and execute it in this turn. Pass the item title, grounded outcome, exact implemented changes, relevant declarations/values, and affected artifact sections as **task documentation sync** context. This supplies the no-phase context; a title alone is insufficient. Document only this item's changes, and keep implementation detail out of artifacts that do not own it. If existing documentation already covers the result (such as a bug fix restoring the documented behavior), invoke the relevant owner to verify coverage; report its no-change finding rather than manufacturing an artifact edit.
+
+Return to this task after each owner and its hooks finish; do not follow its unrelated `Next:` suggestions. The readiness repair's once-per-owner limit does not prevent this post-implementation sync. Preserve owner questions and conflicts: if an owner cannot finish, leave the item `in-task`, report the documentation blocker, and resume it after the answer. Documentation cannot ratify a readiness violation after the fact. If verification failed, still sync the changes being kept when possible, explicitly describing them as partial rather than promising a completed outcome.
+
+Reread the affected sections to confirm they match the implementation. In the final task log include `Documented: <owner → artifact and sections updated, or coverage verified with no edit>`. A suggested command or an unsupported claim of documentation does not pass D3.
+<!-- /mano-rule: task-documents-changes -->
 
 ## Closing a `needs-human` item
 
@@ -245,7 +264,7 @@ When a done gate or verification fails (edits kept, status unchanged):
 
 ```
 [mano task]: <item title> — partial, still in-task
-Why: <D1/D2 or failing check> — <one line>
+Why: <D1/D2/D3 or failing check> — <one line>
 Changed: <files>
 Next: mano task "<item title>" to finish it
 ```

@@ -2,6 +2,14 @@
 
 Shared rules for skills that write planning artifacts. A skill's front-matter names this file in `requires:`; read it once at activation, with `_mano/rules/core.md`.
 
+<!-- mano-rule: id=task-documents-changes; incident=task-left-player-layer-undocumented-and-told-human-to-run-spec; model=not-recorded; date=2026-10-16; eval=task-documents-changes -->
+## Task documentation sync
+
+When `mano task` invokes an artifact owner to document its implementation, accept its bounded handoff as directive-mode input even without a phase or gap row. The item outcome and supplied implementation evidence provide context for the named changes, including a new layer or interface. This exception takes precedence over activation wording requiring a human-typed command or a phase brief; run the owner's normal state projection and language check, but do not pull unrelated closed-phase scope into this sync.
+
+Update only the artifact this skill owns, using targeted edits and the normal quality checks for the affected content. If it already describes the implemented result, verify that coverage and report no change. Do not mine source for new requirements, create a phase or gap just for documentation, or turn partial implementation into a completed contract. Keep human-owned conflicts and hook triage as stops. After completion, return to the calling task without a `Next:` menu or unrelated auto-chain actions.
+<!-- /mano-rule: task-documents-changes -->
+
 ## Artifact Quality
 
 Planning artifacts are written for human readers — people who will read, discuss, edit, and act on them. They are not structured inputs for AI models. Write new planning prose in the resolved `language.artefacts` returned by the language command (`artefacts` → `build` → `chat` → `null`). Keep required headings, schema keys, status labels, commands, paths, and verbatim quotations unchanged. Product/UI copy, including copy in design previews, follows `language.build`.

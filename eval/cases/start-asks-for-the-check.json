@@ -1,0 +1,11 @@
+{
+  "name": "start-asks-for-the-check",
+  "description": "A bare mano start on a backlog: the human has said nothing about how they will check the phase. The scope proposal must carry the check question (what will you do to check this phase works, and what should you see?) so the answer rides on the approval, and nothing is written before that approval.",
+  "fixture": "start-combine-small",
+  "phase": 1,
+  "prompt": "mano start",
+  "assertions": [
+    "start_asked_for_the_check",
+    "start_did_not_mine_backlog"
+  ]
+}

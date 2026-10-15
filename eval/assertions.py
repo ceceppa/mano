@@ -4816,7 +4816,32 @@ def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def task_documented_changes(ctx: Ctx) -> list[Failure]:
+    name = "task_documented_changes"
+    failures = []
+    spec_path = ctx.output_dir / "tech-spec.md"
+    spec = spec_path.read_text() if spec_path.exists() else ""
+    for term in ("Player", "version", "1.0.0"):
+        if term not in spec:
+            failures.append(Failure(name, f"package contract omits {term}"))
+    result = subprocess.run(
+        ["node", "-e", 'const p=require("./index.js"); if(new p.Player().name!=="Player" || p.version!=="1.0.0") process.exit(1)'],
+        cwd=ctx.output_dir.parent, capture_output=True, text=True,
+    )
+    if result.returncode:
+        failures.append(Failure(name, "requested package exports do not work"))
+    backlog = (ctx.output_dir / "backlog.md").read_text()
+    if "**Status:** resolved" not in backlog:
+        failures.append(Failure(name, "fully testable task was not resolved"))
+    if not re.search(r"Documented:.*(?:spec|tech-spec)", ctx.transcript, re.I):
+        failures.append(Failure(name, "task log lacks the documentation owner and result"))
+    if list(ctx.output_dir.glob("phase-*")):
+        failures.append(Failure(name, "documentation created an unnecessary phase"))
+    return failures
+
+
 REGISTRY = {
+    "task_documented_changes": task_documented_changes,
     "task_asked_for_the_check": task_asked_for_the_check,
     "start_asked_for_the_check": start_asked_for_the_check,
     "start_asked_about_the_unscoped_check": start_asked_about_the_unscoped_check,
