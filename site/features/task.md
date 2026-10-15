@@ -25,13 +25,27 @@ When part of it would be a guess, it asks you first, all questions at once:
 - a list may be just examples;
 - something starts but never says when it stops or what reverts.
 
-It asks *what*, never *how*. Your answers go into the item's context in your words, and it carries on in the same turn. When the item is already clear, it asks nothing.
+It asks *what*, never *how*. Your answers go into the item's context in your words, and it carries on in the same turn.
+
+## Your check comes first
+
+The outcome is the item's definition of done, and if Mano writes it from the ticket, all you do is approve it. That's easy to do in a rush, without noticing what's missing. So unless you've already said it, `mano task` shows what the item says and asks one question:
+
+```text
+What will you do to check it works, and what should you see?
+```
+
+Your answer becomes part of the outcome, in your words. It's saved in the item as a `Done when:` line, the done gates need evidence for every part of it, and if the item ends up `needs-human`, its `Check:` starts from it. If your check covers more than the item, it asks whether to leave the extra out or widen the item. It never sends you to `mano start` for it. "Just build it" is a complete answer too, and it won't ask again.
+
+When the run is going to ask you anything, the gates below run first, so the same message also lists every missing value, missing flow, and replacement. You see it all at once.
+
+When the item is already clear and you've said how you'll check it, it asks nothing.
 
 ## Same gates as a phase
 
 A missing default (a duration, a radius, a speed) stops the run and goes to `mano spec`. An unwritten player choice goes to `mano ux`. A stack decision, or work too big for one item, goes to `mano start`. `mano task` never edits the tech spec, rules, UX flow, or design brief itself.
 
-When the item asks for the opposite of what the UX flow, the design brief, or a value in the tech spec says, both are your decisions, so the run stops and asks which one stands. To keep the item's version, run the command it prints. The command carries the change, not just the title:
+When the item asks for the opposite of what the UX flow, the design brief, or a value in the tech spec says, the run stops. If the item's version is in your own words from this run, you've already chosen: building the smallest version and widening its limits later is how iteration works, so it just shows what gets replaced. If it only comes from older item text, either one could be stale, so it asks which one stands. To keep the item's version, run the command it prints. The command carries the change, not just the title:
 
 ```text
 mano ui "Visible shield glow: the glow stays on for the whole immunity window (replaces: the shield shows only on a blocked hit)"

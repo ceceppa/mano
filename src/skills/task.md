@@ -1,6 +1,6 @@
 ---
 name: mano-task
-description: Use to implement one narrow piece of work directly, without a phase. Takes an existing backlog item's title or a plain description of new work, makes sure the item is clearly written first, then implements exactly that item. Refused while a phase is open.
+description: Use to implement one narrow piece of work directly, without a phase. Takes an existing backlog item's title or a plain description of new work, asks how the human will check it unless they already said, makes sure the item is clearly written first, then implements exactly that item. Refused while a phase is open.
 requires: []
 ---
 
@@ -44,6 +44,21 @@ This file is the complete contract. It carries its own copies of the `mano dev` 
 
 An item is clearly written when its outcome can be checked: what a user, test, or caller can see happen once it's done. A backlog item has no acceptance criteria, so this outcome stands in for them, and the done gates check against it.
 
+<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check -->
+**The check is the human's.** The outcome is the item's definition of done. When you write it from the ticket, the human only approves it, often without reading it, and what they actually meant shows up after the code. So unless the human's own words already say what they'll do to check the item and what they should see, show what the item asks for (its context, at most five lines) and ask:
+
+> What will you do to check it works, and what should you see?
+
+Their own words are the request, their answers in this conversation, and the item's `Human check failed:` and `Human redirection:` lines. A title, or an item they didn't write here, is not. Ask once, in the same message as any other question. Every reply is complete: a check, or "just build it" / "as the item says", which means you build the outcome from the item and don't ask again. The question asks for something the item doesn't have, not for a yes, so it isn't the confirmation round ruled out below.
+
+A check they give becomes part of the outcome, in their words: R1 builds on it, D1 needs evidence for each part of it, and a `needs-human` `Check:` line starts from it. Write it into the item as one context line, `Done when: <their words, on one line>`. If the context would pass five lines, shorten your own lines, never theirs. When the check covers more than the item, name the extra part and the item that already tracks it (`node _mano/scripts/state.js --titles --match "<its distinctive word>"`), and ask once: leave it out, or widen this item to include it? Widening is the human's call, and it never sends them to `mano start` on its own.
+
+**One message carries everything.** When this step is going to ask the human anything, first read what R2–R5 check (`tech-spec.md`, `ux-flow.md`, `design-brief.md`, where they exist; not source) and run those gates against the outcome drafted so far. Put each stop in the same message as the questions, so the human sees every missing value, missing flow, and replacement at once instead of meeting a gate after answering. Step 5 still runs the gates in full.
+
+❌ "Here's the outcome I'll build: the panel lists every result. Does that look right?" (asks for a yes)
+✅ "The item says: 'Show how many results the search found.' What will you do to check it works, and what should you see?"
+<!-- /mano-rule: task-human-writes-the-check -->
+
 **R1 — Write the outcome.** In one or two lines, write the observable outcome. Every part of it must come from the item's context, an artifact it names, or the human's words in this conversation, never from what you'd expect such a feature to do.
 
 **For new work, draft the item first.** Title: short and specific. Type: `feature`, `bug`, `refinement`, `tech-debt`, or `test`, never a gap type. Context: at most 5 lines, built from the human's words; keep their phrasing where you can and add nothing they didn't say.
@@ -63,7 +78,7 @@ Ask all your questions at once, numbered, one decision each, and only those whos
 - how a player picks between options → R3 routes it to `mano ux`;
 - anything the item already states. Don't re-open it.
 
-When the item is already clear, ask nothing: no confirmation round and no "does this look right?".
+When the item is already clear and the human's own words already say how they'll check it, ask nothing: no confirmation round and no "does this look right?".
 
 ❌ "Should the colour change use a shader or a material swap?" (how, belongs to `mano spec`)
 ❌ "Which shade of red?" (a value, belongs to `mano spec` via R2)
@@ -97,6 +112,10 @@ A stop here means **no edits**: no source, no tests, no artifacts. The item keep
 
 **R5 — Contract contradiction.** If the R1 outcome needs the opposite of what `ux-flow.md`, `design-brief.md`, or a value in `tech-spec.md` states, stop. Both are the human's decisions, so which one stands is theirs to say: quote both and raise one `❓ Decide:`. The route writes the item's version into the owner's artifact as a replacement: `mano ui "<item title>: <the item's version, in its words> (replaces: <the artifact's statement>)"`, or `mano ux` / `mano spec` for their files. Running it is the answer. Build against neither version until the artifact agrees with the item. Any other contradiction with `tech-spec.md`, or one with `project-rules.md`, is an escalation (below).
 
+<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check -->
+When the item's version is the human's own words from this conversation (their request or their check), they have already said which one stands. Humans build by iteration: they ship the smallest version and widen its limits later, so replacing an earlier artifact decision is the normal next step, not a mistake. Raise no `❓ Decide:`. Show the stop as the replacement it is, quoting both, with the same route. Keep the `❓ Decide:` for an item whose version comes only from text the human hasn't restated, where either one may be the stale one.
+<!-- /mano-rule: task-human-writes-the-check -->
+
 ❌ `Next: mano ui "Visible shield glow"` (a title gives the owner nothing to write)
 ✅ `Next: mano ui "Visible shield glow: the glow stays on for the whole immunity window (replaces: the shield shows only on a blocked hit)"`
 
@@ -117,7 +136,7 @@ When `state.js --task` reports `MODE: auto`, a readiness stop that routes to `ma
 **All of these must hold:**
 
 - `state.js --task` reported `MODE: auto` in this run, and nothing is pending: no unanswered clarify question, no script failure, no stop from the human.
-- The stop is R2, R3, or R4's missing scaffold command, or R5 once the human has answered its `❓ Decide:` in favour of the item. R5 always pauses for that answer first; an answer for the artifact ends the run with the item untouched. An escalation (R4's stack decision included), a gap-type item, a done gate, and a failing check never chain. Their next step is `mano start`, a decision, or a fix, and those belong to the human.
+- The stop is R2, R3, or R4's missing scaffold command, or R5 once the human has chosen the item's version: by answering its `❓ Decide:` for the item, or by stating that version in their own words in this conversation, which raises no `❓ Decide:`. An R5 `❓ Decide:` always pauses for its answer first; an answer for the artifact ends the run with the item untouched. An escalation (R4's stack decision included), a gap-type item, a done gate, and a failing check never chain. Their next step is `mano start`, a decision, or a fix, and those belong to the human.
 - The item is written in `backlog.md` with its R1 outcome. The owner supplies a value, a flow, or a treatment, never the outcome.
 - This run hasn't already run that owner. One attempt per owner per run.
 
@@ -154,7 +173,7 @@ A failure here leaves the status `in-task` and is reported. Keep the edits, and 
 <!-- mirrors _mano/rules/implement.md 10.1 -->
 **D1 — Outcome evidence.** Reread the outcome you wrote for R1. For every part of it, point to concrete evidence from this turn (a test that exercises it, or a manual/runtime check you ran) showing the outcome happens through the route the item describes. A green suite is not enough if nothing in it exercises the outcome. Any assertion, fixture, comment, skipped test, or observed result that says the opposite (success expected as failure, available expected as unavailable) proves the item is **not done**, even if everything passes. If current code or an artifact deliberately keeps the opposite behaviour, stop and report the contradiction; do not invert the test or reword the outcome to match. If a visual or experiential part can't be checked, don't resolve: when every other part has evidence, the item becomes `needs-human`.
 
-**`needs-human` is a handoff, not an escape hatch.** Use it only when every part of the outcome you *can* exercise has evidence from this turn, and what's left is inherently visual, experiential, or otherwise impossible for you to check honestly (how it looks, how it feels, a device you don't have). It is never for a missing test you could have written, a tool you didn't try, a failed check, or a contradiction. Those leave the status `in-task` and report the item as partial. The `Check:` line names one thing the human does and what they should see.
+**`needs-human` is a handoff, not an escape hatch.** Use it only when every part of the outcome you *can* exercise has evidence from this turn, and what's left is inherently visual, experiential, or otherwise impossible for you to check honestly (how it looks, how it feels, a device you don't have). It is never for a missing test you could have written, a tool you didn't try, a failed check, or a contradiction. Those leave the status `in-task` and report the item as partial. The `Check:` line names one thing the human does and what they should see. When the item has a `Done when:` line, start from it, in the human's words, and keep only the part this turn couldn't verify.
 
 <!-- mirrors _mano/rules/implement.md 10.2 -->
 **D2 — Design-contract conformance.** If the item produced or changed a user-visible surface and `_mano_output/design-brief.md` names components for that surface, confirm from **this turn's edits** that the surface uses each named one: its name, or the file that defines it, appears in what you wrote. A shared theme, matching colour, copied style, or hand-built lookalike is not the component. A missing one means not done.
@@ -187,9 +206,12 @@ When the item needs clarification (nothing written):
 
 ```
 [mano task]: <item title or "new item"> — needs clarification
+The item says: <its context, at most five lines — omit for new work drafted from the human's words>
 Outcome so far: <the parts already grounded, one line>
-1. <question>
+1. What will you do to check it works, and what should you see?   ← only when their words don't say it yet
 2. <question>
+Before code: <each stop R2–R5 already found: the missing value or flow, or "<item's version> (replaces: <statement>)" — omit when none>
+❓ Decide: <R5 on item text the human hasn't restated only: keep the artifact's version, or replace it with the item's?>
 ```
 
 When the gate refuses (nothing written):
@@ -205,7 +227,7 @@ When a readiness gate stops or escalation fires (no edits made):
 ```
 [mano task]: <item title> — not implemented
 Why: <R2/R3/R4/R5 or escalation trigger> — <what's missing, or both statements for R5, one line>
-❓ Decide: <R5 only: keep the artifact's version, or replace it with the item's?>
+❓ Decide: <R5 on item text the human hasn't restated only: keep the artifact's version, or replace it with the item's?>
 Next: <mano start | mano spec "<item>: <what's missing>" | mano ux "<item>: <what's missing>" | R5: mano <ux|ui|spec> "<item>: <item's version> (replaces: <statement>)">
 ```
 

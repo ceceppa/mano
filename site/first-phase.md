@@ -15,7 +15,7 @@ This is a real phase from [react-native-ama](https://github.com/FormidableLabs/r
 mano start
 ```
 
-Mano reads your backlog and proposes a phase. It asks about anything it would otherwise have to guess, then shows you the complete scope and waits. **Nothing is written until you approve it.**
+Mano reads your backlog and proposes a phase. With the proposal it asks how you'll check the phase works and what you should see. Answer in the same reply as your approval, and your check becomes the exit criteria, in your words. It asks about anything it would otherwise have to guess, then shows you the complete scope and waits. **Nothing is written until you approve it.**
 
 What came out:
 
