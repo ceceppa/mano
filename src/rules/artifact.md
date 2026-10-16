@@ -96,6 +96,20 @@ When the current artifact owns the value, state the relevant details:
 
 If the value remains undecided, ask for it or mark it provisional through the normal decision protocol. Never invent a default to remove an open question. When another artifact owns the value, reference that artifact instead of repeating the number.
 
+<!-- mano-rule: id=tuning-seeds-not-contracts; incident=attractor-poc-tuning-froze-seeds-in-spec-and-tests; model=not-recorded; date=2026-10-16; eval=spec-tuning-seeds -->
+#### Parameter authority: contracts, tuning, and seeds
+
+A parameter needs an owner and meaning; its current number does not always belong in an artifact. Classify it where it is defined, without adding a separate registry:
+
+- **Contract:** an exact value or relationship required by a product promise, interoperability, correctness, or a technical constraint. State it and why it is binding. Changing it requires updating its owning artifact.
+- **Tuning:** a parameter intended for iteration. State its meaning, unit, authoritative implementation configuration location, override precedence when relevant, and actual constraints. The current value lives in that configuration, not in a duplicate artifact table. A change within this delegated freedom needs no spec sync or new decision.
+- **Initial seed:** a suggested starting value for tuning, explicitly non-normative and for first implementation only. It is not the current default or an acceptance criterion. Preserve it as labelled initial guidance or remove it when no longer useful; never continually synchronise it with implementation.
+
+For tuning, the parameter details above describe configuration ownership and real constraints; an exact current default in the artifact is not required. Distinguish necessary bounds from convenient editor ranges: do not turn an arbitrary slider limit into a permanent requirement. A seed needs no separate approval when the human has authorised provisional choices or tuning; an unresolved product promise still needs a decision. If no configuration exists yet, name its intended home and provide an authorised seed or an explicit rule for choosing it.
+
+Do not silently reclassify an existing normative value as tuning. On an explicit request to allow tuning, replace its normative wording in place and retain genuine promises and constraints. A differing seed is not artifact drift; violating a contract, required relationship, or promised playable outcome still is. Verification must not promote seeds into requirements: use explicit fixture values for behaviour checks, check configuration wiring separately, and retain checks of real configured outcomes where they protect a promise.
+<!-- /mano-rule: tuning-seeds-not-contracts -->
+
 #### Make requirements testable without adding ceremony
 
 A requirement gives the reader enough information to answer:

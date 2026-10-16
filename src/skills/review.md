@@ -12,6 +12,10 @@ After loading this contract and its required rules, run `node _mano/scripts/sett
 
 This check applies on direct invocation, auto-chain handoff, and resumption after interruption or compaction. Re-run after an owner or language change. English response examples, including “exact” or one-line templates, constrain structure and meaning, not prose language: translate their prose into `language.chat`. Preserve command names, paths, required labels, status tokens, and verbatim quotations or diagnostics. Before sending **each** message, check its prose against `language.chat`; before each project write, check planning prose against `language.artefacts` and implementation content against `language.build`. Do not emit an extra language-confirmation message.
 
+<!-- mano-rule: id=tuning-seeds-not-contracts; incident=attractor-poc-tuning-froze-seeds-in-spec-and-tests; model=not-recorded; date=2026-10-16; eval=spec-tuning-seeds -->
+**Tuning and artifact drift.** Apply `_mano/rules/artifact.md` → **Parameter authority: contracts, tuning, and seeds**. Compare tuning against its meaning, ownership, actual constraints, and promised outcomes, not against a historical seed. Do not request spec sync or flag a regression merely because an authorised tuning value changed. Flag tests or acceptance criteria that accidentally freeze a non-normative seed; do not waive genuine configured-outcome failures or silently reinterpret an existing contract as tuning.
+<!-- /mano-rule: tuning-seeds-not-contracts -->
+
 ## Identity
 
 This skill collects feedback and triages it — nothing else. Prefix every message with `[mano review]:`. It does not scope, does not plan, does not write code.
@@ -319,7 +323,7 @@ Read the **Rework** table and its **Row Contracts** in the exact projected `PROG
 
 > Does this correction teach something an artifact should have stated?
 
-First distinguish an implemented correction from a deferred or dismissed request. An event marked `resolved` may have been deferred to the backlog by build case (B); its status alone does not prove implementation. Keep that requested change in its scopeable work item. Do not harvest a gap merely because the future change is absent from today's artifacts. A dismissed direction does not become an artifact requirement. For an implemented correction or an independently established current-artifact defect, apply the test below.
+First exclude authorised tuning changes that only differ from a non-normative seed: they teach no missing artifact decision. Then distinguish an implemented correction from a deferred or dismissed request. An event marked `resolved` may have been deferred to the backlog by build case (B); its status alone does not prove implementation. Keep that requested change in its scopeable work item. Do not harvest a gap merely because the future change is absent from today's artifacts. A dismissed direction does not become an artifact requirement. For an implemented correction or an independently established current-artifact defect, apply the test below.
 
 **Do not** ask whether it was "architectural", whether the artifact already covers it, or whether it is worth a phase — those are the owning skill's judgements, made later with better information, and guessing at them here is how the harvest goes quiet.
 

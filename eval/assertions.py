@@ -4771,6 +4771,22 @@ def task_asked_for_the_check(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def task_reused_reproduction(ctx: Ctx) -> list[Failure]:
+    """Reuse the reported action, but still ask for the cargo's destination."""
+    name = "task_reused_reproduction"
+    out = _wrote_nothing(ctx, name)
+    text = ctx.transcript
+    if _CHECK_QUESTION.search(text) or re.search(
+        r"(?:how|what).{0,60}\b(?:verify|reproduce|test)\b.{0,100}\?", text, re.I
+    ):
+        out.append(Failure(name, "asked for verification already supplied by the reproduction"))
+    if not re.search(r"(?:where|which side|should|stay|land|stop|pass|continue|block).{0,300}\?", text, re.I | re.S):
+        out.append(Failure(name, "did not ask for the unresolved cargo behaviour"))
+    if not re.search(r"cargo|objects|contents", text, re.I):
+        out.append(Failure(name, "did not ground the question in the reported cargo loss"))
+    return out
+
+
 def start_asked_for_the_check(ctx: Ctx) -> list[Failure]:
     """The scope proposal carries the check question, and nothing is written yet."""
     name = "start_asked_for_the_check"
@@ -4840,9 +4856,32 @@ def task_documented_changes(ctx: Ctx) -> list[Failure]:
     return failures
 
 
+
+def spec_tuning_seed_authority(ctx: Ctx) -> list[Failure]:
+    name = "spec_tuning_seed_authority"
+    out = _directive_no_phase(ctx, name, "tech-spec.md",
+                              ("capture_duration", "gametuning"),
+                              ("project-rules.md", "ux-flow.md", "design-brief.md"))
+    text = (ctx.output_text("tech-spec.md") or "").lower()
+    checks = {
+        "seed explicitly non-normative": r"non[- ]normative|not (?:a |an )?(?:binding|contractual|acceptance)|not.*acceptance criter",
+        "current values delegated to configuration": r"configur|tuning",
+        "instance overrides": r"overrid",
+        "countdown starts after field ends": r"(?:after|once|when)[^\n.]*field[^\n.]*(?:end|finish|complet)",
+        "release at configured duration": r"releas[^\n.]*(?:durat|expir|timer|countdown)|(?:durat|timer|countdown)[^\n.]*releas",
+        "explicit fixture verification": r"fixture|explicit.*test.*(?:value|parameter)|test.*explicit.*(?:value|parameter)",
+    }
+    for meaning, pattern in checks.items():
+        if not re.search(pattern, text):
+            out.append(Failure(name, f"Missing {meaning}"))
+    return out
+
+
 REGISTRY = {
+    "spec_tuning_seed_authority": spec_tuning_seed_authority,
     "task_documented_changes": task_documented_changes,
     "task_asked_for_the_check": task_asked_for_the_check,
+    "task_reused_reproduction": task_reused_reproduction,
     "start_asked_for_the_check": start_asked_for_the_check,
     "start_asked_about_the_unscoped_check": start_asked_about_the_unscoped_check,
     "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,
