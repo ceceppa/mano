@@ -4787,6 +4787,61 @@ def task_reused_reproduction(ctx: Ctx) -> list[Failure]:
     return out
 
 
+# Asking the human how they will check or verify the work: the generic check
+# question, or its action half on its own. A concrete behaviour question that
+# happens to say "see" is not this.
+_ASKS_HOW_THEY_CHECK = re.compile(
+    r"\b(?:what will you do|what would you do|how will you|how would you|how do you plan to)\b"
+    r"[^?\n]{0,80}\b(?:check|verify|test|confirm)\b[^?\n]{0,160}\?",
+    re.IGNORECASE,
+)
+
+_STATED_GOAL = "prevent spawn-killing and unavoidable death loops"
+
+
+def task_skipped_stated_check(ctx: Ctx) -> list[Failure]:
+    """The request already says what the human will see: ask only what's open.
+
+    Its bullets and goal line are the check. Asking how they'll check it gets
+    the goal back in other words. The exploit clause is still open, so a
+    question about it must stay, and nothing may be written before the answer.
+    """
+    name = "task_skipped_stated_check"
+    if not ctx.steps:
+        return [Failure(name, "case ran no steps")]
+    step = ctx.step(1)
+    out = []
+    changed = sorted(ctx.changed_in_step(1))
+    if changed:
+        out.append(Failure(name, f"step 1 wrote {changed} before the open question was answered"))
+    new_source = sorted(set(step.source_files) - _seeded_sources(ctx))
+    if new_source:
+        out.append(Failure(name, f"step 1 wrote source before the open question was answered: {new_source}"))
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", step.final_response)
+    if _ASKS_HOW_THEY_CHECK.search(text):
+        out.append(Failure(name, "asked how the human will check it, though the request already "
+                                 "says what they should see"))
+    if not re.search(r"\b(?:exploit\w*|abus\w*|escape|flee|run away|actions?|sprint\w*|"
+                     r"throw\w*|interact\w*)\b[^?]{0,300}\?", text, re.IGNORECASE):
+        out.append(Failure(name, "did not ask what keeps respawn from being an exploitable escape"))
+    return out
+
+
+def task_done_when_quotes_request(ctx: Ctx) -> list[Failure]:
+    """With no check question asked, `Done when:` quotes the human's goal line."""
+    name = "task_done_when_quotes_request"
+    blocks = [body for title, _, body in _backlog_blocks(ctx) if "respawn" in title.lower()]
+    if not blocks:
+        return [Failure(name, "no respawn item was written after the open question was answered")]
+    done = re.search(r"^\s*Done when:\s*(.+)$", blocks[0], re.MULTILINE)
+    if not done:
+        return [Failure(name, "the item has no `Done when:` line")]
+    quoted = re.sub(r"[*_`]", "", done.group(1)).lower()
+    if _STATED_GOAL not in re.sub(r"\s+", " ", quoted):
+        return [Failure(name, f"`Done when:` does not quote the human's goal line: {done.group(1)!r}")]
+    return []
+
+
 def start_asked_for_the_check(ctx: Ctx) -> list[Failure]:
     """The scope proposal carries the check question, and nothing is written yet."""
     name = "start_asked_for_the_check"
@@ -4882,6 +4937,8 @@ REGISTRY = {
     "task_documented_changes": task_documented_changes,
     "task_asked_for_the_check": task_asked_for_the_check,
     "task_reused_reproduction": task_reused_reproduction,
+    "task_skipped_stated_check": task_skipped_stated_check,
+    "task_done_when_quotes_request": task_done_when_quotes_request,
     "start_asked_for_the_check": start_asked_for_the_check,
     "start_asked_about_the_unscoped_check": start_asked_about_the_unscoped_check,
     "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,

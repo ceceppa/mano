@@ -29,7 +29,7 @@ It asks *what*, never *how*. Your answers go into the item's context in your wor
 
 ## Your check comes first
 
-The outcome is the item's definition of done, and if Mano writes it from the ticket, all you do is approve it. That's easy to do in a rush, without noticing what's missing. So unless you've already said it, `mano task` shows what the item says and asks one question:
+The outcome is the item's definition of done, and if Mano writes it from the ticket, all you do is approve it. That's easy to do in a rush, without noticing what's missing. So unless your own words already say what you'll see, `mano task` shows what the item says and asks one question:
 
 ```text
 What will you do to check it works, and what should you see?
@@ -37,9 +37,11 @@ What will you do to check it works, and what should you see?
 
 Your answer becomes part of the outcome, in your words. It's saved in the item as a `Done when:` line, the done gates need evidence for every part of it, and if the item ends up `needs-human`, its `Check:` starts from it. If your check covers more than the item, it asks whether to leave the extra out or widen the item. It never sends you to `mano start` for it. "Just build it" is a complete answer too, and it won't ask again.
 
+If your request already describes the result ("after respawning, I'm immune for 3 seconds"), that's your check: it doesn't ask you to say it again. The `Done when:` line quotes your sentence word for word instead. It never asks only what you'll *do* to check, because for new behaviour that's doing what the result describes.
+
 When the run is going to ask you anything, the gates below run first, so the same message also lists every missing value, missing flow, and replacement. You see it all at once.
 
-When the item is already clear and you've said how you'll check it, it asks nothing.
+When the item is already clear and you've said what you'll see, it asks nothing.
 
 ## Same gates as a phase
 

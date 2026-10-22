@@ -1,0 +1,19 @@
+{
+  "name": "task-skips-check-when-result-stated",
+  "description": "The human pastes a detailed request that already says what they'll see: a safe respawn far from monsters, three seconds of immunity, and a goal line. The contract asked the generic check question anyway, and the answer only restated the goal. Step 1 must ask only the open behaviour (what counts as an exploitable escape) and write nothing. Step 2 answers it, and the item's `Done when:` must quote the human's goal line word for word instead of a check Mano asked them to restate.",
+  "fixture": "task-stated-result",
+  "steps": [
+    {
+      "prompt": "mano task\n### Safe Respawn & Temporary Immunity\n\nWhen a player dies, the respawn system must select **any valid, safe location on the map**, rather than relying on fixed spawn points.\n\n- The location must be reachable, collision-free, and sufficiently far from monsters to prevent immediate detection or capture.\n- Prefer locations outside monsters' vision, hearing, and presence ranges.\n- If no fully safe location exists, select the safest available valid location.\n- After respawning, the player receives **3 seconds of temporary immunity** during which monsters cannot catch, attack, or damage them.\n- Monsters must not automatically retain aggro or track the player's new position after respawn. Normal detection rules apply once immunity expires.\n- Immunity must be configurable and provide clear visual feedback.\n- The authoritative host determines respawn location and immunity state in multiplayer.\n\n**Goal:** Prevent spawn-killing and unavoidable death loops without making respawning an exploitable escape mechanic.",
+      "session": "fresh"
+    },
+    {
+      "prompt": "Monsters ignore me completely while I'm immune. Any action I take (throw, interact, sprint) ends the immunity at once. When it ends, normal rules apply straight away.",
+      "session": "continue"
+    }
+  ],
+  "assertions": [
+    "task_skipped_stated_check",
+    "task_done_when_quotes_request"
+  ]
+}
