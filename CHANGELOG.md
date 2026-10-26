@@ -32,6 +32,10 @@ A history of Mano's releases — what each version changes and why.
 
 - **`mano spec` no longer sends you back to a blocked `mano start`.** When an import homed a project-wide directive as a `spec-gap` before any phase existed, `mano start` refused to scope until the gap was resolved, and `mano spec`, finding no brief, offered `mano start` as the way forward. Nothing could move. `mano spec` now has the same gap-only mode as `mano ux` and `mano ui`: with no brief and at least one open spec-gap, it settles only those gaps in `tech-spec.md`, resolves them, creates no phase, and points to `mano start`. With no brief and no gaps it still routes to `mano start`. `mano rules` had the same hole: it accepted a no-phase run but set no bounds on it, and with no tech spec yet it offered `mano spec` first. With no brief, `mano spec` routes to `mano start`, which the open rule-gap blocks, so you ended up back at `mano rules`. It now has the same gap-only mode, skips the accessibility and testing questions when there is no phase, and never sends you to `mano spec` first.
 
+### Removed
+
+- **`verify.js` is gone.** Verification commands now run directly. The rule it enforced stays as plain instruction in the dev contract, `mano build` and `mano task`: report each command as pass or fail, on failure only the first error, never the full output. `tech-spec.md`'s optional `## Verification` block keeps `command:` and drops `failure-pattern:`, which only the script read. A leftover `failure-pattern:` line in an existing spec is harmless.
+
 ### Documentation
 
 - **A Tasks page.** `site/features/task.md` covers when to use `mano task` instead of a phase, how it clarifies an item, its gates, the `needs-human` replies, and why it is refused during a phase. The README, command reference, features index, `workflow.md`, both `AGENTS.md` files, `CLAUDE.md`, `cursorrules`, the core rules, and the backlog rule and template now list `mano task` and the `in-task` and `needs-human` statuses.

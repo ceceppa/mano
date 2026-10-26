@@ -48,7 +48,7 @@ This gate applies in default, YOLO, and auto mode.
 9. If the unit involves user-entered state, forms, onboarding drafts, settings, or other local data, check whether the unit or the tech spec says that data should persist across app restarts. If it should, treat restart persistence as part of the required behaviour, not as an optional enhancement.
 10. Read `_mano_output/project-rules.md` only when the unit explicitly points to a rule there, something remains ambiguous after reading the unit and any mandatory tech-spec pre-read, or you need fuller context behind a rule already summarized in the unit.
 
-    **Verification runs filtered.** Run every build, lint, type-check, and test command for verification through `node _mano/scripts/verify.js -- <command>`. On success it prints one `PASS:` line; on failure it prints the trimmed error excerpt. Do not run verification commands raw and paste their full output into the conversation. A failing verification enters **Repair Mode** (below).
+    **Verification reports a result, not a transcript.** Run every build, lint, type-check, and test command the project uses for verification. Report each as one line: the command and pass or fail. On failure, report the first error only. Never paste a command's full output into the conversation. A failing verification enters **Repair Mode** (below).
 
 ## After implementing — the acceptance-evidence gate
 
@@ -76,8 +76,6 @@ Never: re-read the unit/brief/spec/rules (they didn't change); re-read any file 
 full command output (report the error's first line); rewrite a class or file to fix one assertion — repairs are
 surgical edits at the failure site; run the full suite to check a fix — re-run the narrowest reproducing command,
 full suite exactly once after it passes.
-Repair-mode commands still run through `node _mano/scripts/verify.js -- <command>` — it already reports the
-trimmed failure excerpt.
 Attempt limit: 3 on the same error → stop, leave the row pending, report ≤3 lines (error, file:line, tried).
 Exception — never optimised away: the `state.js` re-check before the status write, and the
 acceptance-evidence and design-contract gates (10.1, 10.2), run in full regardless.

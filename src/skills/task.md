@@ -33,7 +33,7 @@ This file is the complete contract. It carries its own copies of the `mano dev` 
 4. **Read project context before you change anything:** the item's context, the artifacts it names, and `_mano_output/project-rules.md` for the area you'll touch. Then read source.
 5. **Run the readiness gates (R2–R5) and the escalation check.** If any of them stops you, stop before you edit anything. In auto mode, check **Auto mode: gap repair** before handing back.
 6. **Mark the item `in-task`, then implement exactly this item** (see Rules). Before the first edit, run `node _mano/scripts/backlog.js task-status --title "<title>" --to in-task`; skip it only when the item is already `in-task`. The script refuses to move a `backlog` item anywhere else, so step 8 can't run without it.
-7. **Verify.** Run every build, lint, type-check, and test command through `node _mano/scripts/verify.js -- <command>`. If a failure's fix is inside this item's scope, fix it and re-run. Otherwise document the changes being kept under D3, report the failure, and leave the status alone.
+7. **Verify.** Run every build, lint, type-check, and test command the project uses. Report each as pass or fail, and on failure only the first error, never the full output. If a failure's fix is inside this item's scope, fix it and re-run. Otherwise document the changes being kept under D3, report the failure, and leave the status alone.
 8. **Document the changes through their owning skills (D3), then run all done gates (D1–D3) and write the status** with `node _mano/scripts/backlog.js task-status`. Never edit a status or `Check:` line by hand.
    - All gates pass → `--title "<title>" --to resolved`.
    - D2 and D3 pass and D1's only shortfall is a human-only part (see D1) → `--title "<title>" --to needs-human --check "<what the human should try, one line>"`.
@@ -222,7 +222,7 @@ After `broken` or a redirect, hand back with `Next: mano task "<title>"`. The ne
 [mano task]: <item title> → resolved
 Outcome: <the R1 outcome, one line>
 Changed: <files>
-Checks: <verify.js PASS lines>
+Checks: <command — pass, one per line>
 Discovered (not added): <one line each, or "none">
 ```
 
@@ -263,7 +263,7 @@ When the only gap is a human-only check (D1, `needs-human`):
 [mano task]: <item title> → needs-human
 Outcome: <the R1 outcome, one line>
 Changed: <files>
-Checks: <verify.js PASS lines>
+Checks: <command — pass, one per line>
 Check: <what to try, one line> — reply "works", what's broken, or how you want it different
 ```
 

@@ -104,7 +104,7 @@ documents — those update in place.
 _mano/                    ← Mano framework (do not modify during implementation)
 ├── skills/               ← Mano skill prompts
 ├── rules/                ← shared rule fragments; skills name the ones they require
-├── scripts/              ← state.js (read-only state projection), backlog.js / stories.js / progress.js (ledger writers), chain.js (records chain actions the human struck), verify.js (verification output filter)
+├── scripts/              ← state.js (read-only state projection), backlog.js / stories.js / progress.js (ledger writers), chain.js (records chain actions the human struck)
 ├── hooks/                ← optional post-skill hooks
 └── templates/            ← Mano templates
 _mano_output/             ← Planning artifacts

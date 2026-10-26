@@ -273,7 +273,7 @@ The spec is not a project diary. History lives in `reviews.md`, `backlog.md`, an
 - **Out of Scope** — architectural commitments the system holds across phases (e.g. "no ECS architecture," "no shaders," "no client-side routing"). Not what ships this phase — phase-level scope belongs in the phase brief. Out of Scope in the spec is for architectural commitments only.
 - **Platform constraints** — anything platform-specific that affects implementation.
 - **Product principle constraints** — only when phase brief principles create technical requirements (perceived performance, accessibility, offline confidence, keyboard-first interaction, latency budgets).
-- **Verification** (optional) — the project's canonical verification command(s) once they exist, as `command:` lines, plus an optional `failure-pattern:` regex that `_mano/scripts/verify.js` uses to pick the meaningful error lines out of a failing run. Project-owned sharpening; omit the section until the project has a real verification command.
+- **Verification** (optional) — the project's canonical verification command(s) once they exist, as `command:` lines. Omit the section until the project has a real verification command.
 - **Cross-environment boundaries** — if any feature spans two different rendering environments (app vs widget, app vs watch, web vs native webview, app vs notification), list what each environment supports:
 
   ```
