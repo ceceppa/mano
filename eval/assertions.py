@@ -4748,6 +4748,59 @@ def start_routed_the_directive_to_its_owner(ctx: Ctx) -> list[Failure]:
     return out
 
 
+# The check question, in any reasonable wording: it asks what the human will do
+# to check the work and what they should see.
+_CHECK_QUESTION = re.compile(r"\bcheck\b.{0,160}?\bsee\b", re.IGNORECASE | re.DOTALL)
+
+
+def task_asked_for_the_check(ctx: Ctx) -> list[Failure]:
+    """A clear item the human named only by title: ask for their check first.
+
+    The old contract built a clear item with no question, so the outcome was
+    Mano's and the human only approved it. Nothing may be written before the
+    answer: not the item, not its status, not source.
+    """
+    name = "task_asked_for_the_check"
+    out = _wrote_nothing(ctx, name)
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not _CHECK_QUESTION.search(text):
+        out.append(Failure(name, "the reply never asked what the human will do to check the item "
+                                 "and what they should see"))
+    if "12 thumbnails" not in text and "no thumbnails" not in text.lower():
+        out.append(Failure(name, "the reply did not show what the item says before asking"))
+    return out
+
+
+def start_asked_for_the_check(ctx: Ctx) -> list[Failure]:
+    """The scope proposal carries the check question, and nothing is written yet."""
+    name = "start_asked_for_the_check"
+    out = []
+    if ctx.artifact_text("phase-brief.md") is not None:
+        out.append(Failure(name, "a phase brief was written before any approval"))
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not _CHECK_QUESTION.search(text):
+        out.append(Failure(name, "the proposal never asked how the human will check the phase "
+                                 "and what they should see"))
+    return out
+
+
+def start_asked_about_the_unscoped_check(ctx: Ctx) -> list[Failure]:
+    """Half the human's check needs an item they didn't select: ask, don't cut it.
+
+    Drafting the brief here means Mano settled it alone, either by cutting the
+    cancellation half into Not This Phase or by adding the item itself.
+    """
+    name = "start_asked_about_the_unscoped_check"
+    out = []
+    if ctx.artifact_text("phase-brief.md") is not None:
+        out.append(Failure(name, "the brief was drafted without asking about the part of the "
+                                 "check no selected item delivers"))
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not re.search(r"cancel", text, re.IGNORECASE):
+        out.append(Failure(name, "the reply never raised the cancellation half of the check"))
+    return out
+
+
 def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
     name = "review_ui_ux_requests_remain_scopeable"
     out = []
@@ -4764,6 +4817,9 @@ def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
 
 
 REGISTRY = {
+    "task_asked_for_the_check": task_asked_for_the_check,
+    "start_asked_for_the_check": start_asked_for_the_check,
+    "start_asked_about_the_unscoped_check": start_asked_about_the_unscoped_check,
     "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,
     "ui_feature_contract_written_after_closed_phase": ui_feature_contract_written_after_closed_phase,
     "ux_feature_contract_written_after_closed_phase": ux_feature_contract_written_after_closed_phase,

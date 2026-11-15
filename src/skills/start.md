@@ -242,6 +242,8 @@ Prioritise:
 
 [X] more items in backlog.
 
+Your check: what will you do to check this phase works, and what should you see? Put it in your reply.
+
 What to do?
 1. ✅ Go with this — Approve this scope.
 2. ✏️ Adjust — Add/remove items.
@@ -259,6 +261,16 @@ What do you want to build next?
 ```
 
 After presenting, stop. Do not continue to Step 7 until the user explicitly approves or adjusts the phase selection.
+
+<!-- mano-rule: id=start-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=start-asks-for-the-check,start-check-needs-unscoped-item -->
+**The check is the human's. Ask for it with the proposal.** Exit Criteria are the phase's definition of done. When you derive them from item titles, the human approves them, often without reading the brief, and what they meant shows up at review, often as something `## Not This Phase` cut. So unless the human's own words in this conversation already say what they'll do to check the phase and what they should see, the proposal carries the `Your check:` line. It rides on the approval the human is already giving (`1 — I open the picker with forty presets and see them under headings`). Never send it as a separate message, and never stop for it when the prompt or reply already approves a scope. Every reply is complete: an approval with no check means you derive Exit Criteria as before and don't ask again. When options 3, 4, or 5 re-present the menu, keep the line until it's answered.
+
+A check the human gives shapes the phase in three places:
+
+- **Scope.** A part of the check that no selected item delivers is a 7b question, asked once: name the part and the backlog item that tracks it (`state.js --titles --match`), then ask whether to add that item to this phase or leave that part of the check for later. This is the human's own words disagreeing with the selection, not you reopening it.
+- **Exit Criteria.** The demo sketch starts from the check. Its actions and results become leaves in the human's words, and you derive criteria only for what the check doesn't cover.
+- **Not This Phase.** Nothing the check depends on goes there. A Slice-check deferral or an exclusion that touches the check is a 7b question, not a line you write.
+<!-- /mano-rule: start-human-writes-the-check -->
 
 **Answering the menu options.** Options 3, 4 and 5 are real offers — honour them in the same turn and then re-present the menu; none of them advances to Step 7 on its own.
 
