@@ -29,7 +29,7 @@ It asks *what*, never *how*. Your answers go into the item's context in your wor
 
 ## Your check comes first
 
-The outcome is the item's definition of done, and if Mano writes it from the ticket, all you do is approve it. That's easy to do in a rush, without noticing what's missing. So unless you've already said it, `mano task` shows what the item says and asks one question:
+The outcome is the item's definition of done, and if Mano writes it from the ticket, all you do is approve it. That's easy to do in a rush, without noticing what's missing. So unless your own words already say what you'll see, `mano task` shows what the item says and asks one question:
 
 ```text
 What will you do to check it works, and what should you see?
@@ -37,9 +37,11 @@ What will you do to check it works, and what should you see?
 
 Your answer becomes part of the outcome, in your words. It's saved in the item as a `Done when:` line, the done gates need evidence for every part of it, and if the item ends up `needs-human`, its `Check:` starts from it. If your check covers more than the item, it asks whether to leave the extra out or widen the item. It never sends you to `mano start` for it. "Just build it" is a complete answer too, and it won't ask again.
 
+If your request already describes the result ("after respawning, I'm immune for 3 seconds"), that's your check: it doesn't ask you to say it again. The `Done when:` line quotes your sentence word for word instead. It never asks only what you'll *do* to check, because for new behaviour that's doing what the result describes.
+
 When the run is going to ask you anything, the gates below run first, so the same message also lists every missing value, missing flow, and replacement. You see it all at once.
 
-When the item is already clear and you've said how you'll check it, it asks nothing.
+When the item is already clear and you've said what you'll see, it asks nothing.
 
 ## Same gates as a phase
 
@@ -52,6 +54,10 @@ mano ui "Visible shield glow: the glow stays on for the whole immunity window (r
 ```
 
 That replaces the old line in the design brief. Then run `mano task` again.
+
+## Documentation is part of the task
+
+After implementation, `mano task` invokes the skills that own the affected documentation: `mano spec`, `mano rules`, `mano ux`, or `mano ui`. This happens in both manual and auto mode, before the item becomes `resolved` or `needs-human`. It passes the concrete changes and returns to the task after the documentation is updated. If the artifacts already cover the result, the owner verifies that coverage. A documentation blocker leaves the item `in-task`; you do not have to request documentation separately.
 
 ## Closing the item
 
@@ -84,7 +90,7 @@ Once you've typed it, auto mode saves you the next two commands. When the run st
 - Stopped: needs-human, check above
 ```
 
-- Each owner runs at most once per task. If the gates stop on the same owner a second time, the run stops and shows you what's still missing.
+- Each owner runs at most once during readiness repair. The documentation pass can invoke it again after implementation. If the gates stop on the same owner a second time, the run stops and shows you what's still missing.
 - A question or a `❓ Decide:` from `mano spec` or `mano ux` still stops the run. Answer it and the task carries on.
 - Escalations still stop. A stack decision, or work too big for one item, goes to `mano start`, and you run that yourself.
 - Nothing is saved as a chain, because there's no phase. If the session ends mid-run, type `mano task "<title>"` again. Whatever `mano spec` or `mano ux` already wrote stays written.

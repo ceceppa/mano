@@ -1,10 +1,10 @@
 ---
-description: Install Mano in your project, scope your first change, and choose how your coding agent implements it.
+description: Install Mano in your project, try one item or scope your first phase, and choose how your coding agent implements it.
 ---
 
 # Get started
 
-Mano helps you turn a change into a small, approved plan your coding agent can implement. You review the scope before code is written, and the decisions and progress live in your repository.
+Mano helps you turn a change into a small, approved plan your coding agent can implement: one item, or one small phase. You review the scope before code is written, and the decisions and progress live in your repository.
 
 ## 1. Install in your project
 
@@ -20,7 +20,17 @@ The installer adds `_mano/` with the workflow and helper scripts, and a Mano sec
 
 ## 2. Describe one small change
 
-Open your coding agent's chat in the same project. From here on, type commands **in chat**, not the terminal:
+Open your coding agent's chat in the same project. From here on, type commands **in chat**, not the terminal.
+
+If the change is one idea you can only judge by trying it, build it as a single item:
+
+```text
+mano task "the contact form shows an inline error for an invalid email"
+```
+
+Mano writes the item into the backlog, asks about anything it leaves open and, unless you've said what you'll see, how you'll check it works, then builds it and hands it back for you to try. That's the whole loop: no phase, no review. [More on tasks →](/features/task)
+
+When several pieces have to land together, scope a phase instead. The rest of this guide follows that path:
 
 ```text
 mano start

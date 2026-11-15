@@ -1,6 +1,6 @@
 ---
 name: mano-task
-description: Use to implement one narrow piece of work directly, without a phase. Takes an existing backlog item's title or a plain description of new work, asks how the human will check it unless they already said, makes sure the item is clearly written first, then implements exactly that item. Refused while a phase is open.
+description: Use to implement one narrow piece of work directly, without a phase. Takes an existing backlog item's title or a plain description of new work, asks how the human will check it unless they already said what they should see, makes sure the item is clearly written first, then implements exactly that item. Refused while a phase is open.
 requires: []
 ---
 
@@ -33,10 +33,10 @@ This file is the complete contract. It carries its own copies of the `mano dev` 
 4. **Read project context before you change anything:** the item's context, the artifacts it names, and `_mano_output/project-rules.md` for the area you'll touch. Then read source.
 5. **Run the readiness gates (R2–R5) and the escalation check.** If any of them stops you, stop before you edit anything. In auto mode, check **Auto mode: gap repair** before handing back.
 6. **Mark the item `in-task`, then implement exactly this item** (see Rules). Before the first edit, run `node _mano/scripts/backlog.js task-status --title "<title>" --to in-task`; skip it only when the item is already `in-task`. The script refuses to move a `backlog` item anywhere else, so step 8 can't run without it.
-7. **Verify.** Run every build, lint, type-check, and test command through `node _mano/scripts/verify.js -- <command>`. If a failure's fix is inside this item's scope, fix it and re-run. Otherwise stop, report the failure, and leave the status alone.
-8. **Run the done gates (D1–D2), then write the status** with `node _mano/scripts/backlog.js task-status`. Never edit a status or `Check:` line by hand.
-   - Both gates pass → `--title "<title>" --to resolved`.
-   - D1's only shortfall is a human-only part (see D1) → `--title "<title>" --to needs-human --check "<what the human should try, one line>"`.
+7. **Verify.** Run every build, lint, type-check, and test command the project uses. Report each as pass or fail, and on failure only the first error, never the full output. If a failure's fix is inside this item's scope, fix it and re-run. Otherwise document the changes being kept under D3, report the failure, and leave the status alone.
+8. **Document the changes through their owning skills (D3), then run all done gates (D1–D3) and write the status** with `node _mano/scripts/backlog.js task-status`. Never edit a status or `Check:` line by hand.
+   - All gates pass → `--title "<title>" --to resolved`.
+   - D2 and D3 pass and D1's only shortfall is a human-only part (see D1) → `--title "<title>" --to needs-human --check "<what the human should try, one line>"`.
    - Anything else → no status write; the item stays `in-task` and is reported as partial.
 9. **Report** (see Output).
 
@@ -44,18 +44,23 @@ This file is the complete contract. It carries its own copies of the `mano dev` 
 
 An item is clearly written when its outcome can be checked: what a user, test, or caller can see happen once it's done. A backlog item has no acceptance criteria, so this outcome stands in for them, and the done gates check against it.
 
-<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check -->
-**The check is the human's.** The outcome is the item's definition of done. When you write it from the ticket, the human only approves it, often without reading it, and what they actually meant shows up after the code. So unless the human's own words already say what they'll do to check the item and what they should see, show what the item asks for (its context, at most five lines) and ask:
+<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check,task-reuses-reproduction,task-skips-check-when-result-stated -->
+**The check is the human's.** The outcome is the item's definition of done. When you write it from an item the human didn't write here, they only approve it, often without reading it, and what they actually meant shows up after the code. First reuse what the human has already supplied in their own words (defined below). A result they describe, what a user, test, or caller sees happen once it's done, is their check even if they did not label it one: don't ask for it again. Never ask for the action on its own. For new behaviour it is doing what the result describes, and for a bug it is the reproduction they gave, so the answer would only repeat them. Ask only when nothing in their own words says what they should see: a bare title, an item they didn't write here, or a request that names the work but not its result ("improve the search", "tidy up the export code"). Then show what the item asks for (its context, at most five lines) and ask:
 
 > What will you do to check it works, and what should you see?
 
+If the reproduction is already given and concrete questions about intended behaviour will supply the missing expected result, ask those questions only. Do not also ask the generic check question or ask them to restate the scenario. Combine the original scenario with their answers for the check, preserving their words. A report that cargo is lost does not decide where it should land: do not invent that result, even as an example answer. This is not a blanket exemption for bugs; unresolved behaviour still needs a decision before code. A question that depends on another answer should be conditional on that answer, not an independent required choice.
+
+For example, “When I throw the full ball at a closing door, its cargo is lost” already supplies the reproduction. If the intended destination is unresolved, ask where the cargo should end up when the door closes during flight; do not also ask how they will verify the fix. If a side-of-door question matters only when the door blocks the cargo, make that dependency explicit.
+
 Their own words are the request, their answers in this conversation, and the item's `Human check failed:` and `Human redirection:` lines. A title, or an item they didn't write here, is not. Ask once, in the same message as any other question. Every reply is complete: a check, or "just build it" / "as the item says", which means you build the outcome from the item and don't ask again. The question asks for something the item doesn't have, not for a yes, so it isn't the confirmation round ruled out below.
 
-A check they give becomes part of the outcome, in their words: R1 builds on it, D1 needs evidence for each part of it, and a `needs-human` `Check:` line starts from it. Write it into the item as one context line, `Done when: <their words, on one line>`. If the context would pass five lines, shorten your own lines, never theirs. When the check covers more than the item, name the extra part and the item that already tracks it (`node _mano/scripts/state.js --titles --match "<its distinctive word>"`), and ask once: leave it out, or widen this item to include it? Widening is the human's call, and it never sends them to `mano start` on its own.
+A check they give becomes part of the outcome, in their words: R1 builds on it, D1 needs evidence for each part of it, and a `needs-human` `Check:` line starts from it. Write it into the item as one context line, `Done when: <their words, on one line>`. When the check is a result they already described, `Done when:` quotes the sentence of theirs that states it, word for word (their goal line, when they wrote one), because the rest of the context condenses their request into your lines. If the context would pass five lines, shorten your own lines, never theirs. When the check covers more than the item, name the extra part and the item that already tracks it (`node _mano/scripts/state.js --titles --match "<its distinctive word>"`), and ask once: leave it out, or widen this item to include it? Widening is the human's call, and it never sends them to `mano start` on its own.
 
 **One message carries everything.** When this step is going to ask the human anything, first read what R2–R5 check (`tech-spec.md`, `ux-flow.md`, `design-brief.md`, where they exist; not source) and run those gates against the outcome drafted so far. Put each stop in the same message as the questions, so the human sees every missing value, missing flow, and replacement at once instead of meeting a gate after answering. Step 5 still runs the gates in full.
 
 ❌ "Here's the outcome I'll build: the panel lists every result. Does that look right?" (asks for a yes)
+❌ The request says "after saving, the new entry appears at the top of the list", and the reply asks "What will you do to check it works, and what should you see?" (their words already say what they'll see)
 ✅ "The item says: 'Show how many results the search found.' What will you do to check it works, and what should you see?"
 <!-- /mano-rule: task-human-writes-the-check -->
 
@@ -78,7 +83,7 @@ Ask all your questions at once, numbered, one decision each, and only those whos
 - how a player picks between options → R3 routes it to `mano ux`;
 - anything the item already states. Don't re-open it.
 
-When the item is already clear and the human's own words already say how they'll check it, ask nothing: no confirmation round and no "does this look right?".
+When the item is already clear and the human's own words already say what they should see, ask nothing: no confirmation round and no "does this look right?".
 
 ❌ "Should the colour change use a shader or a material swap?" (how, belongs to `mano spec`)
 ❌ "Which shade of red?" (a value, belongs to `mano spec` via R2)
@@ -98,7 +103,7 @@ Then continue to step 4 in the same turn. The human's answers are the approval, 
 A stop here means **no edits**: no source, no tests, no artifacts. The item keeps its status: `backlog`, or `in-task` when an earlier run started it. A new item added in step 3 stays in the backlog, which is where it should be. Name the gate, quote what's missing, and name the owning command with what it has to decide after the item title. An owner handed only a title has nothing to write. Do not write the gap into `backlog.md` yourself; the human decides whether to record it.
 
 <!-- mirrors _mano/rules/implement.md 6.2 -->
-**R2 — Spec-owned default gap.** If the item needs a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, a canonical spec section must state the owning field/config/constant and its exact value or relationship. A vague phrase such as "small area" is not an implementation value. If it's missing, stop → `mano spec "[the item title]: [each missing value, named]"`. `mano spec` writes a directive like that into `tech-spec.md` with no phase and no backlog row. Do not choose a default yourself, add a temporary literal, or treat a test fixture as the product default.
+**R2 — Spec-owned default gap.** If the item needs a starting state, first-use state, capacity, radius/range, count, duration, threshold, spawn amount, or other behaviour-driving default, the canonical spec must define its owner and authority under `_mano/rules/artifact.md` → **Parameter authority: contracts, tuning, and seeds**: an exact contractual value/relationship, or declared tuning with a configuration home, constraints, and an initialisation route. An existing tuning configuration or authorised seed/seed-selection rule satisfies this gate without a current numeric default in the spec. A vague phrase such as "small area" is not an implementation value. If it's missing, stop → `mano spec "[the item title]: [each missing value, named]"`. `mano spec` writes a directive like that into `tech-spec.md` with no phase and no backlog row. Do not choose a default yourself, add a temporary literal, or treat a test fixture as the product default.
 
 <!-- mirrors _mano/rules/implement.md 6.3 -->
 **R3 — Player-choice UX gap.** If the item lets a player choose among two or more simultaneously available tools, buildables, abilities, modes, rewards, or alternatives, `_mano_output/ux-flow.md` must define how the player invokes the choice, selects/changes the active option, sees that active state, and receives locked/unavailable/cancel feedback. If it doesn't, or the file doesn't exist, stop → `mano ux "[the item title]: [the choice that needs a flow]"`. Do not invent a hotkey, picker, cycling scheme, default active item, or HUD treatment.
@@ -110,9 +115,9 @@ A stop here means **no edits**: no source, no tests, no artifacts. The item keep
 - If the tech spec says the data persists across restarts, restart persistence is part of R1's outcome, not an extra.
 - If the item needs a stack decision the tech spec doesn't make (a new library, storage, or service), stop: escalate (see below).
 
-**R5 — Contract contradiction.** If the R1 outcome needs the opposite of what `ux-flow.md`, `design-brief.md`, or a value in `tech-spec.md` states, stop. Both are the human's decisions, so which one stands is theirs to say: quote both and raise one `❓ Decide:`. The route writes the item's version into the owner's artifact as a replacement: `mano ui "<item title>: <the item's version, in its words> (replaces: <the artifact's statement>)"`, or `mano ux` / `mano spec` for their files. Running it is the answer. Build against neither version until the artifact agrees with the item. Any other contradiction with `tech-spec.md`, or one with `project-rules.md`, is an escalation (below).
+**R5 — Contract contradiction.** An authorised tuning change that differs only from a non-normative seed is not a contradiction; changes to its constraints or promised outcome still are. If the R1 outcome needs the opposite of what `ux-flow.md`, `design-brief.md`, or a value in `tech-spec.md` states, stop. Both are the human's decisions, so which one stands is theirs to say: quote both and raise one `❓ Decide:`. The route writes the item's version into the owner's artifact as a replacement: `mano ui "<item title>: <the item's version, in its words> (replaces: <the artifact's statement>)"`, or `mano ux` / `mano spec` for their files. Running it is the answer. Build against neither version until the artifact agrees with the item. Any other contradiction with `tech-spec.md`, or one with `project-rules.md`, is an escalation (below).
 
-<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check -->
+<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check,task-reuses-reproduction,task-skips-check-when-result-stated -->
 When the item's version is the human's own words from this conversation (their request or their check), they have already said which one stands. Humans build by iteration: they ship the smallest version and widen its limits later, so replacing an earlier artifact decision is the normal next step, not a mistake. Raise no `❓ Decide:`. Show the stop as the replacement it is, quoting both, with the same route. Keep the `❓ Decide:` for an item whose version comes only from text the human hasn't restated, where either one may be the stale one.
 <!-- /mano-rule: task-human-writes-the-check -->
 
@@ -148,7 +153,7 @@ When `state.js --task` reports `MODE: auto`, a readiness stop that routes to `ma
 
 **Pause instead** when the owner asks a question or raises `❓ Decide:`, routes the request somewhere else instead of writing it, or fails, and when the rerun gates stop again on an owner this run already ran. Print the chain's closing block (see Output) and wait. The human's answer resumes the chain in the same turn.
 
-Nothing else chains. A finished task never chains into another one, and the chain never runs `mano start` or closes a `needs-human` item. Picking what to build next is the human's call.
+Apart from the mandatory documentation handoff in D3, nothing else chains. A finished task never chains into another one, and the chain never runs `mano start` or closes a `needs-human` item. Picking what to build next is the human's call.
 
 A task chain keeps no `chain.js` record, because a task has no phase. The item in `backlog.md` is its durable state: if a session reset cuts the chain, `mano task "<item title>"` picks it up, and whatever the owner already wrote stays in its artifact.
 
@@ -157,13 +162,13 @@ A task chain keeps no `chain.js` record, because a task has no phase. The item i
 - Implement exactly one backlog item, and only after it is written in `backlog.md`.
 - Read existing project context before implementation.
 - Do not create a phase brief, stories, or a `progress.md` ledger.
-- Do not edit `tech-spec.md`, `project-rules.md`, `ux-flow.md`, or `design-brief.md`. A missing or wrong decision there goes to its owning command, as the gates say.
+- Do not edit `tech-spec.md`, `project-rules.md`, `ux-flow.md`, or `design-brief.md` directly as `mano task`. Invoke their owning skills to document implemented changes under D3; missing or conflicting decisions before implementation still follow the readiness gates.
 - Do not expand the scope of the backlog item.
 - Do not implement adjacent backlog items, even when they touch the same code.
 - Do not introduce new architecture unless the item requires it.
 - Do not add dependencies unless the item requires them.
 - Follow existing architecture and project rules.
-- Run relevant tests/checks.
+- Run relevant tests/checks. For declared tuning, use explicit fixture parameters for behaviour tests and check configuration wiring/overrides separately. Never assert that a non-normative seed must remain the current default. Retain checks of real configured outcomes where they protect a product promise.
 - Report anything discovered that belongs in another backlog item. Report it only. Do not add it to `backlog.md` unless the user approves; once they do, use `node _mano/scripts/backlog.js add`.
 
 ## Done gates — before the status may change
@@ -177,6 +182,27 @@ A failure here leaves the status `in-task` and is reported. Keep the edits, and 
 
 <!-- mirrors _mano/rules/implement.md 10.2 -->
 **D2 — Design-contract conformance.** If the item produced or changed a user-visible surface and `_mano_output/design-brief.md` names components for that surface, confirm from **this turn's edits** that the surface uses each named one: its name, or the file that defines it, appears in what you wrote. A shared theme, matching colour, copied style, or hand-built lookalike is not the component. A missing one means not done.
+
+## Document implemented changes
+
+<!-- mano-rule: id=task-documents-changes; incident=task-left-player-layer-undocumented-and-told-human-to-run-spec; model=not-recorded; date=2026-10-16; eval=task-documents-changes -->
+**D3 — Documentation through the owner.** Every task that changes implementation must document what changed before becoming `resolved` or `needs-human`, including work resumed from `in-task`. This is part of completing the requested task in **both manual and auto mode**, not an optional next step. Never say “run `mano spec` if you want this documented.”
+
+For an authorised tuning-only change, verify the existing delegation and constraints locally and report `Documented: existing tuning delegation verified; no artifact change`. Do not invoke an artifact owner merely to synchronise its seed. Changes to meaning, ownership, constraints, or promised outcomes still need documentation.
+
+Compare the other actual changes with the canonical artifacts and invoke the relevant owner with a concrete, bounded account of the implemented result:
+
+- `mano spec` → technical contracts, layers and their responsibilities (for example a new Player layer), data models, dependencies, and behaviour-driving values.
+- `mano rules` → project conventions and file-structure rules.
+- `mano ux` → user actions, flows, feedback, and recovery.
+- `mano ui` → visual treatments and component decisions.
+
+Load each selected skill's contract and required rules and execute it in this turn. Pass the item title, grounded outcome, exact implemented changes, relevant declarations/values, and affected artifact sections as **task documentation sync** context. This supplies the no-phase context; a title alone is insufficient. Document only this item's changes, and keep implementation detail out of artifacts that do not own it. If existing documentation already covers the result (such as a bug fix restoring the documented behavior), invoke the relevant owner to verify coverage; report its no-change finding rather than manufacturing an artifact edit.
+
+Return to this task after each owner and its hooks finish; do not follow its unrelated `Next:` suggestions. The readiness repair's once-per-owner limit does not prevent this post-implementation sync. Preserve owner questions and conflicts: if an owner cannot finish, leave the item `in-task`, report the documentation blocker, and resume it after the answer. Documentation cannot ratify a readiness violation after the fact. If verification failed, still sync the changes being kept when possible, explicitly describing them as partial rather than promising a completed outcome.
+
+Reread the affected sections to confirm they match the implementation. In the final task log include `Documented: <owner → artifact and sections updated, or coverage verified with no edit>`. A suggested command or an unsupported claim of documentation does not pass D3.
+<!-- /mano-rule: task-documents-changes -->
 
 ## Closing a `needs-human` item
 
@@ -196,7 +222,7 @@ After `broken` or a redirect, hand back with `Next: mano task "<title>"`. The ne
 [mano task]: <item title> → resolved
 Outcome: <the R1 outcome, one line>
 Changed: <files>
-Checks: <verify.js PASS lines>
+Checks: <command — pass, one per line>
 Discovered (not added): <one line each, or "none">
 ```
 
@@ -208,7 +234,7 @@ When the item needs clarification (nothing written):
 [mano task]: <item title or "new item"> — needs clarification
 The item says: <its context, at most five lines — omit for new work drafted from the human's words>
 Outcome so far: <the parts already grounded, one line>
-1. What will you do to check it works, and what should you see?   ← only when their words don't say it yet
+1. What will you do to check it works, and what should you see?   ← only when their words don't say what they'll see yet
 2. <question>
 Before code: <each stop R2–R5 already found: the missing value or flow, or "<item's version> (replaces: <statement>)" — omit when none>
 ❓ Decide: <R5 on item text the human hasn't restated only: keep the artifact's version, or replace it with the item's?>
@@ -237,7 +263,7 @@ When the only gap is a human-only check (D1, `needs-human`):
 [mano task]: <item title> → needs-human
 Outcome: <the R1 outcome, one line>
 Changed: <files>
-Checks: <verify.js PASS lines>
+Checks: <command — pass, one per line>
 Check: <what to try, one line> — reply "works", what's broken, or how you want it different
 ```
 
@@ -245,7 +271,7 @@ When a done gate or verification fails (edits kept, status unchanged):
 
 ```
 [mano task]: <item title> — partial, still in-task
-Why: <D1/D2 or failing check> — <one line>
+Why: <D1/D2/D3 or failing check> — <one line>
 Changed: <files>
 Next: mano task "<item title>" to finish it
 ```

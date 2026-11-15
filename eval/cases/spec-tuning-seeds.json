@@ -1,0 +1,7 @@
+{
+  "name": "spec-tuning-seeds",
+  "description": "An authorised POC tuning seed must not become a permanent default contract; real timing semantics remain binding.",
+  "fixture": "spec-directive-no-phase",
+  "prompt": "mano spec \"Define capture_duration as a tuning parameter in seconds, owned by GameTuning.capture_duration with per-instance overrides. I authorise an initial seed of 6 seconds for first implementation only; future balancing lives in configuration and must not require keeping this number synchronised in the spec. The binding behaviour is that containment starts counting down after the field ends and releases when the configured duration expires. Record that exact-seed assertions are not acceptance criteria; behaviour tests use explicit fixtures and configuration wiring is checked separately.\"",
+  "assertions": ["spec_tuning_seed_authority"]
+}

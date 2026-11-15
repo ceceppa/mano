@@ -4771,6 +4771,77 @@ def task_asked_for_the_check(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def task_reused_reproduction(ctx: Ctx) -> list[Failure]:
+    """Reuse the reported action, but still ask for the cargo's destination."""
+    name = "task_reused_reproduction"
+    out = _wrote_nothing(ctx, name)
+    text = ctx.transcript
+    if _CHECK_QUESTION.search(text) or re.search(
+        r"(?:how|what).{0,60}\b(?:verify|reproduce|test)\b.{0,100}\?", text, re.I
+    ):
+        out.append(Failure(name, "asked for verification already supplied by the reproduction"))
+    if not re.search(r"(?:where|which side|should|stay|land|stop|pass|continue|block).{0,300}\?", text, re.I | re.S):
+        out.append(Failure(name, "did not ask for the unresolved cargo behaviour"))
+    if not re.search(r"cargo|objects|contents", text, re.I):
+        out.append(Failure(name, "did not ground the question in the reported cargo loss"))
+    return out
+
+
+# Asking the human how they will check or verify the work: the generic check
+# question, or its action half on its own. A concrete behaviour question that
+# happens to say "see" is not this.
+_ASKS_HOW_THEY_CHECK = re.compile(
+    r"\b(?:what will you do|what would you do|how will you|how would you|how do you plan to)\b"
+    r"[^?\n]{0,80}\b(?:check|verify|test|confirm)\b[^?\n]{0,160}\?",
+    re.IGNORECASE,
+)
+
+_STATED_GOAL = "prevent spawn-killing and unavoidable death loops"
+
+
+def task_skipped_stated_check(ctx: Ctx) -> list[Failure]:
+    """The request already says what the human will see: ask only what's open.
+
+    Its bullets and goal line are the check. Asking how they'll check it gets
+    the goal back in other words. The exploit clause is still open, so a
+    question about it must stay, and nothing may be written before the answer.
+    """
+    name = "task_skipped_stated_check"
+    if not ctx.steps:
+        return [Failure(name, "case ran no steps")]
+    step = ctx.step(1)
+    out = []
+    changed = sorted(ctx.changed_in_step(1))
+    if changed:
+        out.append(Failure(name, f"step 1 wrote {changed} before the open question was answered"))
+    new_source = sorted(set(step.source_files) - _seeded_sources(ctx))
+    if new_source:
+        out.append(Failure(name, f"step 1 wrote source before the open question was answered: {new_source}"))
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", step.final_response)
+    if _ASKS_HOW_THEY_CHECK.search(text):
+        out.append(Failure(name, "asked how the human will check it, though the request already "
+                                 "says what they should see"))
+    if not re.search(r"\b(?:exploit\w*|abus\w*|escape|flee|run away|actions?|sprint\w*|"
+                     r"throw\w*|interact\w*)\b[^?]{0,300}\?", text, re.IGNORECASE):
+        out.append(Failure(name, "did not ask what keeps respawn from being an exploitable escape"))
+    return out
+
+
+def task_done_when_quotes_request(ctx: Ctx) -> list[Failure]:
+    """With no check question asked, `Done when:` quotes the human's goal line."""
+    name = "task_done_when_quotes_request"
+    blocks = [body for title, _, body in _backlog_blocks(ctx) if "respawn" in title.lower()]
+    if not blocks:
+        return [Failure(name, "no respawn item was written after the open question was answered")]
+    done = re.search(r"^\s*Done when:\s*(.+)$", blocks[0], re.MULTILINE)
+    if not done:
+        return [Failure(name, "the item has no `Done when:` line")]
+    quoted = re.sub(r"[*_`]", "", done.group(1)).lower()
+    if _STATED_GOAL not in re.sub(r"\s+", " ", quoted):
+        return [Failure(name, f"`Done when:` does not quote the human's goal line: {done.group(1)!r}")]
+    return []
+
+
 def start_asked_for_the_check(ctx: Ctx) -> list[Failure]:
     """The scope proposal carries the check question, and nothing is written yet."""
     name = "start_asked_for_the_check"
@@ -4816,8 +4887,58 @@ def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def task_documented_changes(ctx: Ctx) -> list[Failure]:
+    name = "task_documented_changes"
+    failures = []
+    spec_path = ctx.output_dir / "tech-spec.md"
+    spec = spec_path.read_text() if spec_path.exists() else ""
+    for term in ("Player", "version", "1.0.0"):
+        if term not in spec:
+            failures.append(Failure(name, f"package contract omits {term}"))
+    result = subprocess.run(
+        ["node", "-e", 'const p=require("./index.js"); if(new p.Player().name!=="Player" || p.version!=="1.0.0") process.exit(1)'],
+        cwd=ctx.output_dir.parent, capture_output=True, text=True,
+    )
+    if result.returncode:
+        failures.append(Failure(name, "requested package exports do not work"))
+    backlog = (ctx.output_dir / "backlog.md").read_text()
+    if "**Status:** resolved" not in backlog:
+        failures.append(Failure(name, "fully testable task was not resolved"))
+    if not re.search(r"Documented:.*(?:spec|tech-spec)", ctx.transcript, re.I):
+        failures.append(Failure(name, "task log lacks the documentation owner and result"))
+    if list(ctx.output_dir.glob("phase-*")):
+        failures.append(Failure(name, "documentation created an unnecessary phase"))
+    return failures
+
+
+
+def spec_tuning_seed_authority(ctx: Ctx) -> list[Failure]:
+    name = "spec_tuning_seed_authority"
+    out = _directive_no_phase(ctx, name, "tech-spec.md",
+                              ("capture_duration", "gametuning"),
+                              ("project-rules.md", "ux-flow.md", "design-brief.md"))
+    text = (ctx.output_text("tech-spec.md") or "").lower()
+    checks = {
+        "seed explicitly non-normative": r"non[- ]normative|not (?:a |an )?(?:binding|contractual|acceptance)|not.*acceptance criter",
+        "current values delegated to configuration": r"configur|tuning",
+        "instance overrides": r"overrid",
+        "countdown starts after field ends": r"(?:after|once|when)[^\n.]*field[^\n.]*(?:end|finish|complet)",
+        "release at configured duration": r"releas[^\n.]*(?:durat|expir|timer|countdown)|(?:durat|timer|countdown)[^\n.]*releas",
+        "explicit fixture verification": r"fixture|explicit.*test.*(?:value|parameter)|test.*explicit.*(?:value|parameter)",
+    }
+    for meaning, pattern in checks.items():
+        if not re.search(pattern, text):
+            out.append(Failure(name, f"Missing {meaning}"))
+    return out
+
+
 REGISTRY = {
+    "spec_tuning_seed_authority": spec_tuning_seed_authority,
+    "task_documented_changes": task_documented_changes,
     "task_asked_for_the_check": task_asked_for_the_check,
+    "task_reused_reproduction": task_reused_reproduction,
+    "task_skipped_stated_check": task_skipped_stated_check,
+    "task_done_when_quotes_request": task_done_when_quotes_request,
     "start_asked_for_the_check": start_asked_for_the_check,
     "start_asked_about_the_unscoped_check": start_asked_about_the_unscoped_check,
     "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,

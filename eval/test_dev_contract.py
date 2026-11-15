@@ -55,8 +55,9 @@ class DevContractPins(unittest.TestCase):
         # The two checks that are never optimised away inside Repair Mode.
         self.assertIn("design-contract gates (10.1, 10.2), run in full regardless", DEV)
 
-    def test_verification_runs_through_verify_script(self) -> None:
-        self.assertIn("node _mano/scripts/verify.js -- <command>", DEV)
+    def test_verification_reports_result_not_transcript(self) -> None:
+        self.assertIn("Never paste a command's full output into the conversation", DEV)
+        self.assertNotIn("verify.js", DEV)
 
     def test_agents_stub_keeps_the_two_ambient_rules(self) -> None:
         # AGENTS.md keeps only the stub; its two inline rules are deliberate

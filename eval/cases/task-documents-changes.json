@@ -1,0 +1,10 @@
+{
+  "name": "task-documents-changes",
+  "description": "A manual task exports an existing helper and must sync the package contract via spec before closing, without a phase or a separate documentation request.",
+  "fixture": "task-documents-changes",
+  "run_mode": "manual",
+  "prompt": "mano task \"Export the existing Player helper\". I will check that requiring the package exposes Player and new Player().name is \"Player\", with the existing version export still available.",
+  "assertions": [
+    "task_documented_changes"
+  ]
+}

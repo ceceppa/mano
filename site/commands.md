@@ -15,6 +15,7 @@ Type these in your AI IDE's chat, not a terminal. Mano is a set of skills your a
 | `mano status` | Read project state and show where you are and what to do next. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
 | [`mano import [doc]`](/features/import) | Turn an existing PRD or document into a backlog, then stop. |
+| [`mano task "<item>"`](/features/task) | Implement one item with no phase. Writes the backlog item first; refused while a phase is open. |
 | `mano start` | Scope a new project or phase. Writes nothing until you approve. |
 | `mano continue` | Run the next logical action, if it's unambiguous. |
 | `mano spec` | Technical decisions, contracts, data models. |
@@ -24,7 +25,6 @@ Type these in your AI IDE's chat, not a terminal. Mano is a set of skills your a
 | `mano stories` | Decompose the phase into self-contained stories. |
 | `mano dev` | Implement the next pending story. |
 | [`mano build ["<fix>"]`](/features/build) | Build the phase straight from its brief, no story files. |
-| [`mano task "<item>"`](/features/task) | Implement one item with no phase. Writes the backlog item first; refused while a phase is open. |
 | `mano review` | Record outcomes, triage feedback, close the phase. |
 | [`mano owner [slug]`](/features/owners) | Set this clone's phase owner, for parallel work. |
 | [`mano mode [auto\|manual]`](/features/auto-mode) | Whether finished actions chain automatically. |
