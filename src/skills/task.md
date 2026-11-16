@@ -1,6 +1,6 @@
 ---
 name: mano-task
-description: Use to implement one narrow piece of work directly, without a phase. Takes an existing backlog item's title or a plain description of new work, asks how the human will check it unless they already said what they should see, makes sure the item is clearly written first, then implements exactly that item. Refused while a phase is open.
+description: Use to implement one narrow piece of work directly, without a phase. Takes an existing backlog item's title or a plain description of new work, asks how the human will check it only when their words name no result anyone could observe, makes sure the item is clearly written first, then implements exactly that item. Refused while a phase is open.
 requires: []
 ---
 
@@ -44,8 +44,10 @@ This file is the complete contract. It carries its own copies of the `mano dev` 
 
 An item is clearly written when its outcome can be checked: what a user, test, or caller can see happen once it's done. A backlog item has no acceptance criteria, so this outcome stands in for them, and the done gates check against it.
 
-<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check,task-reuses-reproduction,task-skips-check-when-result-stated -->
-**The check is the human's.** The outcome is the item's definition of done. When you write it from an item the human didn't write here, they only approve it, often without reading it, and what they actually meant shows up after the code. First reuse what the human has already supplied in their own words (defined below). A result they describe, what a user, test, or caller sees happen once it's done, is their check even if they did not label it one: don't ask for it again. Never ask for the action on its own. For new behaviour it is doing what the result describes, and for a bug it is the reproduction they gave, so the answer would only repeat them. Ask only when nothing in their own words says what they should see: a bare title, an item they didn't write here, or a request that names the work but not its result ("improve the search", "tidy up the export code"). Then show what the item asks for (its context, at most five lines) and ask:
+<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check,task-reuses-reproduction,task-skips-check-when-result-stated,task-skips-check-for-named-behaviour -->
+**The check is the human's.** The outcome is the item's definition of done. When you write it from an item the human didn't write here, they only approve it, often without reading it, and what they actually meant shows up after the code. First reuse what the human has already supplied in their own words (defined below). A result they describe, what a user, test, or caller sees happen once it's done, is their check even if they did not label it one: don't ask for it again. So is a behaviour they name. "Let me rename my player, and keep the name after a restart" already says what they will do (rename, restart) and what they should see (the new name, still there), and how that is exercised in this project is yours to work out from the project, not theirs to recite. Asking it gets their request back in other words. Never ask for the action on its own. For new behaviour it is doing what the result describes, and for a bug it is the reproduction they gave, so the answer would only repeat them.
+
+The check question is the last resort, for a request you cannot write any observable outcome from: a bare title, an item they didn't write here, or a request that names the work but not its result ("improve the search", "tidy up the export code"). The test is the `Outcome so far` line: when you can fill it from their words with something a user, test, or caller could observe, the check question is redundant and is not asked. What their words leave open is asked as the concrete question about that part (see **Ask before writing** below), never as the check question: "where does the player change it?" makes them decide something, "how will you check it?" makes them repeat themselves. Only when nothing observable can be written, show what the item asks for (its context, at most five lines) and ask:
 
 > What will you do to check it works, and what should you see?
 
@@ -55,13 +57,15 @@ For example, “When I throw the full ball at a closing door, its cargo is lost�
 
 Their own words are the request, their answers in this conversation, and the item's `Human check failed:` and `Human redirection:` lines. A title, or an item they didn't write here, is not. Ask once, in the same message as any other question. Every reply is complete: a check, or "just build it" / "as the item says", which means you build the outcome from the item and don't ask again. The question asks for something the item doesn't have, not for a yes, so it isn't the confirmation round ruled out below.
 
-A check they give becomes part of the outcome, in their words: R1 builds on it, D1 needs evidence for each part of it, and a `needs-human` `Check:` line starts from it. Write it into the item as one context line, `Done when: <their words, on one line>`. When the check is a result they already described, `Done when:` quotes the sentence of theirs that states it, word for word (their goal line, when they wrote one), because the rest of the context condenses their request into your lines. If the context would pass five lines, shorten your own lines, never theirs. When the check covers more than the item, name the extra part and the item that already tracks it (`node _mano/scripts/state.js --titles --match "<its distinctive word>"`), and ask once: leave it out, or widen this item to include it? Widening is the human's call, and it never sends them to `mano start` on its own.
+A check they give becomes part of the outcome, in their words: R1 builds on it, D1 needs evidence for each part of it, and a `needs-human` `Check:` line starts from it. Write it into the item as one context line, `Done when: <their words, on one line>`. When the check is a result they already described or a behaviour they named, `Done when:` quotes the sentence of theirs that states it, word for word (their goal line, when they wrote one), because the rest of the context condenses their request into your lines. If the context would pass five lines, shorten your own lines, never theirs. When the check covers more than the item, name the extra part and the item that already tracks it (`node _mano/scripts/state.js --titles --match "<its distinctive word>"`), and ask once: leave it out, or widen this item to include it? Widening is the human's call, and it never sends them to `mano start` on its own.
 
 **One message carries everything.** When this step is going to ask the human anything, first read what R2–R5 check (`tech-spec.md`, `ux-flow.md`, `design-brief.md`, where they exist; not source) and run those gates against the outcome drafted so far. Put each stop in the same message as the questions, so the human sees every missing value, missing flow, and replacement at once instead of meeting a gate after answering. Step 5 still runs the gates in full.
 
 ❌ "Here's the outcome I'll build: the panel lists every result. Does that look right?" (asks for a yes)
 ❌ The request says "after saving, the new entry appears at the top of the list", and the reply asks "What will you do to check it works, and what should you see?" (their words already say what they'll see)
-✅ "The item says: 'Show how many results the search found.' What will you do to check it works, and what should you see?"
+❌ The request says "let me change my player name from 'Player', and keep it after a restart", and the reply asks "1. What will you do to check it works, and what should you see? 2. Where does the player change it?" (the request names the behaviour, and question 2 is the one that was open)
+✅ The same request, and the reply asks only what is open: "1. Where does the player change it? 2. Do other players see the new name? 3. What happens when the field is left empty?"
+✅ "The item says: 'Show how many results the search found.' What will you do to check it works, and what should you see?" (a title typed alone: nothing of theirs says what they'd see)
 <!-- /mano-rule: task-human-writes-the-check -->
 
 **R1 — Write the outcome.** In one or two lines, write the observable outcome. Every part of it must come from the item's context, an artifact it names, or the human's words in this conversation, never from what you'd expect such a feature to do.
@@ -83,7 +87,7 @@ Ask all your questions at once, numbered, one decision each, and only those whos
 - how a player picks between options → R3 routes it to `mano ux`;
 - anything the item already states. Don't re-open it.
 
-When the item is already clear and the human's own words already say what they should see, ask nothing: no confirmation round and no "does this look right?".
+When the item is already clear and the human's own words already name the behaviour or say what they should see, ask nothing: no confirmation round and no "does this look right?".
 
 ❌ "Should the colour change use a shader or a material swap?" (how, belongs to `mano spec`)
 ❌ "Which shade of red?" (a value, belongs to `mano spec` via R2)
@@ -117,7 +121,7 @@ A stop here means **no edits**: no source, no tests, no artifacts. The item keep
 
 **R5 — Contract contradiction.** An authorised tuning change that differs only from a non-normative seed is not a contradiction; changes to its constraints or promised outcome still are. If the R1 outcome needs the opposite of what `ux-flow.md`, `design-brief.md`, or a value in `tech-spec.md` states, stop. Both are the human's decisions, so which one stands is theirs to say: quote both and raise one `❓ Decide:`. The route writes the item's version into the owner's artifact as a replacement: `mano ui "<item title>: <the item's version, in its words> (replaces: <the artifact's statement>)"`, or `mano ux` / `mano spec` for their files. Running it is the answer. Build against neither version until the artifact agrees with the item. Any other contradiction with `tech-spec.md`, or one with `project-rules.md`, is an escalation (below).
 
-<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check,task-reuses-reproduction,task-skips-check-when-result-stated -->
+<!-- mano-rule: id=task-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=task-asks-for-the-check,task-reuses-reproduction,task-skips-check-when-result-stated,task-skips-check-for-named-behaviour -->
 When the item's version is the human's own words from this conversation (their request or their check), they have already said which one stands. Humans build by iteration: they ship the smallest version and widen its limits later, so replacing an earlier artifact decision is the normal next step, not a mistake. Raise no `❓ Decide:`. Show the stop as the replacement it is, quoting both, with the same route. Keep the `❓ Decide:` for an item whose version comes only from text the human hasn't restated, where either one may be the stale one.
 <!-- /mano-rule: task-human-writes-the-check -->
 
@@ -234,8 +238,8 @@ When the item needs clarification (nothing written):
 [mano task]: <item title or "new item"> — needs clarification
 The item says: <its context, at most five lines — omit for new work drafted from the human's words>
 Outcome so far: <the parts already grounded, one line>
-1. What will you do to check it works, and what should you see?   ← only when their words don't say what they'll see yet
-2. <question>
+1. <question about a part their words leave open, one decision each>
+N. What will you do to check it works, and what should you see?   ← last resort: only when `Outcome so far` has nothing observable to state. Never next to a request that names the behaviour.
 Before code: <each stop R2–R5 already found: the missing value or flow, or "<item's version> (replaces: <statement>)" — omit when none>
 ❓ Decide: <R5 on item text the human hasn't restated only: keep the artifact's version, or replace it with the item's?>
 ```

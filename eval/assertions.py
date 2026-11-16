@@ -4827,6 +4827,27 @@ def task_skipped_stated_check(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def task_skipped_check_for_named_behaviour(ctx: Ctx) -> list[Failure]:
+    """The request names a behaviour: ask what it leaves open, not how to check it.
+
+    "Let me rename my player, and keep it after a restart" says what the human
+    will do and what they should see. Where the name is changed, who sees it,
+    and what an empty name does are open, so a concrete question must remain,
+    and nothing may be written before the answer.
+    """
+    name = "task_skipped_check_for_named_behaviour"
+    out = _wrote_nothing(ctx, name)
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if _ASKS_HOW_THEY_CHECK.search(text) or _CHECK_QUESTION.search(text):
+        out.append(Failure(name, "asked how the human will check it, though the request already "
+                                 "names what they will do and what they should see"))
+    if not re.search(r"\b(?:where|options|lobby|menu|esc|other players?|everyone|multiplayer|"
+                     r"panels?|empty|blank|clear\w*)\b[^?]{0,300}\?", text, re.IGNORECASE):
+        out.append(Failure(name, "did not ask about anything the request leaves open: where the "
+                                 "name is changed, who sees it, or what an empty name does"))
+    return out
+
+
 def task_done_when_quotes_request(ctx: Ctx) -> list[Failure]:
     """With no check question asked, `Done when:` quotes the human's goal line."""
     name = "task_done_when_quotes_request"
@@ -4938,6 +4959,7 @@ REGISTRY = {
     "task_asked_for_the_check": task_asked_for_the_check,
     "task_reused_reproduction": task_reused_reproduction,
     "task_skipped_stated_check": task_skipped_stated_check,
+    "task_skipped_check_for_named_behaviour": task_skipped_check_for_named_behaviour,
     "task_done_when_quotes_request": task_done_when_quotes_request,
     "start_asked_for_the_check": start_asked_for_the_check,
     "start_asked_about_the_unscoped_check": start_asked_about_the_unscoped_check,

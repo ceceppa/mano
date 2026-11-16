@@ -28,7 +28,7 @@ If the change is one idea you can only judge by trying it, build it as a single 
 mano task "the contact form shows an inline error for an invalid email"
 ```
 
-Mano writes the item into the backlog, asks about anything it leaves open and, unless you've said what you'll see, how you'll check it works, then builds it and hands it back for you to try. That's the whole loop: no phase, no review. [More on tasks →](/features/task)
+Mano writes the item into the backlog, asks about anything it leaves open and, only when your words name nothing you could see happen, how you'll check it works, then builds it and hands it back for you to try. That's the whole loop: no phase, no review. [More on tasks →](/features/task)
 
 When several pieces have to land together, scope a phase instead. The rest of this guide follows that path:
 
