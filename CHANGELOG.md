@@ -2,7 +2,9 @@
 
 A history of Mano's releases — what each version changes and why.
 
-## Unreleased
+## 1.7.0 — November 23, 2026
+
+Mano gets a second loop. `mano task` builds one item without a phase, for ideas you can only judge by trying them, and both loops share one backlog. It still writes the item down first and asks how you'll check it before any code. You also say how you'll check a phase now, in the same reply that approves its scope. Project-wide decisions and one-feature contracts no longer need a phase to be written down, planning artifacts can have their own language, and auto chains go straight to `mano build` instead of stopping at stories nobody asked for.
 
 ### Added
 
@@ -20,6 +22,8 @@ A history of Mano's releases — what each version changes and why.
 
 - **`mano start` asks how you'll check the phase, with the proposal.** Exit Criteria used to come entirely from Mano: you approved a list of titles, and the brief was written without a second look. Approving costs nothing, so in a rush the criteria were never really yours, and what you meant turned up at review, often as something `Not This Phase` had cut. The scope proposal now has one more line: what will you do to check this phase works, and what should you see? You answer in the same reply as the approval (`1 — I open the picker with forty presets and see them under headings`), so it costs no extra exchange. Your check becomes Exit Criteria in your words. Nothing it depends on goes into `Not This Phase` without asking you, and a part of it that no selected item delivers gets one question: add the item that tracks it, or leave that part for later. An approval with no check is still a complete answer, and a prompt that already approves a scope never stops to ask. `mano start` still doesn't read the tech spec or the UX flow. A brief that contradicts them is for `mano spec` and `mano ux` to raise, one command later.
 
+- **Auto chains go straight to `mano build`.** Auto mode never runs `mano stories`: before either ledger exists, an approved chain ends at `mano build`, and a chain saved by an older version with `stories, dev` in it is read as `build`. The approved artifact actions keep their order, and the next save writes the corrected list. A phase that already has a stories ledger keeps `mano dev yolo`. The state projection now prints `CONTINUE_ACTION`, the action `mano continue` runs next, separately from `IMPLEMENTATION_ENTRY`, so approved planning still runs before implementation. A saved plan that conflicts with the ledger, still includes `stories`, or includes an action you skipped is reported as `blocked` with a `CONTINUE_BLOCKER` line, and Mano asks you to reconcile it instead of guessing. An owner's settings file now keeps the chain record for the newest phase only.
+
 - **Project-wide decisions no longer need a phase or a backlog row.** Some decisions belong to the whole project rather than to a phase: a test rule for every file, a folder scheme, the storage engine, a component treatment. Until now `mano spec`, `mano rules`, `mano ux`, and `mano ui` would only write those inside a phase, or to settle a gap already in the backlog. With neither, they stopped, so the only way in was to record your own sentence as a gap, approve it, and run the skill again. Now each one accepts the decision written with the command (`mano rules "every source file has a matching test file"`, `mano spec "use SQLite for local storage"`) and writes it directly into its artifact, with or without a phase. The bounds are the same as gap-only mode: the skill writes only what you stated, creates no phase and no gap row, and writes no preview in `mano ui`. A decision that belongs to another skill is passed to that skill, word for word. Writing a rule doesn't change code already built, so when it affects existing work you get a `⚠ Verify:` line, and bringing that work in line goes through `mano start`. `mano start` given only a directive like that (`mano start "every source file must have a test assigned"`) now writes nothing and points you to the skill that owns it, instead of treating the text as phase scope.
 
 ### Fixed
@@ -34,11 +38,15 @@ A history of Mano's releases — what each version changes and why.
 
 - **`mano spec` no longer sends you back to a blocked `mano start`.** When an import homed a project-wide directive as a `spec-gap` before any phase existed, `mano start` refused to scope until the gap was resolved, and `mano spec`, finding no brief, offered `mano start` as the way forward. Nothing could move. `mano spec` now has the same gap-only mode as `mano ux` and `mano ui`: with no brief and at least one open spec-gap, it settles only those gaps in `tech-spec.md`, resolves them, creates no phase, and points to `mano start`. With no brief and no gaps it still routes to `mano start`. `mano rules` had the same hole: it accepted a no-phase run but set no bounds on it, and with no tech spec yet it offered `mano spec` first. With no brief, `mano spec` routes to `mano start`, which the open rule-gap blocks, so you ended up back at `mano rules`. It now has the same gap-only mode, skips the accessibility and testing questions when there is no phase, and never sends you to `mano spec` first.
 
+- **Installed scripts run in ESM projects.** In a project whose `package.json` says `"type": "module"`, Node loaded `_mano/scripts/*.js` as ES modules, and every script failed at its first `require`. The install now ships `_mano/scripts/package.json` with `"type": "commonjs"`, an upgrade from an older install adds it, and the project's own `package.json` is left untouched.
+
 ### Removed
 
 - **`verify.js` is gone.** Verification commands now run directly. The rule it enforced stays as plain instruction in the dev contract, `mano build` and `mano task`: report each command as pass or fail, on failure only the first error, never the full output. `tech-spec.md`'s optional `## Verification` block keeps `command:` and drops `failure-pattern:`, which only the script read. A leftover `failure-pattern:` line in an existing spec is harmless.
 
 ### Documentation
+
+- **Two loops on the landing page and in the README.** Both now open with `mano task` for a single item and `mano start` for a phase, and show how the two hand off. The diagram was redrawn to match.
 
 - **A Tasks page.** `site/features/task.md` covers when to use `mano task` instead of a phase, how it clarifies an item, its gates, the `needs-human` replies, and why it is refused during a phase. The README, command reference, features index, `workflow.md`, both `AGENTS.md` files, `CLAUDE.md`, `cursorrules`, the core rules, and the backlog rule and template now list `mano task` and the `in-task` and `needs-human` statuses.
 
