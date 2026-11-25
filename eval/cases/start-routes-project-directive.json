@@ -1,0 +1,9 @@
+{
+  "name": "start-routes-project-directive",
+  "description": "The human's whole mano start input is a project-wide convention, not work to scope. mano start writes nothing — no brief, no backlog item, no gap — and routes the words to mano rules.",
+  "fixture": "start-routes-project-directive",
+  "prompt": "mano start \"every source file must have a test assigned\"",
+  "assertions": [
+    "start_routed_the_directive_to_its_owner"
+  ]
+}

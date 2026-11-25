@@ -1,0 +1,9 @@
+{
+  "name": "spec-gap-only-mode",
+  "description": "An import homed a project-wide directive as a spec-gap before any phase exists. The open gap blocks mano start, so mano spec must settle it with no brief — adopting the directive into tech-spec.md and resolving the item — instead of routing the human back to mano start.",
+  "fixture": "spec-gap-only-mode",
+  "prompt": "mano spec",
+  "assertions": [
+    "spec_gap_only_settled_the_directive"
+  ]
+}

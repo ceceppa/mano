@@ -1,0 +1,9 @@
+{
+  "name": "task-skips-check-for-named-behaviour",
+  "description": "A lazy but testable request: rename the player, and keep the name after a restart. It names what the human will do and what they should see, so the outcome can already be written from their words. The contract asked the generic check question first anyway, next to three concrete questions that were the ones actually open, and the human could only answer it by restating the request. mano task must ask only what the request leaves open (where the name is changed, whether other players see it, what an empty name does) and write nothing before the answer.",
+  "fixture": "task-named-behaviour",
+  "prompt": "mano task let me change my player's name from \"Player\" to something else. Obviously it has to be saved for the next restart",
+  "assertions": [
+    "task_skipped_check_for_named_behaviour"
+  ]
+}

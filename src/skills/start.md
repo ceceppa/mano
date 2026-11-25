@@ -7,6 +7,12 @@ requires-in-auto: [auto]
 
 # `mano start` — Intake Skill
 
+## Language check — before any response
+
+After loading this contract and its required rules, run `node _mano/scripts/settings.js language` from the project root **before the first user-facing message or any project write**. Use the returned `language.chat` for all conversation, including progress, questions, errors, and the final response; use `language.artefacts` for new planning artifacts and `language.build` for new implementation content (code, tests, product documentation, and product/UI text, including preview copy). The command resolves missing or `null` `artefacts` through `build`, then `chat`, then `null`. Never read settings JSON directly or infer languages from the prompt, source files, or this skill's English examples. A `null` value preserves existing behaviour for that channel only. If the command fails or any of the three fields is absent, report the failure and stop; do not guess.
+
+This check applies on direct invocation, auto-chain handoff, and resumption after interruption or compaction. Re-run after an owner or language change. English response examples, including “exact” or one-line templates, constrain structure and meaning, not prose language: translate their prose into `language.chat`. Preserve command names, paths, required labels, status tokens, and verbatim quotations or diagnostics. Before sending **each** message, check its prose against `language.chat`; before each project write, check planning prose against `language.artefacts` and implementation content against `language.build`. Do not emit an extra language-confirmation message.
+
 ## Identity
 
 This skill scopes the project and the next phase. Prefix every message with `[mano start]:`. Genuinely understand what the user is trying to solve — be direct and curious, and don't let vague ideas slide.
@@ -16,6 +22,16 @@ Read this file plus the `_mano/rules/` files named in `requires:` (core, artifac
 ## Activation
 
 This skill activates when the user types `mano start`. A user may narrow returning backlog candidates by provenance: `mano start from source "[text]"` (or `mano start source "[text]"`), or by experiment: `mano start from track "[name]"`. They may combine them, for example `mano start from source "Piano brief" and track "Option B"`; that is an intersection, never a fallback. Source is a case-insensitive substring search; Track is case-insensitive exact matching. Both only narrow candidates and still require normal approval. With an active `mano track`, Start applies that track automatically unless the command gives an explicit track.
+
+<!-- mano-rule: id=project-directive-no-phase; incident=project-directive-needed-a-gap; model=not-recorded; date=2026-10-05; eval=rules-directive-no-phase,spec-directive-no-phase,ux-directive-no-phase,ui-directive-no-phase,start-routes-project-directive -->
+**A project-wide directive is not phase work — route it, don't scope it.** When the whole text with the command is a rule for how the entire project is built or looks, and it names no work to scope and no change to the current brief, it belongs to the artifact that owns it. Examples: `mano start "every source file has a test assigned"`, `mano start "use SQLite"`. Run nothing, write nothing (no backlog item, no gap, no brief), ask nothing. Reply with one line routing the human's words, verbatim, to the owner:
+- a folder, naming, test-layout, or code convention → `mano rules "[their words]"`
+- a language, runtime, library, package manager, storage, or behaviour-driving value → `mano spec "[their words]"`
+- a navigation rule or a required state every flow must have → `mano ux "[their words]"`
+- a palette, typeface, or component treatment → `mano ui "[their words]"`
+
+Those skills write a directive straight into their artifact with or without a phase. Text that mixes a directive with work to scope, or with a change to the current brief, stays on the normal path below, and **B1 → Every stated directive gets a home** carries the directive.
+<!-- /mano-rule: project-directive-no-phase -->
 
 On activation:
 1. **Run the state script and obey its decision — do not scan `_mano_output/` yourself** (don't `ls` the phase folders or stat the dir; the script reports the state you need). Don't create `_mano_output/` here — it's made when the phase actually starts (the first backlog write, or the phase folder at finalisation):
@@ -226,6 +242,8 @@ Prioritise:
 
 [X] more items in backlog.
 
+Your check: what will you do to check this phase works, and what should you see? Put it in your reply.
+
 What to do?
 1. ✅ Go with this — Approve this scope.
 2. ✏️ Adjust — Add/remove items.
@@ -244,11 +262,23 @@ What do you want to build next?
 
 After presenting, stop. Do not continue to Step 7 until the user explicitly approves or adjusts the phase selection.
 
+<!-- mano-rule: id=start-human-writes-the-check; incident=brief-approved-in-a-rush-missed-what-the-human-meant; model=not-recorded; date=2026-10-12; eval=start-asks-for-the-check,start-check-needs-unscoped-item -->
+**The check is the human's. Ask for it with the proposal.** Exit Criteria are the phase's definition of done. When you derive them from item titles, the human approves them, often without reading the brief, and what they meant shows up at review, often as something `## Not This Phase` cut. So unless the human's own words in this conversation already say what they should see once the phase is done, the proposal carries the `Your check:` line. A result they describe, or a behaviour they name that someone can do and observe, is their check even when they didn't label it one: the criteria start from those words and the line is left out, because answering it would only repeat them. It rides on the approval the human is already giving (`1 — I open the picker with forty presets and see them under headings`). Never send it as a separate message, and never stop for it when the prompt or reply already approves a scope. Every reply is complete: an approval with no check means you derive Exit Criteria as before and don't ask again. When options 3, 4, or 5 re-present the menu, keep the line until it's answered.
+
+A check the human gives shapes the phase in three places:
+
+- **Scope.** A part of the check that no selected item delivers is a 7b question, asked once: name the part and the backlog item that tracks it (`state.js --titles --match`), then ask whether to add that item to this phase or leave that part of the check for later. This is the human's own words disagreeing with the selection, not you reopening it.
+- **Exit Criteria.** The demo sketch starts from the check. Its actions and results become leaves in the human's words, and you derive criteria only for what the check doesn't cover.
+- **Not This Phase.** Nothing the check depends on goes there. A Slice-check deferral or an exclusion that touches the check is a 7b question, not a line you write.
+<!-- /mano-rule: start-human-writes-the-check -->
+
 **Answering the menu options.** Options 3, 4 and 5 are real offers — honour them in the same turn and then re-present the menu; none of them advances to Step 7 on its own.
 
 - **3 — I know what I want.** The human names the work. Match their words to real item titles before doing anything with them (`_mano/rules/backlog.md` → **The backlog roster**): `node _mano/scripts/state.js --titles --match "[distinctive word]"`. Quote the exact titles back and confirm. Never re-word their request into an item of your own invention — the item they mean almost always exists already.
 - **4 — Show full backlog.** Run `node _mano/scripts/state.js --titles` and show the roster grouped as the script prints it. This is the whole backlog, not just this phase's candidates: it includes items already scoped into a phase and items already shipped, which `SCOPE INPUT` deliberately omits. Do **not** open `backlog.md` to answer this, and do not paste item context — the roster is titles, types and statuses by design.
 - **5 — New idea.** Capture it as one or more items now, through the script, exactly as Step 5 does. Run the roster check first: an "idea" the human just had is frequently something the backlog already tracks, and `backlog.js add` will hold it back if so. Then re-present the menu with the new item among the candidates.
+
+**In auto mode, never include `mano stories` in the chain.** A new phase goes directly to `mano build` after its approved artifact actions; `stories → dev yolo` is not an auto path.
 
 **In auto mode** (`MODE: auto` in the state projection), append the intended chain to this same message, so the user arms it with the approval they are already giving — never as a second gate:
 

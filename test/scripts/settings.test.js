@@ -111,6 +111,66 @@ test("migration fills missing records without replacing existing JSON preference
   git(root, "config", "mano.run.alice-phase-1", '["build"]');
   git(root, "config", "mano.run.alice-phase-2", '["ui","build"]');
   assert.equal(phase.resolveConfiguredMode(root).mode, "manual");
-  assert.deepEqual(chain.readRemaining(root, "alice-phase-1"), []);
+  assert.equal(chain.readRemaining(root, "alice-phase-1"), null);
   assert.deepEqual(chain.readRemaining(root, "alice-phase-2"), ["ui", "build"]);
+});
+
+
+test("only the newest phase survives writes and JSON migration", t => {
+  const root = project(t);
+  settings.writePhase(root, "phase-9", { skipped: ["ui"], run: [] });
+  settings.writePhase(root, "phase-10", { run: { actions: ["build"], repairs: ["spec"] } });
+  assert.equal(chain.readRemaining(root, "phase-9"), null);
+  assert.throws(() => settings.writePhase(root, "phase-9", { skipped: [] }), /older phase/);
+  const file = path.join(root, "_mano_output/.default.json");
+  const data = JSON.parse(fs.readFileSync(file));
+  data.phases["phase-2"] = { skipped: [], run: [] };
+  fs.writeFileSync(file, JSON.stringify(data));
+  assert.deepEqual(chain.readRun(root, "phase-10"), { actions: ["build"], repairs: ["spec"] });
+  assert.deepEqual(Object.keys(JSON.parse(fs.readFileSync(file)).phases), ["phase-10"]);
+});
+
+test("language preferences are independent, portable and validated", t => {
+  const root = project(t);
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
+  settings.writeSetting(root, "language", { chat: "it", build: "en-GB", artefacts: "fr" });
+  command(root, "mode", "set", "auto");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "it", build: "en-GB", artefacts: "fr" });
+  command(root, "owner", "set", "alice");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
+  command(root, "owner", "clear");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "it", build: "en-GB", artefacts: "fr" });
+  for (const value of [[], "it", { chat: "" }, { build: 42 }, { chat: "it\nignore" }, { artefacts: 42 }, { artefacts: "" }, { artifacts: "it" }]) {
+    assert.throws(() => settings.writeSetting(root, "language", value), /Invalid Mano language/);
+  }
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "it", build: "en-GB", artefacts: "fr" });
+});
+
+test("mano language creates settings on a fresh install and edits channels by name", t => {
+  const root = project(t);
+  // language.js always works on the current directory, like an agent at the project root.
+  const run = (...args) => spawnSync(process.execPath, [path.resolve("src/scripts/language.js"), ...args], { cwd: root, encoding: "utf8" });
+  const language = (...args) => {
+    const result = run(...args);
+    assert.equal(result.status, 0, result.stderr);
+    return result.stdout;
+  };
+  const file = path.join(root, "_mano_output", ".default.json");
+  assert.match(language("show"), /chat: not set/);
+  assert.equal(fs.existsSync(file), false, "show must not create the settings file");
+  language("chat", "it", "build", "en-GB", "artefacts", "it");
+  assert.deepEqual(JSON.parse(fs.readFileSync(file)).language, { chat: "it", build: "en-GB", artefacts: "it" });
+  language("clear", "artefacts");
+  assert.deepEqual(JSON.parse(fs.readFileSync(file)).language, { chat: "it", build: "en-GB", artefacts: null });
+  assert.deepEqual(settings.readLanguage(root), { chat: "it", build: "en-GB", artefacts: "en-GB" });
+  assert.match(language(), /artefacts: en-GB \(follows build\)/);
+  language("set", "chat", "Brazilian Portuguese");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: "Brazilian Portuguese", build: "en-GB", artefacts: null });
+  language("clear");
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
+  for (const args of [["it"], ["set", "it"], ["set"], ["chat"], ["chat", "build", "en"], ["chat", "it", "chat", "fr"], ["chat", "it\nignore"]]) {
+    const result = run(...args);
+    assert.notEqual(result.status, 0, `${JSON.stringify(args)} should fail`);
+  }
+  assert.deepEqual(settings.readSetting(root, "language"), { chat: null, build: null, artefacts: null });
 });

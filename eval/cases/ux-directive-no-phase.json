@@ -1,0 +1,9 @@
+{
+  "name": "ux-directive-no-phase",
+  "description": "No phase and no open ux-gap, but the human hands mano ux a project-wide interaction rule with the command. mano ux writes it straight into ux-flow.md, adds no gap item, and creates no phase.",
+  "fixture": "ux-directive-no-phase",
+  "prompt": "mano ux \"Every destructive action asks for confirmation before it happens.\"",
+  "assertions": [
+    "ux_directive_written_without_a_gap"
+  ]
+}

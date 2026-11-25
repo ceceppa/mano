@@ -30,6 +30,19 @@ class AutoRepairContractTests(unittest.TestCase):
         self.assertIn('invoke the exact owning Mano skill now', repair)
         self.assertIn('never lets build invent or edit an input contract', repair)
 
+    def test_task_chain_repairs_only_its_own_gaps_and_never_picks_work(self):
+        task = read('src/skills/task.md')
+        repair = task.split('## Auto mode: gap repair', 1)[1].split('\n## ', 1)[0]
+        for guard in ['R2, R3, or R4\'s missing scaffold command', 'never chain',
+                      'One attempt per owner per run', '❓ Decide:', 'hook triage',
+                      'run R2–R5 in full again before any edit', 'never runs `mano start`',
+                      'keeps no `chain.js` record']:
+            self.assertIn(guard, repair)
+        self.assertIn('Auto mode never chains into it, `mano continue` never selects it', task)
+        self.assertIn('[mano auto]: task "<item title>"', task)
+        self.assertIn('**Task chains.**', read('src/rules/auto.md'))
+        self.assertIn('**The one arming outside a phase is `mano task`.**', read('src/workflow.md'))
+
     def test_start_accounts_for_removed_state_and_resets_only_on_scope_approval(self):
         start = read('src/skills/start.md')
         self.assertIn('State removal and replacement require spec coverage', start)

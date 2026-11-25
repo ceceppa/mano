@@ -6,11 +6,9 @@
 
 📖 **Docs & guides: [mano.ceceppa.me](https://mano.ceceppa.me/)**
 
-Plan in small phases and validate each assumption before it becomes code. You stay in control of the direction — correcting course at the brief, not after dozens of tasks have already shipped.
+Build one small step at a time and validate each assumption before it becomes code. You stay in control of the direction — correcting course at one item or one brief, not after dozens of tasks have already shipped.
 
-Mano is built on a simple assumption: software projects rarely move in a straight line. Feedback, testing, and technical discovery invalidate early assumptions. So the goal isn't a perfect upfront plan — it's a tight loop where each small phase is scoped, reviewed, and corrected before the next one starts. You catch the wrong turn early, while it's still cheap to change.
-
-Each phase breaks into self-contained stories an agent implements one at a time by default. On greenfield work this keeps the build loop focused — but the point throughout is that **you** approve the direction at every seam. When you have reviewed a few small stories and want one continuous implementation turn, `mano dev yolo` is the explicit user-owned exception; Mano never opts into it for you.
+Mano is built on a simple assumption: software projects rarely move in a straight line. Feedback, testing, and technical discovery invalidate early assumptions. So the goal isn't a perfect upfront plan — it's a tight loop where each small step is written down, built, tried, and corrected before the next one starts. You catch the wrong turn early, while it's still cheap to change.
 
 > **Important:** Mano is not a compiled CLI tool, a deterministic software framework, or an autonomous planning system. It is a set of skills, templates, and instructions that rely entirely on your AI agent's context window. You, the human, are the ultimate enforcer of scope, context, and quality.
 
@@ -37,7 +35,29 @@ npx mano-plan@1.0.0 install      # a specific version
 
 **Updating:** re-run `npx mano-plan install` in the same project. Existing files are left untouched — your edits are safe. Use `--force` to overwrite Mano's files with the newer versions, or `--yes` to accept defaults without prompts.
 
-Once installed, type `mano` in your AI IDE's chat to see available commands, or `mano start` to begin.
+Once installed, type `mano` in your AI IDE's chat to see available commands, or pick one of the two loops below to begin.
+
+## Two loops
+
+Mano has two loop sizes. Both read and write the same backlog, so you can move between them as the work changes.
+
+### One item: `mano task`
+
+Start here when the only way to judge an idea is to try it.
+
+```text
+mano task "the ball changes colour when it captures something"
+```
+
+Before any code, it writes the item into the backlog, asks about anything the item leaves open, and, only when your words name nothing you could see happen, asks how you'll check it works. Then it builds that one item. It closes the item on evidence, or hands it back to you as `needs-human` with one line saying what to try. Your reply (`works`, what's broken, or what you want different) decides what happens next. Details: [One item, no phase](#one-item-no-phase-mano-task).
+
+### One phase: `mano start`
+
+Use a phase when several items have to land together, or when the direction needs a review before you go further. `mano start` scopes a small phase with you and waits for your approval. `mano build`, or `mano stories` + `mano dev`, builds it, and `mano review` closes it.
+
+Each phase can break into self-contained stories an agent implements one at a time by default. On greenfield work this keeps the build loop focused — but the point throughout is that **you** approve the direction at every seam. When you have reviewed a few small stories and want one continuous implementation turn, `mano dev yolo` is the explicit user-owned exception; Mano never opts into it for you.
+
+The two loops hand off to each other. A task that turns out too big for one item stops and points you to `mano start`. While a phase is open, `mano task` is refused until `mano review` closes it, because the phase was planned against the code as it was.
 
 ## Core Principles
 
@@ -67,16 +87,28 @@ Mano should help you think more clearly, not encourage passive acceptance. Skill
 |---------|-------------|
 | `mano` | Show available commands and current status. |
 | `mano status` | Runs the deterministic state projection. Shows the selected owner, active phase, artifact state, and valid next actions. |
+| `mano task "<item>"` | Implement one item with no phase: a backlog item by title, or new work in plain words, which it writes into the backlog first. Asks only what the item leaves open. Refused while a phase is open. |
 | `mano import [doc]` | Turn an existing PRD or document into a backlog, then stop. Run `mano start` afterwards to scope the first phase. |
 | `mano owner [slug]` | Show, set, or clear this repository clone's optional phase owner. |
 | `mano mode [auto\|manual]` | Show or set whether finished actions chain automatically through to implementation. Defaults to `manual`. |
 | `mano track [name]` | Show, set, or clear an optional local experiment/work track. |
+| `mano language <chat\|build\|artefacts> <lang> ...` | Show, set, or clear the languages for conversation, implementation, and planning artifacts. |
 | `mano start` | Scope a new project or phase. This is a dedicated command, not part of `mano [action]`. (`mano start`) |
 | `mano [action]` | Run a planning action: `spec`, `ux`, `rules`, `ui`, `stories`, `review`. Any order, when its inputs are useful. |
 | `mano build ["what changed"]` | Build the active phase straight from its brief — no story files. The brief's own numbered Phase Scope items are the units, tracked in `progress.md`. The optional quoted text is a mid-phase correction, accepted only once a valid ledger exists. |
 | `mano dev [yolo]` | Implement the next pending story, or explicitly batch all stories currently pending with `yolo`. Follows the implementation contract in `AGENTS.md`. |
 | `mano continue` | Resume where the project is. With an open ledger it runs the implementation entry — `mano build` to completion, or `mano dev` for one story. Otherwise it auto-runs a planning action only when there is a single obvious next step; if several are still reasonable it shows the options instead of picking the shortest path. |
 | `mano help [skill]` | Show what a skill does and when to use it. |
+
+#### One item, no phase: `mano task`
+
+`mano task "the ball changes colour when it captures something"` builds one narrow piece of work. Pass an existing backlog item's title, or describe new work and it adds the item to the backlog first. Before any code it writes down the outcome the item has to deliver, and if part of that outcome would be a guess (an open detail, an undefined noun, an effect that starts but never says when it stops) it asks you, all questions at once. When your words name nothing anyone could see happen (a bare title, "improve the search"), it also asks one thing the item can't tell it: *what will you do to check it works, and what should you see?* A request that describes the result, or names a behaviour you can try ("let me rename my player, and keep the name after a restart"), is your check already, so it quotes you instead of asking. Your check becomes part of the outcome, in your words, and the done gates prove it. "Just build it" is a fine answer too. Your answers go into the item. When the item is already clear and you've said what you'll see, it asks nothing.
+
+The guardrails are the same gates as `mano dev`/`mano build`. A missing default goes to `mano spec`, an unwritten player choice to `mano ux`, and work too big for one item to `mano start`. When the item asks for the opposite of what the UX flow, design brief, or a spec value says, it stops, and the command it prints writes the item's version over the old line. If the new version is in your own words from this run, it doesn't ask which one stands: widening an earlier limit is how you iterate. It only asks when the item's text is older than the artifact's. The item turns `in-task` before the first edit and stays that way until it's closed, so a half-built item never looks untouched. It closes the item only on evidence. When what's left can only be judged by you (how it looks, how it feels), the item becomes `needs-human`, with a one-line `Check:` saying what to try. Reply `works`, what's broken, or how you want it different. A redirect sends the item back to the backlog with your words in it, and the next run clarifies it again. The `Check:` line stays on the resolved item as the record of how it was verified.
+
+`mano task` is refused while a phase is open, because the phase's stories or ledger were planned against the code as it was. Auto mode and `mano continue` never start a task: picking what to build is yours.
+
+In auto mode, once you've typed `mano task`, a missing value or an unwritten player choice doesn't stop the run, and a contradiction stops only for your answer. It runs the `mano spec` or `mano ux` command it would otherwise have told you to type, then comes back to the item and checks its gates again. Each owner runs at most once per task, and a question from it still stops and waits for you.
 
 `mano dev` and `mano build` are the two named paths into implementation, but you don't have to remember either command — plain phrasing like "implement the next story" or "build the phase" routes to the same flows. Either way the agent follows the implementation contract in `AGENTS.md`.
 
@@ -119,7 +151,7 @@ Mano saves portable settings and chain state in `_mano_output/[owner].json`. Eac
 
 | File | What it contains | Commit it? |
 | --- | --- | --- |
-| `_mano_output/alice.json` | Alice's mode, track, and chain records by phase | Yes, to resume elsewhere |
+| `_mano_output/alice.json` | Alice's mode, track, languages, and chain records by phase | Yes, to resume elsewhere |
 | `_mano_output/.default.json` | The same settings for work without an owner | Yes, if used |
 | `_mano_output/.local.json` | The owner selected in this checkout | No; Mano adds it to `_mano_output/.gitignore` |
 
@@ -129,9 +161,10 @@ Use these commands in your agent's chat to create or update the files:
 mano owner alice
 mano mode auto
 mano track "Option B"
+mano language chat it build en-GB artefacts it
 ```
 
-A new owner starts in `manual` mode with no track. Selecting an existing owner restores that owner's saved settings. Bare `mano owner`, `mano mode`, and `mano track` show the effective values. `mano mode clear` resets the mode to `manual`; `mano track clear` resets the track to `null`. `mano owner clear` selects the unowned `.default.json` settings without deleting any owner's file.
+A new owner starts in `manual` mode with no track and no languages set. Selecting an existing owner restores that owner's saved settings. Bare `mano owner`, `mano mode`, `mano track`, and `mano language` show the effective values. `mano mode clear` resets the mode to `manual`; `mano track clear` resets the track to `null`; `mano language clear` resets all three languages to `null`, or only the channels you name. `mano owner clear` selects the unowned `.default.json` settings without deleting any owner's file.
 
 An owner file with an approved chain in progress looks like this:
 
@@ -141,6 +174,7 @@ An owner file with an approved chain in progress looks like this:
   "owner": "alice",
   "mode": "auto",
   "track": "Option B",
+  "language": { "chat": "it", "build": "en-GB", "artefacts": "it" },
   "phases": {
     "alice-phase-1": {
       "skipped": ["ux"],
@@ -159,12 +193,30 @@ An owner file with an approved chain in progress looks like this:
 | `owner` | Owner slug matching the filename; `null` in `.default.json` |
 | `mode` | `manual` or `auto` |
 | `track` | Active work track, or `null` for none |
-| `phases` | Chain records keyed by the exact phase ID |
+| `language.chat` | Conversation language, e.g. `it` for Italian; missing or `null` keeps existing behaviour |
+| `language.build` | Language for new implementation content, e.g. `en-GB` for UK English; missing or `null` keeps existing behaviour |
+| `language.artefacts` | Language for new planning artifacts; missing or `null` falls back to `build`, then `chat`, then existing behaviour |
+| `phases` | Only the newest phase’s chain record, keyed by its exact phase ID |
 | `skipped` | Planning actions the human explicitly removed from this phase's chain |
 | `run.actions` | Remaining approved actions, in order; a nonempty list ends with `build` or `dev` |
 | `run.repairs` | Artifact actions already given an automatic repair attempt in this run |
 
 `run: null` means there is no saved approval. A run with `"actions": []` means the approved chain has finished. These records accompany the phase artifacts and implementation ledgers; they do not replace them. Mano updates the chain fields as approved actions finish, so use the commands to manage them rather than reconstructing approval by editing JSON.
+
+Agents obtain the effective languages by running `node _mano/scripts/settings.js language` from the project root. The command returns validated JSON with `language.chat`, `language.build`, and `language.artefacts`, resolving the selected owner. Missing `chat` and `build` values become `null`; missing or `null` `artefacts` falls back to `build`, then `chat`, then `null`; agents do not read the settings files themselves. Every skill runs this check before its first response or project write, including auto-chain handoffs and resumed work. English response templates retain their structure while their prose follows the chat language, including build and dev completion messages.
+
+Set conversation, implementation, and planning languages independently with `mano language`. It creates the settings file if it does not exist yet, so it works on a fresh install:
+
+```text
+mano language chat it build en-GB artefacts it   # set several channels at once
+mano language build en-GB                         # or just one
+mano language clear artefacts                     # planning artifacts follow build again
+mano language                                     # show the effective values
+```
+
+From a terminal, the same commands are `node _mano/scripts/language.js show|set|clear`. Every language needs its channel — `chat`, `build`, or `artefacts` — so a bare `mano language it` is refused rather than guessed. Values are language names or locale tags; quote a name with spaces (`mano language chat "Brazilian Portuguese"`). The artefacts language applies to briefs, specs, rules, UX flows, design briefs, stories, backlog entries, reviews, and ledger prose. The build language applies to product documentation, code identifiers and comments, tests, and product/UI text, including preview copy. The owner file example above produces Italian chat and planning artifacts with UK English implementation content — `mano language chat it build en-GB artefacts it`. Existing settings containing only `chat` and `build` remain valid; the command resolves the artefacts fallback without saving it into the settings file. Required machine-readable labels, commands, paths, and exact quotations stay unchanged. Changing a language does not translate existing files.
+
+Older phase settings are compacted automatically, retaining the highest phase number per owner. Starting a newer chain replaces the previous record; attempts to update an older phase are rejected. Phase artifacts and implementation ledgers remain intact. Old Git settings cannot restore discarded history.
 
 The local selection contains only:
 
@@ -216,11 +268,13 @@ On a project where you have stopped reading the intermediate artifacts and just 
 mano mode auto
 ```
 
-From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano build`, without you typing each one — including when you came in through `mano import`, where the whole path from document to built phase writes no story files. (A phase that already has a stories index keeps its path and finishes at `mano dev yolo` instead.) Three things keep it supervised:
+From then on, **once you approve a phase scope**, Mano runs the actions that phase needs and finishes at `mano build`, without you typing each one — including when you came in through `mano import`, where the whole path from document to built phase writes no story files. Auto never runs `mano stories`: even an older saved `stories → dev` plan goes to `build` before either ledger exists, keeping the other planning actions in order. A phase that already has a stories index keeps its path and finishes at `mano dev yolo` instead. Three things keep it supervised:
 
 - **You still approve the phase.** Auto mode is armed by that approval and never replaces it — the brief is still where you correct course, before any code exists.
 - **It pauses for any question.** A decision to confirm, a clarification, an ambiguous next action, hook findings, a blocker — it stops and asks. Nothing is ever picked on your behalf. Answer, and it carries on.
 - **It never closes the phase.** The chain stops after implementation. `mano review` is always yours to run.
+
+A `mano task` you type in auto mode gets a smaller chain of its own: it can run `mano spec` or `mano ux` for a missing value or flow, then finish the item. It never picks the next task for you.
 
 At the scope prompt, `1` and `go` are exact synonyms: both approve the scope and start the displayed auto chain. To change it and approve in one reply, use wording such as `go, skip rules` or `1, add ux`; an edit without `1` or `go` changes the proposal but does not start it.
 
@@ -248,6 +302,8 @@ Run a Mano action again when concrete new information affects its artifact. The 
 | **`mano owner`** | Configures optional repository-local phase ownership for team work | `skills/owner.md` |
 | **`mano mode`** | Configures whether finished actions chain automatically (`auto`) or hand back (`manual`) | `skills/mode.md` |
 | **`mano track`** | Configures an optional local experiment/work track for imports, phase candidates, and review follow-ups | `skills/track.md` |
+| **`mano language`** | Configures the conversation, implementation, and planning-artifact languages | `skills/language.md` |
+| **`mano task`** | Implements one backlog item, or one new idea it writes into the backlog first, with no phase | `skills/task.md` |
 | **`mano start`** | Scopes the idea, populates the backlog (from conversation), proposes phases | `skills/start.md` |
 | **`mano rules`** | Defines and updates project rules — components, patterns, architecture | `skills/rules.md` |
 | **`mano spec`** | Translates the phase brief into tech spec | `skills/spec.md` |
@@ -266,7 +322,7 @@ The user owns scope, priorities, and product tradeoffs. `mano spec` can recommen
 
 Mano is strictly **à la carte** and functions as a **Just-In-Time (JIT) planning** system.
 
-You only pay the cognitive tax for what you are building *today*. The shortest complete phase is two commands plus the close: `mano start` to scope the work, `mano build` to build it from that brief, and `mano review` to close the phase. The story path adds one: `mano start` → `mano stories` to generate the tasks → `mano dev` per story (one turn each by default, or one explicit YOLO batch) → `mano review`. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
+You only pay the cognitive tax for what you are building *today*. The shortest loop is one `mano task`: one item, no brief, no review, closed on evidence or on your check. The shortest complete phase is two commands plus the close: `mano start` to scope the work, `mano build` to build it from that brief, and `mano review` to close the phase. The story path adds one: `mano start` → `mano stories` to generate the tasks → `mano dev` per story (one turn each by default, or one explicit YOLO batch) → `mano review`. Every other action (`spec`, `ux`, `rules`, `ui`) is optional context tightening.
 
 When implementation finishes the phase, it hands you the brief's own `Validate now:` checks — the `Try` lines you wrote in the validation plan, not checks Mano invented — and `mano review` shows each one again beside the promise it tests, because that review is usually a new session where the earlier message is gone.
 

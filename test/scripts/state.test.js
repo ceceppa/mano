@@ -474,3 +474,127 @@ test("an invalid ledger is never an implementation entry", () => {
   assert.match(rendered, /^IMPLEMENTATION_ENTRY: none$/m);
   assert.match(rendered, /is not a valid v2 ledger/);
 });
+
+function saveChain(root, actions) {
+  const result = childProcess.spawnSync("node", [
+    path.join(__dirname, "../../src/scripts/chain.js"),
+    "save", "--phase", "phase-1", "--actions", actions.join(","), root,
+  ], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+}
+
+function withMode(t, mode) {
+  const previous = process.env.MANO_MODE;
+  process.env.MANO_MODE = mode;
+  t.after(() => {
+    if (previous === undefined) delete process.env.MANO_MODE;
+    else process.env.MANO_MODE = previous;
+  });
+}
+
+function writeStories(root, status = "pending") {
+  const dir = path.join(root, "_mano_output/phase-1/stories");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "README.md"),
+    `| # | Story | File | Status |\n|---|---|---|---|\n| 1 | Demo | story-1.md | ${status} |\n`);
+}
+
+test("continue resumes artifact planning then build despite existing artifacts", t => {
+  withMode(t, "auto");
+  const root = projectWithBrief("mano-continue-chain-");
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  for (const name of ["tech-spec", "ux-flow", "design-brief", "project-rules"]) {
+    fs.writeFileSync(path.join(root, "_mano_output", `${name}.md`), `# ${name}\n`);
+  }
+  const actions = ["ui", "rules", "build"];
+  for (let i = 0; i < actions.length; i++) {
+    saveChain(root, actions.slice(i));
+    const snapshot = state.scan(root);
+    assert.equal(snapshot.decision, "STOP", "start cannot scope another phase");
+    assert.equal(snapshot.implementationEntry, "build");
+    assert.equal(snapshot.continueAction, actions[i]);
+    assert.equal(JSON.parse(state.renderJson(snapshot)).continueAction, actions[i]);
+    assert.equal(snapshot.continueBlocker, null);
+    assert.deepEqual(snapshot.chainRemaining, actions.slice(i));
+    const rendered = state.renderDecision(snapshot);
+    assert.match(rendered, new RegExp(`^CONTINUE_ACTION: ${actions[i]}$`, "m"));
+    assert.doesNotMatch(rendered, /terminal action is mano build/);
+  }
+  saveChain(root, []);
+  assert.equal(state.scan(root).continueAction, "none");
+});
+
+test("continue respects build planning, manual mode, and direct implementation fallbacks", t => {
+  withMode(t, "auto");
+  const root = projectWithBrief("mano-continue-build-chain-");
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  assert.equal(state.scan(root).continueAction, "build");
+  saveChain(root, ["ui", "rules", "build"]);
+  assert.equal(state.scan(root).continueAction, "ui");
+  process.env.MANO_MODE = "manual";
+  assert.equal(state.scan(root).continueAction, "none", "manual does not resume an auto plan");
+  writeStories(root);
+  assert.equal(state.scan(root).continueAction, "dev", "manual keeps the current ledger path");
+  fs.rmSync(path.join(root, "_mano_output/phase-1/stories"), { recursive: true });
+  process.env.MANO_MODE = "auto";
+  saveChain(root, ["build"]);
+  assert.equal(state.scan(root).continueAction, "build");
+  saveChain(root, []);
+  assert.equal(state.scan(root).continueAction, "none", "completed records never arm a new run");
+});
+
+test("auto resumes old stories plans through build without writing during projection", t => {
+  withMode(t, "auto");
+  const root = projectWithBrief("mano-continue-old-chain-");
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  const settings = require("../../src/scripts/settings.js");
+  for (const actions of [["ui", "rules", "stories", "dev"], ["stories", "dev"], ["dev"]]) {
+    settings.writePhase(root, "phase-1", { run: { actions, repairs: ["spec"] } });
+    const snapshot = state.scan(root);
+    const expected = actions[0] === "ui" ? ["ui", "rules", "build"] : ["build"];
+    assert.deepEqual(snapshot.chainRemaining, expected);
+    assert.equal(snapshot.continueAction, expected[0]);
+    assert.equal(snapshot.implementationEntry, "build");
+    assert.equal(snapshot.continueBlocker, null);
+    assert.deepEqual(settings.readPhase(root, "phase-1").run.actions, actions);
+    assert.equal(fs.existsSync(path.join(root, "_mano_output/phase-1/stories")), false);
+  }
+  writeStories(root);
+  assert.equal(state.scan(root).continueAction, "dev", "existing stories keep their ledger");
+  writeStories(root, "done");
+  assert.equal(state.scan(root).continueAction, "none", "completed stories do not restart");
+});
+
+test("continue blocks invalid ledgers and chain conflicts without rewriting approved actions", t => {
+  withMode(t, "auto");
+  const root = projectWithLedger("mano-continue-conflict-");
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  saveChain(root, ["rules", "build"]);
+  assert.equal(state.scan(root).continueAction, "rules", "approved reruns still precede implementation");
+  for (const actions of [["ui", "stories", "dev"], ["stories", "build"]]) {
+    saveChain(root, actions);
+    const snapshot = state.scan(root);
+    assert.equal(snapshot.continueAction, "blocked");
+    assert.match(snapshot.continueBlocker, /conflicts with the implementation ledger/);
+    assert.deepEqual(snapshot.chainRemaining, actions);
+  }
+  saveChain(root, ["ui", "build"]);
+  fs.writeFileSync(path.join(root, "_mano_output/phase-1/progress.md"), "broken ledger\n");
+  assert.equal(state.scan(root).continueAction, "blocked");
+  assert.match(state.renderDecision(state.scan(root)), /^CONTINUE_BLOCKER: .*not a valid v2 ledger/m);
+  fs.unlinkSync(path.join(root, "_mano_output/phase-1/progress.md"));
+  saveChain(root, ["stories", "build"]);
+  assert.equal(state.scan(root).continueAction, "build", "auto omits stories before either ledger exists");
+  saveChain(root, ["dev"]);
+  assert.equal(state.scan(root).continueAction, "build", "auto replaces dev before either ledger exists");
+  writeStories(root);
+  saveChain(root, ["ui", "build"]);
+  assert.equal(state.scan(root).continueAction, "blocked", "an existing stories path cannot become build");
+});
+
+test("continue never starts implementation without a phase brief", t => {
+  withMode(t, "auto");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "mano-continue-no-brief-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  assert.equal(state.scan(root).continueAction, "none");
+});

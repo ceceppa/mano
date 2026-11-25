@@ -69,6 +69,15 @@ function legacyPhases(root) {
   const result = spawnSync("git", ["config", "--local", "--name-only", "--get-regexp", "^mano\\.(chain|run)\\."], { cwd: root, encoding: "utf8" });
   return [...new Set((result.stdout || "").trim().split("\n").filter(Boolean).map(key => key.replace(/^mano\.(chain|run)\./, "")))];
 }
+function latestPhase(phases) {
+  return Object.keys(phases).sort((a, b) => Number(b.match(/(\d+)$/)[1]) - Number(a.match(/(\d+)$/)[1]))[0];
+}
+function validateLanguage(value) {
+  if (!object(value) || Object.keys(value).some(key => !["chat", "build", "artefacts"].includes(key)) ||
+      Object.values(value).some(v => v !== null && (typeof v !== "string" || !v.trim() || v.length > 120 || /[\u0000-\u001f\u007f]/.test(v)))) {
+    throw new Error("Invalid Mano language settings: use chat, build and artefacts language names or locale tags, or null");
+  }
+}
 function readOwner(root, owner = selectedOwner(root)) {
   const file = path.join(root, relativeFile(root, owner));
   const saved = readJson(file);
@@ -87,8 +96,11 @@ function readOwner(root, owner = selectedOwner(root)) {
     }
   }
   if (!own(data, "phases")) data.phases = {};
+  const retained = latestPhase(data.phases);
   for (const id of legacyPhases(root)) {
     if (phaseOwner(id) !== owner) continue;
+    // Older records must not reappear after compaction, even from Git migration.
+    if (retained && Number(id.match(/(\d+)$/)[1]) < Number(retained.match(/(\d+)$/)[1])) continue;
     const record = data.phases[id] ?? {};
     if (!object(record)) throw new Error(`Invalid Mano phase record in ${file}: ${id}`);
     if (!own(record, "skipped")) {
@@ -122,6 +134,13 @@ function readOwner(root, owner = selectedOwner(root)) {
       throw new Error(`Invalid Mano phase record in ${file}: ${id}`);
     }
   }
+  if (!own(data, "language")) data.language = { chat: null, build: null, artefacts: null };
+  validateLanguage(data.language);
+  if (Object.keys(data.phases).length > 1) {
+    const id = latestPhase(data.phases);
+    data.phases = { [id]: data.phases[id] };
+    migrated = true;
+  }
   if (migrated) writeJson(file, data);
   return data;
 }
@@ -138,6 +157,7 @@ function readSetting(root, key) { return readOwner(root)[key]; }
 function writeSetting(root, key, value) {
   const owner = selectedOwner(root);
   const data = readOwner(root, owner);
+  if (key === "language") validateLanguage(value);
   data[key] = value;
   writeJson(path.join(root, relativeFile(root, owner)), data);
 }
@@ -145,7 +165,11 @@ function readPhase(root, id) { return readOwner(root, phaseOwner(id)).phases[id]
 function writePhase(root, id, patch) {
   const owner = phaseOwner(id);
   const data = readOwner(root, owner);
-  data.phases[id] = { skipped: [], run: null, ...data.phases[id], ...patch };
+  const retained = latestPhase(data.phases);
+  if (retained && Number(id.match(/(\d+)$/)[1]) < Number(retained.match(/(\d+)$/)[1])) {
+    throw new Error(`Cannot update older phase ${id}; settings retain only ${retained}`);
+  }
+  data.phases = { [id]: { skipped: [], run: null, ...data.phases[id], ...patch } };
   writeJson(path.join(root, relativeFile(root, owner)), data);
 }
 function allPhases(root) {
@@ -157,4 +181,33 @@ function allPhases(root) {
   }
   return [...owners].flatMap(owner => Object.entries(readOwner(root, owner).phases).map(([phaseId, record]) => ({ phaseId, ...record })));
 }
-module.exports = { selectedOwner, selectOwner, relativeFile, readSetting, writeSetting, readPhase, writePhase, allPhases };
+function readLanguage(root) {
+  const language = readSetting(root, "language");
+  return {
+    chat: language.chat ?? null,
+    build: language.build ?? null,
+    artefacts: language.artefacts ?? language.build ?? language.chat ?? null,
+  };
+}
+
+function main(argv = process.argv.slice(2)) {
+  if (argv.length === 1 && ["--help", "-h"].includes(argv[0])) {
+    process.stdout.write("Usage: node settings.js language [projectRoot]\nReturns the selected owner's validated language settings as JSON.\nThe artefacts language falls back to build, then chat, then null.\n");
+    return;
+  }
+  if (argv[0] !== "language" || argv.length > 2) {
+    throw new Error("Usage: node settings.js language [projectRoot]");
+  }
+  const root = path.resolve(argv[1] || process.cwd());
+  process.stdout.write(JSON.stringify({ language: readLanguage(root) }, null, 2) + "\n");
+}
+
+if (require.main === module) {
+  try { main(); }
+  catch (error) {
+    process.stderr.write(`[mano settings] ${error.message}\n`);
+    process.exitCode = 1;
+  }
+}
+
+module.exports = { selectedOwner, selectOwner, relativeFile, readSetting, writeSetting, readPhase, writePhase, allPhases, readLanguage, main };

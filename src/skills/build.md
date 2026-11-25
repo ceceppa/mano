@@ -6,6 +6,12 @@ requires: [implement]
 
 # `mano build` — build the phase from its brief
 
+## Language check — before any response
+
+After loading this contract and its required rules, run `node _mano/scripts/settings.js language` from the project root **before the first user-facing message or any project write**. Use the returned `language.chat` for all conversation, including progress, questions, errors, and the final response; use `language.artefacts` for new planning artifacts and `language.build` for new implementation content (code, tests, product documentation, and product/UI text, including preview copy). The command resolves missing or `null` `artefacts` through `build`, then `chat`, then `null`. Never read settings JSON directly or infer languages from the prompt, source files, or this skill's English examples. A `null` value preserves existing behaviour for that channel only. If the command fails or any of the three fields is absent, report the failure and stop; do not guess.
+
+This check applies on direct invocation, auto-chain handoff, and resumption after interruption or compaction. Re-run after an owner or language change. English response examples, including “exact” or one-line templates, constrain structure and meaning, not prose language: translate their prose into `language.chat`. Preserve command names, paths, required labels, status tokens, and verbatim quotations or diagnostics. Before sending **each** message, check its prose against `language.chat`; before each project write, check planning prose against `language.artefacts` and implementation content against `language.build`. Do not emit an extra language-confirmation message.
+
 This file plus `_mano/rules/implement.md` are the **complete contract** for `mano build`. Read both completely before writing any code, including when the user asks in plain words ("now build the phase"). Together they are self-contained: no other `_mano/` file is required, and `_mano/workflow.md` is never opened mid-skill.
 
 **The unit of work is the `## Phase Scope` leaf the human already approved** — a lettered leaf of a numbered category in a two-level brief, the numbered item itself in a flat one, and never a unit this skill invents. That single property is what the rest of this file protects. A row that is a copy of the brief cannot drift from it, so build needs no story format, no filename law, no acceptance-criteria authoring, and no quality rules for text it never writes. What it does need, unchanged and in full, are the gates that decide whether the brief is ready to build at all.
@@ -16,7 +22,7 @@ This file plus `_mano/rules/implement.md` are the **complete contract** for `man
 **One invocation builds the whole phase.** `mano build` is `mano dev yolo` with no opt-in word: there is no one-row variant to fall back to, so *every* invocation runs from wherever the ledger stands to the terminal sweep. That holds in `manual` as much as in `auto` — the mode decides whether planning actions chain into this one, never how much of the phase this one finishes. The ledger is what makes it safe: it is written as each row closes, so an interrupted run resumes from disk in a fresh session with nothing carried in the conversation. Resumability is why the run may be long, not permission to leave it half-run — **`_mano/rules/implement.md` → Never end a turn on an announcement** governs every stop.
 <!-- /mano-rule: implementation-run-to-completion -->
 
-**Read order — keep the prefix stable.** Read this contract and `_mano/rules/implement.md` first (they are identical on every run, so they cache as a stable prompt prefix), then the state projection, then the phase brief, then the artifact sections a row needs, then source.
+**Read order — keep the prefix stable.** Read this contract and `_mano/rules/implement.md` first (they are identical on every run, so they cache as a stable prompt prefix), then the language command, then the state projection, then the phase brief, then the artifact sections a row needs, then source.
 
 **An argument is a correction, never new scope.** `mano build "[what changed]"` is accepted **only when a valid ledger exists** — the ledger is the thing the text corrects, and this design still rests on the ledger itself being derivable from the brief alone. The invocation is only a channel; the classification, the write rules, and the stops are the same ones a correction typed mid-run goes through (**Mid-phase corrections**). The exact wording is the human's contract: pass it through verbatim, never paraphrase it into scope-ese, and never treat it as licence to widen a row.
 
@@ -54,7 +60,7 @@ A **pass** is one implement-then-verify cycle. By default it is that one row. Wh
 
   a. **Run the gates first, before touching any status or any code.** Apply gates **6.2**, **6.3**, **6.4** and the **read budget** from `_mano/rules/implement.md` against **each row's** contract in the pass. A gate that fires stops the run *here*, with the ledger untouched — a row flipped to `doing` for work that then gets refused is a false record of what happened. In a group, the gate fires against one row and ends the pass **before** that row; the earlier rows are still an honest pass.
   b. Only once the gates pass, flip the pass to `doing` in one call: `node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_ID] --row [id] --status doing` — repeating `--row [id] --status doing` for each row in the pass.
-  c. Derive what the pass needs from the artifacts *in this pass*; never write an implementation reference to disk. It is expensive, single-use, and wrong to persist. Implement, then verify through `node _mano/scripts/verify.js -- <command>`, then apply gates **10.1 and 10.2** — **separately to every row in the pass and every `E` leaf you are about to mark**. Verification may be shared; evidence may not.
+  c. Derive what the pass needs from the artifacts *in this pass*; never write an implementation reference to disk. It is expensive, single-use, and wrong to persist. Implement, then run the project's verification commands, then apply gates **10.1 and 10.2** — **separately to every row in the pass and every `E` leaf you are about to mark**. Verification may be shared; evidence may not.
   d. Flip the rows you proved to `done` and mark `met` every Exit Criterion this pass produced evidence for, in one call:
      `node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_ID] --row [id] --status done --row [Eid] --status met`
      No stored row → criterion mapping exists and none is needed: mark leaves as the evidence appears, and step 4's terminal sweep re-checks all of them regardless of which row got there. A row or leaf you cannot yet prove stays open — that is the gate doing its job, and the next run resumes at the first unresolved leaf.
@@ -140,9 +146,9 @@ Then report what you read:
 
 **0c. Readiness.** For each Phase Scope item involving mechanics, workflows, APIs, or stateful behaviour, verify: what data or entity does it operate on? what starts the behaviour? what state changes? what condition proves it worked? what default fixture, seed data, or example input is needed? If an item depends on missing domain structure, that is a gap — route it to `mano spec`; do not build around it with an invented model.
 
-**0c.0 Spec-owned defaults and initial state — hard gate.** `_mano/rules/implement.md` → **Before writing code — the gap gates** gate 6.2, applied here against the **whole brief** instead of one unit: every Exit Criterion and Phase Scope item that depends on a behaviour-driving default needs that default owned and valued in the canonical tech spec.
+**0c.0 Spec-owned defaults and initial state — hard gate.** `_mano/rules/implement.md` → **Before writing code — the gap gates** gate 6.2, applied here against the **whole brief** instead of one unit: every Exit Criterion and Phase Scope item that depends on a behaviour-driving default needs its owner and authority defined under gate 6.2: an exact contract or declared tuning with a configuration home, constraints, and an initialisation route. A current tuning number need not be duplicated in the spec.
 
-If that owner or value is missing, **write no ledger**. Report `⚠️ Build readiness gap: spec-owned default missing`, name the affected exit path and field that needs defining, and route to `mano spec`. Do not offer a build-owned default, a `TODO` in the code, or options to continue with a temporary value. Build may implement an already-decided default; it never chooses one.
+If that owner or value is missing, **write no ledger**. Report `⚠️ Build readiness gap: spec-owned default missing`, name the affected exit path and field that needs defining, and route to `mano spec`. Do not offer a build-owned default, a `TODO` in the code, or options to continue with a temporary value. Build may implement an already-decided contract or initialise tuning under an authorised seed-selection rule; it never invents an unresolved product decision.
 
 **0c.1 Player choice interaction — hard gate.** Gate 6.3 from the same shared contract, applied against the whole brief: wherever the phase lets a player choose among two or more simultaneously available alternatives, `_mano_output/ux-flow.md` must define that choice as a player path — availability, how it is invoked, how the active option is selected and shown, and the locked/unavailable/cancel case. In-world or minimal presentation is still UX.
 
@@ -450,7 +456,7 @@ Every Scope leaf reads `done` and every Exit leaf reads `met`. **That is not suf
 
 1. **Refresh identity.** Re-run `state.js --next`; confirm `OWNER`, `PHASE_ID`, and `PROGRESS_STATUS: present`. A contract-digest failure here means the brief moved: stop, case (E).
 2. **Re-run the whole-brief checks against the artifacts as they stand now** — 0g project-rule coverage, 0c.3 artifact polarity, and the 0f `Phase Goal` → Scope → Exit chain. Artifacts may have been extended since pre-flight, and a rule added mid-phase is exactly the one nobody mapped.
-3. **Re-run canonical verification on the final code**, through `node _mano/scripts/verify.js -- <command>`. Not the narrow command from the last repair — the project's full check.
+3. **Re-run canonical verification on the final code.** Not the narrow command from the last repair — the project's full check.
 4. **Re-evaluate every Exit leaf against final evidence**, in this session. For a manual or experiential criterion, repeat the narrow human-facing check when you can honestly perform it now. Never infer, after a fresh session, that an earlier observation still holds — you did not observe it.
 5. **Reopen any leaf that later work invalidated**, with `--reopen`. Then fix or prove it. A sweep that finds a regression has done its job; a sweep that never finds one is not evidence it works.
 6. **Refuse terminal success while any correction lacks an affected or new Exit leaf.** *"Fixed but unprovable" cannot close a phase.*
@@ -468,6 +474,8 @@ node _mano/scripts/progress.js set-status --phase [N] --expect-phase-id [PHASE_I
 `met` is implementer evidence and `needs-human` is an explicit handoff. Neither is the human's verdict — that is what `mano review` is for.
 
 ## Chat output
+
+Apply the language check to every line below: render the explanatory prose in `language.chat`, including the terminal response. Keep `[mano build]`, phase IDs, paths, commands, and required status labels unchanged.
 
 `_mano/rules/implement.md` → **Implementation Output Discipline** applies in full. Build's own shape: one closing line per invocation — the **Terminal** line below, a **Deviation stop**, or a **Repair-limit stop** — never an interim report between passes. `Next:` names a command; never instruct the human to start a fresh session or manage their context.
 

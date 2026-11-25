@@ -1042,6 +1042,120 @@ class ManoScriptTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(self.backlog.read_bytes(), before)
 
+    def test_task_status_walks_the_needs_human_loop_and_keeps_the_check(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+
+        # in-task comes first: an item whose code was touched never reads as untouched backlog.
+        started = self.run_backlog("task-status", "--title", "Ordinary feature", "--to", "in-task")
+        self.assertEqual(started.returncode, 0, started.stderr)
+        self.assertIn("- **Status:** in-task", self.backlog.read_text())
+        task = self.run_state("--task")
+        self.assertIn("IN_TASK: 1\n  - Ordinary feature\nNEEDS_HUMAN: 0", task.stdout)
+        roster = self.run_state("--titles")
+        self.assertIn("## in-task (1)\n  Ordinary feature  [feature]", roster.stdout)
+
+        built = self.run_backlog(
+            "task-status", "--title", "Ordinary feature", "--to", "needs-human",
+            "--check", "Throw a ball at a box: does it glow?",
+        )
+        self.assertEqual(built.returncode, 0, built.stderr)
+        text = self.backlog.read_text()
+        self.assertIn(
+            "- **Status:** needs-human\n- **Check:** Throw a ball at a box: does it glow?", text
+        )
+
+        # needs-human items are neither scopeable nor open backlog work.
+        scope = self.run_state("--scope")
+        self.assertNotIn("This is phase work, not gap context.", scope.stdout)
+        task = self.run_state("--task")
+        self.assertEqual(task.returncode, 0, task.stderr)
+        self.assertIn("TASK: allowed", task.stdout)
+        self.assertIn(
+            "NEEDS_HUMAN: 1\n  - Ordinary feature — Check: Throw a ball at a box: does it glow?",
+            task.stdout,
+        )
+
+        redirected = self.run_backlog(
+            "task-status", "--title", "Ordinary feature", "--to", "backlog",
+            "--redirect", "make it flash once instead",
+        )
+        self.assertEqual(redirected.returncode, 0, redirected.stderr)
+        text = self.backlog.read_text()
+        self.assertIn(
+            "  This is phase work, not gap context.\n  Human redirection: make it flash once instead\n"
+            "- **Status:** backlog",
+            text,
+        )
+        self.assertNotIn("**Check:**", text)
+
+        self.run_backlog("task-status", "--title", "Ordinary feature", "--to", "in-task")
+        self.run_backlog(
+            "task-status", "--title", "Ordinary feature", "--to", "needs-human", "--check", "Does it flash?",
+        )
+        resolved = self.run_backlog("task-status", "--title", "Ordinary feature", "--to", "resolved")
+        self.assertEqual(resolved.returncode, 0, resolved.stderr)
+        # The Check line stays on a resolved item as the record of how it was verified.
+        self.assertIn("- **Status:** resolved\n- **Check:** Does it flash?", self.backlog.read_text())
+
+    def test_task_status_refuses_every_move_outside_the_contract(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        before = self.backlog.read_bytes()
+        cases = (
+            ("--title", "Ordinary feature", "--to", "needs-human"),                 # no --check
+            ("--title", "Ordinary feature", "--to", "backlog", "--failed", "x"),  # backlog -> backlog
+            ("--title", "Ordinary feature", "--to", "rejected"),
+            ("--title", "Ordinary feature", "--to", "resolved", "--check", "x"),
+            ("--title", "Ordinary feature", "--to", "resolved"),                   # skips in-task
+            ("--title", "Ordinary feature", "--to", "needs-human", "--check", "x"),  # skips in-task
+            ("--title", "Ordinary feature", "--to", "in-task", "--check", "x"),
+            ("--title", "Open spec", "--to", "resolved"),                          # gap type
+            ("--title", "In phase spec", "--to", "resolved"),
+            ("--title", "Resolved spec", "--to", "backlog", "--failed", "x"),
+            ("--title", "Missing title", "--to", "resolved"),
+            ("--title", "Principle-shaped sentinel", "--to", "resolved"),
+        )
+        for args in cases:
+            with self.subTest(args=args):
+                result = self.run_backlog("task-status", *args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.backlog.read_bytes(), before)
+
+        self.run_backlog("task-status", "--title", "Ordinary feature", "--to", "in-task")
+        after_start = self.backlog.read_bytes()
+        for args in (
+            ("--to", "backlog", "--failed", "x"),  # in-task -> backlog
+            ("--to", "in-task"),
+        ):
+            with self.subTest(args=args):
+                result = self.run_backlog("task-status", "--title", "Ordinary feature", *args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.backlog.read_bytes(), after_start)
+
+        self.run_backlog("task-status", "--title", "Ordinary feature", "--to", "needs-human", "--check", "x")
+        after_check = self.backlog.read_bytes()
+        for args in (
+            ("--to", "backlog"),                                   # no human words
+            ("--to", "backlog", "--failed", "a", "--redirect", "b"),
+        ):
+            with self.subTest(args=args):
+                result = self.run_backlog("task-status", "--title", "Ordinary feature", *args)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.backlog.read_bytes(), after_check)
+
+    def test_task_gate_refuses_while_a_phase_is_open(self):
+        self.backlog.write_text(MIXED_BACKLOG)
+        phase = self.output / "phase-1"
+        phase.mkdir()
+        (phase / "phase-brief.md").write_text("# Phase 1\n")
+
+        result = self.run_state("--task")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("TASK: refused", result.stdout)
+        self.assertIn("OPEN_PHASE: phase-1", result.stdout)
+
+        combined = self.run_state("--task", "--titles")
+        self.assertNotEqual(combined.returncode, 0)
+
     def test_rejected_items_are_never_scopeable_or_assignable(self):
         self.backlog.write_text(MIXED_BACKLOG)
         self.run_backlog("reject", "--title", "Ordinary feature")

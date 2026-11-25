@@ -27,15 +27,16 @@ Usage:
   node chain.js clear --phase <phase-id> [projectRoot]
 
 save     persist approved remaining actions in order; an empty string marks completion.
+         In auto, before either ledger exists, omit stories and end with build.
 repair   insert one artifact owner before pending build in auto, before either
          ledger exists. Each owner gets one automatic attempt per approved run.
 skip     record that the human removed these actions when they approved the
          scope. Only ${SKIPPABLE.join(", ")} may be skipped; implementation is a
          chain's terminal action and is never optional.
-show     print the saved run and skips for one phase, or skips for every phase.
+show     print the effective run and skips for one phase, or retained skips for each owner.
 clear    forget skips and repair attempts on fresh scope approval; retain actions.
 
-Approved actions, skips, and repair attempts are grouped by phase inside
+Approved actions, skips, and repair attempts retain only the newest phase inside
 _mano_output/[owner].json (or .default.json without an owner). Commit this
 file with the phase artifacts to resume on another computer.
 Missing run records require recovering approval from chat or asking the human.`;
@@ -114,7 +115,19 @@ function readRun(root, phaseId) {
     throw new Error("Invalid chain repair record");
   }
   validateRemaining(run.actions);
-  return run;
+  return { ...run, actions: implementationActions(root, phaseId, run.actions) };
+}
+
+/** Auto uses build before a ledger exists, including when resuming older plans.
+ * Keep approved artifact work in order. Reads project this without writing;
+ * the next save persists it. Existing ledgers remain authoritative.
+ */
+function implementationActions(root, phaseId, actions) {
+  if (!actions.length || resolveConfiguredMode(root).mode !== "auto") return actions;
+  const phaseDir = path.join(root, "_mano_output", phaseId);
+  if (fs.existsSync(path.join(phaseDir, "progress.md")) ||
+      fs.existsSync(path.join(phaseDir, "stories", "README.md"))) return actions;
+  return [...actions.filter(action => !["stories", "dev", "build"].includes(action)), "build"];
 }
 
 function readRemaining(root, phaseId) {
@@ -174,10 +187,11 @@ function main() {
   if (args.command === "save") {
     const phaseId = validatePhaseId(args.phase);
     if (args.actions == null) fail("save requires --actions (empty after completion)");
-    const actions = args.actions === ""
+    let actions = args.actions === ""
       ? []
       : args.actions.split(",").map(a => a.trim().toLowerCase()).filter(Boolean);
     validateRemaining(actions);
+    actions = implementationActions(args.root, phaseId, actions);
     const previous = readRun(args.root, phaseId);
     writeRun(args.root, phaseId, { actions, repairs: previous?.repairs ?? [] });
     process.stdout.write(`[mano chain] ${phaseId} — remaining: ${actions.join(", ") || "none (completed)"}\n`);

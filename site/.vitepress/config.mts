@@ -4,7 +4,7 @@ const siteUrl = 'https://mano.ceceppa.me'
 
 export default defineConfig({
   title: 'Mano',
-  description: 'A fast planning loop for AI-assisted development. Plan in small phases and validate each assumption before it becomes code.',
+  description: 'A fast planning loop for AI-assisted development. Build one small step at a time and validate each assumption before it becomes code.',
   cleanUrls: true,
   lastUpdated: true,
   sitemap: { hostname: siteUrl },
@@ -69,11 +69,13 @@ export default defineConfig({
         text: 'Features',
         items: [
           { text: 'All features', link: '/features/' },
+          { text: 'Tasks', link: '/features/task' },
           { text: 'Build mode', link: '/features/build' },
           { text: 'Auto mode', link: '/features/auto-mode' },
           { text: 'Import', link: '/features/import' },
           { text: 'Team owners', link: '/features/owners' },
           { text: 'Tracks & filters', link: '/features/tracks' },
+          { text: 'Languages', link: '/features/languages' },
           { text: 'Hooks', link: '/features/hooks' }
         ]
       },
@@ -95,11 +97,13 @@ export default defineConfig({
         text: 'Features',
         items: [
           { text: 'Overview', link: '/features/' },
+          { text: 'Tasks', link: '/features/task' },
           { text: 'Build mode', link: '/features/build' },
           { text: 'Auto mode', link: '/features/auto-mode' },
           { text: 'Import a document', link: '/features/import' },
           { text: 'Team owners', link: '/features/owners' },
           { text: 'Tracks & filters', link: '/features/tracks' },
+          { text: 'Languages', link: '/features/languages' },
           { text: 'Hooks', link: '/features/hooks' }
         ]
       },

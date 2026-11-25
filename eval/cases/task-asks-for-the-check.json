@@ -1,0 +1,10 @@
+{
+  "name": "task-asks-for-the-check",
+  "description": "The item is clear enough to build, but the human only typed its title: nothing they wrote says how they will check it. mano task must show what the item says and ask what they will do to check it and what they should see, before writing anything. The old contract asked nothing for a clear item and went straight to code, so the outcome was Mano's and the human only approved it.",
+  "fixture": "task-check-first",
+  "phase": 1,
+  "prompt": "mano task \"Thumbnail count in the panel header\"",
+  "assertions": [
+    "task_asked_for_the_check"
+  ]
+}

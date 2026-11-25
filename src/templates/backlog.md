@@ -34,4 +34,4 @@ Current-phase implementation work belongs in `phase-brief.md` or the phase's sto
 - **Context:**
   What it is.
   Why it matters or key detail.
-- **Status:** backlog / in-phase-N / in-owner-phase-N / resolved / rejected
+- **Status:** backlog / in-phase-N / in-owner-phase-N / in-task / needs-human / resolved / rejected

@@ -77,14 +77,40 @@ class ImplementationEntryTests(unittest.TestCase):
         self.assertIn("This is rule 6 of **Implementation entry**", workflow)
         # Continue dispatches into the entry the projection names; it never
         # prints a card asking for the command the human just typed.
-        self.assertIn("**`IMPLEMENTATION_ENTRY:` decides first, and it is dispatch, not advice.**", workflow)
+        self.assertIn("**`CONTINUE_ACTION:` decides first, and it is dispatch, not advice.**", workflow)
         self.assertIn("It builds the phase to its terminal line in this same invocation", workflow)
         self.assertIn("**Never `mano dev yolo`.**", workflow)
         self.assertNotIn("Use `mano build` to resume at the row state reports next.", workflow)
 
+    def test_continue_preserves_approved_planning_before_implementation(self) -> None:
+        workflow = _read("src/workflow.md")
+        dispatch = workflow.split("## Continue", 1)[1].split("## ", 1)[0]
+        self.assertIn("CHAIN_REMAINING: ui, rules, build", dispatch)
+        self.assertIn("means run `mano ui` first", dispatch)
+        self.assertIn("Existing artifacts never prove a planned rerun finished", dispatch)
+        self.assertIn("The terminal `dev` in an armed chain with an existing stories ledger runs `mano dev yolo`", dispatch)
+        self.assertIn("CONTINUE_BLOCKER:", dispatch)
+        self.assertIn("scoping with `mano start`", dispatch)
+        self.assertNotIn("`IMPLEMENTATION_ENTRY:` decides first", workflow)
+        for path in ("src/rules/auto.md", "src/rules/implement.md"):
+            self.assertIn("`IMPLEMENTATION_ENTRY` never authorises jumping over approved planning", _read(path))
+        self.assertIn("`CONTINUE_ACTION:`", _read("src/bootstrap/AGENTS.md"))
+
+    def test_auto_never_generates_stories_even_from_an_old_saved_chain(self) -> None:
+        for path in ("src/workflow.md", "src/rules/auto.md", "src/rules/implement.md",
+                     "src/rules/artifact.md", "src/bootstrap/AGENTS.md"):
+            with self.subTest(path=path):
+                self.assertIn("Auto never runs `mano stories`", _read(path))
+        self.assertIn("**In auto mode, never include `mano stories` in the chain.**",
+                      _read("src/skills/start.md"))
+        self.assertIn("**Never invoke this skill as an automatic chain action.**",
+                      _read("src/skills/stories.md"))
+        self.assertIn("Reads do not edit the record; the next save persists the projected actions",
+                      _read("src/workflow.md"))
+
     def test_the_command_menu_marks_the_entry_the_state_implies(self) -> None:
         workflow = _read("src/workflow.md")
-        self.assertIn("Mark the suggested next action by **Implementation entry**", workflow)
+        self.assertIn("mark the suggested next action by **Implementation entry**", workflow)
         self.assertIn("in `manual` leave `stories` and `build` both visible and mark neither", workflow)
 
     def test_the_planning_decision_tree_no_longer_hardcodes_stories(self) -> None:
@@ -93,7 +119,7 @@ class ImplementationEntryTests(unittest.TestCase):
         self.assertNotIn("suggest `mano stories`", tree)
         self.assertIn("suggest implementation", tree)
         self.assertIn("go straight to implementation", tree)
-        self.assertIn("in `auto`, the approved chain terminates at `mano build`", artifact)
+        self.assertIn("in `auto`, every chain without a ledger terminates at `mano build`", artifact)
 
     def test_every_planning_skill_offers_both_paths(self) -> None:
         for skill in ("spec", "rules", "ux", "ui"):

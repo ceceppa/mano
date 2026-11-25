@@ -1,0 +1,9 @@
+{
+  "name": "task-reuses-reproduction",
+  "description": "A bug report already supplies reproduction. Ask only for unresolved cargo behaviour, without a generic verification question or writes.",
+  "fixture": "task-cargo-reproduction",
+  "prompt": "mano task \"There is a bug: when I throw the full ball at a door that is closing, its cargo is lost.\"",
+  "assertions": [
+    "task_reused_reproduction"
+  ]
+}

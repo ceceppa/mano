@@ -4577,6 +4577,48 @@ def ux_gap_only_repaired_the_flow(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def spec_gap_only_settled_the_directive(ctx: Ctx) -> list[Failure]:
+    name = "spec_gap_only_settled_the_directive"
+    out = []
+    spec = ctx.output_dir / "tech-spec.md"
+    text = spec.read_text(encoding="utf-8") if spec.is_file() else ""
+    if "sqlite" not in text.lower():
+        out.append(Failure(name, "tech-spec.md does not adopt or name the stated SQLite "
+                                 "directive — the spec-gap was not addressed, and it still "
+                                 "blocks mano start"))
+    if not _gap_resolved(ctx, "store notes in SQLite"):
+        out.append(Failure(name, "the spec-gap item is still Status: backlog — an unresolved "
+                                 "gap keeps mano start blocked forever"))
+    if re.search(r"\btag", text, re.IGNORECASE):
+        out.append(Failure(name, "tech-spec.md specifies the unscoped tagging feature — "
+                                 "gap-only mode settles the projected gaps and nothing else"))
+    if any(p.name.startswith("phase-") for p in ctx.output_dir.glob("phase-*")):
+        out.append(Failure(name, "a phase directory was created — gap-only mode runs "
+                                 "precisely because there is no phase"))
+    return out
+
+
+def rules_gap_only_settled_the_directive(ctx: Ctx) -> list[Failure]:
+    name = "rules_gap_only_settled_the_directive"
+    out = []
+    rules = ctx.output_dir / "project-rules.md"
+    text = rules.read_text(encoding="utf-8") if rules.is_file() else ""
+    if ".test" not in text:
+        out.append(Failure(name, "project-rules.md does not adopt or name the stated test-layout "
+                                 "directive — the rule-gap was not addressed, and it still "
+                                 "blocks mano start"))
+    if not _gap_resolved(ctx, "tests live beside their source"):
+        out.append(Failure(name, "the rule-gap item is still Status: backlog — an unresolved "
+                                 "gap keeps mano start blocked forever"))
+    if (ctx.output_dir / "tech-spec.md").is_file():
+        out.append(Failure(name, "tech-spec.md was written by mano rules — gap-only mode "
+                                 "repairs its own artifact and nothing else"))
+    if any(p.name.startswith("phase-") for p in ctx.output_dir.glob("phase-*")):
+        out.append(Failure(name, "a phase directory was created — gap-only mode runs "
+                                 "precisely because there is no phase"))
+    return out
+
+
 def ui_gap_only_repaired_the_brief(ctx: Ctx) -> list[Failure]:
     name = "ui_gap_only_repaired_the_brief"
     out = []
@@ -4595,6 +4637,262 @@ def ui_gap_only_repaired_the_brief(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def _directive_no_phase(ctx: Ctx, name: str, artifact: str, needles: tuple[str, ...],
+                        foreign: tuple[str, ...]) -> list[Failure]:
+    out = []
+    path = ctx.output_dir / artifact
+    text = path.read_text(encoding="utf-8").lower() if path.is_file() else ""
+    missing = [n for n in needles if n not in text]
+    if missing:
+        out.append(Failure(name, f"{artifact} does not adopt the directive written with the "
+                                 f"command (missing {missing}) — a project-wide decision "
+                                 f"must not need a phase or a gap row to land"))
+    if (ctx.backlog() or "").strip() != ctx.fixture_snapshot.get("backlog.md", "").strip():
+        out.append(Failure(name, "backlog.md changed — the directive's home is the artifact; "
+                                 "recording it as a gap row makes the human approve their own sentence"))
+    for other in foreign:
+        if (ctx.output_dir / other).is_file():
+            out.append(Failure(name, f"{other} was written — directive mode writes only "
+                                     f"its own artifact"))
+    if ctx.phase_dirs():
+        out.append(Failure(name, "a phase directory was created — a project-wide directive "
+                                 "needs no phase"))
+    return out
+
+
+def rules_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    return _directive_no_phase(ctx, "rules_directive_written_without_a_gap", "project-rules.md",
+                               (".test",), ("tech-spec.md", "ux-flow.md", "design-brief.md"))
+
+
+def spec_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    return _directive_no_phase(ctx, "spec_directive_written_without_a_gap", "tech-spec.md",
+                               ("sqlite",), ("project-rules.md", "ux-flow.md", "design-brief.md"))
+
+
+def ux_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    return _directive_no_phase(ctx, "ux_directive_written_without_a_gap", "ux-flow.md",
+                               ("confirm",), ("tech-spec.md", "project-rules.md", "design-brief.md"))
+
+
+def ui_directive_written_without_a_gap(ctx: Ctx) -> list[Failure]:
+    name = "ui_directive_written_without_a_gap"
+    out = _directive_no_phase(ctx, name, "design-brief.md", ("pill",),
+                              ("tech-spec.md", "project-rules.md", "ux-flow.md"))
+    if list(ctx.output_dir.rglob("design-preview.html")):
+        out.append(Failure(name, "a design preview was written with no phase to own it"))
+    return out
+
+
+def _feature_contract_closed_phase(ctx: Ctx, name: str, artifact: str, sentinel: str,
+                                   any_of: tuple[str, ...], gone: tuple[str, ...],
+                                   untouched: str) -> list[Failure]:
+    out = []
+    text = (ctx.output_text(artifact) or "")
+    lowered = text.lower()
+    if text.strip() == (ctx.fixture_text(artifact) or "").strip():
+        out.append(Failure(name, f"{artifact} is unchanged — a feature's contract the human asks "
+                                 f"for is the owner's to write, phase or not"))
+    elif not any(word in lowered for word in any_of):
+        out.append(Failure(name, f"{artifact} changed but does not carry the request "
+                                 f"(none of {list(any_of)})"))
+    for phrase in gone:
+        if phrase in lowered:
+            out.append(Failure(name, f"{artifact} still states {phrase!r} — the request replaces it; "
+                                     f"leaving both makes the contract contradict itself"))
+    if sentinel not in text:
+        out.append(Failure(name, f"{artifact} lost its sentinel — targeted edit, not a regeneration"))
+    if (ctx.backlog() or "").strip() != ctx.fixture_snapshot.get("backlog.md", "").strip():
+        out.append(Failure(name, "backlog.md changed — writing a contract adds no gap and closes no item"))
+    if [p.name for p in ctx.phase_dirs()] != ["phase-1"]:
+        out.append(Failure(name, "a phase directory was created — a feature's contract needs no phase"))
+    seeded = {"phase-1/phase-brief.md", "phase-1/progress.md"}
+    added = sorted(f for f in ctx.output_files() if f.startswith("phase-1/") and f not in seeded)
+    if added:
+        out.append(Failure(name, f"wrote into the reviewed phase {added} — the contract is project-wide"))
+    if (ctx.output_text(untouched) or "") != (ctx.fixture_text(untouched) or ""):
+        out.append(Failure(name, f"{untouched} changed — only the owner's own artifact is written"))
+    for other in ("tech-spec.md", "project-rules.md"):
+        if (ctx.output_dir / other).is_file():
+            out.append(Failure(name, f"{other} was written — only the owner's own artifact is written"))
+    if list(ctx.output_dir.rglob("design-preview.html")):
+        out.append(Failure(name, "a design preview was written with no open phase to own it"))
+    return out
+
+
+def ui_feature_contract_written_after_closed_phase(ctx: Ctx) -> list[Failure]:
+    return _feature_contract_closed_phase(
+        ctx, "ui_feature_contract_written_after_closed_phase", "design-brief.md",
+        "sentinel: design-phase-1-must-survive", ("settleoutline", "outline"),
+        ("never shown while",), "ux-flow.md")
+
+
+def ux_feature_contract_written_after_closed_phase(ctx: Ctx) -> list[Failure]:
+    return _feature_contract_closed_phase(
+        ctx, "ux_feature_contract_written_after_closed_phase", "ux-flow.md",
+        "sentinel: ux-phase-1-must-survive", ("batch", "several", "multiple"),
+        (), "design-brief.md")
+
+
+def start_routed_the_directive_to_its_owner(ctx: Ctx) -> list[Failure]:
+    name = "start_routed_the_directive_to_its_owner"
+    out = []
+    if ctx.phase_dirs():
+        out.append(Failure(name, "a phase directory was created — a project-wide convention "
+                                 "is not phase work"))
+    if (ctx.backlog() or "").strip() != ctx.fixture_snapshot.get("backlog.md", "").strip():
+        out.append(Failure(name, "backlog.md changed — a directive with no work attached is "
+                                 "routed to its owner, not homed as a gap"))
+    if "mano rules" not in ctx.transcript.lower():
+        out.append(Failure(name, "the reply did not route the convention to `mano rules`"))
+    return out
+
+
+# The check question, in any reasonable wording: it asks what the human will do
+# to check the work and what they should see.
+_CHECK_QUESTION = re.compile(r"\bcheck\b.{0,160}?\bsee\b", re.IGNORECASE | re.DOTALL)
+
+
+def task_asked_for_the_check(ctx: Ctx) -> list[Failure]:
+    """A clear item the human named only by title: ask for their check first.
+
+    The old contract built a clear item with no question, so the outcome was
+    Mano's and the human only approved it. Nothing may be written before the
+    answer: not the item, not its status, not source.
+    """
+    name = "task_asked_for_the_check"
+    out = _wrote_nothing(ctx, name)
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not _CHECK_QUESTION.search(text):
+        out.append(Failure(name, "the reply never asked what the human will do to check the item "
+                                 "and what they should see"))
+    if "12 thumbnails" not in text and "no thumbnails" not in text.lower():
+        out.append(Failure(name, "the reply did not show what the item says before asking"))
+    return out
+
+
+def task_reused_reproduction(ctx: Ctx) -> list[Failure]:
+    """Reuse the reported action, but still ask for the cargo's destination."""
+    name = "task_reused_reproduction"
+    out = _wrote_nothing(ctx, name)
+    text = ctx.transcript
+    if _CHECK_QUESTION.search(text) or re.search(
+        r"(?:how|what).{0,60}\b(?:verify|reproduce|test)\b.{0,100}\?", text, re.I
+    ):
+        out.append(Failure(name, "asked for verification already supplied by the reproduction"))
+    if not re.search(r"(?:where|which side|should|stay|land|stop|pass|continue|block).{0,300}\?", text, re.I | re.S):
+        out.append(Failure(name, "did not ask for the unresolved cargo behaviour"))
+    if not re.search(r"cargo|objects|contents", text, re.I):
+        out.append(Failure(name, "did not ground the question in the reported cargo loss"))
+    return out
+
+
+# Asking the human how they will check or verify the work: the generic check
+# question, or its action half on its own. A concrete behaviour question that
+# happens to say "see" is not this.
+_ASKS_HOW_THEY_CHECK = re.compile(
+    r"\b(?:what will you do|what would you do|how will you|how would you|how do you plan to)\b"
+    r"[^?\n]{0,80}\b(?:check|verify|test|confirm)\b[^?\n]{0,160}\?",
+    re.IGNORECASE,
+)
+
+_STATED_GOAL = "prevent spawn-killing and unavoidable death loops"
+
+
+def task_skipped_stated_check(ctx: Ctx) -> list[Failure]:
+    """The request already says what the human will see: ask only what's open.
+
+    Its bullets and goal line are the check. Asking how they'll check it gets
+    the goal back in other words. The exploit clause is still open, so a
+    question about it must stay, and nothing may be written before the answer.
+    """
+    name = "task_skipped_stated_check"
+    if not ctx.steps:
+        return [Failure(name, "case ran no steps")]
+    step = ctx.step(1)
+    out = []
+    changed = sorted(ctx.changed_in_step(1))
+    if changed:
+        out.append(Failure(name, f"step 1 wrote {changed} before the open question was answered"))
+    new_source = sorted(set(step.source_files) - _seeded_sources(ctx))
+    if new_source:
+        out.append(Failure(name, f"step 1 wrote source before the open question was answered: {new_source}"))
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", step.final_response)
+    if _ASKS_HOW_THEY_CHECK.search(text):
+        out.append(Failure(name, "asked how the human will check it, though the request already "
+                                 "says what they should see"))
+    if not re.search(r"\b(?:exploit\w*|abus\w*|escape|flee|run away|actions?|sprint\w*|"
+                     r"throw\w*|interact\w*)\b[^?]{0,300}\?", text, re.IGNORECASE):
+        out.append(Failure(name, "did not ask what keeps respawn from being an exploitable escape"))
+    return out
+
+
+def task_skipped_check_for_named_behaviour(ctx: Ctx) -> list[Failure]:
+    """The request names a behaviour: ask what it leaves open, not how to check it.
+
+    "Let me rename my player, and keep it after a restart" says what the human
+    will do and what they should see. Where the name is changed, who sees it,
+    and what an empty name does are open, so a concrete question must remain,
+    and nothing may be written before the answer.
+    """
+    name = "task_skipped_check_for_named_behaviour"
+    out = _wrote_nothing(ctx, name)
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if _ASKS_HOW_THEY_CHECK.search(text) or _CHECK_QUESTION.search(text):
+        out.append(Failure(name, "asked how the human will check it, though the request already "
+                                 "names what they will do and what they should see"))
+    if not re.search(r"\b(?:where|options|lobby|menu|esc|other players?|everyone|multiplayer|"
+                     r"panels?|empty|blank|clear\w*)\b[^?]{0,300}\?", text, re.IGNORECASE):
+        out.append(Failure(name, "did not ask about anything the request leaves open: where the "
+                                 "name is changed, who sees it, or what an empty name does"))
+    return out
+
+
+def task_done_when_quotes_request(ctx: Ctx) -> list[Failure]:
+    """With no check question asked, `Done when:` quotes the human's goal line."""
+    name = "task_done_when_quotes_request"
+    blocks = [body for title, _, body in _backlog_blocks(ctx) if "respawn" in title.lower()]
+    if not blocks:
+        return [Failure(name, "no respawn item was written after the open question was answered")]
+    done = re.search(r"^\s*Done when:\s*(.+)$", blocks[0], re.MULTILINE)
+    if not done:
+        return [Failure(name, "the item has no `Done when:` line")]
+    quoted = re.sub(r"[*_`]", "", done.group(1)).lower()
+    if _STATED_GOAL not in re.sub(r"\s+", " ", quoted):
+        return [Failure(name, f"`Done when:` does not quote the human's goal line: {done.group(1)!r}")]
+    return []
+
+
+def start_asked_for_the_check(ctx: Ctx) -> list[Failure]:
+    """The scope proposal carries the check question, and nothing is written yet."""
+    name = "start_asked_for_the_check"
+    out = []
+    if ctx.artifact_text("phase-brief.md") is not None:
+        out.append(Failure(name, "a phase brief was written before any approval"))
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not _CHECK_QUESTION.search(text):
+        out.append(Failure(name, "the proposal never asked how the human will check the phase "
+                                 "and what they should see"))
+    return out
+
+
+def start_asked_about_the_unscoped_check(ctx: Ctx) -> list[Failure]:
+    """Half the human's check needs an item they didn't select: ask, don't cut it.
+
+    Drafting the brief here means Mano settled it alone, either by cutting the
+    cancellation half into Not This Phase or by adding the item itself.
+    """
+    name = "start_asked_about_the_unscoped_check"
+    out = []
+    if ctx.artifact_text("phase-brief.md") is not None:
+        out.append(Failure(name, "the brief was drafted without asking about the part of the "
+                                 "check no selected item delivers"))
+    text = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", ctx.transcript)
+    if not re.search(r"cancel", text, re.IGNORECASE):
+        out.append(Failure(name, "the reply never raised the cancellation half of the check"))
+    return out
+
+
 def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
     name = "review_ui_ux_requests_remain_scopeable"
     out = []
@@ -4610,8 +4908,64 @@ def review_ui_ux_requests_remain_scopeable(ctx: Ctx) -> list[Failure]:
     return out
 
 
+def task_documented_changes(ctx: Ctx) -> list[Failure]:
+    name = "task_documented_changes"
+    failures = []
+    spec_path = ctx.output_dir / "tech-spec.md"
+    spec = spec_path.read_text() if spec_path.exists() else ""
+    for term in ("Player", "version", "1.0.0"):
+        if term not in spec:
+            failures.append(Failure(name, f"package contract omits {term}"))
+    result = subprocess.run(
+        ["node", "-e", 'const p=require("./index.js"); if(new p.Player().name!=="Player" || p.version!=="1.0.0") process.exit(1)'],
+        cwd=ctx.output_dir.parent, capture_output=True, text=True,
+    )
+    if result.returncode:
+        failures.append(Failure(name, "requested package exports do not work"))
+    backlog = (ctx.output_dir / "backlog.md").read_text()
+    if "**Status:** resolved" not in backlog:
+        failures.append(Failure(name, "fully testable task was not resolved"))
+    if not re.search(r"Documented:.*(?:spec|tech-spec)", ctx.transcript, re.I):
+        failures.append(Failure(name, "task log lacks the documentation owner and result"))
+    if list(ctx.output_dir.glob("phase-*")):
+        failures.append(Failure(name, "documentation created an unnecessary phase"))
+    return failures
+
+
+
+def spec_tuning_seed_authority(ctx: Ctx) -> list[Failure]:
+    name = "spec_tuning_seed_authority"
+    out = _directive_no_phase(ctx, name, "tech-spec.md",
+                              ("capture_duration", "gametuning"),
+                              ("project-rules.md", "ux-flow.md", "design-brief.md"))
+    text = (ctx.output_text("tech-spec.md") or "").lower()
+    checks = {
+        "seed explicitly non-normative": r"non[- ]normative|not (?:a |an )?(?:binding|contractual|acceptance)|not.*acceptance criter",
+        "current values delegated to configuration": r"configur|tuning",
+        "instance overrides": r"overrid",
+        "countdown starts after field ends": r"(?:after|once|when)[^\n.]*field[^\n.]*(?:end|finish|complet)",
+        "release at configured duration": r"releas[^\n.]*(?:durat|expir|timer|countdown)|(?:durat|timer|countdown)[^\n.]*releas",
+        "explicit fixture verification": r"fixture|explicit.*test.*(?:value|parameter)|test.*explicit.*(?:value|parameter)",
+    }
+    for meaning, pattern in checks.items():
+        if not re.search(pattern, text):
+            out.append(Failure(name, f"Missing {meaning}"))
+    return out
+
+
 REGISTRY = {
+    "spec_tuning_seed_authority": spec_tuning_seed_authority,
+    "task_documented_changes": task_documented_changes,
+    "task_asked_for_the_check": task_asked_for_the_check,
+    "task_reused_reproduction": task_reused_reproduction,
+    "task_skipped_stated_check": task_skipped_stated_check,
+    "task_skipped_check_for_named_behaviour": task_skipped_check_for_named_behaviour,
+    "task_done_when_quotes_request": task_done_when_quotes_request,
+    "start_asked_for_the_check": start_asked_for_the_check,
+    "start_asked_about_the_unscoped_check": start_asked_about_the_unscoped_check,
     "review_ui_ux_requests_remain_scopeable": review_ui_ux_requests_remain_scopeable,
+    "ui_feature_contract_written_after_closed_phase": ui_feature_contract_written_after_closed_phase,
+    "ux_feature_contract_written_after_closed_phase": ux_feature_contract_written_after_closed_phase,
     "stories_were_written": stories_were_written,
     "readme_index_exists": readme_index_exists,
     "filenames_have_slug": filenames_have_slug,
@@ -4775,5 +5129,12 @@ REGISTRY = {
     "review_next_named_the_drift_routes": review_next_named_the_drift_routes,
     "start_gap_block_wrote_no_brief": start_gap_block_wrote_no_brief,
     "ux_gap_only_repaired_the_flow": ux_gap_only_repaired_the_flow,
+    "spec_gap_only_settled_the_directive": spec_gap_only_settled_the_directive,
+    "rules_gap_only_settled_the_directive": rules_gap_only_settled_the_directive,
     "ui_gap_only_repaired_the_brief": ui_gap_only_repaired_the_brief,
+    "rules_directive_written_without_a_gap": rules_directive_written_without_a_gap,
+    "spec_directive_written_without_a_gap": spec_directive_written_without_a_gap,
+    "ux_directive_written_without_a_gap": ux_directive_written_without_a_gap,
+    "ui_directive_written_without_a_gap": ui_directive_written_without_a_gap,
+    "start_routed_the_directive_to_its_owner": start_routed_the_directive_to_its_owner,
 }

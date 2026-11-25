@@ -43,7 +43,7 @@ mano mode auto
 mano start
 ```
 
-[Auto mode](/features/auto-mode) chains the commands you'd otherwise type, armed by one thing only — your explicit approval of a phase scope. It never scopes for you, never runs `mano review`, and stops at any open question.
+[Auto mode](/features/auto-mode) chains the commands you'd otherwise type, armed only by your explicit approval of a phase scope. It never scopes for you, never runs `mano review`, and stops at any open question.
 
 ```text
 → Auto mode: spec → rules → build
